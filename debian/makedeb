@@ -1,0 +1,46 @@
+#!/bin/sh
+#cd /home/user/devel/MaemoDict/debian || exit
+cp ../src/pysdic.py ../src/sdict.py ../src/sdictview-maemo.py usr/bin || exit
+
+export LD_LIBRARY_PATH=/var/lib/install/usr/lib
+
+DIRS="etc usr"
+find $DIRS| grep \~ && rm -i $(find $DIRS| grep \~)
+
+PACKAGE=sdictviewer
+VERSION=$(grep "^version =" ../src/pysdic.py | sed s/version\ =\ \"// | sed s/\"//)
+SIZE=$(du -sc $DIRS|grep total|sed s/total//)
+
+echo $VERSION	
+
+echo "Package: $PACKAGE
+Version: $VERSION
+Section: unstable
+Priority: optional
+Architecture: arm
+Depends: maemo
+Installed-Size: $SIZE
+Maintainer: Igor Tkach <itkach@users.sourceforge.net>
+Description: A dictionary tool to access (proprietary) dictionaries from sdict.com" > control
+cat control
+
+echo "[Desktop Entry]
+Encoding=UTF-8
+Version=$VERSION
+Name=SDict Viewer
+Type=Application
+Exec=/var/lib/install/usr/bin/sdictview-maemo.py
+#Icon=qgn_list_gene_default_app
+Icon=sdictviewer
+X-HildonDesk-ShowInToolbar=true" > etc/others-menu/extra_applications/sdictviewer.desktop
+
+echo 2.0 > debian-binary
+
+tar -zcvf data.tar.gz ./usr ./etc
+tar -zcvf control.tar.gz control
+NAME="$PACKAGE"-$VERSION.deb
+rm $NAME
+ar q $NAME debian-binary control.tar.gz data.tar.gz 
+ar t $NAME
+ls -al $NAME
+#rm debian-binary control control.tar.gz data.tar.gz
