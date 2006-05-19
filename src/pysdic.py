@@ -10,6 +10,7 @@ import time
 
 gobject.threads_init()
 
+version = "0.1.0"
 settings_file_name = ".pysdic"
 
 def read_last_dict():
@@ -394,8 +395,9 @@ class SDictViewer:
         dialog = gtk.AboutDialog()
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name("SDict Viewer")
-        dialog.set_version("0.1")
+        dialog.set_version(version)
         dialog.set_copyright("Igor Tkach")
+        dialog.set_website("http://sf.net/projects/sdictviewer")
         comments = "SDict Viewer is viewer for dictionaries in open format described at http://sdict.com\nDistributed under terms and conditions of GNU Public License\nSee http://www.gnu.org/licenses/gpl.txt for details"
         dialog.set_comments(comments)        
         dialog.show()        
