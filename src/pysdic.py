@@ -191,6 +191,10 @@ class SDictViewer:
             if cursor_path == selected_path: 
                 word, = model.get(model.get_iter(cursor_path), 0)
                 self.show_article_for(word)
+                   
+    def clear_word_input(self, btn, data = None):
+        self.word_input.child.set_text('')
+        self.word_input.child.grab_focus()
                         
     def word_input_changed(self, editable, data = None):
         self.update_completion(editable.get_text())                
@@ -219,7 +223,16 @@ class SDictViewer:
         box = gtk.VBox()        
         
         self.word_input = self.create_word_input()
-        box.pack_start(self.word_input, False, False, 0)
+        
+        input_box = gtk.HBox()
+        input_box.pack_start(self.word_input, False, False, 0)
+        clear_input = gtk.Button()
+        image = gtk.image_new_from_stock(gtk.STOCK_CLEAR, gtk.ICON_SIZE_SMALL_TOOLBAR)
+        clear_input.set_image(image)
+        clear_input.connect("clicked", self.clear_word_input);
+        input_box.pack_start(clear_input, False, False, 0)
+        
+        box.pack_start(input_box, False, False, 0)
         
         self.word_completion = self.create_word_completion()
         box.pack_start(create_scrolled_window(self.word_completion), True, True, 0)
