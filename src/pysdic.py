@@ -55,6 +55,17 @@ class DictOpenThread(threading.Thread):
              print e
          gobject.idle_add(self.set_dict, dict)
 
+class SmallToolButton(gtk.ToolButton):
+    def __init__(self, icon_widget=None, label=None):
+        super(SmallToolButton, self).__init__(icon_widget=None, label=None)
+
+    def __init__(self, stock_id):
+        super(SmallToolButton, self).__init__(stock_id)
+
+    def get_icon_size(self):
+        print gtk.ToolButton.get_icon_size(self)
+        return gtk.ICON_SIZE_SMALL_TOOLBAR
+
 class SDictViewer:
          
     def destroy(self, widget, data=None):
@@ -67,29 +78,20 @@ class SDictViewer:
         word = self.word_input.child.get_text()         
         if not word:
             return     
-        self.schedule_word_lookup(word)
-#        if not self.show_article_for(word):                        
-#            model = self.word_completion.get_model()
-#            first_completion = model.get_iter_first()
-#            if first_completion:                        
-#                word = model.get_value(first_completion, 0)
-#                self.show_article_for(word)        
+        #self.schedule_word_lookup(word)
+        self.process_word_input(word)
           
     def schedule_word_lookup(self, word):
-#        if self.current_word_handler:
-#            gobject.source_remove(self.current_word_handler)
-#            self.current_word_handler = None
-#        self.current_word_handler = gobject.timeout_add(700, self.process_word_input, word)        
-#        print "lookup word %s, request handler %s" % (word, self.current_word_handler)        
-         self.schedule(self.process_word_input, word)
+         self.schedule(self.process_word_input, 200, word)
         
-    def schedule(self, f, *args):
+    def schedule(self, f, timeout, *args):
         if self.current_word_handler:
             gobject.source_remove(self.current_word_handler)
             self.current_word_handler = None
-        self.current_word_handler = gobject.timeout_add(700, f, *args)                
+        self.current_word_handler = gobject.timeout_add(timeout, f, *args)                
                 
     def process_word_input(self, word):
+        word = word.strip()
         if not self.show_article_for(word):                        
             model = self.word_completion.get_model()
             first_completion = model.get_iter_first()
@@ -127,25 +129,32 @@ class SDictViewer:
             buffer.apply_tag_by_name("b", word_start, word_end) 
             
             regions_to_remove = []
+                        
+            transcript_regions = self.find_tag_bounds(buffer, "<t>", "</t>", regions_to_remove)
             italic_regions = self.find_tag_bounds(buffer, "<i>", "</i>", regions_to_remove)
             bold_regions = self.find_tag_bounds(buffer, "<b>", "</b>", regions_to_remove)
             underline_regions = self.find_tag_bounds(buffer, "<u>", "</u>", regions_to_remove)
             forms_regions = self.find_tag_bounds(buffer, "<f>", "</f>", regions_to_remove)
             ref_regions = self.find_tag_bounds(buffer, "<r>", "</r>", regions_to_remove)
             
+            for mark in regions_to_remove:
+                buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1]))            
+            
+            self.apply_tag_to_regions(buffer, transcript_regions, "t", "[", "]")
             self.apply_tag_to_regions(buffer, italic_regions, "i")
             self.apply_tag_to_regions(buffer, bold_regions, "b")
             self.apply_tag_to_regions(buffer, underline_regions, "u")
             self.apply_tag_to_regions(buffer, forms_regions, "f")
+            self.apply_tag_to_regions(buffer, ref_regions, "r")
             for mark in ref_regions:            
                 start = buffer.get_iter_at_mark(mark[0])
                 end = buffer.get_iter_at_mark(mark[1])
                 text = buffer.get_text(start, end)
                 start = buffer.get_iter_at_mark(mark[0])
-                start.backward_chars(3)
+                #start.backward_chars(3)
                 anchor = buffer.create_child_anchor(start)
                 label = gtk.Label()
-                markup_text = "<span foreground='blue' background='white' underline='single' rise='-2'>"+text.replace("&", "&amp;")+"</span>"
+                markup_text = "<span foreground='blue' background='white' underline='single' rise='-5'>"+text.replace("&", "&amp;")+"</span>"
                 label.set_markup(markup_text)
                 btn = gtk.EventBox()
                 btn.add(label)                
@@ -158,8 +167,8 @@ class SDictViewer:
                 end = buffer.get_iter_at_mark(mark[1])                
                 buffer.apply_tag_by_name("invisible", start, end)                
             self.article_view.show_all()
-            for mark in regions_to_remove:
-                buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1]))
+#            for mark in regions_to_remove:
+#                buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1]))
                 
             self.article_view.scroll_to_iter(buffer.get_start_iter(), 0)
             self.add_to_history(word)            
@@ -168,9 +177,18 @@ class SDictViewer:
             buffer.set_text('Word not found')        
             return False
     
-    def apply_tag_to_regions(self, buffer, regions, tag_name):
+    def apply_tag_to_regions(self, buffer, regions, tag_name, surround_text_start = '', surround_text_end = ''):
         for mark in regions:            
-            buffer.apply_tag_by_name(tag_name, buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1]))
+            regions_start_iter = buffer.get_iter_at_mark(mark[0]);
+            buffer.insert(regions_start_iter, surround_text_start)
+            buffer.insert(buffer.get_iter_at_mark(mark[1]), surround_text_end)
+            
+            tag_start = buffer.get_iter_at_mark(mark[0])            
+            tag_end = buffer.get_iter_at_mark(mark[1])
+            
+            tag_start.backward_chars(len(surround_text_start))
+            
+            buffer.apply_tag_by_name(tag_name, tag_start, tag_end)
         
     def find_tag_bounds(self, buffer, start_tag, end_tag, regions_to_remove):
         current_iter = buffer.get_start_iter()            
@@ -195,8 +213,8 @@ class SDictViewer:
         
         
     def format_article(self, article_text):                    
-       article_text = article_text.replace('<t>', '[')
-       article_text = article_text.replace('</t>', ']')
+#       article_text = article_text.replace('<t>', '[')
+#       article_text = article_text.replace('</t>', ']')        
        article_text = article_text.replace('<br>', '\n')
        article_text = article_text.replace('<p>', '\n\n')
        return article_text        
@@ -222,13 +240,14 @@ class SDictViewer:
         
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
-        self.word_input.child.grab_focus()    
+        gobject.idle_add(self.word_input.child.grab_focus)
                         
     def word_input_changed(self, editable, data = None):
         #self.update_completion(editable.get_text())                
-        self.schedule(self.update_completion, editable.get_text())
+        self.schedule(self.update_completion, 600, editable.get_text())        
                 
     def update_completion(self, word, n = 20):
+        word = word.strip()
         self.word_completion.handler_block(self.cursor_changed_handler_id)
         model = self.word_completion.get_model()        
         self.word_completion.set_model(None)        
@@ -237,14 +256,20 @@ class SDictViewer:
             word_list = self.dict.get_word_list(word, n)
             for word in word_list:
                 model.append([word])     
+            if len(word_list) == 1:
+                self.word_input.child.set_text(word_list[0])
+                self.word_input.child.set_position(-1)
+                self.word_input.child.activate()
         self.word_completion.set_model(model)
         self.word_completion.handler_unblock(self.cursor_changed_handler_id)
+        
         
     def __init__(self):
         self.dict = None
         self.fileChooser = None
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
+        self.font = None
                                  
         contentBox = gtk.VBox(False, 0)
         self.add_menu(contentBox)
@@ -254,14 +279,12 @@ class SDictViewer:
         self.word_input = self.create_word_input()
         
         input_box = gtk.HBox()
-        input_box.pack_start(self.word_input, False, False, 0)
-        clear_input = gtk.Button()
-        image = gtk.image_new_from_stock(gtk.STOCK_CLEAR, gtk.ICON_SIZE_SMALL_TOOLBAR)
-        clear_input.set_image(image)
+        input_box.pack_start(self.word_input, True, True, 0)
+        clear_input = gtk.ToolButton(gtk.STOCK_CLEAR)        
         clear_input.connect("clicked", self.delayed_clear_word_input);
-        input_box.pack_start(clear_input, False, False, 0)
+        input_box.pack_start(clear_input, False, False, 2)
         
-        box.pack_start(input_box, False, False, 0)
+        box.pack_start(input_box, False, False, 4)
         
         self.word_completion = self.create_word_completion()
         box.pack_start(create_scrolled_window(self.word_completion), True, True, 0)
@@ -347,7 +370,16 @@ class SDictViewer:
         
         mn_dict.show_all()
         mn_help_item.show_all()
-        return (mn_dict_item, mn_help_item)        
+        
+        mn_options = gtk.Menu()
+        mn_options_item = gtk.MenuItem("Options")
+        mn_options_item.set_submenu(mn_options)
+        
+        mi_select_font = gtk.MenuItem("Font...")
+        mi_select_font.connect("activate", self.show_font_select_dlg)
+        mn_options.append(mi_select_font)
+        mn_options.show_all()
+        return (mn_dict_item, mn_options_item, mn_help_item)        
 
     def get_dialog_parent(self):
         return self.window
@@ -370,7 +402,8 @@ class SDictViewer:
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
         buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "green")
-        buffer.create_tag("r", underline = True, foreground = "blue")
+        buffer.create_tag("r", underline = True, foreground = "blue", rise = -10, rise_set = True)
+        buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
         buffer.create_tag("invisible", invisible = True)
         return article_view
 
@@ -442,7 +475,30 @@ class SDictViewer:
         dialog.set_website("http://sf.net/projects/sdictviewer")
         comments = "SDict Viewer is viewer for dictionaries in open format described at http://sdict.com\nDistributed under terms and conditions of GNU Public License\nSee http://www.gnu.org/licenses/gpl.txt for details"
         dialog.set_comments(comments)        
-        dialog.show()        
+        dialog.show()     
+        
+    def show_font_select_dlg(self, widget):
+        dialog = gtk.FontSelectionDialog("Select Article Font")
+        dialog.set_position(gtk.WIN_POS_CENTER)
+        dialog.ok_button.connect("clicked",
+                                     self.font_selection_ok, dialog)
+        dialog.cancel_button.connect_object("clicked",
+                                                lambda wid: wid.destroy(),
+                                                dialog)        
+        if self.font:
+            dialog.set_font_name(self.font)
+        dialog.show()
+        
+    def font_selection_ok(self, button, dialog):
+        self.font = dialog.get_font_name()                    
+        print "font name %s" % dialog.get_font_name()
+        font_desc = pango.FontDescription(self.font)
+        if font_desc: 
+            #self.article_view.modify_font(font_desc)
+            text_buffer = self.article_view.get_buffer()
+            tag_table = text_buffer.get_tag_table()
+            tag_table.lookup("t").set_property("font-desc", font_desc)
+        dialog.destroy()
         
     def main(self):
         gtk.main()            
