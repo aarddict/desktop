@@ -66,13 +66,37 @@ class SDictViewer:
             return        
         word = self.word_input.child.get_text()         
         if not word:
-            return                
+            return     
+        self.schedule_word_lookup(word)
+#        if not self.show_article_for(word):                        
+#            model = self.word_completion.get_model()
+#            first_completion = model.get_iter_first()
+#            if first_completion:                        
+#                word = model.get_value(first_completion, 0)
+#                self.show_article_for(word)        
+          
+    def schedule_word_lookup(self, word):
+#        if self.current_word_handler:
+#            gobject.source_remove(self.current_word_handler)
+#            self.current_word_handler = None
+#        self.current_word_handler = gobject.timeout_add(700, self.process_word_input, word)        
+#        print "lookup word %s, request handler %s" % (word, self.current_word_handler)        
+         self.schedule(self.process_word_input, word)
+        
+    def schedule(self, f, *args):
+        if self.current_word_handler:
+            gobject.source_remove(self.current_word_handler)
+            self.current_word_handler = None
+        self.current_word_handler = gobject.timeout_add(700, f, *args)                
+                
+    def process_word_input(self, word):
         if not self.show_article_for(word):                        
             model = self.word_completion.get_model()
             first_completion = model.get_iter_first()
             if first_completion:                        
                 word = model.get_value(first_completion, 0)
                 self.show_article_for(word)        
+        
                         
     def word_ref_clicked(self, widget, event, word):
         self.word_input.child.set_text(word)
@@ -190,15 +214,20 @@ class SDictViewer:
                 selected_path = cursor_path
             if cursor_path == selected_path: 
                 word, = model.get(model.get_iter(cursor_path), 0)
-                self.show_article_for(word)
+                #self.show_article_for(word)
+                self.schedule_word_lookup(word)
                    
+    def delayed_clear_word_input(self, btn, data = None):
+        gobject.idle_add(self.clear_word_input, btn, data)
+        
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
-        self.word_input.child.grab_focus()
+        self.word_input.child.grab_focus()    
                         
     def word_input_changed(self, editable, data = None):
-        self.update_completion(editable.get_text())                
-        
+        #self.update_completion(editable.get_text())                
+        self.schedule(self.update_completion, editable.get_text())
+                
     def update_completion(self, word, n = 20):
         self.word_completion.handler_block(self.cursor_changed_handler_id)
         model = self.word_completion.get_model()        
@@ -214,7 +243,7 @@ class SDictViewer:
     def __init__(self):
         self.dict = None
         self.fileChooser = None
-                               
+        self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
                                  
         contentBox = gtk.VBox(False, 0)
@@ -229,7 +258,7 @@ class SDictViewer:
         clear_input = gtk.Button()
         image = gtk.image_new_from_stock(gtk.STOCK_CLEAR, gtk.ICON_SIZE_SMALL_TOOLBAR)
         clear_input.set_image(image)
-        clear_input.connect("clicked", self.clear_word_input);
+        clear_input.connect("clicked", self.delayed_clear_word_input);
         input_box.pack_start(clear_input, False, False, 0)
         
         box.pack_start(input_box, False, False, 0)
