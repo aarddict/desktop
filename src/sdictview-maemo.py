@@ -1,4 +1,4 @@
-#!/var/lib/install/usr/bin/python2.4
+#!/usr/bin/env python
 import pysdic
 import sdict
 import hildon

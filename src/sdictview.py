@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/env python
 import pysdic
 import sdict
 if __name__ == "__main__":    
