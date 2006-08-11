@@ -7,27 +7,27 @@ import os.path
 import threading
 import gobject
 import time
+import pickle
 
 gobject.threads_init()
 
-version = "0.1.0"
+version = "0.2.0"
 settings_file_name = ".pysdic"
 
-def read_last_dict():
+def save_app_state(app_state):
     home_dir = os.path.expanduser('~')
     settings = os.path.join(home_dir, settings_file_name) 
-    if os.path.exists(settings):
+    settings_file = file(settings, "w")    
+    pickle.dump(app_state, settings_file)
+    
+def load_app_state():
+    home_dir = os.path.expanduser('~')
+    settings = os.path.join(home_dir, settings_file_name) 
+    if os.path.exists(settings):        
         settings_file = file(settings, "r")
-        for line in settings_file.readlines():
-            prop_name, dict_path = line.split("=")
-            return dict_path                
-    return None
-
-def write_last_dict(file_name):
-    home_dir = os.path.expanduser('~')
-    settings = os.path.join(home_dir, settings_file_name) 
-    settings_file = file(settings, "w")
-    settings_file.writelines(("dictionary=",file_name))    
+        app_state = pickle.load(settings_file)
+        return app_state
+    return None    
     
 def create_scrolled_window(widget):
     scrolled_window = gtk.ScrolledWindow()
@@ -36,6 +36,12 @@ def create_scrolled_window(widget):
     scrolled_window.add(widget)                                
     return scrolled_window
 
+class State:    
+    def __init__(self, dict_file = None, phonetic_font = None, word = None, history = []):
+        self.dict_file = dict_file
+        self.phonetic_font = phonetic_font
+        self.word = word
+        self.history = history
 
 class DictOpenThread(threading.Thread):
      def __init__(self, file_name, sdict_viewer):
@@ -69,16 +75,24 @@ class SmallToolButton(gtk.ToolButton):
 class SDictViewer:
          
     def destroy(self, widget, data=None):
+        try:
+            word = self.word_input.child.get_text()
+            history_list = []
+            hist_model = self.word_input.get_model()
+            hist_model.foreach(self.history_to_list, history_list)
+            save_app_state(State(self.dict.file_name, self.font, word, history_list))
+        except Exception, ex:
+            print 'Failed to store settings:', ex        
         gtk.main_quit()  
+        
+    def history_to_list(self, model, path, iter, history_list):
+        history_list.append(model.get_value(iter, 0))
         
     def word_input_callback(self, widget, data = None):
         if not self.dict:
             print "No dictionary opened"
             return        
         word = self.word_input.child.get_text()         
-        if not word:
-            return     
-        #self.schedule_word_lookup(word)
         self.process_word_input(word)
           
     def schedule_word_lookup(self, word):
@@ -91,6 +105,8 @@ class SDictViewer:
         self.current_word_handler = gobject.timeout_add(timeout, f, *args)                
                 
     def process_word_input(self, word):
+        if not word or word == '':
+            return
         word = word.strip()
         if not self.show_article_for(word):                        
             model = self.word_completion.get_model()
@@ -235,9 +251,6 @@ class SDictViewer:
                 #self.show_article_for(word)
                 self.schedule_word_lookup(word)
                    
-    def delayed_clear_word_input(self, btn, data = None):
-        gobject.idle_add(self.clear_word_input, btn, data)
-        
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
         gobject.idle_add(self.word_input.child.grab_focus)
@@ -281,7 +294,7 @@ class SDictViewer:
         input_box = gtk.HBox()
         input_box.pack_start(self.word_input, True, True, 0)
         clear_input = gtk.ToolButton(gtk.STOCK_CLEAR)        
-        clear_input.connect("clicked", self.delayed_clear_word_input);
+        clear_input.connect("clicked", self.clear_word_input);
         input_box.pack_start(clear_input, False, False, 2)
         
         box.pack_start(input_box, False, False, 4)
@@ -299,6 +312,18 @@ class SDictViewer:
         self.add_content(contentBox)
         self.update_title()
         self.window.show_all()
+        
+        try:
+            app_state = load_app_state()     
+            if app_state:   
+                self.open_dict(app_state.dict_file)
+                self.word_input.child.set_text(app_state.word)                
+                app_state.history.reverse()
+                for w in app_state.history:
+                    self.add_to_history(w)
+                self.set_phonetic_font(app_state.phonetic_font)
+        except Exception, ex:
+            print 'Failed to load application state:', ex        
 
     def create_top_level_widget(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)    
@@ -375,9 +400,9 @@ class SDictViewer:
         mn_options_item = gtk.MenuItem("Options")
         mn_options_item.set_submenu(mn_options)
         
-        mi_select_font = gtk.MenuItem("Font...")
-        mi_select_font.connect("activate", self.show_font_select_dlg)
-        mn_options.append(mi_select_font)
+        mi_select_phonetic_font = gtk.MenuItem("Phonetic Font...")
+        mi_select_phonetic_font.connect("activate", self.show_font_select_dlg)
+        mn_options.append(mi_select_phonetic_font)
         mn_options.show_all()
         return (mn_dict_item, mn_options_item, mn_help_item)        
 
@@ -449,11 +474,9 @@ class SDictViewer:
             self.word_completion.get_model().clear()
             self.article_view.get_buffer().set_text('')
             self.dict = None
-        self.dict = dict        
-        try:
-            write_last_dict(self.dict.file_name)            
-        except Exception, ex:
-            print 'Failed to store settings:', ex
+        self.dict = dict   
+        self.update_completion(self.word_input.child.get_text())
+        self.process_word_input(self.word_input.child.get_text())
         self.update_title()
 
     def show_dict_info(self, widget):
@@ -478,7 +501,7 @@ class SDictViewer:
         dialog.show()     
         
     def show_font_select_dlg(self, widget):
-        dialog = gtk.FontSelectionDialog("Select Article Font")
+        dialog = gtk.FontSelectionDialog("Select Font")
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.ok_button.connect("clicked",
                                      self.font_selection_ok, dialog)
@@ -490,15 +513,16 @@ class SDictViewer:
         dialog.show()
         
     def font_selection_ok(self, button, dialog):
-        self.font = dialog.get_font_name()                    
-        print "font name %s" % dialog.get_font_name()
+        self.set_phonetic_font(dialog.get_font_name())
+        dialog.destroy()
+        
+    def set_phonetic_font(self, font_name):
+        self.font = font_name                    
         font_desc = pango.FontDescription(self.font)
         if font_desc: 
-            #self.article_view.modify_font(font_desc)
             text_buffer = self.article_view.get_buffer()
             tag_table = text_buffer.get_tag_table()
             tag_table.lookup("t").set_property("font-desc", font_desc)
-        dialog.destroy()
         
     def main(self):
         gtk.main()            

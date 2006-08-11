@@ -28,7 +28,4 @@ class HildonSDictViewer(pysdic.SDictViewer):
 
 if __name__ == "__main__":    
     viewer = HildonSDictViewer()
-    dict_file = pysdic.read_last_dict()
-    if dict_file:
-        viewer.open_dict(dict_file)    
     viewer.main()
