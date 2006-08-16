@@ -1,24 +1,24 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.4
 import pysdic
 import sdict
 import hildon
-import gtk
+import osso
+
+osso_c = osso.Context("sdictviewer", pysdic.version, False)
 
 class HildonStatusDisplay:
     def __init__(self, message, parent):
         self.message = message
-        self.parent = parent
-        self.dialog = None
-    
+        self.parent = parent        
+
     def show_start(self):
-        self.dialog = hildon.Note ("information", (self.parent, self.message, gtk.STOCK_DIALOG_INFO) )
-        self.dialog.show_all()
+        osso_c.system_note_infoprint(self.message)
         
     def show_end(self):
-        self.dialog.destroy()
+        print ''
 
 class HildonSDictViewer(pysdic.SDictViewer):
-    
+        
     def create_top_level_widget(self):
         app = hildon.App()
         appview = hildon.AppView("SDict Viewer")
@@ -34,8 +34,8 @@ class HildonSDictViewer(pysdic.SDictViewer):
             main_menu.append(menu)
             menu.show()     
     
-#    def create_dict_loading_status_display(self, dict_name):
-#        return HildonStatusDisplay("Loading " + dict_name, self.get_dialog_parent())    
+    def create_dict_loading_status_display(self, dict_name):
+        return HildonStatusDisplay("Loading " + dict_name, self.get_dialog_parent())
     
     def get_dialog_parent(self):
         return None    

@@ -478,7 +478,7 @@ class SDictViewer:
         worker = BackgroundWorker(lambda : sdict.SDictionary(file), status_display, self.set_dict)
         worker.start()
         
-    def create_dict_loading_status_display(self, dict_name):
+    def create_dict_loading_status_display(self, dict_name):            
         return DialogStatusDisplay("Loading " + dict_name, self.get_dialog_parent())
         
     def set_dict(self, dict):     
