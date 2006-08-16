@@ -2,6 +2,20 @@
 import pysdic
 import sdict
 import hildon
+import gtk
+
+class HildonStatusDisplay:
+    def __init__(self, message, parent):
+        self.message = message
+        self.parent = parent
+        self.dialog = None
+    
+    def show_start(self):
+        self.dialog = hildon.Note ("information", (self.parent, self.message, gtk.STOCK_DIALOG_INFO) )
+        self.dialog.show_all()
+        
+    def show_end(self):
+        self.dialog.destroy()
 
 class HildonSDictViewer(pysdic.SDictViewer):
     
@@ -19,6 +33,9 @@ class HildonSDictViewer(pysdic.SDictViewer):
         for menu in self.create_menus():
             main_menu.append(menu)
             menu.show()     
+    
+#    def create_dict_loading_status_display(self, dict_name):
+#        return HildonStatusDisplay("Loading " + dict_name, self.get_dialog_parent())    
     
     def get_dialog_parent(self):
         return None    

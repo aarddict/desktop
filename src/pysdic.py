@@ -8,6 +8,7 @@ import threading
 import gobject
 import time
 import pickle
+import string
 
 gobject.threads_init()
 
@@ -42,38 +43,138 @@ class State:
         self.phonetic_font = phonetic_font
         self.word = word
         self.history = history
+         
+class BackgroundWorker(threading.Thread):
+    def __init__(self, task, status_display, callback):
+        super(BackgroundWorker, self).__init__()
+        self.callback = callback
+        self.status_display = status_display
+        self.task = task
+            
+    def run(self):
+        gobject.idle_add(self.status_display.show_start)
+        result = self.task()
+        gobject.idle_add(self.callback, result)
+        gobject.idle_add(self.status_display.show_end)
+        
+class DialogStatusDisplay:
+    
+    def __init__(self, message, parent):
+        self.loading_dialog = None
+        self.message = message
+        self.parent = parent
+        
+    def show_start(self):
+        self.loading_dialog = gtk.Dialog(parent=self.parent, flags=gtk.DIALOG_MODAL)
+        self.loading_dialog.set_decorated(False)
+        self.loading_dialog.set_modal(True)
+        self.loading_dialog.set_has_separator(False)
+        self.loading_dialog.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse("lightgrey"))        
+        label = gtk.Label(self.message)
+        self.loading_dialog.vbox.pack_start(label, True, True, 0)
+        self.loading_dialog.show_all()
+        
+    def show_end(self):    
+        if self.loading_dialog:
+            self.loading_dialog.destroy()
+            self.loading_dialog = None        
 
-class DictOpenThread(threading.Thread):
-     def __init__(self, file_name, sdict_viewer):
-         super(DictOpenThread, self).__init__()
-         self.file_name = file_name
-         self.sdict_viewer = sdict_viewer
+class ArticleFormat: 
+    
+    def __init__(self):
+        self.template = string.Template("$word\n$text")
+       
+    def apply(self, word, article, article_view, word_ref_callback):
+        buffer = article_view.get_buffer()
+        text = self.convert_newlines(article)                                        
+        text = self.convert_paragraphs(text)
+        text = self.template.substitute(text = text, word = word)
+        buffer.set_text(text)
+        word_start = buffer.get_iter_at_offset(0)
+        word_end = buffer.get_iter_at_offset(len(word.decode('utf-8')))
+        buffer.apply_tag_by_name("b", word_start, word_end) 
+        
+        regions_to_remove = []
+                    
+        transcript_regions = self.find_tag_bounds(buffer, "<t>", "</t>", regions_to_remove)
+        italic_regions = self.find_tag_bounds(buffer, "<i>", "</i>", regions_to_remove)
+        bold_regions = self.find_tag_bounds(buffer, "<b>", "</b>", regions_to_remove)
+        underline_regions = self.find_tag_bounds(buffer, "<u>", "</u>", regions_to_remove)
+        forms_regions = self.find_tag_bounds(buffer, "<f>", "</f>", regions_to_remove)
+        ref_regions = self.find_tag_bounds(buffer, "<r>", "</r>", regions_to_remove)
+        
+        for mark in regions_to_remove:
+            buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1]))            
+        
+        self.apply_tag_to_regions(buffer, transcript_regions, "t", "[", "]")
+        self.apply_tag_to_regions(buffer, italic_regions, "i")
+        self.apply_tag_to_regions(buffer, bold_regions, "b")
+        self.apply_tag_to_regions(buffer, underline_regions, "u")
+        self.apply_tag_to_regions(buffer, forms_regions, "f")
+        self.apply_tag_to_regions(buffer, ref_regions, "r")
+        for mark in ref_regions:            
+            start = buffer.get_iter_at_mark(mark[0])
+            end = buffer.get_iter_at_mark(mark[1])
+            text = buffer.get_text(start, end)
+            start = buffer.get_iter_at_mark(mark[0])
+            anchor = buffer.create_child_anchor(start)
+            label = gtk.Label()
+            markup_text = "<span foreground='blue' background='white' underline='single' rise='-5'>"+text.replace("&", "&amp;")+"</span>"
+            label.set_markup(markup_text)
+            btn = gtk.EventBox()
+            btn.add(label)                
+            ref_text = text.replace("~", word)
+            btn.connect('button-release-event', word_ref_callback, ref_text)
+            article_view.add_child_at_anchor(btn, anchor)
+            hand_cursor = gtk.gdk.Cursor(gtk.gdk.HAND2)                
+            btn.window.set_cursor(hand_cursor)                
+            start = buffer.get_iter_at_mark(mark[0])
+            end = buffer.get_iter_at_mark(mark[1])                
+            buffer.apply_tag_by_name("invisible", start, end)                
+            
+    def apply_tag_to_regions(self, buffer, regions, tag_name, surround_text_start = '', surround_text_end = ''):
+        for mark in regions:            
+            regions_start_iter = buffer.get_iter_at_mark(mark[0]);
+            buffer.insert(regions_start_iter, surround_text_start)
+            buffer.insert(buffer.get_iter_at_mark(mark[1]), surround_text_end)
+            
+            tag_start = buffer.get_iter_at_mark(mark[0])            
+            tag_end = buffer.get_iter_at_mark(mark[1])
+            
+            tag_start.backward_chars(len(surround_text_start))
+            
+            buffer.apply_tag_by_name(tag_name, tag_start, tag_end)
+        
+    def find_tag_bounds(self, buffer, start_tag, end_tag, regions_to_remove):
+        current_iter = buffer.get_start_iter()            
+        regions_to_mark = []            
+        while True:            
+            match_start, match_end = current_iter.forward_search(start_tag, gtk.TEXT_SEARCH_TEXT_ONLY) or (None, None)
+            if not match_start:
+                break;                
+            mark_start_i_tag = buffer.create_mark(None, match_start)
+            mark_start_i = buffer.create_mark(None, match_end)            
+            match_start, match_end = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)
+            current_iter = match_end
+            if not match_start:
+                break;                
+            mark_end_i_tag = buffer.create_mark(None, match_end)
+            mark_end_i = buffer.create_mark(None, match_start)
+                            
+            regions_to_mark.append((mark_start_i, mark_end_i))
+            regions_to_remove.append((mark_start_i_tag, mark_start_i))
+            regions_to_remove.append((mark_end_i, mark_end_i_tag))                                
+        return regions_to_mark
+        
+        
+    def convert_newlines(self, article_text):                    
+       return article_text.replace('<br>', '\n')
 
-     def set_dict(self, dict):
-         self.sdict_viewer.set_dict(dict)
-         return False
-
-     def run(self):
-         dict = None
-         try:
-             dict = sdict.SDictionary(self.file_name)
-         except Exception, e:
-             print e
-         gobject.idle_add(self.set_dict, dict)
-
-class SmallToolButton(gtk.ToolButton):
-    def __init__(self, icon_widget=None, label=None):
-        super(SmallToolButton, self).__init__(icon_widget=None, label=None)
-
-    def __init__(self, stock_id):
-        super(SmallToolButton, self).__init__(stock_id)
-
-    def get_icon_size(self):
-        print gtk.ToolButton.get_icon_size(self)
-        return gtk.ICON_SIZE_SMALL_TOOLBAR
+    def convert_paragraphs(self, article_text):                    
+       return article_text.replace('<p>', '\n\t')
 
 class SDictViewer:
-         
+             
     def destroy(self, widget, data=None):
         try:
             word = self.word_input.child.get_text()
@@ -134,106 +235,17 @@ class SDictViewer:
             model.remove(model.get_iter(history_size - 1))
                 
     def show_article_for(self, word):
-        article = self.dict.lookup(word)
-        buffer = self.article_view.get_buffer()
-        if article:
-            text = self.format_article(article)                                        
-            text = word + "\n" + text
-            buffer.set_text(text)
-            word_start = buffer.get_iter_at_offset(0)
-            word_end = buffer.get_iter_at_offset(len(word.decode('utf-8')))
-            buffer.apply_tag_by_name("b", word_start, word_end) 
-            
-            regions_to_remove = []
-                        
-            transcript_regions = self.find_tag_bounds(buffer, "<t>", "</t>", regions_to_remove)
-            italic_regions = self.find_tag_bounds(buffer, "<i>", "</i>", regions_to_remove)
-            bold_regions = self.find_tag_bounds(buffer, "<b>", "</b>", regions_to_remove)
-            underline_regions = self.find_tag_bounds(buffer, "<u>", "</u>", regions_to_remove)
-            forms_regions = self.find_tag_bounds(buffer, "<f>", "</f>", regions_to_remove)
-            ref_regions = self.find_tag_bounds(buffer, "<r>", "</r>", regions_to_remove)
-            
-            for mark in regions_to_remove:
-                buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1]))            
-            
-            self.apply_tag_to_regions(buffer, transcript_regions, "t", "[", "]")
-            self.apply_tag_to_regions(buffer, italic_regions, "i")
-            self.apply_tag_to_regions(buffer, bold_regions, "b")
-            self.apply_tag_to_regions(buffer, underline_regions, "u")
-            self.apply_tag_to_regions(buffer, forms_regions, "f")
-            self.apply_tag_to_regions(buffer, ref_regions, "r")
-            for mark in ref_regions:            
-                start = buffer.get_iter_at_mark(mark[0])
-                end = buffer.get_iter_at_mark(mark[1])
-                text = buffer.get_text(start, end)
-                start = buffer.get_iter_at_mark(mark[0])
-                #start.backward_chars(3)
-                anchor = buffer.create_child_anchor(start)
-                label = gtk.Label()
-                markup_text = "<span foreground='blue' background='white' underline='single' rise='-5'>"+text.replace("&", "&amp;")+"</span>"
-                label.set_markup(markup_text)
-                btn = gtk.EventBox()
-                btn.add(label)                
-                ref_text = text.replace("~", word)
-                btn.connect('button-release-event', self.word_ref_clicked, ref_text)
-                self.article_view.add_child_at_anchor(btn, anchor)
-                hand_cursor = gtk.gdk.Cursor(gtk.gdk.HAND2)                
-                btn.window.set_cursor(hand_cursor)                
-                start = buffer.get_iter_at_mark(mark[0])
-                end = buffer.get_iter_at_mark(mark[1])                
-                buffer.apply_tag_by_name("invisible", start, end)                
+        article = self.dict.lookup(word)        
+        buffer = self.article_view.get_buffer()                
+        if article:        
+            self.article_format.apply(word, article, self.article_view, self.word_ref_clicked)
             self.article_view.show_all()
-#            for mark in regions_to_remove:
-#                buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1]))
-                
             self.article_view.scroll_to_iter(buffer.get_start_iter(), 0)
             self.add_to_history(word)            
             return True           
         else:
             buffer.set_text('Word not found')        
-            return False
-    
-    def apply_tag_to_regions(self, buffer, regions, tag_name, surround_text_start = '', surround_text_end = ''):
-        for mark in regions:            
-            regions_start_iter = buffer.get_iter_at_mark(mark[0]);
-            buffer.insert(regions_start_iter, surround_text_start)
-            buffer.insert(buffer.get_iter_at_mark(mark[1]), surround_text_end)
-            
-            tag_start = buffer.get_iter_at_mark(mark[0])            
-            tag_end = buffer.get_iter_at_mark(mark[1])
-            
-            tag_start.backward_chars(len(surround_text_start))
-            
-            buffer.apply_tag_by_name(tag_name, tag_start, tag_end)
-        
-    def find_tag_bounds(self, buffer, start_tag, end_tag, regions_to_remove):
-        current_iter = buffer.get_start_iter()            
-        regions_to_mark = []            
-        while True:            
-            match_start, match_end = current_iter.forward_search(start_tag, gtk.TEXT_SEARCH_TEXT_ONLY) or (None, None)
-            if not match_start:
-                break;                
-            mark_start_i_tag = buffer.create_mark(None, match_start)
-            mark_start_i = buffer.create_mark(None, match_end)            
-            match_start, match_end = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)
-            current_iter = match_end
-            if not match_start:
-                break;                
-            mark_end_i_tag = buffer.create_mark(None, match_end)
-            mark_end_i = buffer.create_mark(None, match_start)
-                            
-            regions_to_mark.append((mark_start_i, mark_end_i))
-            regions_to_remove.append((mark_start_i_tag, mark_start_i))
-            regions_to_remove.append((mark_end_i, mark_end_i_tag))                                
-        return regions_to_mark
-        
-        
-    def format_article(self, article_text):                    
-#       article_text = article_text.replace('<t>', '[')
-#       article_text = article_text.replace('</t>', ']')        
-       article_text = article_text.replace('<br>', '\n')
-       article_text = article_text.replace('<p>', '\n\n')
-       return article_text        
+            return False    
     
     def word_selected(self, tree_view, start_editing = None, data = None):
         if tree_view.get_selection().count_selected_rows() == 0:
@@ -283,6 +295,7 @@ class SDictViewer:
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.font = None
+        self.article_format = ArticleFormat()
                                  
         contentBox = gtk.VBox(False, 0)
         self.add_menu(contentBox)
@@ -293,8 +306,7 @@ class SDictViewer:
         
         input_box = gtk.HBox()
         input_box.pack_start(self.word_input, True, True, 0)
-        clear_input = gtk.ToolButton(gtk.STOCK_CLEAR)        
-        clear_input.connect("clicked", self.clear_word_input);
+        clear_input = self.create_clear_button()
         input_box.pack_start(clear_input, False, False, 2)
         
         box.pack_start(input_box, False, False, 4)
@@ -325,6 +337,17 @@ class SDictViewer:
         except Exception, ex:
             print 'Failed to load application state:', ex        
 
+    def create_clear_button(self):
+        clear_input = gtk.Button(stock = gtk.STOCK_CLEAR)
+        settings = clear_input.get_settings()
+        settings.set_property( "gtk-button-images", True )        
+        clear_input.set_label('')
+        clear_input.set_image(gtk.image_new_from_stock(gtk.STOCK_CLEAR, gtk.ICON_SIZE_SMALL_TOOLBAR))
+        clear_input.set_relief(gtk.RELIEF_NONE)
+        clear_input.set_focus_on_click(False)
+        clear_input.connect("clicked", self.clear_word_input);
+        return clear_input        
+   
     def create_top_level_widget(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)    
         window.connect("destroy", self.destroy)
@@ -451,24 +474,14 @@ class SDictViewer:
             self.fileChooser.hide()
 
     def open_dict(self, file):
-        self.loading_dialog = gtk.Dialog(title="Loading", parent=self.get_dialog_parent(), flags=gtk.DIALOG_MODAL)
-        self.loading_dialog.set_decorated(False)
-        self.loading_dialog.set_modal(True)
-        self.loading_dialog.set_has_separator(False)
-        self.loading_dialog.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse("lightgrey"))
+        status_display = self.create_dict_loading_status_display(file)
+        worker = BackgroundWorker(lambda : sdict.SDictionary(file), status_display, self.set_dict)
+        worker.start()
         
-        label = gtk.Label("Loading "+file)
-        self.loading_dialog.vbox.pack_start(label, True, True, 0)
-        label.show()
-        
-        t = DictOpenThread(file, self)
-        t.start()
-        self.loading_dialog.show()
+    def create_dict_loading_status_display(self, dict_name):
+        return DialogStatusDisplay("Loading " + dict_name, self.get_dialog_parent())
         
     def set_dict(self, dict):     
-        if self.loading_dialog:
-            self.loading_dialog.destroy()
-            self.loading_dialog = None
         if self.dict:
             self.dict.close() 
             self.word_completion.get_model().clear()
@@ -501,7 +514,7 @@ class SDictViewer:
         dialog.show()     
         
     def show_font_select_dlg(self, widget):
-        dialog = gtk.FontSelectionDialog("Select Font")
+        dialog = gtk.FontSelectionDialog("Select Article Font")
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.ok_button.connect("clicked",
                                      self.font_selection_ok, dialog)
