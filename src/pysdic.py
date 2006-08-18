@@ -13,7 +13,7 @@ import string
 gobject.threads_init()
 
 version = "0.2.0"
-settings_file_name = ".pysdic"
+settings_file_name = ".sdictviewer"
 
 def save_app_state(app_state):
     home_dir = os.path.expanduser('~')
