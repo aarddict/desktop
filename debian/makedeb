@@ -2,9 +2,9 @@
 #cd /home/user/devel/MaemoDict/debian || exit
 cp ../src/pysdic.py ../src/sdict.py ../src/sdictview-maemo.py usr/bin || exit
 
-export LD_LIBRARY_PATH=/var/lib/install/usr/lib
+export LD_LIBRARY_PATH=/usr/lib
 
-DIRS="etc usr"
+DIRS="usr"
 find $DIRS| grep \~ && rm -i $(find $DIRS| grep \~)
 
 PACKAGE=sdictviewer
@@ -15,28 +15,32 @@ echo $VERSION
 
 echo "Package: $PACKAGE
 Version: $VERSION
-Section: unstable
+Section: user/other
 Priority: optional
-Architecture: arm
-Depends: maemo
+Architecture: all
+Depends: python2.4, python2.4-hildon, python2.4-gtk2
 Installed-Size: $SIZE
 Maintainer: Igor Tkach <itkach@users.sourceforge.net>
-Description: A dictionary tool to access (proprietary) dictionaries from sdict.com" > control
+Description: A dictionary application that works with dictionaries from http://sdict.com" > control
 cat control
 
 echo "[Desktop Entry]
-Encoding=UTF-8
 Version=$VERSION
+Encoding=UTF-8
 Name=SDict Viewer
 Type=Application
-Exec=/var/lib/install/usr/bin/sdictview-maemo.py
-#Icon=qgn_list_gene_default_app
+Exec=/usr/bin/sdictview-maemo.py
 Icon=sdictviewer
-X-HildonDesk-ShowInToolbar=true" > etc/others-menu/extra_applications/sdictviewer.desktop
+X-Osso-Service=sdictviewer
+X-Osso-Type=application/x-executable" > usr/share/applications/hildon/sdictviewer.desktop
+
+echo "[D-BUS Service]
+Name=com.nokia.sdictviewer
+Exec=/usr/bin/sdictview-maemo.py" > usr/share/dbus-1/services/sdictviewer.service
 
 echo 2.0 > debian-binary
 
-tar -zcvf data.tar.gz ./usr ./etc
+tar -zcvf data.tar.gz ./usr 
 tar -zcvf control.tar.gz control
 NAME="$PACKAGE"-$VERSION.deb
 rm $NAME
