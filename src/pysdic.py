@@ -54,8 +54,14 @@ class BackgroundWorker(threading.Thread):
             
     def run(self):
         gobject.idle_add(self.status_display.show_start)
-        result = self.task()
-        gobject.idle_add(self.callback, result)
+        result = None
+        error = None
+        try:
+            result = self.task()
+        except Exception, ex:
+            print "Failed to execute task: ", ex
+            error = ex
+        gobject.idle_add(self.callback, result, error)
         gobject.idle_add(self.status_display.show_end)
         
 class DialogStatusDisplay:
@@ -292,7 +298,6 @@ class SDictViewer:
         
     def __init__(self):
         self.dict = None
-        self.fileChooser = None
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.font = None
@@ -485,31 +490,58 @@ class SDictViewer:
         return article_view
 
     def select_dict_file(self, widget):
-        if not self.fileChooser:
-            self.fileChooser = gtk.FileSelection("Select Dictionary")
-            if self.dict:
-                self.fileChooser.set_filename(self.dict.file_name)
-            self.fileChooser.ok_button.connect("clicked", self.file_selected)
-            self.fileChooser.cancel_button.connect("clicked", lambda w: self.fileChooser.hide())
-        self.fileChooser.show()
+            #self.fileChooser = gtk.FileSelection("Select Dictionary")
+        fileChooser = self.create_file_chooser_dlg()
+        fileChooser.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+        fileChooser.add_button( gtk.STOCK_OPEN, gtk.RESPONSE_OK)
+        if self.dict:
+            fileChooser.set_filename(self.dict.file_name)
+            #self.fileChooser.ok_button.connect("clicked", self.file_selected)
+            #self.fileChooser.cancel_button.connect("clicked", lambda w: self.fileChooser.hide())
+        #self.fileChooser.show()
+        response = fileChooser.run()          
+        if response == gtk.RESPONSE_OK:
+            fileName = fileChooser.get_filename()
+            try:
+                self.open_dict(fileName)
+            except Exception, ex:
+                print "Failed to open dictionary in file", fileName, "\n", ex                                
+        fileChooser.destroy()
+        
+        
+    def create_file_chooser_dlg(self):
+        dlg = gtk.FileChooserDialog( title="Open Dictionary File", parent = self.window, action = gtk.FILE_CHOOSER_ACTION_OPEN)        
+        return dlg
+
     
-    def file_selected(self, widget):
-        fileName = self.fileChooser.get_filename()
-        try:
-            self.open_dict(fileName)
-        except Exception, ex:
-            print "Failed to open dictionary in file", fileName, "\n", ex
-        else:
-            self.fileChooser.hide()
+#    def file_selected(self, widget):
+#        fileName = self.fileChooser.get_filename()
+#        try:
+#            self.open_dict(fileName)
+#        except Exception, ex:
+#            print "Failed to open dictionary in file", fileName, "\n", ex
+#        else:
+#            self.fileChooser.hide()
 
     def open_dict(self, file):
         status_display = self.create_dict_loading_status_display(file)
-        worker = BackgroundWorker(lambda : sdict.SDictionary(file), status_display, self.set_dict)
+        worker = BackgroundWorker(lambda : sdict.SDictionary(file), status_display, self.set_dict_callback)
         worker.start()
         
     def create_dict_loading_status_display(self, dict_name):            
         return DialogStatusDisplay("Loading " + dict_name, self.get_dialog_parent())
-        
+    
+    def set_dict_callback(self, dict, error):
+        if not error:
+            self.set_dict(dict)
+        else:
+            self.show_error("Couldn't open dictionary:\n%s" % error.value)
+    
+    def show_error(self, text):
+        dlg = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE, message_format=text)
+        dlg.run()
+        dlg.destroy()
+    
     def set_dict(self, dict):     
         if self.dict:
             self.dict.close() 
@@ -554,7 +586,7 @@ class SDictViewer:
         if self.font:
             dialog.set_font_name(self.font)
         dialog.show()
-        
+                
     def font_selection_ok(self, button, dialog):
         self.set_phonetic_font(dialog.get_font_name())
         dialog.destroy()
