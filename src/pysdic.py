@@ -12,7 +12,7 @@ import string
 
 gobject.threads_init()
 
-version = "0.2.0"
+version = "0.2.1"
 settings_file_name = ".sdictviewer"
 
 def save_app_state(app_state):
@@ -38,12 +38,13 @@ def create_scrolled_window(widget):
     return scrolled_window
 
 class State:    
-    def __init__(self, dict_file = None, phonetic_font = None, word = None, history = []):
+    def __init__(self, dict_file = None, phonetic_font = None, word = None, history = [], recent = []):
         self.dict_file = dict_file
         self.phonetic_font = phonetic_font
         self.word = word
         self.history = history
-         
+        self.recent = recent
+     
 class BackgroundWorker(threading.Thread):
     def __init__(self, task, status_display, callback):
         super(BackgroundWorker, self).__init__()
@@ -181,7 +182,7 @@ class SDictViewer:
             history_list = []
             hist_model = self.word_input.get_model()
             hist_model.foreach(self.history_to_list, history_list)
-            save_app_state(State(self.dict.file_name, self.font, word, history_list))
+            save_app_state(State(self.dict.file_name, self.font, word, history_list, self.recent_menu_items.keys()))
         except Exception, ex:
             print 'Failed to store settings:', ex        
         gtk.main_quit()  
@@ -296,6 +297,7 @@ class SDictViewer:
         self.window = self.create_top_level_widget()                               
         self.font = None
         self.article_format = ArticleFormat()
+        self.recent_menu_items = {}
                                  
         contentBox = gtk.VBox(False, 0)
         self.add_menu(contentBox)
@@ -334,6 +336,9 @@ class SDictViewer:
                 for w in app_state.history:
                     self.add_to_history(w)
                 self.set_phonetic_font(app_state.phonetic_font)
+                for r in app_state.recent:
+                    title, version, file_name = r[0], r[1], r[2]
+                    self.add_to_recent(title, version, file_name)
         except Exception, ex:
             print 'Failed to load application state:', ex        
 
@@ -399,14 +404,19 @@ class SDictViewer:
         mi_exit = gtk.MenuItem("Exit")
         mi_exit.connect("activate", self.destroy)
         
+        self.mn_recent = gtk.Menu()
+        mn_recent_item = gtk.MenuItem("Recent")
+        mn_recent_item.set_submenu(self.mn_recent)                        
+        
         mn_dict = gtk.Menu()
         mn_dict_item = gtk.MenuItem("Dictionary")
         mn_dict_item.set_submenu(mn_dict)        
         
         mn_dict.append(mi_open)        
         mn_dict.append(mi_info)
+        mn_dict.append(mn_recent_item)
         mn_dict.append(mi_exit)
-
+        
         mi_about = gtk.MenuItem("About")        
         mi_about.connect("activate", self.show_about)
         
@@ -428,6 +438,25 @@ class SDictViewer:
         mn_options.append(mi_select_phonetic_font)
         mn_options.show_all()
         return (mn_dict_item, mn_options_item, mn_help_item)        
+
+    def add_dict_to_recent(self, dict):
+        self.add_to_recent(dict.title, dict.version, dict.file_name)
+            
+    def add_to_recent(self, title, version, file_name):
+        mi_dict = gtk.MenuItem("%s %s" % (title, version))                 
+        key = (title, version, file_name)
+        if self.recent_menu_items.has_key(key):
+            old_mi = self.recent_menu_items[key]
+            self.mn_recent.remove(old_mi)
+            del self.recent_menu_items[key]
+        self.recent_menu_items[key] = mi_dict;        
+        self.mn_recent.prepend(mi_dict)
+        mi_dict.connect("activate", lambda f: self.open_dict(file_name))
+        children = self.mn_recent.get_children()        
+        child_count = len(children)
+        if child_count > 4:
+            self.mn_recent.remove(children[child_count-1])
+        mi_dict.show_all()
 
     def get_dialog_parent(self):
         return self.window
@@ -491,6 +520,7 @@ class SDictViewer:
         self.update_completion(self.word_input.child.get_text())
         self.process_word_input(self.word_input.child.get_text())
         self.update_title()
+        self.add_dict_to_recent(self.dict)
 
     def show_dict_info(self, widget):
         dialog = gtk.AboutDialog()
