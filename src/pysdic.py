@@ -466,7 +466,7 @@ class SDictViewer:
             dict_title = self.dict.title
         else:
             dict_title = "No dictionary"
-        title = "SDict Viewer - %s" % dict_title        
+        title = "%s - SDict Viewer" % dict_title        
         self.window.set_title(title)
 
     def create_article_view(self):
