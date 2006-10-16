@@ -12,8 +12,8 @@ class HildonSDictViewer(pysdic.SDictViewer):
     def create_top_level_widget(self):
         app = hildon.Program()        
         window = hildon.Window()
+        gtk.set_application_name("SDict Viewer")
         self.window_in_fullscreen = False
-        window.set_title("SDict Viewer")
         window.connect("key-press-event", self.on_key_press)
         window.connect("window-state-event", self.on_window_state_change)
         app.add_window(window)        
