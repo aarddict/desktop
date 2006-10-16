@@ -66,20 +66,16 @@ class BackgroundWorker(threading.Thread):
         
 class DialogStatusDisplay:
     
-    def __init__(self, message, parent):
+    def __init__(self, title, message, parent):
         self.loading_dialog = None
         self.message = message
         self.parent = parent
+        self.title = title
         
-    def show_start(self):
-        self.loading_dialog = gtk.Dialog(parent=self.parent, flags=gtk.DIALOG_MODAL)
-        self.loading_dialog.set_decorated(False)
-        self.loading_dialog.set_modal(True)
-        self.loading_dialog.set_has_separator(False)
-        self.loading_dialog.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse("lightgrey"))        
-        label = gtk.Label(self.message)
-        self.loading_dialog.vbox.pack_start(label, True, True, 0)
-        self.loading_dialog.show_all()
+    def show_start(self):        
+        self.loading_dialog = gtk.MessageDialog(parent=self.parent, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_INFO, message_format=self.message)        
+        self.loading_dialog.set_title(self.title)
+        self.loading_dialog.run()        
         
     def show_end(self):    
         if self.loading_dialog:
@@ -439,7 +435,7 @@ class SDictViewer:
         mn_options_item.set_submenu(mn_options)
         
         mi_select_phonetic_font = gtk.MenuItem("Phonetic Font...")
-        mi_select_phonetic_font.connect("activate", self.show_font_select_dlg)
+        mi_select_phonetic_font.connect("activate", self.select_phonetic_font)
         mn_options.append(mi_select_phonetic_font)
         mn_options.show_all()
         return (mn_dict_item, mn_options_item, mn_help_item)        
@@ -490,55 +486,45 @@ class SDictViewer:
         return article_view
 
     def select_dict_file(self, widget):
-            #self.fileChooser = gtk.FileSelection("Select Dictionary")
         fileChooser = self.create_file_chooser_dlg()
-        fileChooser.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
-        fileChooser.add_button( gtk.STOCK_OPEN, gtk.RESPONSE_OK)
-        if self.dict:
-            fileChooser.set_filename(self.dict.file_name)
-            #self.fileChooser.ok_button.connect("clicked", self.file_selected)
-            #self.fileChooser.cancel_button.connect("clicked", lambda w: self.fileChooser.hide())
-        #self.fileChooser.show()
+        fileChooser.set_title("Open Dictionary")
         response = fileChooser.run()          
         if response == gtk.RESPONSE_OK:
             fileName = fileChooser.get_filename()
-            try:
-                self.open_dict(fileName)
-            except Exception, ex:
-                print "Failed to open dictionary in file", fileName, "\n", ex                                
-        fileChooser.destroy()
-        
+            self.open_dict(fileName)
+        fileChooser.destroy()        
         
     def create_file_chooser_dlg(self):
-        dlg = gtk.FileChooserDialog( title="Open Dictionary File", parent = self.window, action = gtk.FILE_CHOOSER_ACTION_OPEN)        
+        dlg = gtk.FileChooserDialog(parent = self.window, action = gtk.FILE_CHOOSER_ACTION_OPEN)        
+        dlg.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+        dlg.add_button( gtk.STOCK_OPEN, gtk.RESPONSE_OK)        
+        if self.dict:
+            dlg.set_filename(self.dict.file_name)        
         return dlg
-
     
-#    def file_selected(self, widget):
-#        fileName = self.fileChooser.get_filename()
-#        try:
-#            self.open_dict(fileName)
-#        except Exception, ex:
-#            print "Failed to open dictionary in file", fileName, "\n", ex
-#        else:
-#            self.fileChooser.hide()
-
     def open_dict(self, file):
         status_display = self.create_dict_loading_status_display(file)
         worker = BackgroundWorker(lambda : sdict.SDictionary(file), status_display, self.set_dict_callback)
         worker.start()
         
     def create_dict_loading_status_display(self, dict_name):            
-        return DialogStatusDisplay("Loading " + dict_name, self.get_dialog_parent())
+        return DialogStatusDisplay("Loading...", dict_name, self.get_dialog_parent())
     
     def set_dict_callback(self, dict, error):
         if not error:
             self.set_dict(dict)
         else:
-            self.show_error("Couldn't open dictionary:\n%s" % error.value)
+            print "Failed to open dictionary: ", error
+            try: 
+                raise error
+            except IOError:
+                self.show_error("Dictionary Open Failed", "%s: %s" % (error.strerror, error.filename))
+            except sdict.DictFormatError:
+                self.show_error("Dictionary Open Failed", error.value)
     
-    def show_error(self, text):
+    def show_error(self, title, text):
         dlg = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE, message_format=text)
+        dlg.set_title(title)
         dlg.run()
         dlg.destroy()
     
@@ -562,7 +548,8 @@ class SDictViewer:
         dialog.set_copyright(self.dict.copyright)
         comments = "Contains %d words, packed with %s\nRead from %s" % (self.dict.header.num_of_words, self.dict.compression, self.dict.file_name)        
         dialog.set_comments(comments)        
-        dialog.show()
+        dialog.run()
+        dialog.destroy()
         
     def show_about(self, widget):
         dialog = gtk.AboutDialog()
@@ -573,24 +560,19 @@ class SDictViewer:
         dialog.set_website("http://sf.net/projects/sdictviewer")
         comments = "SDict Viewer is viewer for dictionaries in open format described at http://sdict.com\nDistributed under terms and conditions of GNU Public License\nSee http://www.gnu.org/licenses/gpl.txt for details"
         dialog.set_comments(comments)        
-        dialog.show()     
-        
-    def show_font_select_dlg(self, widget):
-        dialog = gtk.FontSelectionDialog("Select Article Font")
-        dialog.set_position(gtk.WIN_POS_CENTER)
-        dialog.ok_button.connect("clicked",
-                                     self.font_selection_ok, dialog)
-        dialog.cancel_button.connect_object("clicked",
-                                                lambda wid: wid.destroy(),
-                                                dialog)        
-        if self.font:
-            dialog.set_font_name(self.font)
-        dialog.show()
-                
-    def font_selection_ok(self, button, dialog):
-        self.set_phonetic_font(dialog.get_font_name())
+        dialog.run()     
         dialog.destroy()
         
+    def select_phonetic_font(self, widget):
+        dialog = gtk.FontSelectionDialog("Select Phonetic Font")        
+        if self.font:
+            dialog.set_font_name(self.font)
+                        
+        response = dialog.run()          
+        if response == gtk.RESPONSE_OK:
+            self.set_phonetic_font(dialog.get_font_name())
+        dialog.destroy()
+                
     def set_phonetic_font(self, font_name):
         self.font = font_name                    
         font_desc = pango.FontDescription(self.font)

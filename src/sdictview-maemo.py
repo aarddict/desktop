@@ -7,33 +7,32 @@ import gtk
 
 osso_c = osso.Context("sdictviewer", pysdic.version, False)
 
-class HildonStatusDisplay:
-    def __init__(self, message, parent):
-        self.message = message
-        self.parent = parent        
-
-    def show_start(self):
-        osso_c.system_note_infoprint(self.message)
-        #self.dialog = hildon.Note ("cancel_with_progress_bar", (self.parent, self.message, gtk.STOCK_DIALOG_INFO) )
-        #self.dialog.set_button_text("Cancel")        
-        #response = self.dialog.run()        
-        #dialog.destroy()
-        #if not response == gtk.RESPONSE_OK:
-        #    print 'Cancel is not implemented'
-        
-    def show_end(self):
-        #self.dialog.destroy()
-        print ''
-
 class HildonSDictViewer(pysdic.SDictViewer):
         
     def create_top_level_widget(self):
         app = hildon.Program()        
         window = hildon.Window()
-        #window.set_title("SDict Viewer")
+        self.window_in_fullscreen = False
+        window.set_title("SDict Viewer")
+        window.connect("key-press-event", self.on_key_press)
+        window.connect("window-state-event", self.on_window_state_change)
         app.add_window(window)        
         window.connect("destroy", self.destroy)
         return window
+    
+    def on_window_state_change(self, widget, event, *args):             
+         if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
+             self.window_in_fullscreen = True
+         else:
+             self.window_in_fullscreen = False    
+    
+    def on_key_press(self, widget, event, *args):
+        if event.keyval == gtk.keysyms.F6:
+            # The "Full screen" hardware key has been pressed
+            if self.window_in_fullscreen:
+                self.window.unfullscreen ()
+            else:
+                self.window.fullscreen ()
     
     def add_menu(self, content_box):        
         main_menu =  gtk.Menu()
@@ -42,15 +41,10 @@ class HildonSDictViewer(pysdic.SDictViewer):
             main_menu.append(menu)
             menu.show()     
     
-    def create_dict_loading_status_display(self, dict_name):
-        return HildonStatusDisplay("Loading " + dict_name, self.get_dialog_parent())
-    
-#    def get_dialog_parent(self):
-#        return None    
-    
-#    def add_content(self, content_box):
-#        self.window.add(content_box)            
-
+    def create_file_chooser_dlg(self):
+        dlg = hildon.FileChooserDialog(self.window, gtk.FILE_CHOOSER_ACTION_OPEN);        
+        return dlg
+        
 if __name__ == "__main__":    
     viewer = HildonSDictViewer()
     viewer.main()
