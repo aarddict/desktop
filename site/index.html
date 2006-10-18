@@ -1,0 +1,101 @@
+<html>
+<head>
+</head>
+<body>
+
+<div>
+<h1>SDict Viewer</h1>
+<p>SDict Viewer is a viewer for dictionaries in open format
+developed by <a href="http://axmasoft.com">AXMA Soft</a>. Primary goal
+of the project is to provide usable dictionary application for <a
+	href="http://www.nokia.com/770">Nokia 770</a> running <a
+	href="http://www.maemo.org">Maemo</a>. Because SDict Viewer is written
+in Python and its user interface is implemented in PyGTK, it should be
+possible to run it on any platform where Python and PyGTK are available.
+Many free dictionaries, reference books and encyclopedias are available
+for download at <a href="http://sdict.com">http://sdict.com</a></p>
+</div>
+
+<div>
+<h1>Features</h1>
+<ul>
+	<li>Works with dictionaries in AXMASoft's open dictionary format</li>
+	<li>Supports rich article text formatting</li>
+	<li>Supports hyperlinks in article text</li>
+	<li>Displays list of possible word completions as you type</li>
+	<li>Keeps word lookup history</li>
+	<li>Allows to quickly open one of most recently used dictionaries</li>
+	<li>Allows to select font for phonetic transcriptions (additional
+	font installation may be required)</li>
+	<li>Displays detailed dictionary information</li>
+</ul>
+</div>
+
+<div>
+<h1>Installation</h1>
+<h2>Nokia 770</h2>
+<p>SDict Viewer requires Python runtime environment. Please follow
+installation instructions at <a href="http://pymaemo.sourceforge.net">Python
+for Maemo web site</a>.</p>
+<p>Download appropriate .deb package from <a
+	href="http://sourceforge.net/project/showfiles.php?group_id=165272">here</a>
+and install it through Application Manager in a usual fashion.</p>
+Version 0.1.0 is packaged for Internet Table OS 2005 (Maemo 1.1), all
+subsequent versions are for Internet Table OS 2006 (Maemo 2.0).
+<h2>Other</h2>
+There are no installation packages for other platforms. You can download
+the <a
+	href="http://prdownloads.sourceforge.net/sdictviewer/sdictviewer-0.2.1-src.zip?download">source
+code</a>, unpack it and run sdictview.py. Windows users will also need to
+download and install Python, GTK and PyGTK (any 2.6 version or greater
+should be fine). Most Linux users are likely to have all these installed
+already. Please keep in mind the main focus of this project is Nokia
+770, so other platforms most likely will not get a lot of attention in
+the near future. Windows is especially problematic since it may be quite
+tedious to download and install all the libraries mentioned, and they
+don't always work as smoothly as they do on other platforms.</div>
+
+<div>
+<h1>Fonts</h1>
+If you are using dictionaries that have phonetic transcription you may
+want to install at least one unicode font that contains International
+Phonetic Alphabet characters. Nokia 770 out of the box doesn't have one.
+<a href="http://scripts.sil.org/">scripts.sil.org</a> has several good
+fonts free to download. Get at least one, <a
+	href="http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&item_id=DoulosSILfont">Doulus
+SIL</a>, for example. To install a font just create /home/user/.fonts
+directory and put the font file there. The system should pick it up, so
+when you go to "Options">"Phonetic Font..." in SDict Viewer you should
+see it in the list.</div>
+
+<div>
+<h1>Limitations and Known Issues</h1>
+<ul>
+	<li>Opening a dictionary, especially a large one takes a long time
+	(on Nokia 770)</li>
+	<li>In large dictionaries lookup of certain words may take a
+	relatively long time. This is mostly due to the fact that most
+	dictionaries use only 3 level short index. When a number of words that
+	starts with the same 3 letters is large the further down the list the
+	word is the longer its lookup takes.</li>
+	<li>References (hyperlinks) in article text are not rendered at
+	the same base line as the rest of the text.</li>
+	<li>References to other articles may not work in some cases: a
+	word in one form may be tagged as reference, but dictionary only
+	contains this word in a different form. Current dictionary format
+	doesn't provide any additional information to properly resolve the
+	reference. How often a user may encounter this depends a lot on a
+	specific dictionary and specific language.</li>
+	<li>Scrolling large articles is slow.</li>
+	<li>No user preferences. The only option right now is which font
+	to use for phonetic transcription. Most things should work well enough
+	for most users right away, and if they don't - it's better to fix it
+	then to wash one's hands and expose it as preference. On the other
+	hand, it is nice to have preferences for some things. So what kind of
+	preferences the applicaiton will get in the future largely depends on
+	user feedback and the time I have (or don't have).</li>
+</ul>
+</div>
+
+</body>
+</html>
