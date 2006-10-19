@@ -1,39 +1,76 @@
-<html>
+<html version="-//W3C//DTD HTML 4.01 Transitional//EN">
 <head>
+<title>SDict Viewer</title>
 </head>
-<body>
+<body style="font-family: sans-serif;">
+
+<div style="float: left; margin-bottom: 2px;"><a
+	href="http://sourceforge.net"><img
+	src="http://sourceforge.net/sflogo.php?group_id=144664&amp;type=1"
+	width="88" height="31" border="0" alt="SourceForge.net Logo" /></a></div>
+
+<div
+	style="border: thin solid blue; background-color: #eeeeff; float: right; padding: 5px;">
+<div><a
+	href="http://prdownloads.sourceforge.net/sdictviewer/sdictviewer-0.2.1.deb?download">Download
+Latest</a></div>
+<div><a href="http://sdict.com">Download Dictionaries</a></div>
+<div><a href="http://sourceforge.net/projects/sdictviewer">SourceForge
+Project Page</a></div>
+<div><a href="http://sdictviewer.cvs.sourceforge.net/sdictviewer/">Browse
+Source Code</a></div>
+</div>
 
 <div>
-<h1>SDict Viewer</h1>
+<h1 style="text-align: center;"><img src="sdictviewer_48x48.png"
+	style="margin-right: 10px; vertical-align: middle; "></img>SDict Viewer</h1>
+<!--
+<div style="float: left;"><img src="sdictviewer_logo.png" style="margin: 5px;"></img></div>
+-->
 <p>SDict Viewer is a viewer for dictionaries in open format
 developed by <a href="http://axmasoft.com">AXMA Soft</a>. Primary goal
 of the project is to provide usable dictionary application for <a
 	href="http://www.nokia.com/770">Nokia 770</a> running <a
 	href="http://www.maemo.org">Maemo</a>. Because SDict Viewer is written
-in Python and its user interface is implemented in PyGTK, it should be
+in <a href="http://python.org">Python</a> and its user interface is
+implemented in <a href="http://pygtk.org">PyGTK</a>, it should be
 possible to run it on any platform where Python and PyGTK are available.
 Many free dictionaries, reference books and encyclopedias are available
 for download at <a href="http://sdict.com">http://sdict.com</a></p>
 </div>
-
+<br>
 <div>
-<h1>Features</h1>
+<h2>Features</h2>
 <ul>
-	<li>Works with dictionaries in AXMASoft's open dictionary format</li>
+	<li>Works with dictionaries in AXMASoft's open dictionary format.
+	Get dictionaries <a href="http://sdict.com/">here</a></li>
 	<li>Supports rich article text formatting</li>
 	<li>Supports hyperlinks in article text</li>
 	<li>Displays list of possible word completions as you type</li>
 	<li>Keeps word lookup history</li>
 	<li>Allows to quickly open one of most recently used dictionaries</li>
 	<li>Allows to select font for phonetic transcriptions (additional
-	font installation may be required)</li>
+	<a href="#fonts">font installation</a> may be required)</li>
 	<li>Displays detailed dictionary information</li>
 </ul>
 </div>
 
 <div>
-<h1>Installation</h1>
-<h2>Nokia 770</h2>
+<h2>Screenshots</h2>
+<div style="text-align: center"><img
+	src="sdictviewer-0.2.0-maemo-1.png" alt="SDict Viewer 0.2.0 on Maemo"
+	style="padding: 5px;" /></div>
+</div>
+<div style="text-align: center"><img
+	src="sdictviewer-0.2.0-maemo-2.png" alt="SDict Viewer 0.2.0 on Maemo"
+	style="padding: 5px;" /></div>
+<div style="text-align: center"><img
+	src="sdictviewer-0.2.0-gentoo-1.png"
+	alt="SDict Viewer 0.2.0 on Gentoo Linux" style="padding: 5px;" /></div>
+
+<div>
+<h2>Installation</h2>
+<h3>Nokia 770</h3>
 <p>SDict Viewer requires Python runtime environment. Please follow
 installation instructions at <a href="http://pymaemo.sourceforge.net">Python
 for Maemo web site</a>.</p>
@@ -42,7 +79,7 @@ for Maemo web site</a>.</p>
 and install it through Application Manager in a usual fashion.</p>
 Version 0.1.0 is packaged for Internet Table OS 2005 (Maemo 1.1), all
 subsequent versions are for Internet Table OS 2006 (Maemo 2.0).
-<h2>Other</h2>
+<h3>Other Platforms</h3>
 There are no installation packages for other platforms. You can download
 the <a
 	href="http://prdownloads.sourceforge.net/sdictviewer/sdictviewer-0.2.1-src.zip?download">source
@@ -56,7 +93,7 @@ tedious to download and install all the libraries mentioned, and they
 don't always work as smoothly as they do on other platforms.</div>
 
 <div>
-<h1>Fonts</h1>
+<h3><a name="fonts">Fonts</a></h3>
 If you are using dictionaries that have phonetic transcription you may
 want to install at least one unicode font that contains International
 Phonetic Alphabet characters. Nokia 770 out of the box doesn't have one.
@@ -65,11 +102,11 @@ fonts free to download. Get at least one, <a
 	href="http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&item_id=DoulosSILfont">Doulus
 SIL</a>, for example. To install a font just create /home/user/.fonts
 directory and put the font file there. The system should pick it up, so
-when you go to "Options">"Phonetic Font..." in SDict Viewer you should
-see it in the list.</div>
+when you go to "Options"&gt;"Phonetic Font..." in SDict Viewer you
+should see it in the list.</div>
 
 <div>
-<h1>Limitations and Known Issues</h1>
+<h2>Limitations and Known Issues</h2>
 <ul>
 	<li>Opening a dictionary, especially a large one takes a long time
 	(on Nokia 770)</li>
@@ -96,6 +133,24 @@ see it in the list.</div>
 	user feedback and the time I have (or don't have).</li>
 </ul>
 </div>
+
+<div>
+<h2>Links</h2>
+<ul>
+	<li><a href="http://sdict.com/">AXMASoft's Sdictionary
+	community home</a></li>
+	<li><a href="http://axmasoft.com/">AXMASoft Ltd.</a></li>
+	<li><a href="http://scripts.sil.org/">Computers &amp; Writing
+	Systems</a></li>
+	<li><a href="http://maemo.org/">Maemo.org</a></li>
+	<li><a href="http://pymaemo.sourceforge.net/">Python for Maemo</a></li>
+	<li><a href="http://python.org/">Python Programming Language</a></li>
+	<li><a href="http://pygtk.org/">PyGTK: GTK+ for Python</a></li>
+	<li><a href="http://www.gimp.org/~tml/gimp/win32/">GTK+ for
+	Windows</a></li>
+</ul>
+</div>
+
 
 </body>
 </html>
