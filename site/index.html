@@ -1,6 +1,11 @@
 <html version="-//W3C//DTD HTML 4.01 Transitional//EN">
 <head>
 <title>SDict Viewer</title>
+<style type="text/css">
+a:visited {
+	color : #000099;
+}
+</style>
 </head>
 <body style="font-family: sans-serif;">
 
@@ -55,6 +60,10 @@ for download at <a href="http://sdict.com">http://sdict.com</a></p>
 <div>
 <h2>Screenshots</h2>
 <div style="text-align: center"><img
+	src="sdictviewer-0.2.1-maemo-japanese.png"
+	alt="SDict Viewer 0.2.1 with English-Japanese dictionary on Maemo"
+	style="padding: 5px;" /></div>
+<div style="text-align: center"><img
 	src="sdictviewer-0.2.0-maemo-1.png" alt="SDict Viewer 0.2.0 on Maemo"
 	style="padding: 5px;" /></div>
 <div style="text-align: center"><img
@@ -91,16 +100,21 @@ don't always work as smoothly as they do on other platforms.</div>
 
 <div>
 <h3><a name="fonts">Fonts</a></h3>
-If you are using dictionaries that have phonetic transcription you may
-want to install at least one unicode font that contains International
-Phonetic Alphabet characters. Nokia 770 out of the box doesn't have one.
-<a href="http://scripts.sil.org/">scripts.sil.org</a> has several good
-fonts free to download. Get at least one, <a
+<p>If you are using dictionaries that have phonetic transcription
+you may want to install at least one unicode font that contains
+International Phonetic Alphabet characters. Nokia 770 out of the box
+doesn't have one. <a href="http://scripts.sil.org/">scripts.sil.org</a>
+has several good fonts free to download. Get at least one, <a
 	href="http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&item_id=DoulosSILfont">Doulus
 SIL</a>, for example. To install a font just create /home/user/.fonts
 directory and put the font file there. The system should pick it up, so
 when you go to "Options"&gt;"Phonetic Font..." in SDict Viewer you
-should see it in the list.</div>
+should see it in the list.</p>
+<p>You also need to install additional fonts if you use dictionaries
+in languages not supported by Nokia 770 out of the box. WAZU JAPAN's <a
+	href="http://www.wazu.jp/">Gallery of Unicode Fonts</a> is an excellent
+resource for various unicode fonts.</p>
+</div>
 
 <div>
 <h2>Limitations and Known Issues</h2>
@@ -139,6 +153,8 @@ should see it in the list.</div>
 	<li><a href="http://axmasoft.com/">AXMASoft Ltd.</a></li>
 	<li><a href="http://scripts.sil.org/">Computers &amp; Writing
 	Systems</a></li>
+	<li><a href="http://www.wazu.jp/">WAZU JAPAN's Gallery of
+	Unicode Fonts</a></li>
 	<li><a href="http://maemo.org/">Maemo.org</a></li>
 	<li><a href="http://pymaemo.sourceforge.net/">Python for Maemo</a></li>
 	<li><a href="http://python.org/">Python Programming Language</a></li>
