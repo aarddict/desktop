@@ -143,7 +143,6 @@ class SDictionary:
         s = self.file.read( record_length )
         s = self.compression.decompress( s )
         return s
-        #return s.decode(self.encoding)
     
     def read_short_index(self):
         self.short_index = {}  
@@ -164,7 +163,7 @@ class SDictionary:
             short_word_len = len(short_word)            
             if not self.short_index.has_key(short_word_len):                
                 self.short_index[short_word_len] = {}
-            self.short_index[short_word_len][short_word.encode('utf-8')] = pointer  
+            self.short_index[short_word_len][short_word.encode(self.encoding)] = pointer  
             if short_word_len == s_index_depth:
                self.short_list.append(pointer) 
             
@@ -175,9 +174,9 @@ class SDictionary:
         for i in range(1, s_index_depth + 1):
             index = self.short_index[i]    
             try:
-                u_word = word.decode('utf-8')
+                u_word = word.decode(self.encoding)
                 u_subword = u_word[:i]
-                subword = u_subword.encode('utf-8')
+                subword = u_subword.encode(self.encoding)
                 if index.has_key(subword):
                     search_pos = index[subword]
                     starts_with = subword
@@ -243,7 +242,6 @@ class SDictionary:
         if next_word != 0:
             word_length = next_word - 8        
             word = self.file.read( word_length )
-            #word = word.decode(self.encoding)        
         else:
             word = None    
         return FullIndexItem(next_word, prev_word, word, article_pointer)
