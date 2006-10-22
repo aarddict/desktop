@@ -146,7 +146,6 @@ class SDictionary:
     
     def read_short_index(self):
         self.short_index = {}  
-        self.short_list = []      
         self.file.seek(self.header.short_index_offset)
         s_index_depth = self.header.short_index_depth
         short_index_str = self.file.read((s_index_depth*4 + 4)*self.header.short_index_length)
@@ -155,7 +154,9 @@ class SDictionary:
             entry_start = i* (s_index_depth+1)*4
             short_word = unicode("")
             for j in range(s_index_depth):
-                uchar_code =  read_int(short_index_str[entry_start+j*4:entry_start+(j+1)*4])
+                start_index = entry_start+j*4
+                end_index = start_index+4
+                uchar_code =  read_int(short_index_str[start_index:end_index])
                 if uchar_code != 0:
                     short_word += unichr(uchar_code)
             pointer_start = entry_start+s_index_depth*4
@@ -164,8 +165,6 @@ class SDictionary:
             if not self.short_index.has_key(short_word_len):                
                 self.short_index[short_word_len] = {}
             self.short_index[short_word_len][short_word.encode(self.encoding)] = pointer  
-            if short_word_len == s_index_depth:
-               self.short_list.append(pointer) 
             
     def get_search_pos_for(self, word):
         search_pos = -1
