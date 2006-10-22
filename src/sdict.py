@@ -145,32 +145,33 @@ class SDictionary:
         return s
     
     def read_short_index(self):
-        self.short_index = {}  
+        short_index = {}  
         self.file.seek(self.header.short_index_offset)
         s_index_depth = self.header.short_index_depth
         short_index_str = self.file.read((s_index_depth*4 + 4)*self.header.short_index_length)
         short_index_str = self.compression.decompress( short_index_str )                
-        for i in range(self.header.short_index_length):
+        index_length = self.header.short_index_length
+        for i in xrange(index_length):
             entry_start = i* (s_index_depth+1)*4
-            short_word = unicode("")
-            for j in range(s_index_depth):
+            short_word_arr = []
+            for j in xrange(s_index_depth):
                 start_index = entry_start+j*4
                 end_index = start_index+4
                 uchar_code =  read_int(short_index_str[start_index:end_index])
                 if uchar_code != 0:
-                    short_word += unichr(uchar_code)
+                    short_word_arr.append(unichr(uchar_code))
+            short_word = u''.join(short_word_arr)
             pointer_start = entry_start+s_index_depth*4
             pointer = read_int(short_index_str[pointer_start:pointer_start+4])            
             short_word_len = len(short_word)            
-            if not self.short_index.has_key(short_word_len):                
-                self.short_index[short_word_len] = {}
-            self.short_index[short_word_len][short_word.encode(self.encoding)] = pointer  
+            short_index.setdefault(short_word_len, {})[short_word.encode(self.encoding)] = pointer
+        self.short_index = short_index
             
     def get_search_pos_for(self, word):
         search_pos = -1
         starts_with = ""
         s_index_depth = self.header.short_index_depth
-        for i in range(1, s_index_depth + 1):
+        for i in xrange(1, s_index_depth + 1):
             index = self.short_index[i]    
             try:
                 u_word = word.decode(self.encoding)
@@ -233,14 +234,15 @@ class SDictionary:
         if (pointer >= self.header.articles_offset):
             print 'Warning: attempt to read word from illegal position in dict file'        
             return None
-        if (self.file.tell() != pointer):
-            self.file.seek( pointer )
-        next_word = read_short(self.file.read( 2 ))
-        prev_word = read_short(self.file.read( 2 ))
-        article_pointer = read_int(self.file.read(4))
+        f = self.file
+        if (f.tell() != pointer):
+            f.seek( pointer )
+        next_word = read_short(f.read( 2 ))
+        prev_word = read_short(f.read( 2 ))
+        article_pointer = read_int(f.read(4))
         if next_word != 0:
             word_length = next_word - 8        
-            word = self.file.read( word_length )
+            word = f.read( word_length )
         else:
             word = None    
         return FullIndexItem(next_word, prev_word, word, article_pointer)

@@ -12,7 +12,7 @@ import string
 
 gobject.threads_init()
 
-version = "0.2.1"
+version = "0.2.2"
 settings_file_name = ".sdictviewer"
 
 def save_app_state(app_state):
@@ -106,47 +106,48 @@ class ArticleFormat:
         forms_regions = self.find_tag_bounds(buffer, "<f>", "</f>", regions_to_remove)
         ref_regions = self.find_tag_bounds(buffer, "<r>", "</r>", regions_to_remove)
         
-        for mark in regions_to_remove:
-            buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1]))            
+        [buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1])) for mark in regions_to_remove]
+        [self.apply_tag(mark, buffer, "t", "[", "]") for mark in transcript_regions]
+        [self.apply_tag(mark, buffer, "i") for mark in italic_regions]
+        [self.apply_tag(mark, buffer, "b") for mark in bold_regions]
+        [self.apply_tag(mark, buffer, "u") for mark in underline_regions]
+        [self.apply_tag(mark, buffer, "f") for mark in forms_regions]
+        [self.apply_tag(mark, buffer, "r") for mark in ref_regions]
+        [self.create_ref(mark, buffer, word, word_ref_callback, article_view) for mark in ref_regions]
+            
+            
+    def create_ref(self, mark, buffer, word, word_ref_callback, article_view):
+        start = buffer.get_iter_at_mark(mark[0])
+        end = buffer.get_iter_at_mark(mark[1])
+        text = buffer.get_text(start, end)
+        start = buffer.get_iter_at_mark(mark[0])
+        anchor = buffer.create_child_anchor(start)
+        label = gtk.Label()
+        markup_text = "<span foreground='blue' background='white' underline='single' rise='-5'>"+text.replace("&", "&amp;")+"</span>"
+        label.set_markup(markup_text)
+        btn = gtk.EventBox()
+        btn.add(label)                
+        ref_text = text.replace("~", word)
+        btn.connect('button-release-event', word_ref_callback, ref_text)
+        article_view.add_child_at_anchor(btn, anchor)
+        hand_cursor = gtk.gdk.Cursor(gtk.gdk.HAND2)                
+        btn.window.set_cursor(hand_cursor)                
+        start = buffer.get_iter_at_mark(mark[0])
+        end = buffer.get_iter_at_mark(mark[1])                
+        buffer.apply_tag_by_name("invisible", start, end)                   
+            
+            
+    def apply_tag(self, mark, buffer, tag_name, surround_text_start = '', surround_text_end = ''):
+        regions_start_iter = buffer.get_iter_at_mark(mark[0]);
+        buffer.insert(regions_start_iter, surround_text_start)
+        buffer.insert(buffer.get_iter_at_mark(mark[1]), surround_text_end)
         
-        self.apply_tag_to_regions(buffer, transcript_regions, "t", "[", "]")
-        self.apply_tag_to_regions(buffer, italic_regions, "i")
-        self.apply_tag_to_regions(buffer, bold_regions, "b")
-        self.apply_tag_to_regions(buffer, underline_regions, "u")
-        self.apply_tag_to_regions(buffer, forms_regions, "f")
-        self.apply_tag_to_regions(buffer, ref_regions, "r")
-        for mark in ref_regions:            
-            start = buffer.get_iter_at_mark(mark[0])
-            end = buffer.get_iter_at_mark(mark[1])
-            text = buffer.get_text(start, end)
-            start = buffer.get_iter_at_mark(mark[0])
-            anchor = buffer.create_child_anchor(start)
-            label = gtk.Label()
-            markup_text = "<span foreground='blue' background='white' underline='single' rise='-5'>"+text.replace("&", "&amp;")+"</span>"
-            label.set_markup(markup_text)
-            btn = gtk.EventBox()
-            btn.add(label)                
-            ref_text = text.replace("~", word)
-            btn.connect('button-release-event', word_ref_callback, ref_text)
-            article_view.add_child_at_anchor(btn, anchor)
-            hand_cursor = gtk.gdk.Cursor(gtk.gdk.HAND2)                
-            btn.window.set_cursor(hand_cursor)                
-            start = buffer.get_iter_at_mark(mark[0])
-            end = buffer.get_iter_at_mark(mark[1])                
-            buffer.apply_tag_by_name("invisible", start, end)                
-            
-    def apply_tag_to_regions(self, buffer, regions, tag_name, surround_text_start = '', surround_text_end = ''):
-        for mark in regions:            
-            regions_start_iter = buffer.get_iter_at_mark(mark[0]);
-            buffer.insert(regions_start_iter, surround_text_start)
-            buffer.insert(buffer.get_iter_at_mark(mark[1]), surround_text_end)
-            
-            tag_start = buffer.get_iter_at_mark(mark[0])            
-            tag_end = buffer.get_iter_at_mark(mark[1])
-            
-            tag_start.backward_chars(len(surround_text_start))
-            
-            buffer.apply_tag_by_name(tag_name, tag_start, tag_end)
+        tag_start = buffer.get_iter_at_mark(mark[0])            
+        tag_end = buffer.get_iter_at_mark(mark[1])
+        
+        tag_start.backward_chars(len(surround_text_start))
+        
+        buffer.apply_tag_by_name(tag_name, tag_start, tag_end)
         
     def find_tag_bounds(self, buffer, start_tag, end_tag, regions_to_remove):
         current_iter = buffer.get_start_iter()            
@@ -282,8 +283,7 @@ class SDictViewer:
         model.clear()
         if self.dict:
             word_list = self.dict.get_word_list(word, n)
-            for word in word_list:
-                model.append([word])     
+            [model.append([word]) for word in word_list]
             if len(word_list) == 1:
                 self.word_input.child.set_text(word_list[0])
                 self.word_input.child.set_position(-1)
@@ -334,12 +334,9 @@ class SDictViewer:
                 self.open_dict(app_state.dict_file)
                 self.word_input.child.set_text(app_state.word)                
                 app_state.history.reverse()
-                for w in app_state.history:
-                    self.add_to_history(w)
+                [self.add_to_history(w) for w in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
-                for r in app_state.recent:
-                    title, version, file_name = r[0], r[1], r[2]
-                    self.add_to_recent(title, version, file_name)
+                [self.add_to_recent(r[0], r[1], r[2]) for r in app_state.recent]
         except Exception, ex:
             print 'Failed to load application state:', ex        
 
@@ -368,8 +365,7 @@ class SDictViewer:
     def add_menu(self, content_box):
         menu_bar = gtk.MenuBar()
         menu_bar.set_border_width(1)                        
-        for menu in self.create_menus():
-            menu_bar.append(menu)     
+        [menu_bar.append(menu) for menu in self.create_menus()]
         content_box.pack_start(menu_bar, False, False, 2)           
 
     def create_word_completion(self):
@@ -488,8 +484,7 @@ class SDictViewer:
     def select_dict_file(self, widget):
         fileChooser = self.create_file_chooser_dlg()
         fileChooser.set_title("Open Dictionary")
-        response = fileChooser.run()          
-        if response == gtk.RESPONSE_OK:
+        if fileChooser.run() == gtk.RESPONSE_OK:
             fileName = fileChooser.get_filename()
             self.open_dict(fileName)
         fileChooser.destroy()        
@@ -557,7 +552,7 @@ class SDictViewer:
         dialog.set_name("SDict Viewer")
         dialog.set_version(version)
         dialog.set_copyright("Igor Tkach")
-        dialog.set_website("http://sf.net/projects/sdictviewer")
+        dialog.set_website("http://sdictviewer.sf.net/")
         comments = "SDict Viewer is viewer for dictionaries in open format described at http://sdict.com\nDistributed under terms and conditions of GNU Public License\nSee http://www.gnu.org/licenses/gpl.txt for details"
         dialog.set_comments(comments)        
         dialog.run()     
@@ -566,10 +561,8 @@ class SDictViewer:
     def select_phonetic_font(self, widget):
         dialog = gtk.FontSelectionDialog("Select Phonetic Font")        
         if self.font:
-            dialog.set_font_name(self.font)
-                        
-        response = dialog.run()          
-        if response == gtk.RESPONSE_OK:
+            dialog.set_font_name(self.font)                        
+        if dialog.run() == gtk.RESPONSE_OK:
             self.set_phonetic_font(dialog.get_font_name())
         dialog.destroy()
                 
