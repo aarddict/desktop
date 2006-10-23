@@ -88,6 +88,7 @@ class ArticleFormat:
         self.template = string.Template("$word\n$text")
        
     def apply(self, word, article, article_view, word_ref_callback):
+        print 'apply article format'
         buffer = article_view.get_buffer()
         text = self.convert_newlines(article)                                        
         text = self.convert_paragraphs(text)
@@ -230,6 +231,11 @@ class SDictViewer:
         article = self.dict.lookup(word)        
         buffer = self.article_view.get_buffer()                
         if article:        
+            tag_table = buffer.get_tag_table()
+            anon_tags = []
+            tag_table.foreach(self.collect_anonymous_tags, anon_tags)
+            print 'anonymous tags to remove: ', len(anon_tags) 
+            [tag_table.remove(tag) for tag in anon_tags]
             self.article_format.apply(word, article, self.article_view, self.word_ref_clicked)
             self.article_view.show_all()
             self.article_view.scroll_to_iter(buffer.get_start_iter(), 0)
@@ -238,6 +244,10 @@ class SDictViewer:
         else:
             buffer.set_text('Word not found')        
             return False    
+    
+    def collect_anonymous_tags(self, tag, list):
+        if tag.get_property('name') == None:
+            list.append(tag)
     
     def word_selected(self, tree_view, start_editing = None, data = None):
         if tree_view.get_selection().count_selected_rows() == 0:
