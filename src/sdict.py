@@ -135,12 +135,12 @@ class SDictionary:
         self.copyright = self.read_unit( self.header.copyright_offset )
         self.current_pos = self.header.full_index_offset
         self.read_short_index()
-        self.cache = {}
         
     def read_unit( self, pos ):
-        self.file.seek( pos );
-        record_length= read_int(self.file.read( 4 ))
-        s = self.file.read( record_length )
+        f = self.file
+        f.seek( pos );
+        record_length= read_int(f.read( 4 ))
+        s = f.read( record_length )
         s = self.compression.decompress( s )
         return s
     

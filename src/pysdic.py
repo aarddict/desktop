@@ -113,30 +113,17 @@ class ArticleFormat:
         [self.apply_tag(mark, buffer, "u") for mark in underline_regions]
         [self.apply_tag(mark, buffer, "f") for mark in forms_regions]
         [self.apply_tag(mark, buffer, "r") for mark in ref_regions]
-        [self.create_ref(mark, buffer, word, word_ref_callback, article_view) for mark in ref_regions]
-            
-            
+        [self.create_ref(mark, buffer, word, word_ref_callback, article_view) for mark in ref_regions]                            
+        
     def create_ref(self, mark, buffer, word, word_ref_callback, article_view):
         start = buffer.get_iter_at_mark(mark[0])
         end = buffer.get_iter_at_mark(mark[1])
         text = buffer.get_text(start, end)
-        start = buffer.get_iter_at_mark(mark[0])
-        anchor = buffer.create_child_anchor(start)
-        label = gtk.Label()
-        markup_text = "<span foreground='blue' background='white' underline='single' rise='-5'>"+text.replace("&", "&amp;")+"</span>"
-        label.set_markup(markup_text)
-        btn = gtk.EventBox()
-        btn.add(label)                
         ref_text = text.replace("~", word)
-        btn.connect('button-release-event', word_ref_callback, ref_text)
-        article_view.add_child_at_anchor(btn, anchor)
-        hand_cursor = gtk.gdk.Cursor(gtk.gdk.HAND2)                
-        btn.window.set_cursor(hand_cursor)                
-        start = buffer.get_iter_at_mark(mark[0])
-        end = buffer.get_iter_at_mark(mark[1])                
-        buffer.apply_tag_by_name("invisible", start, end)                   
-            
-            
+        ref_tag = buffer.create_tag()
+        ref_tag.connect("event", word_ref_callback, ref_text)
+        buffer.apply_tag(ref_tag, start, end)        
+                    
     def apply_tag(self, mark, buffer, tag_name, surround_text_start = '', surround_text_end = ''):
         regions_start_iter = buffer.get_iter_at_mark(mark[0]);
         buffer.insert(regions_start_iter, surround_text_start)
@@ -221,9 +208,10 @@ class SDictViewer:
                 self.show_article_for(word)        
         
                         
-    def word_ref_clicked(self, widget, event, word):
-        self.word_input.child.set_text(word)
-        self.word_input.child.activate()
+    def word_ref_clicked(self, tag, widget, event, iter, word):
+        if event.type == gtk.gdk.BUTTON_RELEASE:
+            self.word_input.child.set_text(word)
+            self.word_input.child.activate()
                 
     def add_to_history(self, word):        
         model = self.word_input.get_model()
@@ -476,11 +464,26 @@ class SDictViewer:
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
         buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "green")
-        buffer.create_tag("r", underline = True, foreground = "blue", rise = -10, rise_set = True)
-        buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
-        buffer.create_tag("invisible", invisible = True)
-        return article_view
-
+        ref_tag = buffer.create_tag("r", underline = True, foreground = "blue")
+        buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")        
+        article_view.connect("motion_notify_event", self.on_mouse_motion)        
+        return article_view            
+    
+    def on_mouse_motion(self, widget, event, data = None):
+        text_window = self.article_view.get_window(gtk.TEXT_WINDOW_TEXT)
+        x, y, flags = text_window.get_pointer()                    
+        x, y = self.article_view.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
+        tags = self.article_view.get_iter_at_location(x, y).get_tags()
+        is_ref = False
+        for tag in tags:
+            if tag.get_property("name") == "r":
+                is_ref = True
+        if is_ref:
+            text_window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))            
+        else:
+            text_window.set_cursor(None)
+        return False
+        
     def select_dict_file(self, widget):
         fileChooser = self.create_file_chooser_dlg()
         fileChooser.set_title("Open Dictionary")
