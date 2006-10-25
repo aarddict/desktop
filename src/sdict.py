@@ -144,27 +144,26 @@ class SDictionary:
         s = self.compression.decompress( s )
         return s
     
-    def read_short_index(self):
-        short_index = {}  
+    def read_short_index(self):        
         self.file.seek(self.header.short_index_offset)
         s_index_depth = self.header.short_index_depth
         short_index_str = self.file.read((s_index_depth*4 + 4)*self.header.short_index_length)
         short_index_str = self.compression.decompress( short_index_str )                
         index_length = self.header.short_index_length
+        short_index = [{} for i in xrange(s_index_depth+1)]
         for i in xrange(index_length):
             entry_start = i* (s_index_depth+1)*4
-            short_word_arr = []
+            short_word = u''
             for j in xrange(s_index_depth):
                 start_index = entry_start+j*4
                 end_index = start_index+4
                 uchar_code =  read_int(short_index_str[start_index:end_index])
                 if uchar_code != 0:
-                    short_word_arr.append(unichr(uchar_code))
-            short_word = u''.join(short_word_arr)
+                    short_word += unichr(uchar_code)            
             pointer_start = entry_start+s_index_depth*4
             pointer = read_int(short_index_str[pointer_start:pointer_start+4])            
             short_word_len = len(short_word)            
-            short_index.setdefault(short_word_len, {})[short_word.encode(self.encoding)] = pointer
+            short_index[short_word_len][short_word.encode(self.encoding)] = pointer
         self.short_index = short_index
             
     def get_search_pos_for(self, word):

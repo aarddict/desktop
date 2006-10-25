@@ -149,12 +149,13 @@ class ArticleFormat:
             if not match_start:
                 break;                
             mark_start_i_tag = buffer.create_mark(None, match_start)
-            mark_start_i = buffer.create_mark(None, match_end)            
+            mark_start_i = buffer.create_mark(None, match_end)
+            f_search_result = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)
             try:
-                match_start, match_end = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)
+                match_start, match_end = f_search_result
             except TypeError:
                 print 'Formatting error: possible missing start or end tag for tag pair %s%s' % (start_tag, end_tag)
-                match_start = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)                
+                match_start = f_search_result
             current_iter = match_end
             if not match_start:
                 break;                
