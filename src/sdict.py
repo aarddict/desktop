@@ -151,10 +151,11 @@ class SDictionary:
         short_index_str = self.compression.decompress( short_index_str )                
         index_length = self.header.short_index_length
         short_index = [{} for i in xrange(s_index_depth+1)]
+        depth_range = xrange(s_index_depth)
         for i in xrange(index_length):
             entry_start = i* (s_index_depth+1)*4
             short_word = u''
-            for j in xrange(s_index_depth):
+            for j in depth_range:
                 start_index = entry_start+j*4
                 end_index = start_index+4
                 uchar_code =  read_int(short_index_str[start_index:end_index])
