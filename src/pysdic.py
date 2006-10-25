@@ -6,7 +6,7 @@ import sdict
 import os.path
 import threading
 import gobject
-import time
+#import time
 import pickle
 import string
 
@@ -14,6 +14,7 @@ gobject.threads_init()
 
 version = "0.2.2"
 settings_file_name = ".sdictviewer"
+app_name = "SDict Viewer"
 
 def save_app_state(app_state):
     home_dir = os.path.expanduser('~')
@@ -88,7 +89,6 @@ class ArticleFormat:
         self.template = string.Template("$word\n$text")
        
     def apply(self, word, article, article_view, word_ref_callback):
-        print 'apply article format'
         buffer = article_view.get_buffer()
         text = self.convert_newlines(article)                                        
         text = self.convert_paragraphs(text)
@@ -106,6 +106,8 @@ class ArticleFormat:
         underline_regions = self.find_tag_bounds(buffer, "<u>", "</u>", regions_to_remove)
         forms_regions = self.find_tag_bounds(buffer, "<f>", "</f>", regions_to_remove)
         ref_regions = self.find_tag_bounds(buffer, "<r>", "</r>", regions_to_remove)
+        sup_regions = self.find_tag_bounds(buffer, "<sup>", "</sup>", regions_to_remove)
+        sub_regions = self.find_tag_bounds(buffer, "<sub>", "</sub>", regions_to_remove)
         
         [buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1])) for mark in regions_to_remove]
         [self.apply_tag(mark, buffer, "t", "[", "]") for mark in transcript_regions]
@@ -115,6 +117,8 @@ class ArticleFormat:
         [self.apply_tag(mark, buffer, "f") for mark in forms_regions]
         [self.apply_tag(mark, buffer, "r") for mark in ref_regions]
         [self.create_ref(mark, buffer, word, word_ref_callback, article_view) for mark in ref_regions]                            
+        [self.apply_tag(mark, buffer, "sup") for mark in sup_regions]
+        [self.apply_tag(mark, buffer, "sub") for mark in sub_regions]
         
     def create_ref(self, mark, buffer, word, word_ref_callback, article_view):
         start = buffer.get_iter_at_mark(mark[0])
@@ -230,20 +234,25 @@ class SDictViewer:
     def show_article_for(self, word):
         article = self.dict.lookup(word)        
         buffer = self.article_view.get_buffer()                
-        if article:        
-            tag_table = buffer.get_tag_table()
-            anon_tags = []
-            tag_table.foreach(self.collect_anonymous_tags, anon_tags)
-            print 'anonymous tags to remove: ', len(anon_tags) 
-            [tag_table.remove(tag) for tag in anon_tags]
+        if article: 
+            self.remove_anonymous_tags()
             self.article_format.apply(word, article, self.article_view, self.word_ref_clicked)
             self.article_view.show_all()
-            self.article_view.scroll_to_iter(buffer.get_start_iter(), 0)
+            gobject.idle_add(lambda : self.article_view.scroll_to_iter(buffer.get_start_iter(), 0))            
             self.add_to_history(word)            
             return True           
         else:
             buffer.set_text('Word not found')        
             return False    
+        
+    #Anonymous tags are used to implement word references
+    #when new article is loaded into text buffer old anonymous tags are no longer needed
+    def remove_anonymous_tags(self):
+        buffer = self.article_view.get_buffer()
+        tag_table = buffer.get_tag_table()
+        anon_tags = []
+        tag_table.foreach(self.collect_anonymous_tags, anon_tags)        
+        [tag_table.remove(tag) for tag in anon_tags]        
     
     def collect_anonymous_tags(self, tag, list):
         if tag.get_property('name') == None:
@@ -299,6 +308,7 @@ class SDictViewer:
         self.recent_menu_items = {}
                                  
         contentBox = gtk.VBox(False, 0)
+        self.create_menu_items()
         self.add_menu(contentBox)
                                         
         box = gtk.VBox()        
@@ -364,6 +374,7 @@ class SDictViewer:
         menu_bar = gtk.MenuBar()
         menu_bar.set_border_width(1)                        
         [menu_bar.append(menu) for menu in self.create_menus()]
+        menu_bar.show_all()
         content_box.pack_start(menu_bar, False, False, 2)           
 
     def create_word_completion(self):
@@ -391,47 +402,47 @@ class SDictViewer:
          if iter:
              self.word_input.child.activate()
 
-    def create_menus(self):        
-        mi_open = gtk.MenuItem("Open...")
-        mi_open.connect("activate", self.select_dict_file)
-        mi_info = gtk.MenuItem("Info...")
-        mi_info.connect("activate", self.show_dict_info)
-        mi_exit = gtk.MenuItem("Exit")
-        mi_exit.connect("activate", self.destroy)
+    def create_menu_items(self):
+        self.mi_open = gtk.MenuItem("Open...")
+        self.mi_open.connect("activate", self.select_dict_file)
+        
+        self.mi_info = gtk.MenuItem("Info...")
+        self.mi_info.connect("activate", self.show_dict_info)
+        
+        self.mi_exit = gtk.MenuItem("Close")
+        self.mi_exit.connect("activate", self.destroy)
         
         self.mn_recent = gtk.Menu()
-        mn_recent_item = gtk.MenuItem("Recent")
-        mn_recent_item.set_submenu(self.mn_recent)                        
-        
+        self.mn_recent_item = gtk.MenuItem("Recent")
+        self.mn_recent_item.set_submenu(self.mn_recent)                        
+                        
+        self.mi_about = gtk.MenuItem("About %s..." % app_name)
+        self.mi_about.connect("activate", self.show_about)
+                        
+        self.mi_select_phonetic_font = gtk.MenuItem("Phonetic Font...")
+        self.mi_select_phonetic_font.connect("activate", self.select_phonetic_font)
+
+    def create_menus(self):           
         mn_dict = gtk.Menu()
         mn_dict_item = gtk.MenuItem("Dictionary")
         mn_dict_item.set_submenu(mn_dict)        
         
-        mn_dict.append(mi_open)        
-        mn_dict.append(mi_info)
-        mn_dict.append(mn_recent_item)
-        mn_dict.append(mi_exit)
-        
-        mi_about = gtk.MenuItem("About")        
-        mi_about.connect("activate", self.show_about)
-        
+        mn_dict.append(self.mi_open)        
+        mn_dict.append(self.mi_info)
+        mn_dict.append(self.mn_recent_item)
+        mn_dict.append(self.mi_exit)
+                
         mn_help = gtk.Menu()
         mn_help_item = gtk.MenuItem("Help")
         mn_help_item.set_submenu(mn_help)
         
-        mn_help.append(mi_about)
-        
-        mn_dict.show_all()
-        mn_help_item.show_all()
-        
+        mn_help.append(self.mi_about)
+                
         mn_options = gtk.Menu()
         mn_options_item = gtk.MenuItem("Options")
         mn_options_item.set_submenu(mn_options)
         
-        mi_select_phonetic_font = gtk.MenuItem("Phonetic Font...")
-        mi_select_phonetic_font.connect("activate", self.select_phonetic_font)
-        mn_options.append(mi_select_phonetic_font)
-        mn_options.show_all()
+        mn_options.append(self.mi_select_phonetic_font)
         return (mn_dict_item, mn_options_item, mn_help_item)        
 
     def add_dict_to_recent(self, dict):
@@ -461,7 +472,7 @@ class SDictViewer:
             dict_title = self.dict.title
         else:
             dict_title = "No dictionary"
-        title = "%s - SDict Viewer" % dict_title        
+        title = "%s - %s" % (dict_title, app_name)
         self.window.set_title(title)
 
     def create_article_view(self):
@@ -474,8 +485,10 @@ class SDictViewer:
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
         buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "green")
-        ref_tag = buffer.create_tag("r", underline = True, foreground = "blue")
-        buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")        
+        buffer.create_tag("r", underline = True, foreground = "blue")
+        buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
+        buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
+        tag_sub = buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
         article_view.connect("motion_notify_event", self.on_mouse_motion)        
         return article_view            
     
@@ -562,11 +575,11 @@ class SDictViewer:
     def show_about(self, widget):
         dialog = gtk.AboutDialog()
         dialog.set_position(gtk.WIN_POS_CENTER)
-        dialog.set_name("SDict Viewer")
+        dialog.set_name(app_name)
         dialog.set_version(version)
         dialog.set_copyright("Igor Tkach")
         dialog.set_website("http://sdictviewer.sf.net/")
-        comments = "SDict Viewer is viewer for dictionaries in open format described at http://sdict.com\nDistributed under terms and conditions of GNU Public License\nSee http://www.gnu.org/licenses/gpl.txt for details"
+        comments = "%s is viewer for dictionaries in open format described at http://sdict.com\nDistributed under terms and conditions of GNU Public License\nSee http://www.gnu.org/licenses/gpl.txt for details" % app_name
         dialog.set_comments(comments)        
         dialog.run()     
         dialog.destroy()

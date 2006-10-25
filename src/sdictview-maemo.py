@@ -12,7 +12,7 @@ class HildonSDictViewer(pysdic.SDictViewer):
     def create_top_level_widget(self):
         app = hildon.Program()        
         window = hildon.Window()
-        gtk.set_application_name("SDict Viewer")
+        gtk.set_application_name(pysdic.app_name)
         self.window_in_fullscreen = False
         window.connect("key-press-event", self.on_key_press)
         window.connect("window-state-event", self.on_window_state_change)
@@ -39,7 +39,11 @@ class HildonSDictViewer(pysdic.SDictViewer):
         self.window.set_menu(main_menu)                
         for menu in self.create_menus():
             main_menu.append(menu)
-            menu.show()     
+        main_menu.show_all()
+    
+    def create_menus(self):           
+        return (self.mi_open, self.mn_recent_item, self.mi_info, self.mi_select_phonetic_font, self.mi_about, self.mi_exit)
+    
     
     def create_file_chooser_dlg(self):
         dlg = hildon.FileChooserDialog(self.window, gtk.FILE_CHOOSER_ACTION_OPEN);        
