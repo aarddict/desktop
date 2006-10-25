@@ -144,13 +144,17 @@ class ArticleFormat:
     def find_tag_bounds(self, buffer, start_tag, end_tag, regions_to_remove):
         current_iter = buffer.get_start_iter()            
         regions_to_mark = []            
-        while True:            
+        while True:                  
             match_start, match_end = current_iter.forward_search(start_tag, gtk.TEXT_SEARCH_TEXT_ONLY) or (None, None)
             if not match_start:
                 break;                
             mark_start_i_tag = buffer.create_mark(None, match_start)
             mark_start_i = buffer.create_mark(None, match_end)            
-            match_start, match_end = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)
+            try:
+                match_start, match_end = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)
+            except TypeError:
+                print 'Formatting error: possible missing start or end tag for tag pair %s%s' % (start_tag, end_tag)
+                match_start = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)                
             current_iter = match_end
             if not match_start:
                 break;                
