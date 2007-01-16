@@ -367,7 +367,7 @@ class SDictViewer:
                 app_state.history.reverse()
                 [self.add_to_history(w) for w in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
-                [self.add_to_recent(r[0], r[1], r[2]) for r in app_state.recent]
+                #[self.add_to_recent(r[0], r[1], r[2]) for r in app_state.recent]
         except Exception, ex:
             print 'Failed to load application state:', ex        
 
@@ -435,9 +435,9 @@ class SDictViewer:
         self.mi_exit = gtk.MenuItem("Close")
         self.mi_exit.connect("activate", self.destroy)
         
-        self.mn_recent = gtk.Menu()
-        self.mn_recent_item = gtk.MenuItem("Recent")
-        self.mn_recent_item.set_submenu(self.mn_recent)                        
+        self.mn_remove = gtk.Menu()
+        self.mn_remove_item = gtk.MenuItem("Remove")
+        self.mn_remove_item.set_submenu(self.mn_remove)                        
                         
         self.mi_about = gtk.MenuItem("About %s..." % app_name)
         self.mi_about.connect("activate", self.show_about)
@@ -452,7 +452,7 @@ class SDictViewer:
         
         mn_dict.append(self.mi_open)        
         mn_dict.append(self.mi_info)
-        mn_dict.append(self.mn_recent_item)
+        mn_dict.append(self.mn_remove_item)
         mn_dict.append(self.mi_exit)
                 
         mn_help = gtk.Menu()
@@ -468,23 +468,25 @@ class SDictViewer:
         mn_options.append(self.mi_select_phonetic_font)
         return (mn_dict_item, mn_options_item, mn_help_item)        
 
-    def add_dict_to_recent(self, dict):
-        self.add_to_recent(dict.title, dict.version, dict.file_name)
+#    def add_dict_to_recent(self, dict):
+#        self.add_to_recent(dict.title, dict.version, dict.file_name)
             
-    def add_to_recent(self, title, version, file_name):
+    def add_to_menu_remove(self, dict):
+        title, version, file_name = dict.title, dict.version, dict.file_name
         mi_dict = gtk.MenuItem("%s %s" % (title, version))                 
         key = (title, version, file_name)
         if self.recent_menu_items.has_key(key):
             old_mi = self.recent_menu_items[key]
-            self.mn_recent.remove(old_mi)
+            self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]
         self.recent_menu_items[key] = mi_dict;        
-        self.mn_recent.prepend(mi_dict)
-        mi_dict.connect("activate", lambda f: self.open_dict(file_name))
-        children = self.mn_recent.get_children()        
+        self.mn_remove.prepend(mi_dict)
+        #mi_dict.connect("activate", lambda f: self.open_dict(file_name))
+        mi_dict.connect("activate", lambda f: self.remove_dict(dict))
+        children = self.mn_remove.get_children()        
         child_count = len(children)
         if child_count > 4:
-            self.mn_recent.remove(children[child_count-1])
+            self.mn_remove.remove(children[child_count-1])
         mi_dict.show_all()
 
     def get_dialog_parent(self):
@@ -606,15 +608,25 @@ class SDictViewer:
 #            self.dict = None
 #        self.dict = dict   
 #        self.update_completion(self.word_input.child.get_text())
-#        self.process_word_input(self.word_input.child.get_text())
+#        self.update_completion(self.word_input.child.get_text())
 #        self.update_title()
 #        self.add_dict_to_recent(self.dict)
 
     def add_dict(self, dict):
         self.dictionaries.add(dict)
+        self.add_to_menu_remove(dict)
         self.update_completion(self.word_input.child.get_text())
         self.process_word_input(self.word_input.child.get_text())
-        self.update_title()            
+        self.update_title()  
+        
+    def remove_dict(self, dict):  
+        self.dictionaries.remove(dict)       
+        dict.close()
+        self.word_completion.get_model().clear()
+        self.update_completion(self.word_input.child.get_text())
+        self.update_completion(self.word_input.child.get_text())
+        self.update_title()
+        
 
     def show_dict_info(self, widget):
         dialog = gtk.AboutDialog()
