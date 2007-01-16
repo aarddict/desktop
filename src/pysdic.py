@@ -12,7 +12,7 @@ import string
 
 gobject.threads_init()
 
-version = "0.2.2"
+version = "0.3.0"
 settings_file_name = ".sdictviewer"
 app_name = "SDict Viewer"
 
@@ -39,12 +39,13 @@ def create_scrolled_window(widget):
     return scrolled_window
 
 class State:    
-    def __init__(self, dict_file = None, phonetic_font = None, word = None, history = [], recent = []):
+    def __init__(self, dict_file = None, phonetic_font = None, word = None, history = [], recent = [], dict_files = []):
         self.dict_file = dict_file
         self.phonetic_font = phonetic_font
         self.word = word
         self.history = history
         self.recent = recent
+        self.dict_files = dict_files
      
 class BackgroundWorker(threading.Thread):
     def __init__(self, task, status_display, callback):
@@ -182,7 +183,8 @@ class SDictViewer:
             history_list = []
             hist_model = self.word_input.get_model()
             hist_model.foreach(self.history_to_list, history_list)
-            save_app_state(State(self.dict.file_name, self.font, word, history_list, self.recent_menu_items.keys()))
+            dict_files = [dict.file_name for dict in self.dictionaries.elements()] 
+            save_app_state(State(None, self.font, word, history_list, self.recent_menu_items.keys(), dict_files))
         except Exception, ex:
             print 'Failed to store settings:', ex        
         gtk.main_quit()  
@@ -191,8 +193,8 @@ class SDictViewer:
         history_list.append(model.get_value(iter, 0))
         
     def word_input_callback(self, widget, data = None):
-        if not self.dict:
-            print "No dictionary opened"
+        if self.dictionaries.is_empty():
+            print "No dictionaries opened"
             return        
         word = self.word_input.child.get_text()         
         self.process_word_input(word)
@@ -237,18 +239,30 @@ class SDictViewer:
             model.remove(model.get_iter(history_size - 1))
                 
     def show_article_for(self, word):
-        article = self.dict.lookup(word)        
-        buffer = self.article_view.get_buffer()                
-        if article: 
-            self.remove_anonymous_tags()
-            self.article_format.apply(word, article, self.article_view, self.word_ref_clicked)
-            self.article_view.show_all()
-            gobject.idle_add(lambda : self.article_view.scroll_to_iter(buffer.get_start_iter(), 0))            
-            self.add_to_history(word)            
-            return True           
-        else:
-            buffer.set_text('Word not found')        
-            return False    
+        articles = self.dictionaries.lookup(word)
+        while self.tabs.get_n_pages() > 0:
+            self.tabs.remove_page(-1)
+            
+        #buffer = self.article_view.get_buffer()                        
+        result = False
+        for dict, article in articles:        
+            print dict.title, article
+            if article: 
+                article_view = self.create_article_view()
+                scrollable_view = create_scrolled_window(article_view)                
+                label = gtk.Label(dict.title)
+                label.set_width_chars(6)
+                #label.set_max_width_chars(40)
+                label.set_ellipsize(pango.ELLIPSIZE_END)
+                self.tabs.append_page(scrollable_view, label)
+                self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
+                #self.remove_anonymous_tags()
+                self.article_format.apply(word, article, article_view, self.word_ref_clicked)
+                self.tabs.show_all()
+                #gobject.idle_add(lambda : self.article_view.scroll_to_iter(buffer.get_start_iter(), 0))            
+                self.add_to_history(word)            
+                result = True           
+        return result  
         
     #Anonymous tags are used to implement word references
     #when new article is loaded into text buffer old anonymous tags are no longer needed
@@ -293,19 +307,19 @@ class SDictViewer:
         model = self.word_completion.get_model()        
         self.word_completion.set_model(None)        
         model.clear()
-        if self.dict:
-            word_list = self.dict.get_word_list(word, n)
-            [model.append([word]) for word in word_list]
-            if len(word_list) == 1:
-                self.word_input.child.set_text(word_list[0])
-                self.word_input.child.set_position(-1)
-                self.word_input.child.activate()
+        word_list = self.dictionaries.get_word_list(word, n)
+        [model.append([word]) for word in word_list]
+        if len(word_list) == 1:
+            self.word_input.child.set_text(word_list[0])
+            self.word_input.child.set_position(-1)
+            self.word_input.child.activate()
         self.word_completion.set_model(model)
         self.word_completion.handler_unblock(self.cursor_changed_handler_id)
         
         
     def __init__(self):
-        self.dict = None
+        #self.dict = None
+        self.dictionaries = sdict.SDictionaryCollection()
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.font = None
@@ -334,8 +348,11 @@ class SDictViewer:
         contentBox.pack_start(split_pane, True, True, 2)                        
         split_pane.add(box)
         
-        self.article_view = self.create_article_view()        
-        split_pane.add(create_scrolled_window(self.article_view))
+        #self.article_view = self.create_article_view()        
+        #split_pane.add(create_scrolled_window(self.article_view))
+        self.tabs = gtk.Notebook()
+        self.tabs.set_scrollable(True)
+        split_pane.add(self.tabs)
                         
         self.add_content(contentBox)
         self.update_title()
@@ -344,7 +361,8 @@ class SDictViewer:
         try:
             app_state = load_app_state()     
             if app_state:   
-                self.open_dict(app_state.dict_file)
+                #self.open_dict(app_state.dict_file)
+                self.open_dict2(app_state.dict_files)
                 self.word_input.child.set_text(app_state.word)                
                 app_state.history.reverse()
                 [self.add_to_history(w) for w in app_state.history]
@@ -473,10 +491,13 @@ class SDictViewer:
         return self.window
 
     def update_title(self):
-        if self.dict:        
-            dict_title = self.dict.title
-        else:
-            dict_title = "No dictionary"
+        if self.dictionaries.is_empty():        
+            dict_title = "No dictionaries"
+        else:            
+            if self.dictionaries.size() == 1:
+                dict_title = ("%d dictionary") % self.dictionaries.size()
+            else:
+                dict_title = ("%d dictionaries") % self.dictionaries.size()
         title = "%s - %s" % (dict_title, app_name)
         self.window.set_title(title)
 
@@ -498,10 +519,10 @@ class SDictViewer:
         return article_view            
     
     def on_mouse_motion(self, widget, event, data = None):
-        text_window = self.article_view.get_window(gtk.TEXT_WINDOW_TEXT)
+        text_window = widget.get_window(gtk.TEXT_WINDOW_TEXT)
         x, y, flags = text_window.get_pointer()                    
-        x, y = self.article_view.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
-        tags = self.article_view.get_iter_at_location(x, y).get_tags()
+        x, y = widget.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
+        tags = widget.get_iter_at_location(x, y).get_tags()
         is_ref = False
         for tag in tags:
             if tag.get_property("name") == "r":
@@ -524,14 +545,36 @@ class SDictViewer:
         dlg = gtk.FileChooserDialog(parent = self.window, action = gtk.FILE_CHOOSER_ACTION_OPEN)        
         dlg.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
         dlg.add_button( gtk.STOCK_OPEN, gtk.RESPONSE_OK)        
-        if self.dict:
-            dlg.set_filename(self.dict.file_name)        
+        if not self.dictionaries.is_empty():
+            dlg.set_filename(self.dictionaries.last().file_name)        
         return dlg
     
     def open_dict(self, file):
-        status_display = self.create_dict_loading_status_display(file)
-        worker = BackgroundWorker(lambda : sdict.SDictionary(file), status_display, self.set_dict_callback)
+        self.open_dicts([file])
+#        status_display = self.create_dict_loading_status_display(file)
+#        worker = BackgroundWorker(lambda : sdict.SDictionary(file), status_display, self.set_dict_callback)
+#        worker.start()
+        
+    def open_dicts(self, files):
+        self.open_dict2(files)
+                
+
+    def open_dict2(self, files):
+        if len(files) == 0:
+            return
+        file = files.pop(0)
+        status_display = self.create_dict_loading_status_display(file)        
+        worker = BackgroundWorker(lambda : (sdict.SDictionary(file), files), status_display, self.collect_dict_callback)
         worker.start()
+        
+    def collect_dict_callback(self, dict_and_files, error):
+        dict, files = dict_and_files
+        if not error:
+            self.add_dict(dict)
+        else:
+            print "Failed to open dictionary: ", error
+        self.open_dict2(files)
+        
         
     def create_dict_loading_status_display(self, dict_name):            
         return DialogStatusDisplay("Loading...", dict_name, self.get_dialog_parent())
@@ -555,16 +598,23 @@ class SDictViewer:
         dlg.destroy()
     
     def set_dict(self, dict):     
-        if self.dict:
-            self.dict.close() 
-            self.word_completion.get_model().clear()
-            self.article_view.get_buffer().set_text('')
-            self.dict = None
-        self.dict = dict   
+        self.add_dict(dict)
+#        if self.dict:
+#            self.dict.close() 
+#            self.word_completion.get_model().clear()
+#            self.article_view.get_buffer().set_text('')
+#            self.dict = None
+#        self.dict = dict   
+#        self.update_completion(self.word_input.child.get_text())
+#        self.process_word_input(self.word_input.child.get_text())
+#        self.update_title()
+#        self.add_dict_to_recent(self.dict)
+
+    def add_dict(self, dict):
+        self.dictionaries.add(dict)
         self.update_completion(self.word_input.child.get_text())
         self.process_word_input(self.word_input.child.get_text())
-        self.update_title()
-        self.add_dict_to_recent(self.dict)
+        self.update_title()            
 
     def show_dict_info(self, widget):
         dialog = gtk.AboutDialog()
@@ -601,9 +651,13 @@ class SDictViewer:
         self.font = font_name                    
         font_desc = pango.FontDescription(self.font)
         if font_desc: 
-            text_buffer = self.article_view.get_buffer()
-            tag_table = text_buffer.get_tag_table()
-            tag_table.lookup("t").set_property("font-desc", font_desc)
+            count = self.tabs.get_n_pages()
+            for n in xrange(0,count):
+                page = self.tabs.get_nth_page(n)
+                text_buffer = page.get_child().get_buffer()            
+                #text_buffer = self.article_view.get_buffer()
+                tag_table = text_buffer.get_tag_table()
+                tag_table.lookup("t").set_property("font-desc", font_desc)
         
     def main(self):
         gtk.main()            
