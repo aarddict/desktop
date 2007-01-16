@@ -565,7 +565,11 @@ class SDictViewer:
         if len(files) == 0:
             return
         file = files.pop(0)
-        status_display = self.create_dict_loading_status_display(file)        
+        if len(files) > 0:
+            message = "%s (%d more to go)" % (file, len(files))
+        else:
+            message = file
+        status_display = self.create_dict_loading_status_display(message)
         worker = BackgroundWorker(lambda : (sdict.SDictionary(file), files), status_display, self.collect_dict_callback)
         worker.start()
         
