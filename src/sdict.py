@@ -258,3 +258,45 @@ class SDictionary:
     
     def close(self):
         self.file.close()        
+        
+class SDictionaryCollection:
+    
+    def __init__(self):
+        self.dictionaries = []
+    
+    def lookup(self, word):
+        return [(dict, dict.lookup(word)) for dict in self.dictionaries]
+        
+    def add(self, dict):
+        self.dictionaries.append(dict)
+        
+    def remove(self, dict):
+        self.dictionaries.remove(dict)
+        
+    def get_word_list(self, start_word, n):
+        word_list = []
+        #length = max(n/len(dictionaries), 1)
+        #[word_list.extend(dict.get_word_list(start_word, n)) for dict in self.dictionaries]    
+        for dict in self.dictionaries:
+            l = dict.get_word_list(start_word, n)
+            print dict.title, l
+            word_list.extend(l)
+            
+        word_list = [w for w in set(word_list)]
+        #issue: this potentially results in incorrect sort order for some languages
+        word_list.sort()        
+        return word_list[:n]
+    
+    def is_empty(self):
+        return len(self.dictionaries) == 0
+    
+    def size(self):
+        return len(self.dictionaries)
+    
+    def elements(self):
+        return self.dictionaries
+    
+    def last(self):
+        return self.dictionaries[len(self.dictionaries)-1]
+    
+        
