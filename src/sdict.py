@@ -1,32 +1,13 @@
 """
 This file is part of SDict Viewer (http://sdictviewer.sf.net) - dictionary that uses 
-data bases in AXMASoft's open dictionary format.
-Copyright (C) 2006 Igor Tkach
+data bases in AXMASoft's open dictionary format. SDict Viewer is distributed under terms 
+and conditions of GNU General Public License Version 2. See http://www.gnu.org/licenses/gpl.html
+for license details.
+Copyright (C) 2006-2007 Igor Tkach
 """
-
 import zlib
 import bz2
 import struct
-
-"""
-+--------+------------+-----------+--------------------------------------------+
-| Offset | Len, bytes | Content   |              Description                   |
-+--------+------------+-----------+--------------------------------------------+
-| 0x0    | 4          | uint8_t[] | Signature, 'sdct'                          |
-| 0x4    | 3          | uint8_t[] | Input language                             |
-| 0x7    | 3          | uint8_t[] | Output language                            |
-| 0xa    | 1          | uint8_t   | Compression method            : (bytes 0-3)|
-|        |            |           |             and index levels  : (bytes 4-7)|
-| 0xb    | 4          | uint32_t  | Amount of words                            |
-| 0xf    | 4          | uint32_t  | Length of short index                      |
-| 0x13   | 4          | uint32_t  | Offset of 'title' unit                     |
-| 0x17   | 4          | uint32_t  | Offset of 'copyright' unit                 |
-| 0x1b   | 4          | uint32_t  | Offset of 'version' unit                   |
-| 0x1f   | 4          | uint32_t  | Offset of short index                      |
-| 0x23   | 4          | uint32_t  | Offset of full index                       |
-| 0x27   | 4          | uint32_t  | Offset of articles                         |
-+--------+------------+-----------+--------------------------------------------+
-"""
     
 class GzipCompression:
     
