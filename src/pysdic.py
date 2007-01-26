@@ -15,6 +15,7 @@ import threading
 import gobject
 import pickle
 import string
+import locale
 
 gobject.threads_init()
 
@@ -45,13 +46,14 @@ def create_scrolled_window(widget):
     return scrolled_window
 
 class State:    
-    def __init__(self, dict_file = None, phonetic_font = None, word = None, history = [], recent = [], dict_files = []):
+    def __init__(self, dict_file = None, phonetic_font = None, word = None, history = [], recent = [], dict_files = [], last_dict_file_location = None):
         self.dict_file = dict_file
         self.phonetic_font = phonetic_font
         self.word = word
         self.history = history
         self.recent = recent
         self.dict_files = dict_files
+        self.last_dict_file_location = last_dict_file_location
      
 class BackgroundWorker(threading.Thread):
     def __init__(self, task, status_display, callback):
@@ -89,6 +91,112 @@ class DialogStatusDisplay:
         if self.loading_dialog:
             self.loading_dialog.destroy()
             self.loading_dialog = None        
+
+class DictDetailPane(gtk.HBox):
+    
+    def __init__(self):
+        super(DictDetailPane, self).__init__()
+        self.lbl_title = gtk.Label()
+        self.lbl_title.set_line_wrap(True)
+        self.lbl_version = gtk.Label()
+        self.lbl_copyright = gtk.Label()
+        self.lbl_file_name = gtk.Label()
+        self.lbl_file_name.set_line_wrap(True)
+        self.lbl_compression = gtk.Label()
+        self.lbl_num_of_words = gtk.Label()
+        table = gtk.Table(3, 2, False)
+        scrolled_window = gtk.ScrolledWindow()
+        scrolled_window.set_shadow_type(gtk.SHADOW_IN)
+        scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        scrolled_window.add_with_viewport(table)                                
+        
+        self.pack_start(scrolled_window, True, True, 0)
+        table.set_row_spacings(5)
+        table.set_col_spacings(5)
+        table.attach(self.create_label("Title:"),0,1,0,1, gtk.FILL)
+        table.attach(self.lbl_title,1,2,0,1, gtk.FILL | gtk.EXPAND)
+        table.attach(self.create_label("Version:"),0,1,1,2, gtk.FILL)
+        table.attach(self.lbl_version,1,2,1,2)        
+        table.attach(self.create_label("Copyright:"),0,1,2,3)
+        table.attach(self.lbl_copyright,1,2,2,3)                
+        table.attach(self.create_label("Number of articles:"),0,1,3,4)
+        table.attach(self.lbl_num_of_words,1,2,3,4)                        
+        table.attach(self.create_label("From file:"),0,1,4,5)
+        table.attach(self.lbl_file_name,1,2,4,5)                                
+        table.attach(self.create_label("Compression:"),0,1,5,6)
+        table.attach(self.lbl_compression,1,2,5,6)                                
+            
+    def create_label(self, text):
+        lbl = gtk.Label(text)
+        lbl.set_justify(gtk.JUSTIFY_RIGHT)
+        return lbl
+    
+    def set_dict(self, dict):
+        if dict:
+            self.lbl_title.set_text(dict.title)
+            self.lbl_version.set_text(dict.version)
+            self.lbl_copyright.set_text(dict.copyright)
+            self.lbl_num_of_words.set_text(locale.format("%d", dict.header.num_of_words))
+            self.lbl_file_name.set_text(dict.file_name)
+            self.lbl_compression.set_text("%s" % dict.compression)
+        else:
+            self.lbl_title.set_text('')
+            self.lbl_version.set_text('')
+            self.lbl_copyright.set_text('')
+            self.lbl_num_of_words.set_text('')                     
+            self.lbl_file_name.set_text('')   
+            self.lbl_compression.set_text('')
+        
+        
+class DictInfoDialog(gtk.Dialog):
+    def __init__(self, dicts):        
+        super(DictInfoDialog, self).__init__(title="Dictionary Info", flags=gtk.DIALOG_MODAL)
+        self.set_position(gtk.WIN_POS_CENTER)
+        self.add_button(gtk.STOCK_CLOSE, 1)
+        self.connect("response", lambda w, resp: w.destroy())
+                        
+        contentBox = self.get_child()
+        box = gtk.VBox(contentBox)        
+                
+        dict_list = gtk.TreeView(gtk.ListStore(object))
+        cell = gtk.CellRendererText()
+        dict_column = gtk.TreeViewColumn('Dictionary', cell)
+        dict_list.append_column(dict_column)
+        dict_column.set_cell_data_func(cell, self.extract_dict_title_for_cell)
+        
+        for dict in dicts:
+            dict_list.get_model().append([dict])
+                
+        box.pack_start(create_scrolled_window(dict_list), True, True, 0)
+
+        split_pane = gtk.HPaned()        
+        contentBox.pack_start(split_pane, True, True, 2)                        
+        split_pane.add(box)
+        
+        self.detail_pane = DictDetailPane()
+        
+        split_pane.add(self.detail_pane)
+        split_pane.set_position(200)
+                    
+        dict_list.connect("cursor-changed", self.dict_selected)
+        dict_list.connect("row-activated", self.dict_selected)                
+        self.resize(480, 320)
+        self.show_all()
+                                        
+        
+    def extract_dict_title_for_cell(self, column, cell_renderer, model, iter, data = None):
+        dict = model.get_value(iter, 0)
+        cell_renderer.set_property('text', dict.title)
+        return        
+    
+    def dict_selected(self, dict_list, start_editing = None, data = None):
+        if dict_list.get_selection().count_selected_rows() == 0:
+            self.detail_pane.set_dict(None)
+        else:
+            model, iter = dict_list.get_selection().get_selected()
+            dict = model.get_value(iter, 0)
+            self.detail_pane.set_dict(dict)
+    
 
 class ArticleFormat: 
     
@@ -189,8 +297,8 @@ class SDictViewer:
             history_list = []
             hist_model = self.word_input.get_model()
             hist_model.foreach(self.history_to_list, history_list)
-            dict_files = [dict.file_name for dict in self.dictionaries.elements()] 
-            save_app_state(State(None, self.font, word, history_list, self.recent_menu_items.keys(), dict_files))
+            dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()] 
+            save_app_state(State(None, self.font, word, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
         except Exception, ex:
             print 'Failed to store settings:', ex        
         gtk.main_quit()  
@@ -252,14 +360,12 @@ class SDictViewer:
         #buffer = self.article_view.get_buffer()                        
         result = False
         for dict, article in articles:        
-            print dict.title, article
             if article: 
                 article_view = self.create_article_view()
                 scrollable_view = create_scrolled_window(article_view)                
                 label = gtk.Label(dict.title)
                 label.set_width_chars(6)
-                #label.set_max_width_chars(40)
-                label.set_ellipsize(pango.ELLIPSIZE_END)
+                label.set_ellipsize(pango.ELLIPSIZE_START)
                 self.tabs.append_page(scrollable_view, label)
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
                 #self.remove_anonymous_tags()
@@ -329,6 +435,7 @@ class SDictViewer:
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.font = None
+        self.last_dict_file_location = None
         self.article_format = ArticleFormat()
         self.recent_menu_items = {}
                                  
@@ -368,11 +475,12 @@ class SDictViewer:
             app_state = load_app_state()     
             if app_state:   
                 #self.open_dict(app_state.dict_file)
-                self.open_dict2(app_state.dict_files)
+                self.open_dicts(app_state.dict_files)
                 self.word_input.child.set_text(app_state.word)                
                 app_state.history.reverse()
                 [self.add_to_history(w) for w in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
+                self.last_dict_file_location = app_state.last_dict_file_location
                 #[self.add_to_recent(r[0], r[1], r[2]) for r in app_state.recent]
         except Exception, ex:
             print 'Failed to load application state:', ex        
@@ -432,8 +540,12 @@ class SDictViewer:
              self.word_input.child.activate()
 
     def create_menu_items(self):
-        self.mi_open = gtk.MenuItem("Open...")
+        self.mi_open = gtk.MenuItem("Add...")
         self.mi_open.connect("activate", self.select_dict_file)
+
+        self.mn_remove = gtk.Menu()
+        self.mn_remove_item = gtk.MenuItem("Remove")
+        self.mn_remove_item.set_submenu(self.mn_remove)                        
         
         self.mi_info = gtk.MenuItem("Info...")
         self.mi_info.connect("activate", self.show_dict_info)
@@ -441,9 +553,6 @@ class SDictViewer:
         self.mi_exit = gtk.MenuItem("Close")
         self.mi_exit.connect("activate", self.destroy)
         
-        self.mn_remove = gtk.Menu()
-        self.mn_remove_item = gtk.MenuItem("Remove")
-        self.mn_remove_item.set_submenu(self.mn_remove)                        
                         
         self.mi_about = gtk.MenuItem("About %s..." % app_name)
         self.mi_about.connect("activate", self.show_about)
@@ -457,8 +566,8 @@ class SDictViewer:
         mn_dict_item.set_submenu(mn_dict)        
         
         mn_dict.append(self.mi_open)        
-        mn_dict.append(self.mi_info)
         mn_dict.append(self.mn_remove_item)
+        mn_dict.append(self.mi_info)
         mn_dict.append(self.mi_exit)
                 
         mn_help = gtk.Menu()
@@ -477,22 +586,22 @@ class SDictViewer:
 #    def add_dict_to_recent(self, dict):
 #        self.add_to_recent(dict.title, dict.version, dict.file_name)
             
-    def add_to_menu_remove(self, dict):
-        title, version, file_name = dict.title, dict.version, dict.file_name
+    def add_to_menu_remove(self, dict):        
+        key = dict.key()
+        title, version, file_name = key
         mi_dict = gtk.MenuItem("%s %s" % (title, version))                 
-        key = (title, version, file_name)
         if self.recent_menu_items.has_key(key):
             old_mi = self.recent_menu_items[key]
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]
         self.recent_menu_items[key] = mi_dict;        
-        self.mn_remove.prepend(mi_dict)
+        self.mn_remove.append(mi_dict)
         #mi_dict.connect("activate", lambda f: self.open_dict(file_name))
         mi_dict.connect("activate", lambda f: self.remove_dict(dict))
-        children = self.mn_remove.get_children()        
-        child_count = len(children)
-        if child_count > 4:
-            self.mn_remove.remove(children[child_count-1])
+        #children = self.mn_remove.get_children()        
+        #child_count = len(children)
+        #if child_count > 4:
+        #    self.mn_remove.remove(children[child_count-1])
         mi_dict.show_all()
 
     def get_dialog_parent(self):
@@ -554,7 +663,7 @@ class SDictViewer:
         dlg.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
         dlg.add_button( gtk.STOCK_OPEN, gtk.RESPONSE_OK)        
         if not self.dictionaries.is_empty():
-            dlg.set_filename(self.dictionaries.last().file_name)        
+            dlg.set_filename(self.last_dict_file_location)        
         return dlg
     
     def open_dict(self, file):
@@ -564,10 +673,6 @@ class SDictViewer:
 #        worker.start()
         
     def open_dicts(self, files):
-        self.open_dict2(files)
-                
-
-    def open_dict2(self, files):
         if len(files) == 0:
             return
         file = files.pop(0)
@@ -585,7 +690,7 @@ class SDictViewer:
             self.add_dict(dict)
         else:
             print "Failed to open dictionary: ", error
-        self.open_dict2(files)
+        self.open_dicts(files)
         
         
     def create_dict_loading_status_display(self, dict_name):            
@@ -623,13 +728,23 @@ class SDictViewer:
 #        self.add_dict_to_recent(self.dict)
 
     def add_dict(self, dict):
+        if (self.dictionaries.has(dict)):
+            print "Dictionary is already open"
+            return
+        self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
         self.add_to_menu_remove(dict)
         self.update_completion(self.word_input.child.get_text())
         self.process_word_input(self.word_input.child.get_text())
         self.update_title()  
         
-    def remove_dict(self, dict):  
+    def remove_dict(self, dict):          
+        key = dict.key()
+        title, version, file_name = key
+        if self.recent_menu_items.has_key(key):
+            old_mi = self.recent_menu_items[key]
+            self.mn_remove.remove(old_mi)
+            del self.recent_menu_items[key]                
         self.dictionaries.remove(dict)       
         dict.close()
         self.word_completion.get_model().clear()
@@ -638,16 +753,53 @@ class SDictViewer:
         self.update_title()
         
 
-    def show_dict_info(self, widget):
-        dialog = gtk.AboutDialog()
-        dialog.set_position(gtk.WIN_POS_CENTER)
-        dialog.set_name(self.dict.title)
-        dialog.set_version(self.dict.version)
-        dialog.set_copyright(self.dict.copyright)
-        comments = "Contains %d words, packed with %s\nRead from %s" % (self.dict.header.num_of_words, self.dict.compression, self.dict.file_name)        
-        dialog.set_comments(comments)        
-        dialog.run()
-        dialog.destroy()
+    def show_dict_info(self, widget):        
+#        info_dialog = gtk.Dialog(title="Dictionary Info", flags=gtk.DIALOG_MODAL)                                 
+#        info_dialog.set_position(gtk.WIN_POS_CENTER)
+#        info_dialog.add_button(gtk.STOCK_CLOSE, 1)
+#        info_dialog.connect("response", lambda w, resp: w.destroy())
+#                        
+#        contentBox = info_dialog.get_child()
+#        box = gtk.VBox(contentBox)        
+#                
+#        dict_list = gtk.TreeView(gtk.ListStore(object))
+#        cell = gtk.CellRendererText()
+#        dict_column = gtk.TreeViewColumn('Dictionary', cell)
+#        dict_list.append_column(dict_column)
+#        dict_column.set_cell_data_func(cell, self.extract_dict_title_for_cell)
+#        
+#        for dict in self.dictionaries.get_dicts():
+#            dict_list.get_model().append([dict])
+#                
+#        box.pack_start(create_scrolled_window(dict_list), True, True, 0)
+#
+#        split_pane = gtk.HPaned()        
+#        contentBox.pack_start(split_pane, True, True, 2)                        
+#        split_pane.add(box)
+#        
+#        detail_pane = gtk.TextView()
+#        
+#        split_pane.add(detail_pane)
+#                    
+#        dict_list.connect("cursor-changed", self.dict_selected, detail_pane)
+#        dict_list.connect("row-activated", self.dict_selected, detail_pane)                
+                    
+        info_dialog = DictInfoDialog(self.dictionaries.get_dicts())
+        info_dialog.run()
+        info_dialog.destroy()
+        
+#    def extract_dict_title_for_cell(self, column, cell_renderer, model, iter, data = None):
+#        dict = model.get_value(iter, 0)
+#        cell_renderer.set_property('text', dict.title)
+#        return        
+#    
+#    def dict_selected(self, dict_list, start_editing = None, data = None):
+#        detail_pane = data
+#        model = dict_list.get_model()
+#        first = model.get_iter_first()
+#        if first:                        
+#            text = model.get_value(first, 0).version
+#        detail_pane.get_text_buffer().set_text(text)
         
     def show_about(self, widget):
         dialog = gtk.AboutDialog()
@@ -683,3 +835,4 @@ class SDictViewer:
         
     def main(self):
         gtk.main()            
+        

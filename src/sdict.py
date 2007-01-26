@@ -8,6 +8,7 @@ Copyright (C) 2006-2007 Igor Tkach
 import zlib
 import bz2
 import struct
+import locale
     
 class GzipCompression:
     
@@ -123,6 +124,15 @@ class SDictionary:
         self.current_pos = self.header.full_index_offset
         self.read_short_index()
         
+    def __eq__(self, other):
+        return self.key() == other.key()
+    
+    def __str__(self):
+        return self.file_name
+        
+    def key(self):
+        return (self.title, self.version, self.file_name)
+        
     def read_unit(self, pos):
         f = self.file
         f.seek(pos);
@@ -130,7 +140,7 @@ class SDictionary:
         s = f.read(record_length)
         s = self.compression.decompress(s)
         return s
-    
+        
     def read_short_index(self):        
         self.file.seek(self.header.short_index_offset)
         s_index_depth = self.header.short_index_depth
@@ -146,12 +156,13 @@ class SDictionary:
                 start_index = entry_start+j*4
                 end_index = start_index+4
                 uchar_code =  read_int(short_index_str[start_index:end_index])
-                if uchar_code != 0:
-                    short_word += unichr(uchar_code)            
+                if uchar_code == 0:
+                    break
+                short_word += unichr(uchar_code)            
             pointer_start = entry_start+s_index_depth*4
             pointer = read_int(short_index_str[pointer_start:pointer_start+4])            
             short_word_len = len(short_word)            
-            short_index[short_word_len][short_word.encode(self.encoding)] = pointer
+            short_index[short_word_len][short_word.encode(self.encoding)] = pointer        
         self.short_index = short_index
             
     def get_search_pos_for(self, word):
@@ -170,6 +181,7 @@ class SDictionary:
             except UnicodeDecodeError, ex:
                 print ex            
         return search_pos, starts_with
+
                
     def lookup(self, word):
         search_pos, starts_with = self.get_search_pos_for(word)
@@ -243,41 +255,77 @@ class SDictionary:
 class SDictionaryCollection:
     
     def __init__(self):
-        self.dictionaries = []
+        self.dictionaries = {}
     
     def lookup(self, word):
-        return [(dict, dict.lookup(word)) for dict in self.dictionaries]
+        return [(dict, dict.lookup(word)) for dict in self.get_dicts()]
         
     def add(self, dict):
-        self.dictionaries.append(dict)
+        lang = dict.header.word_lang
+        if not self.dictionaries.has_key(lang):
+            self.dictionaries[lang] = []
+        self.dictionaries[lang].append(dict)
         
-    def remove(self, dict):
-        self.dictionaries.remove(dict)
-        
+    def has(self, dict):
+        if self.dictionaries.has_key(dict.header.word_lang):
+            lang_dicts = self.dictionaries[dict.header.word_lang]
+            for d in lang_dicts:
+                if d == dict:
+                    print "%s eq %s" % (d, dict)
+                    return True
+        return False                
+    
+    def remove(self, dict):        
+        self.dictionaries[dict.header.word_lang].remove(dict)
+        if len(self.dictionaries[dict.header.word_lang]) == 0:
+            del self.dictionaries[dict.header.word_lang]
+    
+    def get_dicts(self, lang = None):
+        if lang:
+            return self.dictionaries[lang]
+        all_dicts = []
+        for list in self.dictionaries.values():
+            all_dicts.extend(list)
+        return all_dicts
+    
+    def get_langs(self):
+        langs = self.dictionaries.keys()
+        if not langs:
+            langs = []
+        return langs
+    
     def get_word_list(self, start_word, n):
         word_list = []
-        #length = max(n/len(dictionaries), 1)
-        #[word_list.extend(dict.get_word_list(start_word, n)) for dict in self.dictionaries]    
-        for dict in self.dictionaries:
-            l = dict.get_word_list(start_word, n)
-            print dict.title, l
+        lang_word_lists = {}
+        #current_collate = locale.getlocale(locale.LC_COLLATE)
+        #print current_collate
+        langs = self.get_langs()
+        #print langs
+        for lang in langs:
+            #print 'lang', lang
+            dicts = self.dictionaries[lang]
+            lang_word_lists[lang] = []
+            for dict in dicts:
+                lang_word_lists[lang].extend(dict.get_word_list(start_word, n))            
+            if len(dicts) > 1:
+                #locale.setlocale(locale.LC_COLLATE, (lang, ''))
+                #loc_name, enc = locale.getlocale(locale.LC_COLLATE)
+                #print "collate_locale: ", loc_name, enc
+                lang_word_lists[lang] = [w for w in set(lang_word_lists[lang])]
+                #lang_word_lists[lang].sort(key=locale.strxfrm)                
+                lang_word_lists[lang].sort()                
+                lang_word_lists[lang] = lang_word_lists[lang][:n]
+        #locale.setlocale(locale.LC_COLLATE, current_collate)
+            
+        for l in lang_word_lists.values():
             word_list.extend(l)
             
-        word_list = [w for w in set(word_list)]
-        #issue: this potentially results in incorrect sort order for some languages
-        word_list.sort()        
-        return word_list[:n]
+        return word_list
     
     def is_empty(self):
-        return len(self.dictionaries) == 0
+        return self.size() == 0
     
     def size(self):
-        return len(self.dictionaries)
-    
-    def elements(self):
-        return self.dictionaries
-    
-    def last(self):
-        return self.dictionaries[len(self.dictionaries)-1]
-    
+        return len(self.get_dicts())        
+        
         
