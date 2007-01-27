@@ -96,40 +96,47 @@ class DictDetailPane(gtk.HBox):
     
     def __init__(self):
         super(DictDetailPane, self).__init__()
-        self.lbl_title = gtk.Label()
-        self.lbl_title.set_line_wrap(True)
-        self.lbl_version = gtk.Label()
-        self.lbl_copyright = gtk.Label()
-        self.lbl_file_name = gtk.Label()
-        self.lbl_file_name.set_line_wrap(True)
-        self.lbl_compression = gtk.Label()
-        self.lbl_num_of_words = gtk.Label()
-        table = gtk.Table(3, 2, False)
+        self.lbl_title = self.create_value_label()
+        self.lbl_version = self.create_value_label()
+        self.lbl_copyright = self.create_value_label()
+        self.lbl_file_name = self.create_value_label()
+        self.lbl_compression = self.create_value_label()
+        self.lbl_num_of_words = self.create_value_label()
+        table = gtk.Table(6, 2, False)
         scrolled_window = gtk.ScrolledWindow()
         scrolled_window.set_shadow_type(gtk.SHADOW_IN)
         scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         scrolled_window.add_with_viewport(table)                                
         
         self.pack_start(scrolled_window, True, True, 0)
+        #self.pack_start(table, True, True, 0)
         table.set_row_spacings(5)
         table.set_col_spacings(5)
-        table.attach(self.create_label("Title:"),0,1,0,1, gtk.FILL)
-        table.attach(self.lbl_title,1,2,0,1, gtk.FILL | gtk.EXPAND)
-        table.attach(self.create_label("Version:"),0,1,1,2, gtk.FILL)
-        table.attach(self.lbl_version,1,2,1,2)        
-        table.attach(self.create_label("Copyright:"),0,1,2,3)
-        table.attach(self.lbl_copyright,1,2,2,3)                
-        table.attach(self.create_label("Number of articles:"),0,1,3,4)
-        table.attach(self.lbl_num_of_words,1,2,3,4)                        
-        table.attach(self.create_label("From file:"),0,1,4,5)
-        table.attach(self.lbl_file_name,1,2,4,5)                                
-        table.attach(self.create_label("Compression:"),0,1,5,6)
+        table.attach(self.create_label("Title:"),0,1,0,1, xoptions = gtk.FILL, yoptions = gtk.FILL)
+        table.attach(self.lbl_title,1,2,0,1, xoptions = gtk.FILL | gtk.EXPAND, yoptions = gtk.FILL)
+        table.attach(self.create_label("Version:"),0,1,1,2, xoptions = gtk.FILL, yoptions = gtk.FILL)
+        table.attach(self.lbl_version,1,2,1,2, yoptions = 0)        
+        table.attach(self.create_label("Copyright:"),0,1,2,3, xoptions = gtk.FILL, yoptions = gtk.FILL)
+        table.attach(self.lbl_copyright,1,2,2,3, yoptions = gtk.FILL)                
+        table.attach(self.create_label("Articles:"),0,1,3,4, xoptions = gtk.FILL, yoptions = gtk.FILL)
+        table.attach(self.lbl_num_of_words,1,2,3,4, yoptions = gtk.FILL)                        
+        table.attach(self.create_label("From file:"),0,1,4,5, xoptions = gtk.FILL, yoptions = gtk.FILL)
+        table.attach(self.lbl_file_name,1,2,4,5, yoptions = gtk.FILL)                                
+        table.attach(self.create_label("Compression:"),0,1,5,6, xoptions = gtk.FILL, yoptions = gtk.FILL)
         table.attach(self.lbl_compression,1,2,5,6)                                
+        table.set_border_width(5)
             
     def create_label(self, text):
         lbl = gtk.Label(text)
-        lbl.set_justify(gtk.JUSTIFY_RIGHT)
+        lbl.set_alignment(1.0, 0.0)
         return lbl
+    
+    def create_value_label(self):
+        lbl = gtk.Label()
+        lbl.set_alignment(0.0, 0.0)
+        lbl.set_line_wrap(True)
+        return lbl
+    
     
     def set_dict(self, dict):
         if dict:
@@ -180,7 +187,7 @@ class DictInfoDialog(gtk.Dialog):
                     
         dict_list.connect("cursor-changed", self.dict_selected)
         dict_list.connect("row-activated", self.dict_selected)                
-        self.resize(480, 320)
+        self.resize(580, 360)
         self.show_all()
                                         
         
@@ -306,15 +313,15 @@ class SDictViewer:
     def history_to_list(self, model, path, iter, history_list):
         history_list.append(model.get_value(iter, 0))
         
-    def word_input_callback(self, widget, data = None):
+    def word_input_callback(self, widget, data = None):        
         if self.dictionaries.is_empty():
             print "No dictionaries opened"
             return        
         word = self.word_input.child.get_text()         
         self.process_word_input(word)
           
-    def schedule_word_lookup(self, word):
-         self.schedule(self.process_word_input, 200, word)
+    def schedule_word_lookup(self, word, lang):
+         self.schedule(self.process_word_input, 200, word, lang)
         
     def schedule(self, f, timeout, *args):
         if self.current_word_handler:
@@ -322,15 +329,16 @@ class SDictViewer:
             self.current_word_handler = None
         self.current_word_handler = gobject.timeout_add(timeout, f, *args)                
                 
-    def process_word_input(self, word):
+    def process_word_input(self, word, lang = None):
+        print 'process word input: ', word, ' ' , lang
         if not word or word == '':
             return
         word = word.strip()
-        if not self.show_article_for(word):                        
+        if not self.show_article_for(word, lang):                        
             model = self.word_completion.get_model()
             first_completion = model.get_iter_first()
             if first_completion:                        
-                word = model.get_value(first_completion, 0)
+                word = model[first_completion][0]
                 self.show_article_for(word)        
         
                         
@@ -350,14 +358,17 @@ class SDictViewer:
             model.insert(0, [word])  
         history_size = model.iter_n_children(None)
         if history_size > 10:
-            model.remove(model.get_iter(history_size - 1))
+            del model[history_size - 1]
                 
-    def show_article_for(self, word):
-        articles = self.dictionaries.lookup(word)
+    def clear_tabs(self):
         while self.tabs.get_n_pages() > 0:
-            self.tabs.remove_page(-1)
-            
-        #buffer = self.article_view.get_buffer()                        
+            self.tabs.remove_page(-1)        
+        self.dict_key_to_tab.clear()       
+        return False 
+    
+    def show_article_for(self, word, lang = None):
+        articles = self.dictionaries.lookup(word, (lang))
+        self.clear_tabs()
         result = False
         for dict, article in articles:        
             if article: 
@@ -367,13 +378,15 @@ class SDictViewer:
                 label.set_width_chars(6)
                 label.set_ellipsize(pango.ELLIPSIZE_START)
                 self.tabs.append_page(scrollable_view, label)
+                self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
+                self.apply_phonetic_font()
                 #self.remove_anonymous_tags()
                 self.article_format.apply(word, article, article_view, self.word_ref_clicked)
-                self.tabs.show_all()
-                #gobject.idle_add(lambda : self.article_view.scroll_to_iter(buffer.get_start_iter(), 0))            
+                gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
                 self.add_to_history(word)            
                 result = True           
+        self.tabs.show_all()
         return result  
         
     #Anonymous tags are used to implement word references
@@ -389,22 +402,23 @@ class SDictViewer:
         if tag.get_property('name') == None:
             list.append(tag)
     
-    def word_selected(self, tree_view, start_editing = None, data = None):
-        if tree_view.get_selection().count_selected_rows() == 0:
+    def word_selection_changed(self, selection):
+        if selection.count_selected_rows() == 0:
+            self.schedule(self.clear_tabs, 200)
             return
-        model, iter = tree_view.get_selection().get_selected()        
-        model = tree_view.get_model()
-        cursor_path, focus_col = tree_view.get_cursor()        
-        if cursor_path:
-            if iter:
-                selected_path = model.get_path(iter)
-            else:
-                selected_path = cursor_path
-            if cursor_path == selected_path: 
-                word, = model.get(model.get_iter(cursor_path), 0)
-                #self.show_article_for(word)
-                self.schedule_word_lookup(word)
-                   
+        model, iter = selection.get_selected()        
+        if model.iter_has_child(iter):
+            #language name, not a word
+            self.schedule(self.clear_tabs, 200)
+            return
+        #model = tree_view.get_model()
+        word = model[iter][0]
+        lang = None
+        lang_iter = model.iter_parent(iter)
+        if lang_iter:
+            lang = model[lang_iter]
+        self.schedule_word_lookup(word, lang)
+    
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
         gobject.idle_add(self.word_input.child.grab_focus)
@@ -415,22 +429,26 @@ class SDictViewer:
                 
     def update_completion(self, word, n = 20):
         word = word.strip()
-        self.word_completion.handler_block(self.cursor_changed_handler_id)
-        model = self.word_completion.get_model()        
         self.word_completion.set_model(None)        
-        model.clear()
-        word_list = self.dictionaries.get_word_list(word, n)
-        [model.append([word]) for word in word_list]
-        if len(word_list) == 1:
-            self.word_input.child.set_text(word_list[0])
-            self.word_input.child.set_position(-1)
-            self.word_input.child.activate()
-        self.word_completion.set_model(model)
-        self.word_completion.handler_unblock(self.cursor_changed_handler_id)
-        
+        lang_word_list = self.dictionaries.get_word_list(word, n)
+        if len(lang_word_list) == 1:
+            model = gtk.ListStore(str)
+            word_list = lang_word_list.values()[0]
+            [model.append([word]) for word in word_list]
+            self.word_completion.set_model(model)
+            if len(word_list) == 1:
+                path = model.get_path(model.get_iter_first())
+                self.word_completion.set_cursor(path)
+        else:
+            model = gtk.TreeStore(str)
+            for lang in lang_word_list.keys():
+                iter = model.append(None, [lang])
+                [model.append(iter, [word]) for word in lang_word_list[lang]]                
+            self.word_completion.set_model(model)
+            
+        self.word_completion.expand_all()
         
     def __init__(self):
-        #self.dict = None
         self.dictionaries = sdict.SDictionaryCollection()
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
@@ -438,6 +456,7 @@ class SDictViewer:
         self.last_dict_file_location = None
         self.article_format = ArticleFormat()
         self.recent_menu_items = {}
+        self.dict_key_to_tab = {}
                                  
         contentBox = gtk.VBox(False, 0)
         self.create_menu_items()
@@ -461,8 +480,6 @@ class SDictViewer:
         contentBox.pack_start(split_pane, True, True, 2)                        
         split_pane.add(box)
         
-        #self.article_view = self.create_article_view()        
-        #split_pane.add(create_scrolled_window(self.article_view))
         self.tabs = gtk.Notebook()
         self.tabs.set_scrollable(True)
         split_pane.add(self.tabs)
@@ -517,8 +534,9 @@ class SDictViewer:
     def create_word_completion(self):
         word_completion = gtk.TreeView(gtk.ListStore(str))        
         word_completion.set_headers_visible(False)
-        self.cursor_changed_handler_id = word_completion.connect("cursor-changed", self.word_selected)
-        word_completion.connect("row-activated", self.word_selected)        
+        ##self.cursor_changed_handler_id = word_completion.connect("cursor-changed", self.word_selected)
+        ##word_completion.connect("row-activated", self.word_selected)        
+        word_completion.get_selection().connect("changed", self.word_selection_changed)
         renderer = gtk.CellRendererText()
         column = gtk.TreeViewColumn("", renderer, text=0)
         column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
@@ -533,7 +551,7 @@ class SDictViewer:
         word_input.connect("changed", self.word_selected_in_history)
         return word_input
     
-    def word_selected_in_history(self, widget, data = None):        
+    def word_selected_in_history(self, widget, data = None):                
          model = widget.get_model()
          iter = widget.get_active_iter()
          if iter:
@@ -583,9 +601,6 @@ class SDictViewer:
         mn_options.append(self.mi_select_phonetic_font)
         return (mn_dict_item, mn_options_item, mn_help_item)        
 
-#    def add_dict_to_recent(self, dict):
-#        self.add_to_recent(dict.title, dict.version, dict.file_name)
-            
     def add_to_menu_remove(self, dict):        
         key = dict.key()
         title, version, file_name = key
@@ -596,12 +611,7 @@ class SDictViewer:
             del self.recent_menu_items[key]
         self.recent_menu_items[key] = mi_dict;        
         self.mn_remove.append(mi_dict)
-        #mi_dict.connect("activate", lambda f: self.open_dict(file_name))
         mi_dict.connect("activate", lambda f: self.remove_dict(dict))
-        #children = self.mn_remove.get_children()        
-        #child_count = len(children)
-        #if child_count > 4:
-        #    self.mn_remove.remove(children[child_count-1])
         mi_dict.show_all()
 
     def get_dialog_parent(self):
@@ -668,9 +678,6 @@ class SDictViewer:
     
     def open_dict(self, file):
         self.open_dicts([file])
-#        status_display = self.create_dict_loading_status_display(file)
-#        worker = BackgroundWorker(lambda : sdict.SDictionary(file), status_display, self.set_dict_callback)
-#        worker.start()
         
     def open_dicts(self, files):
         if len(files) == 0:
@@ -716,16 +723,6 @@ class SDictViewer:
     
     def set_dict(self, dict):     
         self.add_dict(dict)
-#        if self.dict:
-#            self.dict.close() 
-#            self.word_completion.get_model().clear()
-#            self.article_view.get_buffer().set_text('')
-#            self.dict = None
-#        self.dict = dict   
-#        self.update_completion(self.word_input.child.get_text())
-#        self.update_completion(self.word_input.child.get_text())
-#        self.update_title()
-#        self.add_dict_to_recent(self.dict)
 
     def add_dict(self, dict):
         if (self.dictionaries.has(dict)):
@@ -746,60 +743,24 @@ class SDictViewer:
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]                
         self.dictionaries.remove(dict)       
+        self.tabs.remove_page(self.get_tab_for_dict(key)) 
         dict.close()
         self.word_completion.get_model().clear()
         self.update_completion(self.word_input.child.get_text())
         self.update_completion(self.word_input.child.get_text())
         self.update_title()
         
+    def get_tab_for_dict(self, dict_key):
+        if self.dict_key_to_tab.has_key(dict_key):
+            tab_child = self.dict_key_to_tab[dict_key]
+            return self.tabs.page_num(tab_child)
+        return None
+
 
     def show_dict_info(self, widget):        
-#        info_dialog = gtk.Dialog(title="Dictionary Info", flags=gtk.DIALOG_MODAL)                                 
-#        info_dialog.set_position(gtk.WIN_POS_CENTER)
-#        info_dialog.add_button(gtk.STOCK_CLOSE, 1)
-#        info_dialog.connect("response", lambda w, resp: w.destroy())
-#                        
-#        contentBox = info_dialog.get_child()
-#        box = gtk.VBox(contentBox)        
-#                
-#        dict_list = gtk.TreeView(gtk.ListStore(object))
-#        cell = gtk.CellRendererText()
-#        dict_column = gtk.TreeViewColumn('Dictionary', cell)
-#        dict_list.append_column(dict_column)
-#        dict_column.set_cell_data_func(cell, self.extract_dict_title_for_cell)
-#        
-#        for dict in self.dictionaries.get_dicts():
-#            dict_list.get_model().append([dict])
-#                
-#        box.pack_start(create_scrolled_window(dict_list), True, True, 0)
-#
-#        split_pane = gtk.HPaned()        
-#        contentBox.pack_start(split_pane, True, True, 2)                        
-#        split_pane.add(box)
-#        
-#        detail_pane = gtk.TextView()
-#        
-#        split_pane.add(detail_pane)
-#                    
-#        dict_list.connect("cursor-changed", self.dict_selected, detail_pane)
-#        dict_list.connect("row-activated", self.dict_selected, detail_pane)                
-                    
         info_dialog = DictInfoDialog(self.dictionaries.get_dicts())
         info_dialog.run()
         info_dialog.destroy()
-        
-#    def extract_dict_title_for_cell(self, column, cell_renderer, model, iter, data = None):
-#        dict = model.get_value(iter, 0)
-#        cell_renderer.set_property('text', dict.title)
-#        return        
-#    
-#    def dict_selected(self, dict_list, start_editing = None, data = None):
-#        detail_pane = data
-#        model = dict_list.get_model()
-#        first = model.get_iter_first()
-#        if first:                        
-#            text = model.get_value(first, 0).version
-#        detail_pane.get_text_buffer().set_text(text)
         
     def show_about(self, widget):
         dialog = gtk.AboutDialog()
@@ -823,6 +784,9 @@ class SDictViewer:
                 
     def set_phonetic_font(self, font_name):
         self.font = font_name                    
+        self.apply_phonetic_font()
+    
+    def apply_phonetic_font(self):
         font_desc = pango.FontDescription(self.font)
         if font_desc: 
             count = self.tabs.get_n_pages()
