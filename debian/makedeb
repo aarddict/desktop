@@ -18,7 +18,7 @@ Version: $VERSION
 Section: user/other
 Priority: optional
 Architecture: all
-Depends: python2.4, python2.4-hildon, python2.4-gtk2
+Depends: python2.5, python2.5-hildon, python2.5-gtk2
 Installed-Size: $SIZE
 Maintainer: Igor Tkach <itkach@users.sourceforge.net>
 Description: A dictionary application that works with dictionaries from http://sdict.com" > control
