@@ -257,8 +257,8 @@ class SDictionaryCollection:
     def __init__(self):
         self.dictionaries = {}
     
-    def lookup(self, word):
-        return [(dict, dict.lookup(word)) for dict in self.get_dicts()]
+    def lookup(self, word, languages):
+        return [(dict, dict.lookup(word)) for dict in self.get_dicts(languages)]
         
     def add(self, dict):
         lang = dict.header.word_lang
@@ -280,13 +280,15 @@ class SDictionaryCollection:
         if len(self.dictionaries[dict.header.word_lang]) == 0:
             del self.dictionaries[dict.header.word_lang]
     
-    def get_dicts(self, lang = None):
-        if lang:
-            return self.dictionaries[lang]
-        all_dicts = []
-        for list in self.dictionaries.values():
-            all_dicts.extend(list)
-        return all_dicts
+    def get_dicts(self, langs = None):
+        dicts = []
+        if langs:
+            for lang in langs:
+                dicts.extend(self.dictionaries[lang])
+        else:
+            for list in self.dictionaries.values():
+                dicts.extend(list)
+        return dicts
     
     def get_langs(self):
         langs = self.dictionaries.keys()
@@ -295,7 +297,6 @@ class SDictionaryCollection:
         return langs
     
     def get_word_list(self, start_word, n):
-        word_list = []
         lang_word_lists = {}
         #current_collate = locale.getlocale(locale.LC_COLLATE)
         #print current_collate
@@ -304,23 +305,25 @@ class SDictionaryCollection:
         for lang in langs:
             #print 'lang', lang
             dicts = self.dictionaries[lang]
-            lang_word_lists[lang] = []
+            word_list = []
             for dict in dicts:
-                lang_word_lists[lang].extend(dict.get_word_list(start_word, n))            
+                word_list.extend(dict.get_word_list(start_word, n))            
             if len(dicts) > 1:
                 #locale.setlocale(locale.LC_COLLATE, (lang, ''))
                 #loc_name, enc = locale.getlocale(locale.LC_COLLATE)
                 #print "collate_locale: ", loc_name, enc
-                lang_word_lists[lang] = [w for w in set(lang_word_lists[lang])]
+                word_list = [w for w in set(word_list)]
                 #lang_word_lists[lang].sort(key=locale.strxfrm)                
-                lang_word_lists[lang].sort()                
-                lang_word_lists[lang] = lang_word_lists[lang][:n]
+                word_list.sort()                
+                word_list = word_list[:n]
+            if len(word_list) > 0:
+                lang_word_lists[lang] = word_list
         #locale.setlocale(locale.LC_COLLATE, current_collate)
             
-        for l in lang_word_lists.values():
-            word_list.extend(l)
+#        for l in lang_word_lists.values():
+#            word_list.extend(l)
             
-        return word_list
+        return lang_word_lists
     
     def is_empty(self):
         return self.size() == 0
