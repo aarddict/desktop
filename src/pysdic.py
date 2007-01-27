@@ -10,8 +10,9 @@ pygtk.require('2.0')
 import gtk
 import pango
 import sdict
+import dict_info_ui
+import ui_util
 import os.path
-import threading
 import gobject
 import pickle
 import string
@@ -38,13 +39,6 @@ def load_app_state():
         return app_state
     return None    
     
-def create_scrolled_window(widget):
-    scrolled_window = gtk.ScrolledWindow()
-    scrolled_window.set_shadow_type(gtk.SHADOW_IN)
-    scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-    scrolled_window.add(widget)                                
-    return scrolled_window
-
 class State:    
     def __init__(self, dict_file = None, phonetic_font = None, word = None, history = [], recent = [], dict_files = [], last_dict_file_location = None):
         self.dict_file = dict_file
@@ -54,26 +48,7 @@ class State:
         self.recent = recent
         self.dict_files = dict_files
         self.last_dict_file_location = last_dict_file_location
-     
-class BackgroundWorker(threading.Thread):
-    def __init__(self, task, status_display, callback):
-        super(BackgroundWorker, self).__init__()
-        self.callback = callback
-        self.status_display = status_display
-        self.task = task
-            
-    def run(self):
-        gobject.idle_add(self.status_display.show_start)
-        result = None
-        error = None
-        try:
-            result = self.task()
-        except Exception, ex:
-            print "Failed to execute task: ", ex
-            error = ex
-        gobject.idle_add(self.callback, result, error)
-        gobject.idle_add(self.status_display.show_end)
-        
+             
 class DialogStatusDisplay:
     
     def __init__(self, title, message, parent):
@@ -91,118 +66,6 @@ class DialogStatusDisplay:
         if self.loading_dialog:
             self.loading_dialog.destroy()
             self.loading_dialog = None        
-
-class DictDetailPane(gtk.HBox):
-    
-    def __init__(self):
-        super(DictDetailPane, self).__init__()
-        self.lbl_title = self.create_value_label()
-        self.lbl_version = self.create_value_label()
-        self.lbl_copyright = self.create_value_label()
-        self.lbl_file_name = self.create_value_label()
-        self.lbl_compression = self.create_value_label()
-        self.lbl_num_of_words = self.create_value_label()
-        table = gtk.Table(6, 2, False)
-        scrolled_window = gtk.ScrolledWindow()
-        scrolled_window.set_shadow_type(gtk.SHADOW_IN)
-        scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        scrolled_window.add_with_viewport(table)                                
-        
-        self.pack_start(scrolled_window, True, True, 0)
-        #self.pack_start(table, True, True, 0)
-        table.set_row_spacings(5)
-        table.set_col_spacings(5)
-        table.attach(self.create_label("Title:"),0,1,0,1, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_title,1,2,0,1, xoptions = gtk.FILL | gtk.EXPAND, yoptions = gtk.FILL)
-        table.attach(self.create_label("Version:"),0,1,1,2, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_version,1,2,1,2, yoptions = 0)        
-        table.attach(self.create_label("Copyright:"),0,1,2,3, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_copyright,1,2,2,3, yoptions = gtk.FILL)                
-        table.attach(self.create_label("Articles:"),0,1,3,4, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_num_of_words,1,2,3,4, yoptions = gtk.FILL)                        
-        table.attach(self.create_label("From file:"),0,1,4,5, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_file_name,1,2,4,5, yoptions = gtk.FILL)                                
-        table.attach(self.create_label("Compression:"),0,1,5,6, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_compression,1,2,5,6)                                
-        table.set_border_width(5)
-            
-    def create_label(self, text):
-        lbl = gtk.Label(text)
-        lbl.set_alignment(1.0, 0.0)
-        return lbl
-    
-    def create_value_label(self):
-        lbl = gtk.Label()
-        lbl.set_alignment(0.0, 0.0)
-        lbl.set_line_wrap(True)
-        return lbl
-    
-    
-    def set_dict(self, dict):
-        if dict:
-            self.lbl_title.set_text(dict.title)
-            self.lbl_version.set_text(dict.version)
-            self.lbl_copyright.set_text(dict.copyright)
-            self.lbl_num_of_words.set_text(locale.format("%d", dict.header.num_of_words))
-            self.lbl_file_name.set_text(dict.file_name)
-            self.lbl_compression.set_text("%s" % dict.compression)
-        else:
-            self.lbl_title.set_text('')
-            self.lbl_version.set_text('')
-            self.lbl_copyright.set_text('')
-            self.lbl_num_of_words.set_text('')                     
-            self.lbl_file_name.set_text('')   
-            self.lbl_compression.set_text('')
-        
-        
-class DictInfoDialog(gtk.Dialog):
-    def __init__(self, dicts):        
-        super(DictInfoDialog, self).__init__(title="Dictionary Info", flags=gtk.DIALOG_MODAL)
-        self.set_position(gtk.WIN_POS_CENTER)
-        self.add_button(gtk.STOCK_CLOSE, 1)
-        self.connect("response", lambda w, resp: w.destroy())
-                        
-        contentBox = self.get_child()
-        box = gtk.VBox(contentBox)        
-                
-        dict_list = gtk.TreeView(gtk.ListStore(object))
-        cell = gtk.CellRendererText()
-        dict_column = gtk.TreeViewColumn('Dictionary', cell)
-        dict_list.append_column(dict_column)
-        dict_column.set_cell_data_func(cell, self.extract_dict_title_for_cell)
-        
-        for dict in dicts:
-            dict_list.get_model().append([dict])
-                
-        box.pack_start(create_scrolled_window(dict_list), True, True, 0)
-
-        split_pane = gtk.HPaned()        
-        contentBox.pack_start(split_pane, True, True, 2)                        
-        split_pane.add(box)
-        
-        self.detail_pane = DictDetailPane()
-        
-        split_pane.add(self.detail_pane)
-        split_pane.set_position(200)
-                    
-        dict_list.connect("cursor-changed", self.dict_selected)
-        dict_list.connect("row-activated", self.dict_selected)                
-        self.resize(580, 360)
-        self.show_all()
-                                        
-        
-    def extract_dict_title_for_cell(self, column, cell_renderer, model, iter, data = None):
-        dict = model.get_value(iter, 0)
-        cell_renderer.set_property('text', dict.title)
-        return        
-    
-    def dict_selected(self, dict_list, start_editing = None, data = None):
-        if dict_list.get_selection().count_selected_rows() == 0:
-            self.detail_pane.set_dict(None)
-        else:
-            model, iter = dict_list.get_selection().get_selected()
-            dict = model.get_value(iter, 0)
-            self.detail_pane.set_dict(dict)
     
 
 class ArticleFormat: 
@@ -298,6 +161,60 @@ class ArticleFormat:
 
 class SDictViewer:
              
+    def __init__(self):
+        self.dictionaries = sdict.SDictionaryCollection()
+        self.current_word_handler = None                               
+        self.window = self.create_top_level_widget()                               
+        self.font = None
+        self.last_dict_file_location = None
+        self.article_format = ArticleFormat()
+        self.recent_menu_items = {}
+        self.dict_key_to_tab = {}
+                                 
+        contentBox = gtk.VBox(False, 0)
+        self.create_menu_items()
+        self.add_menu(contentBox)
+                                        
+        box = gtk.VBox()        
+        
+        self.word_input = self.create_word_input()
+        
+        input_box = gtk.HBox()
+        input_box.pack_start(self.word_input, True, True, 0)
+        clear_input = self.create_clear_button()
+        input_box.pack_start(clear_input, False, False, 2)
+        
+        box.pack_start(input_box, False, False, 4)
+        
+        self.word_completion = self.create_word_completion()
+        box.pack_start(ui_util.create_scrolled_window(self.word_completion), True, True, 0)
+
+        split_pane = gtk.HPaned()        
+        contentBox.pack_start(split_pane, True, True, 2)                        
+        split_pane.add(box)
+        
+        self.tabs = gtk.Notebook()
+        self.tabs.set_scrollable(True)
+        split_pane.add(self.tabs)
+                        
+        self.add_content(contentBox)
+        self.update_title()
+        self.window.show_all()
+        
+        try:
+            app_state = load_app_state()     
+            if app_state:   
+                #self.open_dict(app_state.dict_file)
+                self.open_dicts(app_state.dict_files)
+                self.word_input.child.set_text(app_state.word)                
+                app_state.history.reverse()
+                [self.add_to_history(w) for w in app_state.history]
+                self.set_phonetic_font(app_state.phonetic_font)
+                self.last_dict_file_location = app_state.last_dict_file_location
+                #[self.add_to_recent(r[0], r[1], r[2]) for r in app_state.recent]
+        except Exception, ex:
+            print 'Failed to load application state:', ex                     
+             
     def destroy(self, widget, data=None):
         try:
             word = self.word_input.child.get_text()
@@ -373,7 +290,7 @@ class SDictViewer:
         for dict, article in articles:        
             if article: 
                 article_view = self.create_article_view()
-                scrollable_view = create_scrolled_window(article_view)                
+                scrollable_view = ui_util.create_scrolled_window(article_view)                
                 label = gtk.Label(dict.title)
                 label.set_width_chars(6)
                 label.set_ellipsize(pango.ELLIPSIZE_START)
@@ -448,59 +365,6 @@ class SDictViewer:
             
         self.word_completion.expand_all()
         
-    def __init__(self):
-        self.dictionaries = sdict.SDictionaryCollection()
-        self.current_word_handler = None                               
-        self.window = self.create_top_level_widget()                               
-        self.font = None
-        self.last_dict_file_location = None
-        self.article_format = ArticleFormat()
-        self.recent_menu_items = {}
-        self.dict_key_to_tab = {}
-                                 
-        contentBox = gtk.VBox(False, 0)
-        self.create_menu_items()
-        self.add_menu(contentBox)
-                                        
-        box = gtk.VBox()        
-        
-        self.word_input = self.create_word_input()
-        
-        input_box = gtk.HBox()
-        input_box.pack_start(self.word_input, True, True, 0)
-        clear_input = self.create_clear_button()
-        input_box.pack_start(clear_input, False, False, 2)
-        
-        box.pack_start(input_box, False, False, 4)
-        
-        self.word_completion = self.create_word_completion()
-        box.pack_start(create_scrolled_window(self.word_completion), True, True, 0)
-
-        split_pane = gtk.HPaned()        
-        contentBox.pack_start(split_pane, True, True, 2)                        
-        split_pane.add(box)
-        
-        self.tabs = gtk.Notebook()
-        self.tabs.set_scrollable(True)
-        split_pane.add(self.tabs)
-                        
-        self.add_content(contentBox)
-        self.update_title()
-        self.window.show_all()
-        
-        try:
-            app_state = load_app_state()     
-            if app_state:   
-                #self.open_dict(app_state.dict_file)
-                self.open_dicts(app_state.dict_files)
-                self.word_input.child.set_text(app_state.word)                
-                app_state.history.reverse()
-                [self.add_to_history(w) for w in app_state.history]
-                self.set_phonetic_font(app_state.phonetic_font)
-                self.last_dict_file_location = app_state.last_dict_file_location
-                #[self.add_to_recent(r[0], r[1], r[2]) for r in app_state.recent]
-        except Exception, ex:
-            print 'Failed to load application state:', ex        
 
     def create_clear_button(self):
         clear_input = gtk.Button(stock = gtk.STOCK_CLEAR)
@@ -688,7 +552,7 @@ class SDictViewer:
         else:
             message = file
         status_display = self.create_dict_loading_status_display(message)
-        worker = BackgroundWorker(lambda : (sdict.SDictionary(file), files), status_display, self.collect_dict_callback)
+        worker = ui_util.BackgroundWorker(lambda : (sdict.SDictionary(file), files), status_display, self.collect_dict_callback)
         worker.start()
         
     def collect_dict_callback(self, dict_and_files, error):
@@ -758,7 +622,7 @@ class SDictViewer:
 
 
     def show_dict_info(self, widget):        
-        info_dialog = DictInfoDialog(self.dictionaries.get_dicts())
+        info_dialog = dict_info_ui.DictInfoDialog(self.dictionaries.get_dicts())
         info_dialog.run()
         info_dialog.destroy()
         
