@@ -211,7 +211,6 @@ class SDictViewer:
                 [self.add_to_history(w, l) for w, l in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
                 self.last_dict_file_location = app_state.last_dict_file_location
-                #[self.add_to_recent(r[0], r[1], r[2]) for r in app_state.recent]
         except Exception, ex:
             print 'Failed to load application state:', ex                     
              
@@ -225,7 +224,17 @@ class SDictViewer:
             save_app_state(State(None, self.font, word, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
         except Exception, ex:
             print 'Failed to store settings:', ex        
-        gtk.main_quit()  
+        gtk.main_quit()                  
+        
+    def on_key_press(self, widget, event, *args):
+        print event.keyval
+        if event.keyval == gtk.keysyms.Escape:
+            self.clear_word_input(None, None)
+        if event.keyval == gtk.keysyms.F7:
+            self.tabs.prev_page()
+        if event.keyval == gtk.keysyms.F8:
+            self.tabs.next_page()
+        
         
     def history_to_list(self, model, path, iter, history_list):
         word, lang = model[iter]
@@ -330,7 +339,7 @@ class SDictViewer:
     
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
-        gobject.idle_add(self.word_input.child.grab_focus)
+        gobject.idle_add(self.word_input.child.grab_focus)        
                                         
     def update_completion(self, word, n = 20, select_if_one = True):
         word = word.lstrip()
@@ -361,8 +370,9 @@ class SDictViewer:
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)    
         window.connect("destroy", self.destroy)
         window.set_border_width(2)                
-        window.resize(600, 400)
+        window.resize(640, 480)
         window.set_position(gtk.WIN_POS_CENTER)        
+        window.connect("key-press-event", self.on_key_press)
         return window
     
     def add_content(self, content_box):
@@ -387,17 +397,21 @@ class SDictViewer:
         return word_completion
 
     def create_word_input(self):
-        word_input = gtk.ComboBoxEntry(gtk.TreeStore(str, str), 0)
+        word_input = gtk.ComboBoxEntry(gtk.TreeStore(str, str))
+        word_input.clear()
         cell1 = gtk.CellRendererText()
-        word_input.pack_start(cell1, False)
+        word_input.pack_start(cell1, False)        
         word_input.set_cell_data_func(cell1, self.format_history_item)
         word_input.child.connect("activate", self.word_input_callback)        
         self.word_change_handler = word_input.connect("changed", self.word_selected_in_history)
         return word_input
     
     def format_history_item(self, celllayout, cell, model, iter, user_data = None):
+        word  = model[iter][0]
         lang  = model[iter][1]
-        cell.set_property('text', lang) 
+        #cell.set_property('text', "%s (%s)" % (word, lang)) 
+        cell.set_property('markup', '<span>%s</span> <span foreground="darkgrey">(<i>%s</i>)</span>' % (word, lang)) 
+        
         
     def word_selected_in_history(self, widget, data = None):                
         active = self.word_input.get_active()
@@ -646,7 +660,7 @@ class SDictViewer:
 
 
     def show_dict_info(self, widget):        
-        info_dialog = dict_info_ui.DictInfoDialog(self.dictionaries.get_dicts())
+        info_dialog = dict_info_ui.DictInfoDialog(self.dictionaries.get_dicts(), parent = self.window)
         info_dialog.run()
         info_dialog.destroy()
         

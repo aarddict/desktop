@@ -70,9 +70,9 @@ class DictDetailPane(gtk.HBox):
         
         
 class DictInfoDialog(gtk.Dialog):
-    def __init__(self, dicts):        
-        super(DictInfoDialog, self).__init__(title="Dictionary Info", flags=gtk.DIALOG_MODAL)
-        self.set_position(gtk.WIN_POS_CENTER)
+    def __init__(self, dicts, parent):        
+        super(DictInfoDialog, self).__init__(title="Dictionary Info", flags=gtk.DIALOG_MODAL, parent = parent)
+        self.set_position(gtk.WIN_POS_CENTER_ON_PARENT)
         self.add_button(gtk.STOCK_CLOSE, 1)
         self.connect("response", lambda w, resp: w.destroy())
                         
@@ -99,21 +99,19 @@ class DictInfoDialog(gtk.Dialog):
         split_pane.add(self.detail_pane)
         split_pane.set_position(200)
                     
-        dict_list.connect("cursor-changed", self.dict_selected)
-        dict_list.connect("row-activated", self.dict_selected)                
-        self.resize(580, 360)
+        dict_list.get_selection().connect("changed", self.dict_selected)
+        self.resize(600, 360)
         self.show_all()
                                         
         
     def extract_dict_title_for_cell(self, column, cell_renderer, model, iter, data = None):
-        dict = model.get_value(iter, 0)
+        dict = model[iter][0]
         cell_renderer.set_property('text', dict.title)
         return        
     
-    def dict_selected(self, dict_list, start_editing = None, data = None):
-        if dict_list.get_selection().count_selected_rows() == 0:
-            self.detail_pane.set_dict(None)
-        else:
-            model, iter = dict_list.get_selection().get_selected()
-            dict = model.get_value(iter, 0)
-            self.detail_pane.set_dict(dict)
+    def dict_selected(self, selection):
+        dict = None
+        if selection.count_selected_rows() > 0:
+            model, iter = selection.get_selected()
+            dict = model[iter][0]
+        self.detail_pane.set_dict(dict)
