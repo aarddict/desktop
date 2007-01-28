@@ -73,7 +73,7 @@ class ArticleFormat:
     def __init__(self):
         self.template = string.Template("$word\n$text")
        
-    def apply(self, word, article, article_view, word_ref_callback):
+    def apply(self, dict, word, article, article_view, word_ref_callback):
         buffer = article_view.get_buffer()
         text = self.convert_newlines(article)                                        
         text = self.convert_paragraphs(text)
@@ -101,17 +101,17 @@ class ArticleFormat:
         [self.apply_tag(mark, buffer, "u") for mark in underline_regions]
         [self.apply_tag(mark, buffer, "f") for mark in forms_regions]
         [self.apply_tag(mark, buffer, "r") for mark in ref_regions]
-        [self.create_ref(mark, buffer, word, word_ref_callback, article_view) for mark in ref_regions]                            
+        [self.create_ref(mark, buffer, dict, word, word_ref_callback, article_view) for mark in ref_regions]                            
         [self.apply_tag(mark, buffer, "sup") for mark in sup_regions]
         [self.apply_tag(mark, buffer, "sub") for mark in sub_regions]
         
-    def create_ref(self, mark, buffer, word, word_ref_callback, article_view):
+    def create_ref(self, mark, buffer, dict, word, word_ref_callback, article_view):
         start = buffer.get_iter_at_mark(mark[0])
         end = buffer.get_iter_at_mark(mark[1])
         text = buffer.get_text(start, end)
         ref_text = text.replace("~", word)
         ref_tag = buffer.create_tag()
-        ref_tag.connect("event", word_ref_callback, ref_text)
+        ref_tag.connect("event", word_ref_callback, ref_text, dict)
         buffer.apply_tag(ref_tag, start, end)        
                     
     def apply_tag(self, mark, buffer, tag_name, surround_text_start = '', surround_text_end = ''):
@@ -195,6 +195,7 @@ class SDictViewer:
         
         self.tabs = gtk.Notebook()
         self.tabs.set_scrollable(True)
+        self.tabs.set_property("can-focus", False)
         split_pane.add(self.tabs)
                         
         self.add_content(contentBox)
@@ -204,11 +205,10 @@ class SDictViewer:
         try:
             app_state = load_app_state()     
             if app_state:   
-                #self.open_dict(app_state.dict_file)
                 self.open_dicts(app_state.dict_files)
                 self.word_input.child.set_text(app_state.word)                
                 app_state.history.reverse()
-                [self.add_to_history(w) for w in app_state.history]
+                [self.add_to_history(w, l) for w, l in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
                 self.last_dict_file_location = app_state.last_dict_file_location
                 #[self.add_to_recent(r[0], r[1], r[2]) for r in app_state.recent]
@@ -228,51 +228,48 @@ class SDictViewer:
         gtk.main_quit()  
         
     def history_to_list(self, model, path, iter, history_list):
-        history_list.append(model.get_value(iter, 0))
+        word, lang = model[iter]
+        history_list.append((word, lang))
         
     def word_input_callback(self, widget, data = None):        
-        if self.dictionaries.is_empty():
-            print "No dictionaries opened"
-            return        
-        word = self.word_input.child.get_text()         
-        self.process_word_input(word)
-          
-    def schedule_word_lookup(self, word, lang):
-         self.schedule(self.process_word_input, 200, word, lang)
-        
+        self.select_first_word_in_completion()
+              
+    def do_word_lookup(self, word, lang):
+        self.show_article_for(word, lang)
+        return False
+                    
     def schedule(self, f, timeout, *args):
         if self.current_word_handler:
             gobject.source_remove(self.current_word_handler)
             self.current_word_handler = None
         self.current_word_handler = gobject.timeout_add(timeout, f, *args)                
-                
-    def process_word_input(self, word, lang = None):
-        print 'process word input: ', word, ' ' , lang
-        if not word or word == '':
-            return
-        word = word.strip()
-        if not self.show_article_for(word, lang):                        
-            model = self.word_completion.get_model()
-            first_completion = model.get_iter_first()
-            if first_completion:                        
-                word = model[first_completion][0]
-                self.show_article_for(word)        
-        
                         
-    def word_ref_clicked(self, tag, widget, event, iter, word):
+    def select_first_word_in_completion(self):
+        model = self.word_completion.get_model()
+        if not model:
+            return
+        first_lang = model.get_iter_first()
+        if first_lang: 
+            word_iter = model.iter_children(first_lang)
+            self.word_completion.get_selection().select_iter(word_iter)
+            self.word_completion.grab_focus()                
+                        
+    def word_ref_clicked(self, tag, widget, event, iter, word, dict):
         if event.type == gtk.gdk.BUTTON_RELEASE:
+            self.word_input.handler_block(self.word_change_handler) 
             self.word_input.child.set_text(word)
-            self.word_input.child.activate()
+            self.word_input.handler_unblock(self.word_change_handler) 
+            self.update_completion_and_select(word, dict.header.word_lang)
                 
-    def add_to_history(self, word):        
+    def add_to_history(self, word, lang):        
         model = self.word_input.get_model()
         insert = True;
         for row in model:
-            if word == row[0]:
+            if word == row[0] and lang == row[1]:
                 insert = False;
                 break;
         if insert:
-            model.insert(0, [word])  
+            model.insert(None, 0, [word, lang])  
         history_size = model.iter_n_children(None)
         if history_size > 10:
             del model[history_size - 1]
@@ -284,13 +281,19 @@ class SDictViewer:
         return False 
     
     def show_article_for(self, word, lang = None):
-        articles = self.dictionaries.lookup(word, (lang))
+        if lang:
+            langs = [lang]
+        else:
+            langs = None
+        articles = self.dictionaries.lookup(word, langs)
         self.clear_tabs()
         result = False
         for dict, article in articles:        
             if article: 
                 article_view = self.create_article_view()
+                article_view.set_property("can-focus", False)
                 scrollable_view = ui_util.create_scrolled_window(article_view)                
+                scrollable_view.set_property("can-focus", False)
                 label = gtk.Label(dict.title)
                 label.set_width_chars(6)
                 label.set_ellipsize(pango.ELLIPSIZE_START)
@@ -298,23 +301,13 @@ class SDictViewer:
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
                 self.apply_phonetic_font()
-                #self.remove_anonymous_tags()
-                self.article_format.apply(word, article, article_view, self.word_ref_clicked)
+                self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
                 gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
-                self.add_to_history(word)            
+                self.add_to_history(word, lang)            
                 result = True           
         self.tabs.show_all()
         return result  
-        
-    #Anonymous tags are used to implement word references
-    #when new article is loaded into text buffer old anonymous tags are no longer needed
-    def remove_anonymous_tags(self):
-        buffer = self.article_view.get_buffer()
-        tag_table = buffer.get_tag_table()
-        anon_tags = []
-        tag_table.foreach(self.collect_anonymous_tags, anon_tags)        
-        [tag_table.remove(tag) for tag in anon_tags]        
-    
+            
     def collect_anonymous_tags(self, tag, list):
         if tag.get_property('name') == None:
             list.append(tag)
@@ -328,42 +321,29 @@ class SDictViewer:
             #language name, not a word
             self.schedule(self.clear_tabs, 200)
             return
-        #model = tree_view.get_model()
         word = model[iter][0]
         lang = None
         lang_iter = model.iter_parent(iter)
         if lang_iter:
-            lang = model[lang_iter]
-        self.schedule_word_lookup(word, lang)
+            lang = model[lang_iter][0]
+        self.schedule(self.do_word_lookup, 200, word, lang)
     
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
         gobject.idle_add(self.word_input.child.grab_focus)
-                        
-    def word_input_changed(self, editable, data = None):
-        #self.update_completion(editable.get_text())                
-        self.schedule(self.update_completion, 600, editable.get_text())        
-                
-    def update_completion(self, word, n = 20):
-        word = word.strip()
+                                        
+    def update_completion(self, word, n = 20, select_if_one = True):
+        word = word.lstrip()
         self.word_completion.set_model(None)        
         lang_word_list = self.dictionaries.get_word_list(word, n)
-        if len(lang_word_list) == 1:
-            model = gtk.ListStore(str)
-            word_list = lang_word_list.values()[0]
-            [model.append([word]) for word in word_list]
-            self.word_completion.set_model(model)
-            if len(word_list) == 1:
-                path = model.get_path(model.get_iter_first())
-                self.word_completion.set_cursor(path)
-        else:
-            model = gtk.TreeStore(str)
-            for lang in lang_word_list.keys():
-                iter = model.append(None, [lang])
-                [model.append(iter, [word]) for word in lang_word_list[lang]]                
-            self.word_completion.set_model(model)
-            
+        model = gtk.TreeStore(str)
+        for lang in lang_word_list.keys():
+            iter = model.append(None, [lang])
+            [model.append(iter, [word]) for word in lang_word_list[lang]]                    
+        self.word_completion.set_model(model)            
         self.word_completion.expand_all()
+        if select_if_one and len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
+            self.select_first_word_in_completion()        
         
 
     def create_clear_button(self):
@@ -396,10 +376,8 @@ class SDictViewer:
         content_box.pack_start(menu_bar, False, False, 2)           
 
     def create_word_completion(self):
-        word_completion = gtk.TreeView(gtk.ListStore(str))        
+        word_completion = gtk.TreeView()        
         word_completion.set_headers_visible(False)
-        ##self.cursor_changed_handler_id = word_completion.connect("cursor-changed", self.word_selected)
-        ##word_completion.connect("row-activated", self.word_selected)        
         word_completion.get_selection().connect("changed", self.word_selection_changed)
         renderer = gtk.CellRendererText()
         column = gtk.TreeViewColumn("", renderer, text=0)
@@ -409,17 +387,62 @@ class SDictViewer:
         return word_completion
 
     def create_word_input(self):
-        word_input = gtk.combo_box_entry_new_text()
-        word_input.child.connect("activate", self.word_input_callback)
-        word_input.child.connect("changed", self.word_input_changed)                        
-        word_input.connect("changed", self.word_selected_in_history)
+        word_input = gtk.ComboBoxEntry(gtk.TreeStore(str, str), 0)
+        cell1 = gtk.CellRendererText()
+        word_input.pack_start(cell1, False)
+        word_input.set_cell_data_func(cell1, self.format_history_item)
+        word_input.child.connect("activate", self.word_input_callback)        
+        self.word_change_handler = word_input.connect("changed", self.word_selected_in_history)
         return word_input
     
+    def format_history_item(self, celllayout, cell, model, iter, user_data = None):
+        lang  = model[iter][1]
+        cell.set_property('text', lang) 
+        
     def word_selected_in_history(self, widget, data = None):                
-         model = widget.get_model()
-         iter = widget.get_active_iter()
-         if iter:
-             self.word_input.child.activate()
+        active = self.word_input.get_active()
+        if active == -1:
+            self.schedule(self.update_completion, 600, self.word_input.child.get_text())            
+            #self.update_completion(self.word_input.child.get_text())
+            return
+        active_row = self.word_input.get_model()[active]
+        word = active_row[0]
+        lang = active_row[1]
+        #use schedule instead of direct call to interrupt already scheduled update if any
+        self.schedule(self.update_completion_and_select, 0, word, lang)        
+        #self.update_completion_and_select(word, lang)
+        self.update_completion(word, select_if_one = False)
+        self.select_word(word, lang)        
+        
+    def update_completion_and_select(self, word, lang):
+        self.update_completion(word, select_if_one = False)
+        self.select_word(word, lang)        
+        return False
+        
+    def select_word(self, word, lang):
+        print 'select word ', word, ' in ', lang
+        model = self.word_completion.get_model()
+        if len (model) == 0:
+            print 'completion is empty'
+            return
+        lang_iter = None
+        current_lang_iter = model.get_iter_first()
+        while current_lang_iter and model[current_lang_iter][0] != lang:
+            print 'lang at current iter ', model[current_lang_iter][0]
+            current_lang_iter = model.iter_next(current_lang_iter)
+            print 'current_lang_iter: ', current_lang_iter
+        if current_lang_iter and model[current_lang_iter][0] == lang:
+            lang_iter = current_lang_iter
+            print 'lang is present in completion'
+        else:
+            print 'lang is NOT present in completion'
+        if lang_iter:                    
+            word_iter = model.iter_children(lang_iter)
+            while word_iter and model[word_iter][0] != word:
+                word_iter = model.iter_next(word_iter)
+            if model[word_iter][0] == word:
+                print 'word found in completion'
+                self.word_completion.get_selection().select_iter(word_iter)            
 
     def create_menu_items(self):
         self.mi_open = gtk.MenuItem("Add...")
@@ -595,8 +618,9 @@ class SDictViewer:
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
         self.add_to_menu_remove(dict)
-        self.update_completion(self.word_input.child.get_text())
-        self.process_word_input(self.word_input.child.get_text())
+        self.schedule(self.update_completion, 600, self.word_input.child.get_text())
+        #self.update_completion(self.word_input.child.get_text())        
+        #self.process_word_input(self.word_input.child.get_text())
         self.update_title()  
         
     def remove_dict(self, dict):          
