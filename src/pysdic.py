@@ -17,6 +17,7 @@ import gobject
 import pickle
 import string
 import locale
+import xml.sax.saxutils
 
 gobject.threads_init()
 
@@ -51,22 +52,33 @@ class State:
              
 class DialogStatusDisplay:
     
-    def __init__(self, title, message, parent):
-        self.loading_dialog = None
-        self.message = message
+    def __init__(self, title, parent):
+        self.loading_dialog = None        
         self.parent = parent
         self.title = title
-        
-    def show_start(self):        
-        self.loading_dialog = gtk.MessageDialog(parent=self.parent, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_INFO, message_format=self.message)        
+        self.loading_dialog = gtk.MessageDialog(parent=self.parent, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_INFO)        
         self.loading_dialog.set_title(self.title)
-        self.loading_dialog.run()        
+        self.shown = False
         
-    def show_end(self):    
+    def show(self):        
+        self.shown = True
+        self.loading_dialog.run()
+        
+    def set_message(self, message):
+        self.loading_dialog.set_markup(message)
+            
+    def dismiss(self):
         if self.loading_dialog:
             self.loading_dialog.destroy()
-            self.loading_dialog = None        
-    
+            self.loading_dialog = None            
+            
+    def before_task_start(self):
+        if not self.shown:
+            self.show()
+            
+    def after_task_end(self):
+        print ''
+            
 
 class ArticleFormat: 
     
@@ -162,6 +174,7 @@ class ArticleFormat:
 class SDictViewer:
              
     def __init__(self):
+        self.status_display = None
         self.dictionaries = sdict.SDictionaryCollection()
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
@@ -227,7 +240,6 @@ class SDictViewer:
         gtk.main_quit()                  
         
     def on_key_press(self, widget, event, *args):
-        print event.keyval
         if event.keyval == gtk.keysyms.Escape:
             self.clear_word_input(None, None)
         if event.keyval == gtk.keysyms.F7:
@@ -409,7 +421,8 @@ class SDictViewer:
     def format_history_item(self, celllayout, cell, model, iter, user_data = None):
         word  = model[iter][0]
         lang  = model[iter][1]
-        #cell.set_property('text', "%s (%s)" % (word, lang)) 
+        #cell.set_property('text', "%s (%s)" % (word, lang))
+        word = xml.sax.saxutils.escape(word)
         cell.set_property('markup', '<span>%s</span> <span foreground="darkgrey">(<i>%s</i>)</span>' % (word, lang)) 
         
         
@@ -434,28 +447,20 @@ class SDictViewer:
         return False
         
     def select_word(self, word, lang):
-        print 'select word ', word, ' in ', lang
         model = self.word_completion.get_model()
         if len (model) == 0:
-            print 'completion is empty'
             return
         lang_iter = None
         current_lang_iter = model.get_iter_first()
         while current_lang_iter and model[current_lang_iter][0] != lang:
-            print 'lang at current iter ', model[current_lang_iter][0]
             current_lang_iter = model.iter_next(current_lang_iter)
-            print 'current_lang_iter: ', current_lang_iter
         if current_lang_iter and model[current_lang_iter][0] == lang:
             lang_iter = current_lang_iter
-            print 'lang is present in completion'
-        else:
-            print 'lang is NOT present in completion'
         if lang_iter:                    
             word_iter = model.iter_children(lang_iter)
             while word_iter and model[word_iter][0] != word:
                 word_iter = model.iter_next(word_iter)
             if model[word_iter][0] == word:
-                print 'word found in completion'
                 self.word_completion.get_selection().select_iter(word_iter)            
 
     def create_menu_items(self):
@@ -579,34 +584,27 @@ class SDictViewer:
     
     def open_dict(self, file):
         self.open_dicts([file])
-        
+                
     def open_dicts(self, files):
         if len(files) == 0:
+            if self.status_display:
+                self.status_display.dismiss()
+                self.status_display = None
             return
+        if not self.status_display:
+            self.status_display = self.create_dict_loading_status_display()            
         file = files.pop(0)
         if len(files) > 0:
             message = "%s (%d more to go)" % (file, len(files))
         else:
-            message = file
-        status_display = self.create_dict_loading_status_display(message)
-        worker = ui_util.BackgroundWorker(lambda : (sdict.SDictionary(file), files), status_display, self.collect_dict_callback)
+            message = file        
+        self.status_display.set_message(message)
+        worker = ui_util.BackgroundWorker(lambda : sdict.SDictionary(file), self.status_display, self.collect_dict_callback, files)
         worker.start()
         
-    def collect_dict_callback(self, dict_and_files, error):
-        dict, files = dict_and_files
+    def collect_dict_callback(self, dict, error, files):
         if not error:
             self.add_dict(dict)
-        else:
-            print "Failed to open dictionary: ", error
-        self.open_dicts(files)
-        
-        
-    def create_dict_loading_status_display(self, dict_name):            
-        return DialogStatusDisplay("Loading...", dict_name, self.get_dialog_parent())
-    
-    def set_dict_callback(self, dict, error):
-        if not error:
-            self.set_dict(dict)
         else:
             print "Failed to open dictionary: ", error
             try: 
@@ -615,16 +613,18 @@ class SDictViewer:
                 self.show_error("Dictionary Open Failed", "%s: %s" % (error.strerror, error.filename))
             except sdict.DictFormatError:
                 self.show_error("Dictionary Open Failed", error.value)
-    
+        self.open_dicts(files)
+        
+        
+    def create_dict_loading_status_display(self):            
+        return DialogStatusDisplay("Loading...", self.get_dialog_parent())
+        
     def show_error(self, title, text):
         dlg = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE, message_format=text)
         dlg.set_title(title)
         dlg.run()
         dlg.destroy()
     
-    def set_dict(self, dict):     
-        self.add_dict(dict)
-
     def add_dict(self, dict):
         if (self.dictionaries.has(dict)):
             print "Dictionary is already open"
@@ -633,8 +633,6 @@ class SDictViewer:
         self.dictionaries.add(dict)
         self.add_to_menu_remove(dict)
         self.schedule(self.update_completion, 600, self.word_input.child.get_text())
-        #self.update_completion(self.word_input.child.get_text())        
-        #self.process_word_input(self.word_input.child.get_text())
         self.update_title()  
         
     def remove_dict(self, dict):          
@@ -695,7 +693,6 @@ class SDictViewer:
             for n in xrange(0,count):
                 page = self.tabs.get_nth_page(n)
                 text_buffer = page.get_child().get_buffer()            
-                #text_buffer = self.article_view.get_buffer()
                 tag_table = text_buffer.get_tag_table()
                 tag_table.lookup("t").set_property("font-desc", font_desc)
         
