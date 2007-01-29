@@ -1,6 +1,5 @@
 #!/bin/sh
-#cd /home/user/devel/MaemoDict/debian || exit
-cp ../src/pysdic.py ../src/sdict.py ../src/sdictview-maemo.py usr/bin || exit
+cp ../src/*.py usr/bin || exit
 
 export LD_LIBRARY_PATH=/usr/lib
 
@@ -18,7 +17,7 @@ Version: $VERSION
 Section: user/other
 Priority: optional
 Architecture: all
-Depends: python2.5, python2.5-hildon, python2.5-gtk2
+Depends: $DEPENDS
 Installed-Size: $SIZE
 Maintainer: Igor Tkach <itkach@users.sourceforge.net>
 Description: A dictionary application that works with dictionaries from http://sdict.com" > control
@@ -42,7 +41,7 @@ echo 2.0 > debian-binary
 
 tar -zcvf data.tar.gz ./usr 
 tar -zcvf control.tar.gz control
-NAME="$PACKAGE"-$VERSION.deb
+NAME="$PACKAGE"-"$VERSION"-py"$PYVERSION".deb
 rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME
