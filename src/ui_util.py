@@ -2,14 +2,16 @@ import threading
 import gobject
 import gtk
 class BackgroundWorker(threading.Thread):
-    def __init__(self, task, status_display, callback):
+    def __init__(self, task, task_listener, callback, data = None):
         super(BackgroundWorker, self).__init__()
         self.callback = callback
-        self.status_display = status_display
+        self.task_listener = task_listener
         self.task = task
+        self.data = data
             
     def run(self):
-        gobject.idle_add(self.status_display.show_start)
+        if self.task_listener:
+            gobject.idle_add(self.task_listener.before_task_start)
         result = None
         error = None
         try:
@@ -17,8 +19,9 @@ class BackgroundWorker(threading.Thread):
         except Exception, ex:
             print "Failed to execute task: ", ex
             error = ex
-        gobject.idle_add(self.callback, result, error)
-        gobject.idle_add(self.status_display.show_end)
+        gobject.idle_add(self.callback, result, error, self.data)
+        if self.task_listener:
+            gobject.idle_add(self.task_listener.after_task_end)
         
 def create_scrolled_window(widget):
     scrolled_window = gtk.ScrolledWindow()
