@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 """
 This file is part of SDict Viewer (http://sdictviewer.sf.net) - dictionary that uses 
 data bases in AXMASoft's open dictionary format. SDict Viewer is distributed under terms 
