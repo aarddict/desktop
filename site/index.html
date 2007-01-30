@@ -17,16 +17,18 @@ a:visited {
 <div
 	style="border: thin solid blue; background-color: #eeeeff; float: right; padding: 5px;">
 <div><a
-	href="http://prdownloads.sourceforge.net/sdictviewer/sdictviewer-0.2.2.deb?download">Download
+	href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.3.0-py2.4.deb?use_mirror=osdn">Download
 Latest (for Python 2.4)</a></div>
 <div><a
-	href="http://prdownloads.sourceforge.net/sdictviewer/sdictviewer-0.2.2-py2.5.deb?download">Download
+	href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.3.0-py2.5.deb?use_mirror=osdn">Download
 Latest (for Python 2.5)</a></div>
 <div><a href="http://sdict.com">Download Dictionaries</a></div>
 <div><a href="http://sourceforge.net/news/?group_id=165272">News</a></div>
 <div><a href="http://sourceforge.net/projects/sdictviewer">SourceForge
 Project Page</a></div>
 <div><a href="http://sdictviewer.svn.sourceforge.net/viewvc/sdictviewer/">Browse
+Source Code</a></div>
+<div><a href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.3.0-src.zip?use_mirror=osdn">Download
 Source Code</a></div>
 </div>
 
@@ -49,11 +51,13 @@ for download at <a href="http://sdict.com">http://sdict.com</a></p>
 <ul>
 	<li>Works with dictionaries in AXMASoft's open dictionary format.
 	Get dictionaries <a href="http://sdict.com/">here</a></li>
+	<li>Works with multiple dictionaries at the same time</li>
 	<li>Supports rich article text formatting</li>
 	<li>Supports hyperlinks in article text</li>
 	<li>Displays list of possible word completions as you type</li>
+	<li>Words in completion list are grouped by language</li>
+	<li>Displays multiple articles if word selected is present in multiple opened dictionaries</li>
 	<li>Keeps word lookup history</li>
-	<li>Allows to quickly open one of most recently used dictionaries</li>
 	<li>Allows to select font for phonetic transcriptions (additional
 	<a href="#fonts">font installation</a> may be required)</li>
 	<li>Displays detailed dictionary information</li>
@@ -63,20 +67,29 @@ for download at <a href="http://sdict.com">http://sdict.com</a></p>
 <div>
 <h2>Screenshots</h2>
 <div style="text-align: center"><img
+	src="sdictviewer-0.3.0_1.png" alt="SDict Viewer 0.3.0 on Maemo"
+	style="padding: 5px;" /></div>
+
+<div style="text-align: center"><img
+	src="sdictviewer-0.3.0_2.png" alt="SDict Viewer 0.3.0 on Maemo"
+	style="padding: 5px;" /></div>
+	
+<div style="text-align: center"><img
+	src="sdictviewer-0.3.0_3.png" alt="SDict Viewer 0.3.0 on Maemo"
+	style="padding: 5px;" /></div>
+	
+<div style="text-align: center"><img
+	src="sdictviewer-0.3.0_4.png" alt="SDict Viewer 0.3.0 on Maemo"
+	style="padding: 5px;" /></div>	
+	
+<div style="text-align: center"><img
+	src="sdictviewer-0.3.0_6.png" alt="SDict Viewer 0.3.0 on Maemo"
+	style="padding: 5px;" /></div>	
+
+<div style="text-align: center"><img
 	src="sdictviewer-0.2.1-maemo-japanese.png"
 	alt="SDict Viewer 0.2.1 with English-Japanese dictionary on Maemo"
-	style="padding: 5px;" /></div>
-<div style="text-align: center"><img
-	src="sdictviewer-0.2.0-maemo-1.png" alt="SDict Viewer 0.2.0 on Maemo"
-	style="padding: 5px;" /></div>
-<div style="text-align: center"><img
-	src="sdictviewer-0.2.2-maemo.png" alt="SDict Viewer 0.2.2 on Maemo"
-	style="padding: 5px;" /></div>
-<div style="text-align: center"><img
-	src="sdictviewer-0.2.0-gentoo-1.png"
-	alt="SDict Viewer 0.2.0 on Gentoo Linux" style="padding: 5px;" /></div>
-</div>
-
+	style="padding: 5px;" /></div>		
 <div>
 <h2>Installation</h2>
 <h3>Nokia 770</h3>
@@ -122,6 +135,10 @@ resource for various unicode fonts.</p>
 <div>
 <h2>Limitations and Known Issues</h2>
 <ul>
+	<li>When word lists from several dictionaries in the same language are merged
+	the resulting list may not be correctly sorted. Sorting applied uses non-language aware 
+	string comparisons. Maybe <a href="http://pyicu.osafoundation.org/">PyICU</a> is the way to do it properly, 
+	but I don't think Maemo port exists yet.</li>
 	<li>Opening a dictionary, especially a large one takes a long time
 	(on Nokia 770)</li>
 	<li>In large dictionaries lookup of certain words may take a
@@ -165,6 +182,11 @@ resource for various unicode fonts.</p>
 </ul>
 </div>
 
-
+<div style="text-align: center; color: gray; font-size: x-small;">
+&copy; 2006-2007 Igor Tkach
+</div>
+<div style="text-align: center; color: gray; font-size: x-small;">
+Sdictionary format developed by <a href="http://axmasoft.com">AXMA Soft</a>
+</div>
 </body>
 </html>
