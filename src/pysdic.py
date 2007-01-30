@@ -643,7 +643,10 @@ class SDictViewer:
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]                
         self.dictionaries.remove(dict)       
-        self.tabs.remove_page(self.get_tab_for_dict(key)) 
+        tab = self.get_tab_for_dict(key)
+        if tab:
+            self.tabs.remove_page(tab) 
+            del self.dict_key_to_tab[dict_key]
         dict.close()
         self.word_completion.get_model().clear()
         self.update_completion(self.word_input.child.get_text())
