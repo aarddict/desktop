@@ -21,7 +21,7 @@ import xml.sax.saxutils
 
 gobject.threads_init()
 
-version = "0.3.0"
+version = "0.3.1"
 settings_file_name = ".sdictviewer"
 app_name = "SDict Viewer"
 
@@ -171,7 +171,7 @@ class ArticleFormat:
     def convert_paragraphs(self, article_text):                    
        return article_text.replace('<p>', '\n\t')
 
-class SDictViewer:
+class SDictViewer(object):
              
     def __init__(self):
         self.status_display = None
@@ -183,6 +183,7 @@ class SDictViewer:
         self.article_format = ArticleFormat()
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
+        self.file_chooser_dlg = None
                                  
         contentBox = gtk.VBox(False, 0)
         self.create_menu_items()
@@ -208,6 +209,7 @@ class SDictViewer:
         
         self.tabs = gtk.Notebook()
         self.tabs.set_scrollable(True)
+        self.tabs.popup_enable()
         self.tabs.set_property("can-focus", False)
         split_pane.add(self.tabs)
                         
@@ -484,6 +486,19 @@ class SDictViewer:
         self.mi_select_phonetic_font = gtk.MenuItem("Phonetic Font...")
         self.mi_select_phonetic_font.connect("activate", self.select_phonetic_font)
 
+        self.mn_copy = gtk.Menu()
+        self.mn_copy_item =gtk.MenuItem("Copy")
+        self.mn_copy_item.set_submenu(self.mn_copy)
+
+        self.mi_copy_article_to_clipboard = gtk.MenuItem("Article")
+        self.mi_copy_article_to_clipboard.connect("activate", self.copy_article_to_clipboard)
+        
+        self.mi_copy_to_clipboard = gtk.MenuItem("Selected Text")
+        self.mi_copy_to_clipboard.connect("activate", self.copy_selected_to_clipboard)
+        
+        self.mn_copy.append(self.mi_copy_article_to_clipboard)
+        self.mn_copy.append(self.mi_copy_to_clipboard)
+
     def create_menus(self):           
         mn_dict = gtk.Menu()
         mn_dict_item = gtk.MenuItem("Dictionary")
@@ -492,6 +507,7 @@ class SDictViewer:
         mn_dict.append(self.mi_open)        
         mn_dict.append(self.mn_remove_item)
         mn_dict.append(self.mi_info)
+        mn_dict.append(self.mn_copy_item)
         mn_dict.append(self.mi_exit)
                 
         mn_help = gtk.Menu()
@@ -506,6 +522,25 @@ class SDictViewer:
         
         mn_options.append(self.mi_select_phonetic_font)
         return (mn_dict_item, mn_options_item, mn_help_item)        
+
+    def copy_selected_to_clipboard(self, widget):
+        clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)        
+        page_num = self.tabs.get_current_page()
+        if page_num < 0:
+            return        
+        article_view = self.tabs.get_nth_page(page_num).get_child()
+        text_buffer = article_view.get_buffer()
+        text_buffer.copy_clipboard(clipboard)
+
+    def copy_article_to_clipboard(self, widget):
+        clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)        
+        page_num = self.tabs.get_current_page()
+        if page_num < 0:
+            return        
+        article_view = self.tabs.get_nth_page(page_num).get_child()
+        text_buffer = article_view.get_buffer()
+        text = text_buffer.get_text(*text_buffer.get_bounds())
+        clipboard.set_text(text)                
 
     def add_to_menu_remove(self, dict):        
         key = dict.key()
@@ -567,18 +602,19 @@ class SDictViewer:
         return False
         
     def select_dict_file(self, widget):
-        fileChooser = self.create_file_chooser_dlg()
-        fileChooser.set_title("Open Dictionary")
-        if fileChooser.run() == gtk.RESPONSE_OK:
-            fileName = fileChooser.get_filename()
+        if not self.file_chooser_dlg:
+            self.file_chooser_dlg = self.create_file_chooser_dlg()
+            self.file_chooser_dlg.set_title("Open Dictionary")
+        if self.file_chooser_dlg.run() == gtk.RESPONSE_OK:
+            fileName = self.file_chooser_dlg.get_filename()
             self.open_dict(fileName)
-        fileChooser.destroy()        
+        self.file_chooser_dlg.hide()        
         
     def create_file_chooser_dlg(self):
         dlg = gtk.FileChooserDialog(parent = self.window, action = gtk.FILE_CHOOSER_ACTION_OPEN)        
         dlg.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
         dlg.add_button( gtk.STOCK_OPEN, gtk.RESPONSE_OK)        
-        if not self.dictionaries.is_empty():
+        if self.last_dict_file_location:
             dlg.set_filename(self.last_dict_file_location)        
         return dlg
     

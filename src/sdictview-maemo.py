@@ -15,7 +15,7 @@ import gtk
 osso_c = osso.Context("sdictviewer", pysdic.version, False)
 
 class HildonSDictViewer(pysdic.SDictViewer):
-        
+            
     def create_top_level_widget(self):
         app = hildon.Program()        
         window = hildon.Window()
@@ -56,12 +56,12 @@ class HildonSDictViewer(pysdic.SDictViewer):
         main_menu.show_all()
     
     def create_menus(self):           
-        return (self.mi_open, self.mn_remove_item, self.mi_info, self.mi_select_phonetic_font, self.mi_about, self.mi_exit)
+        return (self.mi_open, self.mn_remove_item, self.mi_info, self.mn_copy_item, self.mi_select_phonetic_font, self.mi_about, self.mi_exit)
     
     
     def create_file_chooser_dlg(self):
-        dlg = hildon.FileChooserDialog(self.window, gtk.FILE_CHOOSER_ACTION_OPEN);        
-        return dlg
+        return hildon.FileChooserDialog(self.window, gtk.FILE_CHOOSER_ACTION_OPEN);        
+         
         
 if __name__ == "__main__":    
     viewer = HildonSDictViewer()
