@@ -211,6 +211,9 @@ class SDictViewer(object):
         self.tabs.set_scrollable(True)
         self.tabs.popup_enable()
         self.tabs.set_property("can-focus", False)
+#        page-added and page-removed is only available in PyGTK 2.10, doesn't work in Maemo
+#        self.tabs.connect("page-added", self.update_copy_article_mi)
+#        self.tabs.connect("page-removed", self.update_copy_article_mi)
         split_pane.add(self.tabs)
                         
         self.add_content(contentBox)
@@ -226,8 +229,12 @@ class SDictViewer(object):
                 [self.add_to_history(w, l) for w, l in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
                 self.last_dict_file_location = app_state.last_dict_file_location
+                
         except Exception, ex:
             print 'Failed to load application state:', ex                     
+             
+    def update_copy_article_mi(self, notebook = None, child = None, page_num = None):
+        self.mi_copy_article_to_clipboard.set_sensitive(notebook.get_n_pages() > 0)
              
     def destroy(self, widget, data=None):
         try:
@@ -254,9 +261,6 @@ class SDictViewer(object):
         word, lang = model[iter]
         history_list.append((word, lang))
         
-    def word_input_callback(self, widget, data = None):        
-        self.select_first_word_in_completion()
-              
     def do_word_lookup(self, word, lang):
         self.show_article_for(word, lang)
         return False
@@ -282,7 +286,7 @@ class SDictViewer(object):
             self.word_input.handler_block(self.word_change_handler) 
             self.word_input.child.set_text(word)
             self.word_input.handler_unblock(self.word_change_handler) 
-            self.update_completion_and_select(word, dict.header.word_lang)
+            self.update_completion_and_select(word, word, dict.header.word_lang)
                 
     def add_to_history(self, word, lang):        
         model = self.word_input.get_model()
@@ -298,10 +302,22 @@ class SDictViewer(object):
             del model[history_size - 1]
                 
     def clear_tabs(self):
-        while self.tabs.get_n_pages() > 0:
+        while self.tabs.get_n_pages() > 0:            
+            last_page = self.tabs.get_nth_page(self.tabs.get_n_pages() - 1)
+            article_view = last_page.get_child()
+            self.remove_handlers(article_view)
+            text_buffer = article_view.get_buffer()
+            self.remove_handlers(text_buffer)
             self.tabs.remove_page(-1)        
         self.dict_key_to_tab.clear()       
+        self.update_copy_article_mi(self.tabs)
         return False 
+    
+    def remove_handlers(self, obj):
+        handlers = obj.get_data("handlers")
+        for handler in handlers:
+            obj.disconnect(handler)
+        obj.set_data("handlers", None)
     
     def show_article_for(self, word, lang = None):
         if lang:
@@ -328,6 +344,7 @@ class SDictViewer(object):
                 gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
                 self.add_to_history(word, lang)            
                 result = True           
+        self.update_copy_article_mi(self.tabs)
         self.tabs.show_all()
         return result  
             
@@ -353,9 +370,20 @@ class SDictViewer(object):
     
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
-        gobject.idle_add(self.word_input.child.grab_focus)        
+        self.word_input.child.grab_focus()
+          
+    def get_selected_word(self):
+        selection = self.word_completion.get_selection()
+        current_model, selected = selection.get_selected()
+        selected_lang = None
+        selected_word = None
+        if selected:
+            if not current_model.iter_has_child(selected):
+                selected_word = current_model[selected][0]
+                selected_lang = current_model[current_model.iter_parent(selected)][0]                            
+        return (selected_word, selected_lang)
                                         
-    def update_completion(self, word, n = 20, select_if_one = True):
+    def update_completion(self, word, n = 20, select_if_one = True):        
         word = word.lstrip()
         self.word_completion.set_model(None)        
         lang_word_list = self.dictionaries.get_word_list(word, n)
@@ -366,8 +394,7 @@ class SDictViewer(object):
         self.word_completion.set_model(model)            
         self.word_completion.expand_all()
         if select_if_one and len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
-            self.select_first_word_in_completion()        
-        
+            self.select_first_word_in_completion()  
 
     def create_clear_button(self):
         clear_input = gtk.Button(stock = gtk.STOCK_CLEAR)
@@ -416,14 +443,13 @@ class SDictViewer(object):
         cell1 = gtk.CellRendererText()
         word_input.pack_start(cell1, False)        
         word_input.set_cell_data_func(cell1, self.format_history_item)
-        word_input.child.connect("activate", self.word_input_callback)        
+        word_input.child.connect("activate", lambda x: self.select_first_word_in_completion())                
         self.word_change_handler = word_input.connect("changed", self.word_selected_in_history)
         return word_input
     
     def format_history_item(self, celllayout, cell, model, iter, user_data = None):
         word  = model[iter][0]
         lang  = model[iter][1]
-        #cell.set_property('text', "%s (%s)" % (word, lang))
         word = xml.sax.saxutils.escape(word)
         cell.set_property('markup', '<span>%s</span> <span foreground="darkgrey">(<i>%s</i>)</span>' % (word, lang)) 
         
@@ -431,6 +457,9 @@ class SDictViewer(object):
     def word_selected_in_history(self, widget, data = None):                
         active = self.word_input.get_active()
         if active == -1:
+            #removing selection prevents virtual keaboard from disapppearing
+            self.clear_tabs();
+            self.word_completion.get_selection().unselect_all()
             self.schedule(self.update_completion, 600, self.word_input.child.get_text())            
             #self.update_completion(self.word_input.child.get_text())
             return
@@ -438,17 +467,16 @@ class SDictViewer(object):
         word = active_row[0]
         lang = active_row[1]
         #use schedule instead of direct call to interrupt already scheduled update if any
-        self.schedule(self.update_completion_and_select, 0, word, lang)        
-        #self.update_completion_and_select(word, lang)
+        self.schedule(self.update_completion_and_select, 0, word, word, lang)        
         self.update_completion(word, select_if_one = False)
         self.select_word(word, lang)        
         
-    def update_completion_and_select(self, word, lang):
-        self.update_completion(word, select_if_one = False)
+    def update_completion_and_select(self, completion_word, word, lang):
+        self.update_completion(completion_word, select_if_one = False)
         self.select_word(word, lang)        
         return False
         
-    def select_word(self, word, lang):
+    def select_word(self, word, lang):        
         model = self.word_completion.get_model()
         if len (model) == 0:
             return
@@ -462,8 +490,10 @@ class SDictViewer(object):
             word_iter = model.iter_children(lang_iter)
             while word_iter and model[word_iter][0] != word:
                 word_iter = model.iter_next(word_iter)
-            if model[word_iter][0] == word:
+            if word_iter and model[word_iter][0] == word:
                 self.word_completion.get_selection().select_iter(word_iter)            
+                word_path = model.get_path(word_iter)
+                self.word_completion.scroll_to_cell(word_path)
 
     def create_menu_items(self):
         self.mi_open = gtk.MenuItem("Add...")
@@ -491,9 +521,11 @@ class SDictViewer(object):
         self.mn_copy_item.set_submenu(self.mn_copy)
 
         self.mi_copy_article_to_clipboard = gtk.MenuItem("Article")
+        self.mi_copy_article_to_clipboard.set_sensitive(False)
         self.mi_copy_article_to_clipboard.connect("activate", self.copy_article_to_clipboard)
         
         self.mi_copy_to_clipboard = gtk.MenuItem("Selected Text")
+        self.mi_copy_to_clipboard.set_sensitive(False)
         self.mi_copy_to_clipboard.connect("activate", self.copy_selected_to_clipboard)
         
         self.mn_copy.append(self.mi_copy_article_to_clipboard)
@@ -582,9 +614,22 @@ class SDictViewer(object):
         buffer.create_tag("r", underline = True, foreground = "blue")
         buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
         buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
+        handler1 = buffer.connect("mark-set", self.article_text_selection_changed)
+        handler2 = buffer.connect("mark-deleted", self.article_text_selection_changed)
+        buffer.set_data("handlers", (handler1, handler2))
         tag_sub = buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
-        article_view.connect("motion_notify_event", self.on_mouse_motion)        
+        handler = article_view.connect("motion_notify_event", self.on_mouse_motion)        
+        article_view.set_data("handlers", [handler])
         return article_view            
+    
+    def article_text_selection_changed(self, *args):
+        page_num = self.tabs.get_current_page() 
+        sensitive = False       
+        if page_num >= 0:            
+            article_view = self.tabs.get_nth_page(page_num).get_child()
+            text_buffer = article_view.get_buffer()
+            sensitive = len(text_buffer.get_selection_bounds()) > 0
+        self.mi_copy_to_clipboard.set_sensitive(sensitive)
     
     def on_mouse_motion(self, widget, event, data = None):
         text_window = widget.get_window(gtk.TEXT_WINDOW_TEXT)
@@ -665,13 +710,20 @@ class SDictViewer(object):
         if (self.dictionaries.has(dict)):
             print "Dictionary is already open"
             return
+        word, lang = self.get_selected_word()
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
+        total_time = 0;
+        for d in self.dictionaries.get_dicts():
+            total_time += d.elapsed
+        print 'total time ', total_time
         self.add_to_menu_remove(dict)
-        self.schedule(self.update_completion, 600, self.word_input.child.get_text())
+        #self.schedule(self.update_completion, 600, self.word_input.child.get_text())
+        self.schedule(self.update_completion_and_select, 600, self.word_input.child.get_text(), word, lang)
         self.update_title()  
         
     def remove_dict(self, dict):          
+        word, lang = self.get_selected_word()
         key = dict.key()
         title, version, file_name = key
         if self.recent_menu_items.has_key(key):
@@ -682,11 +734,9 @@ class SDictViewer(object):
         tab = self.get_tab_for_dict(key)
         if tab:
             self.tabs.remove_page(tab) 
-            del self.dict_key_to_tab[dict_key]
+            del self.dict_key_to_tab[key]
         dict.close()
-        self.word_completion.get_model().clear()
-        self.update_completion(self.word_input.child.get_text())
-        self.update_completion(self.word_input.child.get_text())
+        self.update_completion_and_select(self.word_input.child.get_text(), word, lang)
         self.update_title()
         
     def get_tab_for_dict(self, dict_key):
@@ -694,7 +744,6 @@ class SDictViewer(object):
             tab_child = self.dict_key_to_tab[dict_key]
             return self.tabs.page_num(tab_child)
         return None
-
 
     def show_dict_info(self, widget):        
         info_dialog = dict_info_ui.DictInfoDialog(self.dictionaries.get_dicts(), parent = self.window)
