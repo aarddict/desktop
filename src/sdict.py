@@ -7,8 +7,9 @@ Copyright (C) 2006-2007 Igor Tkach
 """
 import zlib
 import bz2
-import struct
+from struct import unpack
 import locale
+import time
     
 class GzipCompression:
     
@@ -46,13 +47,13 @@ def read_int(s, fe = None):
         raw = read_raw(s, fe)
     else:
         raw = s
-    return struct.unpack('<I', raw)[0]    
+    return unpack('<I', raw)[0]    
 
 def read_short(raw):  
-    return struct.unpack('<H', raw)[0]    
+    return unpack('<H', raw)[0]    
 
 def read_byte(raw):  
-    return struct.unpack('<B', raw)[0]    
+    return unpack('<B', raw)[0]    
 
 class FormatElement:
     def __init__(self, offset, length, elementType = None):
@@ -122,7 +123,10 @@ class SDictionary:
         self.version = self.read_unit(self.header.version_offset)  
         self.copyright = self.read_unit(self.header.copyright_offset)
         self.current_pos = self.header.full_index_offset
+        t1 = time.time()
         self.read_short_index()
+        self.elapsed = time.time() - t1
+        print 'opened ', file_name, ' in ', self.elapsed
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -154,15 +158,14 @@ class SDictionary:
             short_word = u''
             for j in depth_range:
                 start_index = entry_start+j*4
-                end_index = start_index+4
-                uchar_code =  read_int(short_index_str[start_index:end_index])
+                #inlined unpack yields ~20% performance gain compared to calling read_int()
+                uchar_code =  unpack('<I',short_index_str[start_index:start_index+4])[0]
                 if uchar_code == 0:
                     break
                 short_word += unichr(uchar_code)            
             pointer_start = entry_start+s_index_depth*4
-            pointer = read_int(short_index_str[pointer_start:pointer_start+4])            
-            short_word_len = len(short_word)            
-            short_index[short_word_len][short_word.encode(self.encoding)] = pointer        
+            pointer = unpack('<I',short_index_str[pointer_start:pointer_start+4])[0]
+            short_index[len(short_word)][short_word.encode(self.encoding)] = pointer        
         self.short_index = short_index
             
     def get_search_pos_for(self, word):
