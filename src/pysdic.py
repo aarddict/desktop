@@ -52,19 +52,19 @@ class State:
              
 class DialogStatusDisplay:
     
-    def __init__(self, title, parent):
+    def __init__(self, parent):
         self.loading_dialog = None        
         self.parent = parent
-        self.title = title
         self.loading_dialog = gtk.MessageDialog(parent=self.parent, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_INFO)        
-        self.loading_dialog.set_title(self.title)
         self.shown = False
         
     def show(self):        
         self.shown = True
         self.loading_dialog.run()
         
-    def set_message(self, message):
+    def set_message(self, message, title):
+        self.title = title
+        self.loading_dialog.set_title(self.title)
         self.loading_dialog.set_markup(message)
             
     def dismiss(self):
@@ -674,12 +674,9 @@ class SDictViewer(object):
             return
         if not self.status_display:
             self.status_display = self.create_dict_loading_status_display()            
+            self.status_display.total_files = len(files)
         file = files.pop(0)
-        if len(files) > 0:
-            message = "%s (%d more to go)" % (file, len(files))
-        else:
-            message = file        
-        self.status_display.set_message(message)
+        self.status_display.set_message(file, "Loading %d of %d" % (self.status_display.total_files - len(files), self.status_display.total_files))
         worker = ui_util.BackgroundWorker(lambda : sdict.SDictionary(file), self.status_display, self.collect_dict_callback, files)
         worker.start()
         
@@ -698,7 +695,7 @@ class SDictViewer(object):
         
         
     def create_dict_loading_status_display(self):            
-        return DialogStatusDisplay("Loading...", self.get_dialog_parent())
+        return DialogStatusDisplay(self.get_dialog_parent())
         
     def show_error(self, title, text):
         dlg = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE, message_format=text)
@@ -713,12 +710,7 @@ class SDictViewer(object):
         word, lang = self.get_selected_word()
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
-        total_time = 0;
-        for d in self.dictionaries.get_dicts():
-            total_time += d.elapsed
-        print 'total time ', total_time
         self.add_to_menu_remove(dict)
-        #self.schedule(self.update_completion, 600, self.word_input.child.get_text())
         self.schedule(self.update_completion_and_select, 600, self.word_input.child.get_text(), word, lang)
         self.update_title()  
         
