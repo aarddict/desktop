@@ -123,10 +123,7 @@ class SDictionary:
         self.version = self.read_unit(self.header.version_offset)  
         self.copyright = self.read_unit(self.header.copyright_offset)
         self.current_pos = self.header.full_index_offset
-        t1 = time.time()
         self.read_short_index()
-        self.elapsed = time.time() - t1
-        print 'opened ', file_name, ' in ', self.elapsed
         
     def __eq__(self, other):
         return self.key() == other.key()
