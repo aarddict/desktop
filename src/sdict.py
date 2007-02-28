@@ -183,6 +183,14 @@ class SDictionary:
             pass
         return short_index
 
+    def remove_index_cache_file(self):
+        # should be done after the file is closed, to avoid raising an exception on windows
+        filename = os.path.join(os.path.expanduser("~"), ".sdict_cache" , os.path.basename(self.file_name)+".index")
+        try:
+            os.remove(filename)
+        except:
+            print "could not remove", filename
+
     def read_short_index(self):        
         self.file.seek(self.header.short_index_offset)
         s_index_depth = self.header.short_index_depth

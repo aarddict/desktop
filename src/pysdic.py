@@ -728,6 +728,7 @@ class SDictViewer(object):
             self.tabs.remove_page(tab) 
             del self.dict_key_to_tab[key]
         dict.close()
+        dict.remove_index_cache_file()
         self.update_completion_and_select(self.word_input.child.get_text(), word, lang)
         self.update_title()
         
