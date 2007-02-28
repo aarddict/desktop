@@ -122,8 +122,7 @@ class SDictionary:
         self.title = self.read_unit(self.header.title_offset)  
         self.version = self.read_unit(self.header.version_offset)  
         self.copyright = self.read_unit(self.header.copyright_offset)
-        self.current_pos = self.header.full_index_offset
-        self.read_short_index()
+        self.short_index = self.read_short_index()
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -145,25 +144,26 @@ class SDictionary:
     def read_short_index(self):        
         self.file.seek(self.header.short_index_offset)
         s_index_depth = self.header.short_index_depth
-        short_index_str = self.file.read((s_index_depth*4 + 4)*self.header.short_index_length)
+        index_entry_len = (s_index_depth+1)*4
+        short_index_str = self.file.read(index_entry_len*self.header.short_index_length)
         short_index_str = self.compression.decompress(short_index_str)                
         index_length = self.header.short_index_length
         short_index = [{} for i in xrange(s_index_depth+1)]
-        depth_range = xrange(s_index_depth)
-        for i in xrange(index_length):
-            entry_start = i* (s_index_depth+1)*4
+        depth_range = xrange(s_index_depth)        
+        for i in xrange(index_length):            
+            entry_start = start_index = i*index_entry_len
             short_word = u''
             for j in depth_range:
-                start_index = entry_start+j*4
                 #inlined unpack yields ~20% performance gain compared to calling read_int()
                 uchar_code =  unpack('<I',short_index_str[start_index:start_index+4])[0]
+                start_index+=4
                 if uchar_code == 0:
                     break
-                short_word += unichr(uchar_code)            
+                short_word += unichr(uchar_code)   
             pointer_start = entry_start+s_index_depth*4
-            pointer = unpack('<I',short_index_str[pointer_start:pointer_start+4])[0]
+            pointer = unpack('<I',short_index_str[pointer_start:pointer_start+4])[0]                        
             short_index[len(short_word)][short_word.encode(self.encoding)] = pointer        
-        self.short_index = short_index
+        return short_index
             
     def get_search_pos_for(self, word):
         search_pos = -1
@@ -197,7 +197,7 @@ class SDictionary:
                 index_item = self.read_full_index_item(current_pos)
                 next_word = index_item.word
                 next_ptr = index_item.next_ptr
-                if not next_word.startswith(starts_with):
+                if next_word and not next_word.startswith(starts_with):
                     break
                 if next_ptr == 0:
                     break
@@ -218,7 +218,7 @@ class SDictionary:
                 index_item = self.read_full_index_item(current_pos)
                 next_word = index_item.word
                 next_ptr = index_item.next_ptr
-                if not next_word.startswith(starts_with):
+                if next_word and not next_word.startswith(starts_with):
                     break                
                 if next_ptr == 0:
                     break
@@ -230,11 +230,11 @@ class SDictionary:
         
             
     def read_full_index_item(self, pointer):
-        if (pointer >= self.header.articles_offset):
+        if pointer >= self.header.articles_offset:
             print 'Warning: attempt to read word from illegal position in dict file'        
             return None
         f = self.file
-        if (f.tell() != pointer):
+        if f.tell() != pointer:
             f.seek(pointer)
         next_word = read_short(f.read(2))
         prev_word = read_short(f.read(2))
