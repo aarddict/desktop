@@ -10,7 +10,10 @@ import bz2
 from struct import unpack
 import locale
 import time
-    
+import marshal
+import os
+import os.path
+
 class GzipCompression:
     
     def __str__(self):
@@ -122,7 +125,7 @@ class SDictionary:
         self.title = self.read_unit(self.header.title_offset)  
         self.version = self.read_unit(self.header.version_offset)  
         self.copyright = self.read_unit(self.header.copyright_offset)
-        self.short_index = self.read_short_index()
+        self.short_index = self.load_short_index()
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -140,7 +143,46 @@ class SDictionary:
         s = f.read(record_length)
         s = self.compression.decompress(s)
         return s
+
+    def load_short_index(self):
+        "try to read index from a cache, if that failes fall back to read_short_index(self), and try to write a cache"
+        filename = os.path.join(os.path.expanduser("~"), ".sdict_cache" , os.path.basename(self.file_name)+".index")
+        try:
+            index_file = open(filename, 'rb')
+            # check that the cached version matches the file we are reading
+            read_title = marshal.load(index_file)
+            read_version = marshal.load(index_file)
+            if (read_title != self.title) or (read_version != self.version):
+                print "title or version missmatch in cached file"
+                raise ValueError
+            short_index = marshal.load(index_file)
+            #print "read cache from", filename
+            return short_index
+        except:
+            print "could not read", filename
+            pass
         
+        # fall back to the old method
+        short_index = self.read_short_index()
+        
+        # if we could not read the cache, then maybe the cache folder does not exist
+        # try to make a cache folder, before attempting to write a file into it
+        try:
+            os.mkdir(os.path.join(os.path.expanduser("~"), ".sdict_cache"))
+        except:
+            pass # probably already existed
+      
+        try:
+            index_file = open(filename, 'wb')
+            marshal.dump(self.title, index_file)
+            marshal.dump(self.version, index_file)
+            marshal.dump(short_index, index_file)
+           #print "wrote", filename
+        except:
+            #print "could not write", filename
+            pass
+        return short_index
+
     def read_short_index(self):        
         self.file.seek(self.header.short_index_offset)
         s_index_depth = self.header.short_index_depth
