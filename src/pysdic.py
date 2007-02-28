@@ -77,7 +77,7 @@ class DialogStatusDisplay:
             self.show()
             
     def after_task_end(self):
-        print ''
+        ''
             
 
 class ArticleFormat: 
