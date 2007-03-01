@@ -22,18 +22,35 @@ import xml.sax.saxutils
 gobject.threads_init()
 
 version = "0.3.1"
-settings_file_name = ".sdictviewer"
+settings_dir  = ".sdictviewer"
+app_state_file = "app_state"
+old_settings_file_name = ".sdictviewer"
 app_name = "SDict Viewer"
 
 def save_app_state(app_state):
     home_dir = os.path.expanduser('~')
-    settings = os.path.join(home_dir, settings_file_name) 
+    try:
+        settings = os.path.join(home_dir, settings_dir, app_state_file)
+        settings_file = file(settings, "w")
+        pickle.dump(app_state, settings_file)
+        return
+    except IOError:
+        pass
+    
+    #maybe the old config is still there (we have read it, and are now saving the data so no dataloss)
+    os.remove(os.path.join(home_dir, old_settings_file_name))
+    os.mkdir(os.path.join(home_dir, settings_dir))
+    settings = os.path.join(home_dir, settings_dir, app_state_file)
     settings_file = file(settings, "w")    
     pickle.dump(app_state, settings_file)
     
 def load_app_state():
     home_dir = os.path.expanduser('~')
-    settings = os.path.join(home_dir, settings_file_name) 
+    try:
+        settings = os.path.join(home_dir, settings_dir, app_state_file)
+    except:
+        #If there is no new style setting, try to read the old one.
+        settings = os.path.join(home_dir, old_settings_file_name)
     if os.path.exists(settings):        
         settings_file = file(settings, "r")
         app_state = pickle.load(settings_file)
@@ -245,6 +262,7 @@ class SDictViewer(object):
             dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()] 
             save_app_state(State(None, self.font, word, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
         except Exception, ex:
+            raise
             print 'Failed to store settings:', ex        
         gtk.main_quit()                  
         

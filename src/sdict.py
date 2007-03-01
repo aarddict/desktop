@@ -14,6 +14,9 @@ import marshal
 import os
 import os.path
 
+settings_dir  = ".sdictviewer"
+index_cache_dir = os.path.join(os.path.expanduser("~"),  settings_dir, "index_cache")
+
 class GzipCompression:
     
     def __str__(self):
@@ -125,6 +128,9 @@ class SDictionary:
         self.title = self.read_unit(self.header.title_offset)  
         self.version = self.read_unit(self.header.version_offset)  
         self.copyright = self.read_unit(self.header.copyright_offset)
+        
+        self.index_cache_file_name = os.path.join(index_cache_dir, os.path.basename(self.file_name)+'-'+str(self.version)+".index")
+        
         self.short_index = self.load_short_index()
         
     def __eq__(self, other):
@@ -146,9 +152,8 @@ class SDictionary:
 
     def load_short_index(self):
         "try to read index from a cache, if that failes fall back to read_short_index(self), and try to write a cache"
-        filename = os.path.join(os.path.expanduser("~"), ".sdict_cache" , os.path.basename(self.file_name)+".index")
         try:
-            index_file = open(filename, 'rb')
+            index_file = open(self.index_cache_file_name, 'rb')
             # check that the cached version matches the file we are reading
             read_title = marshal.load(index_file)
             read_version = marshal.load(index_file)
@@ -156,10 +161,10 @@ class SDictionary:
                 print "title or version missmatch in cached file"
                 raise ValueError
             short_index = marshal.load(index_file)
-            #print "read cache from", filename
+            #print "read cache from", self.index_cache_file_name
             return short_index
         except:
-            print "could not read", filename
+            print "could not read", self.index_cache_file_name
             pass
         
         # fall back to the old method
@@ -168,28 +173,27 @@ class SDictionary:
         # if we could not read the cache, then maybe the cache folder does not exist
         # try to make a cache folder, before attempting to write a file into it
         try:
-            os.mkdir(os.path.join(os.path.expanduser("~"), ".sdict_cache"))
+            os.mkdir(index_cache_dir)
         except:
             pass # probably already existed
       
         try:
-            index_file = open(filename, 'wb')
+            index_file = open(self.index_cache_file_name, 'wb')
             marshal.dump(self.title, index_file)
             marshal.dump(self.version, index_file)
             marshal.dump(short_index, index_file)
-           #print "wrote", filename
+           #print "wrote", self.index_cache_file_name
         except:
-            #print "could not write", filename
+            #print "could not write", self.index_cache_file_name
             pass
         return short_index
 
     def remove_index_cache_file(self):
         # should be done after the file is closed, to avoid raising an exception on windows
-        filename = os.path.join(os.path.expanduser("~"), ".sdict_cache" , os.path.basename(self.file_name)+".index")
         try:
-            os.remove(filename)
+            os.remove(self.index_cache_file_name)
         except:
-            print "could not remove", filename
+            print "could not remove", self.index_cache_file_name
 
     def read_short_index(self):        
         self.file.seek(self.header.short_index_offset)
