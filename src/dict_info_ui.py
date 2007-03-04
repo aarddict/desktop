@@ -100,7 +100,7 @@ class DictInfoDialog(gtk.Dialog):
         split_pane.set_position(200)
                     
         dict_list.get_selection().connect("changed", self.dict_selected)
-        self.resize(600, 360)
+        self.resize(600, 320)
         self.show_all()
                                         
         
