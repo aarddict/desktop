@@ -151,7 +151,7 @@ class SDictionary:
         return s
 
     def load_short_index(self):
-        "try to read index from a cache, if that failes fall back to read_short_index(self), and try to write a cache"
+        #"try to read index from a cache, if that failes fall back to read_short_index(self), and try to write a cache"
         try:
             index_file = open(self.index_cache_file_name, 'rb')
             # check that the cached version matches the file we are reading
