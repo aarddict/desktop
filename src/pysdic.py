@@ -21,7 +21,7 @@ import xml.sax.saxutils
 
 gobject.threads_init()
 
-version = "0.3.1"
+version = "0.4.0"
 settings_dir  = ".sdictviewer"
 app_state_file = "app_state"
 old_settings_file_name = ".sdictviewer"
@@ -29,33 +29,38 @@ app_name = "SDict Viewer"
 
 def save_app_state(app_state):
     home_dir = os.path.expanduser('~')
+    settings_dir_path = os.path.join(home_dir, settings_dir)
+    if not os.path.exists(settings_dir_path):
+        try:
+            os.mkdir(settings_dir_path)
+        except:
+            pass        
+    settings = os.path.join(home_dir, settings_dir, app_state_file)
     try:
-        settings = os.path.join(home_dir, settings_dir, app_state_file)
         settings_file = file(settings, "w")
         pickle.dump(app_state, settings_file)
         return
     except IOError:
-        pass
-    
-    #maybe the old config is still there (we have read it, and are now saving the data so no dataloss)
-    os.remove(os.path.join(home_dir, old_settings_file_name))
-    os.mkdir(os.path.join(home_dir, settings_dir))
-    settings = os.path.join(home_dir, settings_dir, app_state_file)
-    settings_file = file(settings, "w")    
-    pickle.dump(app_state, settings_file)
+        pass    
     
 def load_app_state():
     home_dir = os.path.expanduser('~')
-    try:
-        settings = os.path.join(home_dir, settings_dir, app_state_file)
-    except:
+    settings = os.path.join(home_dir, settings_dir, app_state_file)
+    old_settings = False
+    app_state = None
+    if not os.path.exists(settings):
         #If there is no new style setting, try to read the old one.
-        settings = os.path.join(home_dir, old_settings_file_name)
+        settings = os.path.join(home_dir, old_settings_file_name)        
+        old_settings = True
     if os.path.exists(settings):        
         settings_file = file(settings, "r")
         app_state = pickle.load(settings_file)
-        return app_state
-    return None    
+        if old_settings:
+            try:
+                os.remove(settings)
+            except:
+                pass                    
+    return app_state
     
 class State:    
     def __init__(self, dict_file = None, phonetic_font = None, word = None, history = [], recent = [], dict_files = [], last_dict_file_location = None):
@@ -262,8 +267,8 @@ class SDictViewer(object):
             dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()] 
             save_app_state(State(None, self.font, word, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
         except Exception, ex:
-            raise
             print 'Failed to store settings:', ex        
+            raise
         gtk.main_quit()                  
         
     def on_key_press(self, widget, event, *args):
@@ -709,6 +714,8 @@ class SDictViewer(object):
                 self.show_error("Dictionary Open Failed", "%s: %s" % (error.strerror, error.filename))
             except sdict.DictFormatError:
                 self.show_error("Dictionary Open Failed", error.value)
+            except ValueError:
+                self.show_error("Dictionary Open Failed", error.message)
         self.open_dicts(files)
         
         
@@ -766,7 +773,7 @@ class SDictViewer(object):
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
         dialog.set_version(version)
-        dialog.set_copyright("Igor Tkach")
+        dialog.set_copyright("Igor Tkach, Sam Tygier")
         dialog.set_website("http://sdictviewer.sf.net/")
         comments = "%s is viewer for dictionaries in open format described at http://sdict.com\nDistributed under terms and conditions of GNU Public License\nSee http://www.gnu.org/licenses/gpl.txt for details" % app_name
         dialog.set_comments(comments)        
