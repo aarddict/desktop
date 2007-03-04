@@ -172,10 +172,18 @@ class SDictionary:
         
         # if we could not read the cache, then maybe the cache folder does not exist
         # try to make a cache folder, before attempting to write a file into it
-        try:
-            os.mkdir(index_cache_dir)
-        except:
-            pass # probably already existed
+        home_dir = os.path.expanduser('~')
+        settings_dir_path = os.path.join(home_dir, settings_dir)
+        if not os.path.exists(settings_dir_path):
+            try:
+                os.mkdir(settings_dir_path)
+            except:
+                pass        
+        if not os.path.exists(index_cache_dir):
+            try:
+                os.mkdir(index_cache_dir)
+            except:
+                pass 
       
         try:
             index_file = open(self.index_cache_file_name, 'wb')
