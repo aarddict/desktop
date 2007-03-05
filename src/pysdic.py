@@ -713,9 +713,9 @@ class SDictViewer(object):
             except IOError:
                 self.show_error("Dictionary Open Failed", "%s: %s" % (error.strerror, error.filename))
             except sdict.DictFormatError:
-                self.show_error("Dictionary Open Failed", error.value)
+                self.show_error("Dictionary Open Failed", str(error))
             except ValueError:
-                self.show_error("Dictionary Open Failed", error.message)
+                self.show_error("Dictionary Open Failed", str(error))
         self.open_dicts(files)
         
         
