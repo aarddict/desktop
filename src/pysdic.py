@@ -58,6 +58,7 @@ def load_app_state():
         if old_settings:
             try:
                 os.remove(settings)
+                save_app_state(app_state)
             except:
                 pass                    
     return app_state
