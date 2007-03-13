@@ -17,10 +17,10 @@ a:visited {
 <div
 	style="border: thin solid blue; background-color: #eeeeff; float: right; padding: 5px;">
 <div><a
-	href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.3.0-py2.4.deb?use_mirror=osdn">Download
+	href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.4.0-py2.4.deb">Download
 Latest (for Python 2.4)</a></div>
 <div><a
-	href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.3.0-py2.5.deb?use_mirror=osdn">Download
+	href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.4.0-py2.5.deb">Download
 Latest (for Python 2.5)</a></div>
 <div><a href="http://sdict.com">Download Dictionaries</a></div>
 <div><a href="http://sourceforge.net/news/?group_id=165272">News</a></div>
@@ -28,7 +28,7 @@ Latest (for Python 2.5)</a></div>
 Project Page</a></div>
 <div><a href="http://sdictviewer.svn.sourceforge.net/viewvc/sdictviewer/">Browse
 Source Code</a></div>
-<div><a href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.3.0-src.zip?use_mirror=osdn">Download
+<div><a href="http://downloads.sourceforge.net/sdictviewer/sdictviewer-0.4.0-src.zip">Download
 Source Code</a></div>
 </div>
 
@@ -57,6 +57,7 @@ for download at <a href="http://sdict.com">http://sdict.com</a></p>
 	<li>Displays list of possible word completions as you type</li>
 	<li>Words in completion list are grouped by language</li>
 	<li>Displays multiple articles if word selected is present in multiple opened dictionaries</li>
+	<li>Allows to copy full article or selected text to clipboard</li>
 	<li>Keeps word lookup history</li>
 	<li>Allows to select font for phonetic transcriptions (additional
 	<a href="#fonts">font installation</a> may be required)</li>
@@ -139,8 +140,6 @@ resource for various unicode fonts.</p>
 	the resulting list may not be correctly sorted. Sorting applied uses non-language aware 
 	string comparisons. Maybe <a href="http://pyicu.osafoundation.org/">PyICU</a> is the way to do it properly, 
 	but I don't think Maemo port exists yet.</li>
-	<li>Opening a dictionary, especially a large one takes a long time
-	(on Nokia 770)</li>
 	<li>In large dictionaries lookup of certain words may take a
 	relatively long time. This is mostly due to the fact that most
 	dictionaries use only 3 level short index. When a number of words that
@@ -152,6 +151,8 @@ resource for various unicode fonts.</p>
 	doesn't provide any additional information to properly resolve the
 	reference. How often a user may encounter this depends a lot on a
 	specific dictionary and specific language.</li>
+	<li>Formatting large articles with lots of links is slow. This is not noticeable with 
+	most dictionaries, but can be quite painful with some Wikipedia articles.</li>
 	<li>Scrolling large articles is slow.</li>
 	<li>No user preferences. The only option right now is which font
 	to use for phonetic transcription. Most things should work well enough
