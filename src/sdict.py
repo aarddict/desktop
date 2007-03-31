@@ -221,7 +221,13 @@ class SDictionary:
                 start_index+=4
                 if uchar_code == 0:
                     break
-                short_word += unichr(uchar_code)   
+                try:
+                    short_word += unichr(uchar_code)
+                except ValueError:
+                    # python on maemo is built without support for wide unicode chars
+                    # i am not sure what this will do to article containing such chars
+                    # but atleast wikipedia vol 3 can be loaded now.
+                    short_word += u'?'
             pointer_start = entry_start+s_index_depth*4
             pointer = unpack('<I',short_index_str[pointer_start:pointer_start+4])[0]                        
             short_index[len(short_word)][short_word.encode(self.encoding)] = pointer        
