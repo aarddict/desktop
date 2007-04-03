@@ -215,19 +215,20 @@ class SDictionary:
         for i in xrange(index_length):            
             entry_start = start_index = i*index_entry_len
             short_word = u''
-            for j in depth_range:
-                #inlined unpack yields ~20% performance gain compared to calling read_int()
-                uchar_code =  unpack('<I',short_index_str[start_index:start_index+4])[0]
-                start_index+=4
-                if uchar_code == 0:
-                    break
-                try:
+            try:
+                for j in depth_range:
+                    #inlined unpack yields ~20% performance gain compared to calling read_int()
+                    uchar_code =  unpack('<I',short_index_str[start_index:start_index+4])[0]
+                    start_index+=4
+                    if uchar_code == 0:
+                        break
                     short_word += unichr(uchar_code)
-                except ValueError:
-                    # python on maemo is built without support for wide unicode chars
-                    # i am not sure what this will do to article containing such chars
-                    # but atleast wikipedia vol 3 can be loaded now.
-                    short_word += u'?'
+            except ValueError, ve:
+                # If Python is built without wide unicode support (which is the case on Maemo) 
+                # it may not be possible to use some unicode chars. It seems best to ignore such index items. The rest of
+                # the dictionary should be usable.
+                print 'Failed to decode short index item ', i, ', will ignore: ', str(ve)                
+                continue
             pointer_start = entry_start+s_index_depth*4
             pointer = unpack('<I',short_index_str[pointer_start:pointer_start+4])[0]                        
             short_index[len(short_word)][short_word.encode(self.encoding)] = pointer        
