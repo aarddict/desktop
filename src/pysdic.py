@@ -21,7 +21,7 @@ import xml.sax.saxutils
 
 gobject.threads_init()
 
-version = "0.4.0"
+version = "0.4.1"
 settings_dir  = ".sdictviewer"
 app_state_file = "app_state"
 old_settings_file_name = ".sdictviewer"
@@ -214,12 +214,13 @@ class SDictViewer(object):
                                         
         box = gtk.VBox()        
         
-        self.word_input = self.create_word_input()
-        
         input_box = gtk.HBox()
+        btn_paste = self.create_paste_button()
+        input_box.pack_start(btn_paste, False, False, 0)
+        self.word_input = self.create_word_input()
         input_box.pack_start(self.word_input, True, True, 0)
-        clear_input = self.create_clear_button()
-        input_box.pack_start(clear_input, False, False, 2)
+        btn_clear_input = self.create_clear_button()
+        input_box.pack_start(btn_clear_input, False, False, 2)
         
         box.pack_start(input_box, False, False, 4)
         
@@ -242,7 +243,7 @@ class SDictViewer(object):
         self.add_content(contentBox)
         self.update_title()
         self.window.show_all()
-        
+        self.word_input.child.grab_focus()
         try:
             app_state = load_app_state()     
             if app_state:   
@@ -395,6 +396,11 @@ class SDictViewer(object):
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
         self.word_input.child.grab_focus()
+        
+    def paste_to_word_input(self, btn, data = None): 
+        clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)
+        clipboard.request_text(lambda clipboard, text, data : self.word_input.child.set_text(text))
+        self.word_input.child.grab_focus()
           
     def get_selected_word(self):
         selection = self.word_completion.get_selection()
@@ -421,15 +427,21 @@ class SDictViewer(object):
             self.select_first_word_in_completion()  
 
     def create_clear_button(self):
-        clear_input = gtk.Button(stock = gtk.STOCK_CLEAR)
-        settings = clear_input.get_settings()
+        return self.create_button(gtk.STOCK_CLEAR, self.clear_word_input) 
+
+    def create_paste_button(self):
+        return self.create_button(gtk.STOCK_PASTE, self.paste_to_word_input)
+    
+    def create_button(self, stock_id, action):
+        button = gtk.Button(stock = stock_id)
+        settings = button.get_settings()
         settings.set_property( "gtk-button-images", True )        
-        clear_input.set_label('')
-        clear_input.set_image(gtk.image_new_from_stock(gtk.STOCK_CLEAR, gtk.ICON_SIZE_SMALL_TOOLBAR))
-        clear_input.set_relief(gtk.RELIEF_NONE)
-        clear_input.set_focus_on_click(False)
-        clear_input.connect("clicked", self.clear_word_input);
-        return clear_input        
+        button.set_label('')
+        button.set_image(gtk.image_new_from_stock(stock_id, gtk.ICON_SIZE_SMALL_TOOLBAR))
+        button.set_relief(gtk.RELIEF_NONE)
+        button.set_focus_on_click(False)
+        button.connect("clicked", action);
+        return button                
    
     def create_top_level_widget(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)    
@@ -580,13 +592,12 @@ class SDictViewer(object):
         return (mn_dict_item, mn_options_item, mn_help_item)        
 
     def copy_selected_to_clipboard(self, widget):
-        clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)        
         page_num = self.tabs.get_current_page()
         if page_num < 0:
             return        
         article_view = self.tabs.get_nth_page(page_num).get_child()
         text_buffer = article_view.get_buffer()
-        text_buffer.copy_clipboard(clipboard)
+        text_buffer.copy_clipboard(gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD))
 
     def copy_article_to_clipboard(self, widget):
         clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)        
