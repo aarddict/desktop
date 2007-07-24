@@ -1,4 +1,4 @@
 #!/bin/sh
-export DEPENDS="python2.4, python2.4-hildon, python2.4-gtk2"
+export DEPENDS="python2.4, python2.4-hildon, python2.4-gtk2, python2.4-osso, python2.4-xml"
 export PYVERSION=2.4
 sh ./makedeb
