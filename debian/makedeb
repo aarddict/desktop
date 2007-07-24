@@ -1,5 +1,12 @@
 #!/bin/sh
+mkdir -p usr/bin
+mkdir -p usr/share/applications/hildon/
+mkdir -p usr/share/dbus-1/services/
+mkdir -p usr/share/pixmaps
 cp ../src/*.py usr/bin || exit
+cp ../icons/sdictviewer.png usr/share/pixmaps/
+
+chmod +x usr/bin/sdictview-maemo.py
 
 export LD_LIBRARY_PATH=/usr/lib
 
@@ -46,4 +53,5 @@ rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME
 ls -al $NAME
-#rm debian-binary control control.tar.gz data.tar.gz
+rm debian-binary control control.tar.gz data.tar.gz
+rm -rfd usr
