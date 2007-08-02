@@ -16,8 +16,10 @@ import os.path
 import gobject
 import pickle
 import string
-import locale
 import xml.sax.saxutils
+import re
+import time
+import webbrowser
 
 gobject.threads_init()
 
@@ -106,16 +108,20 @@ from HTMLParser import HTMLParser
 
 class ArticleParser(HTMLParser):
     
-    def __init__(self, word, dict, text_buffer, word_ref_callback):
+    def __init__(self):
         HTMLParser.__init__(self)
+        self.replace_map_start = {"t":"[", "br" : "\n", "p" : "\n\t"}
+        self.replace_map_end = {"t" : "]", "br" : "\n", "p" : "\n\t"}
+        self.replace_only_tags = ["br", "p"]
+        self.entities = {"lt" : "<", "gt" : ">"}
+        self.http_link_re = re.compile("http://[^\s]+")
+    
+    def prepare(self, word, dict, text_buffer, word_ref_callback):
         self.text_buffer = text_buffer
         self.word_ref_callback = word_ref_callback
         self.word = word
         self.dict = dict
-        self.replace_map_start = {"t":"[", "br" : "\n", "p" : "\n\t"}
-        self.replace_map_end = {"t" : "]", "br" : "\n", "p" : "\n\t"}
-        self.replace_only_tags = ["br", "p"]
-        self.open_tags = {}
+        self.reset()     
         
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
@@ -127,15 +133,15 @@ class ArticleParser(HTMLParser):
         if tag not in self.replace_only_tags:
             iter = self.text_buffer.get_end_iter()
             iter.backward_chars(replacement_length)
-            self.open_tags[tag] = self.text_buffer.create_mark(tag, iter, True)
+            self.text_buffer.create_mark(tag, iter, True)
         #print "Encountered the beginning of a %s tag" % tag
 
     def handle_endtag(self, tag):
         tag = tag.lower()
         if self.replace_map_end.has_key(tag):
-            self.append(self.replace_map_end.get(tag))       
-        if self.open_tags.has_key(tag):
-            start_mark = self.open_tags.pop(tag)
+            self.append(self.replace_map_end.get(tag))  
+        start_mark = self.text_buffer.get_mark(tag)    
+        if start_mark:
             tag_start = self.text_buffer.get_iter_at_mark(start_mark)
             tag_end = self.text_buffer.get_end_iter()
             if tag == "r":
@@ -145,15 +151,19 @@ class ArticleParser(HTMLParser):
         #print "Encountered the end of a %s tag" % tag
            
     def handle_data(self, data):
+        end_offset = self.text_buffer.get_end_iter().get_offset()
         self.append(data)
+        for m in self.http_link_re.finditer(data):
+            tag_start = self.text_buffer.get_iter_at_offset(end_offset + m.start())
+            tag_end = self.text_buffer.get_iter_at_offset(end_offset + m.end())
+            self.text_buffer.apply_tag_by_name("r", tag_start, tag_end)
+            self.create_external_ref(tag_start, tag_end)
         
     def handle_entityref(self, name):
-        if name == "lt":
-            self.append("<"); 
-        elif name == "gt":
-            self.append(">"); 
+        if self.entities.has_key(name):
+            self.append(self.entities.get(name))
         else:
-            self.append("&"+name+";");        
+            self.append("&"+name+";")
         
     def append(self, text):
         self.text_buffer.insert(self.text_buffer.get_end_iter(), text)
@@ -163,16 +173,29 @@ class ArticleParser(HTMLParser):
         ref_text = text.replace("~", self.word)
         ref_tag = self.text_buffer.create_tag()
         ref_tag.connect("event", self.word_ref_callback, ref_text, self.dict)
-        self.text_buffer.apply_tag(ref_tag, start, end)  
+        self.text_buffer.apply_tag(ref_tag, start, end) 
         
-import re
-import time
+    def create_external_ref(self, start, end):
+        text = self.text_buffer.get_text(start, end)
+        ref_tag = self.text_buffer.create_tag()
+        ref_tag.connect("event", self.external_link_callback , text)
+        self.text_buffer.apply_tag(ref_tag, start, end)  
+
+    def external_link_callback(self, tag, widget, event, iter, url):
+        if event.type == gtk.gdk.BUTTON_RELEASE:
+            webbrowser.open(url)
+        
+    def error(self, message):
+        print "HTML parsing error in article:\n", self.rawdata
+        HTMLParser.error(self, message) 
         
 class ArticleFormat2:
     
-    def __init__(self):
-        self.invalid_start_tag_re = re.compile('(<)\s*[A-Za-z0-9]+\s+')
-        self.invalid_end_tag_re = re.compile('\s+[A-Za-z0-9]+\s*(>)')
+    def __init__(self, text_buffer_factory):
+        self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
+        self.invalid_end_tag_re = re.compile('\s+[\'\"\w]+\s*>')
+        self.text_buffer_factory = text_buffer_factory
+        self.parser =  ArticleParser()
    
     def repl_invalid_end(self, match):
         text = match.group(0)
@@ -185,28 +208,39 @@ class ArticleFormat2:
     def apply(self, dict, word, article, article_view, word_ref_callback):
         t0 = time.clock();
         #print article  
-        article, invalid_start_count = re.subn(self.invalid_start_tag_re, self.repl_invalid_start, article)
-        article, invalid_end_count = re.subn(self.invalid_end_tag_re, self.repl_invalid_end, article)
-        #print "invalid start count: ", invalid_start_count, " invalid end count: ", invalid_end_count, "\n", article
-        
-        text_buffer = article_view.get_buffer()
-        text_buffer.set_text('')
-        text_buffer.insert_with_tags_by_name(text_buffer.get_end_iter(), word, "b")
-        text_buffer.insert(text_buffer.get_end_iter(), "\n")
-        parser = ArticleParser(word, dict, text_buffer, word_ref_callback)
-        parser.feed(article);
+        try:
+            text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
+        except: 
+            article, invalid_start_count = re.subn(self.invalid_start_tag_re, self.repl_invalid_start, article)
+            article, invalid_end_count = re.subn(self.invalid_end_tag_re, self.repl_invalid_end, article)
+             #print "invalid start count: ", invalid_start_count, " invalid end count: ", invalid_end_count, "\n", article     
+            try:
+                text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
+            except:
+                text_buffer = self.text_buffer_factory.create_article_text_buffer()
+                text_buffer.set_text("(Error occured while formatting this article)\n"+article)
         article_view.set_buffer(text_buffer)
         print "formatting time: ", time.clock() - t0
+        
+    def get_formatted_text_buffer(self, dict, word, article, article_view, word_ref_callback):
+            text_buffer = self.text_buffer_factory.create_article_text_buffer()
+            text_buffer.insert_with_tags_by_name(text_buffer.get_end_iter(), word, "b")
+            text_buffer.insert(text_buffer.get_end_iter(), "\n")            
+            self.parser.prepare(word, dict, text_buffer, word_ref_callback)
+            self.parser.feed(article);
+            return text_buffer
 
 class ArticleFormat: 
     
-    def __init__(self):
+    def __init__(self, text_buffer_factory):
         self.template = string.Template("$word\n$text")
+        self.text_buffer_factory = text_buffer_factory
        
     def apply(self, dict, word, article, article_view, word_ref_callback):
         t0 = time.clock()
         #print article
-        buffer = article_view.get_buffer()
+        buffer = self.text_buffer_factory.create_article_text_buffer()
+        article_view.set_buffer(buffer)
         text = self.convert_newlines(article)                                        
         text = self.convert_paragraphs(text)
         text = self.template.substitute(text = text, word = word)
@@ -302,7 +336,7 @@ class SDictViewer(object):
         self.window = self.create_top_level_widget()                               
         self.font = None
         self.last_dict_file_location = None
-        self.article_format = ArticleFormat2()
+        self.article_format = ArticleFormat2(self)
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
@@ -465,7 +499,7 @@ class SDictViewer(object):
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
                 self.apply_phonetic_font()
                 self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
-                gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
+                #gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
                 self.add_to_history(word, lang)            
                 result = True           
         self.update_copy_article_mi(self.tabs)
@@ -740,7 +774,13 @@ class SDictViewer(object):
         article_view.set_wrap_mode(gtk.WRAP_WORD)
         article_view.set_editable(False)        
         article_view.set_cursor_visible(False)
-        buffer = article_view.get_buffer()
+        article_view.set_buffer(self.create_article_text_buffer())
+        handler = article_view.connect("motion_notify_event", self.on_mouse_motion)        
+        article_view.set_data("handlers", [handler])
+        return article_view            
+    
+    def create_article_text_buffer(self):
+        buffer = gtk.TextBuffer()
         buffer.create_tag("b", weight = pango.WEIGHT_BOLD)
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
@@ -752,9 +792,7 @@ class SDictViewer(object):
         handler2 = buffer.connect("mark-deleted", self.article_text_selection_changed)
         buffer.set_data("handlers", (handler1, handler2))
         tag_sub = buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
-        handler = article_view.connect("motion_notify_event", self.on_mouse_motion)        
-        article_view.set_data("handlers", [handler])
-        return article_view            
+        return buffer     
     
     def article_text_selection_changed(self, *args):
         page_num = self.tabs.get_current_page() 
