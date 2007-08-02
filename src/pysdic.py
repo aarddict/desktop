@@ -21,7 +21,7 @@ import xml.sax.saxutils
 
 gobject.threads_init()
 
-version = "0.4.1"
+version = "0.4.2"
 settings_dir  = ".sdictviewer"
 app_state_file = "app_state"
 old_settings_file_name = ".sdictviewer"
@@ -101,7 +101,102 @@ class DialogStatusDisplay:
             
     def after_task_end(self):
         ''
-            
+
+from HTMLParser import HTMLParser
+
+class ArticleParser(HTMLParser):
+    
+    def __init__(self, word, dict, text_buffer, word_ref_callback):
+        HTMLParser.__init__(self)
+        self.text_buffer = text_buffer
+        self.word_ref_callback = word_ref_callback
+        self.word = word
+        self.dict = dict
+        self.replace_map_start = {"t":"[", "br" : "\n", "p" : "\n\t"}
+        self.replace_map_end = {"t" : "]", "br" : "\n", "p" : "\n\t"}
+        self.replace_only_tags = ["br", "p"]
+        self.open_tags = {}
+        
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        replacement_length = 0
+        if self.replace_map_start.has_key(tag):
+            replacement = self.replace_map_start.get(tag)
+            replacement_length = len(replacement)
+            self.append(replacement)
+        if tag not in self.replace_only_tags:
+            iter = self.text_buffer.get_end_iter()
+            iter.backward_chars(replacement_length)
+            self.open_tags[tag] = self.text_buffer.create_mark(tag, iter, True)
+        #print "Encountered the beginning of a %s tag" % tag
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if self.replace_map_end.has_key(tag):
+            self.append(self.replace_map_end.get(tag))       
+        if self.open_tags.has_key(tag):
+            start_mark = self.open_tags.pop(tag)
+            tag_start = self.text_buffer.get_iter_at_mark(start_mark)
+            tag_end = self.text_buffer.get_end_iter()
+            if tag == "r":
+                self.create_ref(tag_start, tag_end)
+            self.text_buffer.apply_tag_by_name(tag, tag_start, tag_end)
+            self.text_buffer.delete_mark(start_mark)
+        #print "Encountered the end of a %s tag" % tag
+           
+    def handle_data(self, data):
+        self.append(data)
+        
+    def handle_entityref(self, name):
+        if name == "lt":
+            self.append("<"); 
+        elif name == "gt":
+            self.append(">"); 
+        else:
+            self.append("&"+name+";");        
+        
+    def append(self, text):
+        self.text_buffer.insert(self.text_buffer.get_end_iter(), text)
+        
+    def create_ref(self, start, end):
+        text = self.text_buffer.get_text(start, end)
+        ref_text = text.replace("~", self.word)
+        ref_tag = self.text_buffer.create_tag()
+        ref_tag.connect("event", self.word_ref_callback, ref_text, self.dict)
+        self.text_buffer.apply_tag(ref_tag, start, end)  
+        
+import re
+import time
+        
+class ArticleFormat2:
+    
+    def __init__(self):
+        self.invalid_start_tag_re = re.compile('(<)\s*[A-Za-z0-9]+\s+')
+        self.invalid_end_tag_re = re.compile('\s+[A-Za-z0-9]+\s*(>)')
+   
+    def repl_invalid_end(self, match):
+        text = match.group(0)
+        return text.replace(">", "&gt;")
+
+    def repl_invalid_start(self, match):
+        text = match.group(0)
+        return text.replace("<", "&lt;")
+   
+    def apply(self, dict, word, article, article_view, word_ref_callback):
+        t0 = time.clock();
+        #print article  
+        article, invalid_start_count = re.subn(self.invalid_start_tag_re, self.repl_invalid_start, article)
+        article, invalid_end_count = re.subn(self.invalid_end_tag_re, self.repl_invalid_end, article)
+        #print "invalid start count: ", invalid_start_count, " invalid end count: ", invalid_end_count, "\n", article
+        
+        text_buffer = article_view.get_buffer()
+        text_buffer.set_text('')
+        text_buffer.insert_with_tags_by_name(text_buffer.get_end_iter(), word, "b")
+        text_buffer.insert(text_buffer.get_end_iter(), "\n")
+        parser = ArticleParser(word, dict, text_buffer, word_ref_callback)
+        parser.feed(article);
+        article_view.set_buffer(text_buffer)
+        print "formatting time: ", time.clock() - t0
 
 class ArticleFormat: 
     
@@ -109,6 +204,8 @@ class ArticleFormat:
         self.template = string.Template("$word\n$text")
        
     def apply(self, dict, word, article, article_view, word_ref_callback):
+        t0 = time.clock()
+        #print article
         buffer = article_view.get_buffer()
         text = self.convert_newlines(article)                                        
         text = self.convert_paragraphs(text)
@@ -139,6 +236,8 @@ class ArticleFormat:
         [self.create_ref(mark, buffer, dict, word, word_ref_callback, article_view) for mark in ref_regions]                            
         [self.apply_tag(mark, buffer, "sup") for mark in sup_regions]
         [self.apply_tag(mark, buffer, "sub") for mark in sub_regions]
+        #print buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+        print "formatting time: ", time.clock() - t0
         
     def create_ref(self, mark, buffer, dict, word, word_ref_callback, article_view):
         start = buffer.get_iter_at_mark(mark[0])
@@ -203,7 +302,7 @@ class SDictViewer(object):
         self.window = self.create_top_level_widget()                               
         self.font = None
         self.last_dict_file_location = None
-        self.article_format = ArticleFormat()
+        self.article_format = ArticleFormat2()
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
