@@ -113,7 +113,7 @@ class ArticleParser(HTMLParser):
         self.replace_map_start = {"t":"[", "br" : "\n", "p" : "\n\t"}
         self.replace_map_end = {"t" : "]", "br" : "\n", "p" : "\n\t"}
         self.replace_only_tags = ["br", "p"]
-        self.entities = {"lt" : "<", "gt" : ">"}
+        self.entities = {"lt" : "<", "gt" : ">", "ndash" : u"\u2013", "nbsp" : u"\u00A0"}
         self.http_link_re = re.compile("http://[^\s]+")
     
     def prepare(self, word, dict, text_buffer, word_ref_callback):
