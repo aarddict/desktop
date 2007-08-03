@@ -1,8 +1,20 @@
 """
-This file is part of SDict Viewer (http://sdictviewer.sf.net) - dictionary that uses 
-data bases in AXMASoft's open dictionary format. SDict Viewer is distributed under terms 
-and conditions of GNU General Public License Version 2. See http://www.gnu.org/licenses/gpl.html
-for license details.
+This file is part of SDict Viewer (http://sdictviewer.sf.net) - 
+a dictionary application that allows to use data bases 
+in AXMASoft's open dictionary format. 
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 Copyright (C) 2006-2007 Igor Tkach
 """
 import pygtk
@@ -825,10 +837,9 @@ class SDictViewer(object):
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
         dialog.set_version(version)
-        dialog.set_copyright("Igor Tkach, Sam Tygier")
+        dialog.set_copyright("(C) 2006-2007 Igor Tkach\nPortions contributed by Sam Tygier")
         dialog.set_website("http://sdictviewer.sf.net/")
-        comments = "%s is viewer for dictionaries in open format described at http://sdict.com\nDistributed under terms and conditions of GNU Public License\nSee http://www.gnu.org/licenses/gpl.txt for details" % app_name
-        dialog.set_comments(comments)        
+        dialog.set_comments("Distributed under terms and conditions of GNU Public License Version 3")
         dialog.run()     
         dialog.destroy()
         
