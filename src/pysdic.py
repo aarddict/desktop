@@ -189,7 +189,7 @@ class ArticleParser(HTMLParser):
         print "HTML parsing error in article:\n", self.rawdata
         HTMLParser.error(self, message) 
         
-class ArticleFormat2:
+class ArticleFormat:
     
     def __init__(self, text_buffer_factory):
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
@@ -230,103 +230,6 @@ class ArticleFormat2:
             self.parser.feed(article);
             return text_buffer
 
-class ArticleFormat: 
-    
-    def __init__(self, text_buffer_factory):
-        self.template = string.Template("$word\n$text")
-        self.text_buffer_factory = text_buffer_factory
-       
-    def apply(self, dict, word, article, article_view, word_ref_callback):
-        t0 = time.clock()
-        #print article
-        buffer = self.text_buffer_factory.create_article_text_buffer()
-        article_view.set_buffer(buffer)
-        text = self.convert_newlines(article)                                        
-        text = self.convert_paragraphs(text)
-        text = self.template.substitute(text = text, word = word)
-        buffer.set_text(text)
-        word_start = buffer.get_iter_at_offset(0)
-        word_end = buffer.get_iter_at_offset(len(word.decode('utf-8')))
-        buffer.apply_tag_by_name("b", word_start, word_end) 
-        
-        regions_to_remove = []
-                    
-        transcript_regions = self.find_tag_bounds(buffer, "<t>", "</t>", regions_to_remove)
-        italic_regions = self.find_tag_bounds(buffer, "<i>", "</i>", regions_to_remove)
-        bold_regions = self.find_tag_bounds(buffer, "<b>", "</b>", regions_to_remove)
-        underline_regions = self.find_tag_bounds(buffer, "<u>", "</u>", regions_to_remove)
-        forms_regions = self.find_tag_bounds(buffer, "<f>", "</f>", regions_to_remove)
-        ref_regions = self.find_tag_bounds(buffer, "<r>", "</r>", regions_to_remove)
-        sup_regions = self.find_tag_bounds(buffer, "<sup>", "</sup>", regions_to_remove)
-        sub_regions = self.find_tag_bounds(buffer, "<sub>", "</sub>", regions_to_remove)
-        
-        [buffer.delete(buffer.get_iter_at_mark(mark[0]), buffer.get_iter_at_mark(mark[1])) for mark in regions_to_remove]
-        [self.apply_tag(mark, buffer, "t", "[", "]") for mark in transcript_regions]
-        [self.apply_tag(mark, buffer, "i") for mark in italic_regions]
-        [self.apply_tag(mark, buffer, "b") for mark in bold_regions]
-        [self.apply_tag(mark, buffer, "u") for mark in underline_regions]
-        [self.apply_tag(mark, buffer, "f") for mark in forms_regions]
-        [self.apply_tag(mark, buffer, "r") for mark in ref_regions]
-        [self.create_ref(mark, buffer, dict, word, word_ref_callback, article_view) for mark in ref_regions]                            
-        [self.apply_tag(mark, buffer, "sup") for mark in sup_regions]
-        [self.apply_tag(mark, buffer, "sub") for mark in sub_regions]
-        #print buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
-        print "formatting time: ", time.clock() - t0
-        
-    def create_ref(self, mark, buffer, dict, word, word_ref_callback, article_view):
-        start = buffer.get_iter_at_mark(mark[0])
-        end = buffer.get_iter_at_mark(mark[1])
-        text = buffer.get_text(start, end)
-        ref_text = text.replace("~", word)
-        ref_tag = buffer.create_tag()
-        ref_tag.connect("event", word_ref_callback, ref_text, dict)
-        buffer.apply_tag(ref_tag, start, end)        
-                    
-    def apply_tag(self, mark, buffer, tag_name, surround_text_start = '', surround_text_end = ''):
-        regions_start_iter = buffer.get_iter_at_mark(mark[0]);
-        buffer.insert(regions_start_iter, surround_text_start)
-        buffer.insert(buffer.get_iter_at_mark(mark[1]), surround_text_end)
-        
-        tag_start = buffer.get_iter_at_mark(mark[0])            
-        tag_end = buffer.get_iter_at_mark(mark[1])
-        
-        tag_start.backward_chars(len(surround_text_start))
-        
-        buffer.apply_tag_by_name(tag_name, tag_start, tag_end)
-        
-    def find_tag_bounds(self, buffer, start_tag, end_tag, regions_to_remove):
-        current_iter = buffer.get_start_iter()            
-        regions_to_mark = []            
-        while True:                  
-            match_start, match_end = current_iter.forward_search(start_tag, gtk.TEXT_SEARCH_TEXT_ONLY) or (None, None)
-            if not match_start:
-                break;                
-            mark_start_i_tag = buffer.create_mark(None, match_start)
-            mark_start_i = buffer.create_mark(None, match_end)
-            f_search_result = current_iter.forward_search(end_tag, gtk.TEXT_SEARCH_TEXT_ONLY)
-            try:
-                match_start, match_end = f_search_result
-            except TypeError:
-                print 'Formatting error: possible missing start or end tag for tag pair %s%s' % (start_tag, end_tag)
-                match_start = f_search_result
-            current_iter = match_end
-            if not match_start:
-                break;                
-            mark_end_i_tag = buffer.create_mark(None, match_end)
-            mark_end_i = buffer.create_mark(None, match_start)
-                            
-            regions_to_mark.append((mark_start_i, mark_end_i))
-            regions_to_remove.append((mark_start_i_tag, mark_start_i))
-            regions_to_remove.append((mark_end_i, mark_end_i_tag))                                
-        return regions_to_mark
-        
-        
-    def convert_newlines(self, article_text):                    
-       return article_text.replace('<br>', '\n')
-
-    def convert_paragraphs(self, article_text):                    
-       return article_text.replace('<p>', '\n\t')
-
 class SDictViewer(object):
              
     def __init__(self):
@@ -336,7 +239,7 @@ class SDictViewer(object):
         self.window = self.create_top_level_widget()                               
         self.font = None
         self.last_dict_file_location = None
-        self.article_format = ArticleFormat2(self)
+        self.article_format = ArticleFormat(self)
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
