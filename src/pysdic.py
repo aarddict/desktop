@@ -120,13 +120,14 @@ from HTMLParser import HTMLParser
 
 class ArticleParser(HTMLParser):
     
-    def __init__(self):
+    def __init__(self, external_link_callback):
         HTMLParser.__init__(self)
         self.replace_map_start = {"t":"[", "br" : "\n", "p" : "\n\t"}
         self.replace_map_end = {"t" : "]", "br" : "\n", "p" : "\n\t"}
         self.replace_only_tags = ["br", "p"]
         self.entities = {"lt" : "<", "gt" : ">", "ndash" : u"\u2013", "nbsp" : u"\u00A0", "amp" : "&"}
         self.http_link_re = re.compile("http://[^\s]+")
+        self.external_link_callback = external_link_callback
     
     def prepare(self, word, dict, text_buffer, word_ref_callback):
         self.text_buffer = text_buffer
@@ -193,21 +194,17 @@ class ArticleParser(HTMLParser):
         ref_tag.connect("event", self.external_link_callback , text)
         self.text_buffer.apply_tag(ref_tag, start, end)  
 
-    def external_link_callback(self, tag, widget, event, iter, url):
-        if event.type == gtk.gdk.BUTTON_RELEASE:
-            webbrowser.open(url)
-        
     def error(self, message):
         print "HTML parsing error in article:\n", self.rawdata
         HTMLParser.error(self, message) 
         
 class ArticleFormat:
     
-    def __init__(self, text_buffer_factory):
+    def __init__(self, text_buffer_factory, external_link_callback):
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
         self.invalid_end_tag_re = re.compile('\s+[\'\"\w]+\s*>')
         self.text_buffer_factory = text_buffer_factory
-        self.parser =  ArticleParser()
+        self.parser =  ArticleParser(external_link_callback)   
    
     def repl_invalid_end(self, match):
         text = match.group(0)
@@ -251,7 +248,7 @@ class SDictViewer(object):
         self.window = self.create_top_level_widget()                               
         self.font = None
         self.last_dict_file_location = None
-        self.article_format = ArticleFormat(self)
+        self.article_format = ArticleFormat(self, self.external_link_callback)
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
@@ -304,6 +301,10 @@ class SDictViewer(object):
                 
         except Exception, ex:
             print 'Failed to load application state:', ex                     
+         
+    def external_link_callback(self, tag, widget, event, iter, url):
+        if event.type == gtk.gdk.BUTTON_RELEASE:
+            webbrowser.open(url)         
              
     def update_copy_article_mi(self, notebook = None, child = None, page_num = None):
         self.mi_copy_article_to_clipboard.set_sensitive(notebook.get_n_pages() > 0)

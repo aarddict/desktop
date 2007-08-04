@@ -23,6 +23,7 @@ import sdict
 import hildon
 import osso
 import gtk
+import webbrowser
 
 osso_c = osso.Context("sdictviewer", pysdic.version, False)
 
@@ -72,7 +73,11 @@ class HildonSDictViewer(pysdic.SDictViewer):
     
     
     def create_file_chooser_dlg(self):
-        return hildon.FileChooserDialog(self.window, gtk.FILE_CHOOSER_ACTION_OPEN);        
+        return hildon.FileChooserDialog(self.window, gtk.FILE_CHOOSER_ACTION_OPEN);  
+    
+    def external_link_callback(self, tag, widget, event, iter, url):
+        if event.type == gtk.gdk.BUTTON_RELEASE:
+           webbrowser.open(url, context = osso_c)           
          
         
 if __name__ == "__main__":    
