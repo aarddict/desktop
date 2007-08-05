@@ -126,7 +126,7 @@ class ArticleParser(HTMLParser):
         self.replace_map_end = {"t" : "]", "br" : "\n", "p" : "\n\t"}
         self.replace_only_tags = ["br", "p"]
         self.entities = {"lt" : "<", "gt" : ">", "ndash" : u"\u2013", "nbsp" : u"\u00A0", "amp" : "&"}
-        self.http_link_re = re.compile("http://[^\s]+")
+        self.http_link_re = re.compile("http://[^\s]+", re.UNICODE)
         self.external_link_callback = external_link_callback
     
     def prepare(self, word, dict, text_buffer, word_ref_callback):
@@ -166,7 +166,8 @@ class ArticleParser(HTMLParser):
     def handle_data(self, data):
         end_offset = self.text_buffer.get_end_iter().get_offset()
         self.append(data)
-        for m in self.http_link_re.finditer(data):
+        
+        for m in self.http_link_re.finditer(data.decode('utf-8')):
             tag_start = self.text_buffer.get_iter_at_offset(end_offset + m.start())
             tag_end = self.text_buffer.get_iter_at_offset(end_offset + m.end())
             self.text_buffer.apply_tag_by_name("r", tag_start, tag_end)
