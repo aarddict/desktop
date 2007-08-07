@@ -117,17 +117,15 @@ class DialogStatusDisplay:
         ''
 
 from HTMLParser import HTMLParser
+from htmlentitydefs import name2codepoint
 
 class ArticleParser(HTMLParser):
     
-    def __init__(self, external_link_callback):
+    def __init__(self):
         HTMLParser.__init__(self)
         self.replace_map_start = {"t":"[", "br" : "\n", "p" : "\n\t"}
         self.replace_map_end = {"t" : "]", "br" : "\n", "p" : "\n\t"}
         self.replace_only_tags = ["br", "p"]
-        self.entities = {"lt" : "<", "gt" : ">", "ndash" : u"\u2013", "nbsp" : u"\u00A0", "amp" : "&"}
-        self.http_link_re = re.compile("http://[^\s]+", re.UNICODE)
-        self.external_link_callback = external_link_callback
     
     def prepare(self, word, dict, text_buffer, word_ref_callback):
         self.text_buffer = text_buffer
@@ -147,7 +145,6 @@ class ArticleParser(HTMLParser):
             iter = self.text_buffer.get_end_iter()
             iter.backward_chars(replacement_length)
             self.text_buffer.create_mark(tag, iter, True)
-        #print "Encountered the beginning of a %s tag" % tag
 
     def handle_endtag(self, tag):
         tag = tag.lower()
@@ -161,23 +158,15 @@ class ArticleParser(HTMLParser):
                 self.create_ref(tag_start, tag_end)
             self.text_buffer.apply_tag_by_name(tag, tag_start, tag_end)
             self.text_buffer.delete_mark(start_mark)
-        #print "Encountered the end of a %s tag" % tag
            
     def handle_data(self, data):
-        end_offset = self.text_buffer.get_end_iter().get_offset()
         self.append(data)
-        
-        for m in self.http_link_re.finditer(data.decode('utf-8')):
-            tag_start = self.text_buffer.get_iter_at_offset(end_offset + m.start())
-            tag_end = self.text_buffer.get_iter_at_offset(end_offset + m.end())
-            self.text_buffer.apply_tag_by_name("r", tag_start, tag_end)
-            self.create_external_ref(tag_start, tag_end)
-        
+
     def handle_entityref(self, name):
-        if self.entities.has_key(name):
-            self.append(self.entities.get(name))
+        if name2codepoint.has_key(name):
+            self.append(unichr(name2codepoint[name]))
         else:
-            self.append("&"+name+";")
+            self.append("&"+name)
         
     def append(self, text):
         self.text_buffer.insert(self.text_buffer.get_end_iter(), text)
@@ -189,12 +178,6 @@ class ArticleParser(HTMLParser):
         ref_tag.connect("event", self.word_ref_callback, ref_text, self.dict)
         self.text_buffer.apply_tag(ref_tag, start, end) 
         
-    def create_external_ref(self, start, end):
-        text = self.text_buffer.get_text(start, end)
-        ref_tag = self.text_buffer.create_tag()
-        ref_tag.connect("event", self.external_link_callback , text)
-        self.text_buffer.apply_tag(ref_tag, start, end)  
-
     def error(self, message):
         print "HTML parsing error in article:\n", self.rawdata
         HTMLParser.error(self, message) 
@@ -205,7 +188,9 @@ class ArticleFormat:
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
         self.invalid_end_tag_re = re.compile('\s+[\'\"\w]+\s*>')
         self.text_buffer_factory = text_buffer_factory
-        self.parser =  ArticleParser(external_link_callback)   
+        self.parser =  ArticleParser()   
+        self.external_link_callback = external_link_callback
+        self.http_link_re = re.compile("http://[^\s]+", re.UNICODE)
    
     def repl_invalid_end(self, match):
         text = match.group(0)
@@ -217,28 +202,45 @@ class ArticleFormat:
    
     def apply(self, dict, word, article, article_view, word_ref_callback):
         t0 = time.clock();
-        #print article  
         try:
             text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
         except: 
             article, invalid_start_count = re.subn(self.invalid_start_tag_re, self.repl_invalid_start, article)
             article, invalid_end_count = re.subn(self.invalid_end_tag_re, self.repl_invalid_end, article)
-             #print "invalid start count: ", invalid_start_count, " invalid end count: ", invalid_end_count, "\n", article     
+            print "invalid start count: ", invalid_start_count, " invalid end count: ", invalid_end_count, "\n", article     
             try:
                 text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
-            except:
+            except Exception, e:
                 text_buffer = self.text_buffer_factory.create_article_text_buffer()
-                text_buffer.set_text("(Error occured while formatting this article)\n"+article)
+                text_buffer.set_text("(Error occured while formatting this article):\n"+str(e)+"\n"+article)
         article_view.set_buffer(text_buffer)
         print "formatting time: ", time.clock() - t0
         
     def get_formatted_text_buffer(self, dict, word, article, article_view, word_ref_callback):
-            text_buffer = self.text_buffer_factory.create_article_text_buffer()
-            text_buffer.insert_with_tags_by_name(text_buffer.get_end_iter(), word, "b")
-            text_buffer.insert(text_buffer.get_end_iter(), "\n")            
-            self.parser.prepare(word, dict, text_buffer, word_ref_callback)
-            self.parser.feed(article);
-            return text_buffer
+        text_buffer = self.text_buffer_factory.create_article_text_buffer()
+        text_buffer.insert_with_tags_by_name(text_buffer.get_end_iter(), word, "b")
+        text_buffer.insert(text_buffer.get_end_iter(), "\n")            
+        self.parser.prepare(word, dict, text_buffer, word_ref_callback)
+        self.parser.feed(article);
+        t0 = time.clock();
+        self.parse_http_links(text_buffer)
+        print "parsing http links took: ", time.clock() - t0
+        return text_buffer
+    
+    def parse_http_links(self, text_buffer):
+        start, end = text_buffer.get_bounds()
+        text = text_buffer.get_text(start, end)
+        for m in self.http_link_re.finditer(text.decode('utf-8')):
+            tag_start = text_buffer.get_iter_at_offset(m.start())
+            tag_end = text_buffer.get_iter_at_offset(m.end())
+            text_buffer.apply_tag_by_name("r", tag_start, tag_end)
+            self.create_external_ref(text_buffer, tag_start, tag_end)
+            
+    def create_external_ref(self, text_buffer, start, end):
+        text = text_buffer.get_text(start, end)
+        ref_tag = text_buffer.create_tag()
+        ref_tag.connect("event", self.external_link_callback , text)
+        text_buffer.apply_tag(ref_tag, start, end)  
 
 class SDictViewer(object):
              
