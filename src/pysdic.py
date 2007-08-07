@@ -233,7 +233,7 @@ class ArticleFormat:
         for m in self.http_link_re.finditer(text.decode('utf-8')):
             tag_start = text_buffer.get_iter_at_offset(m.start())
             tag_end = text_buffer.get_iter_at_offset(m.end())
-            text_buffer.apply_tag_by_name("r", tag_start, tag_end)
+            text_buffer.apply_tag_by_name("url", tag_start, tag_end)
             self.create_external_ref(text_buffer, tag_start, tag_end)
             
     def create_external_ref(self, text_buffer, start, end):
@@ -703,8 +703,9 @@ class SDictViewer(object):
         buffer.create_tag("b", weight = pango.WEIGHT_BOLD)
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
-        buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "green")
-        buffer.create_tag("r", underline = True, foreground = "blue")
+        buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "darkgreen")
+        buffer.create_tag("r", underline = pango.UNDERLINE_SINGLE, foreground = "darkcyan")
+        buffer.create_tag("url", underline = pango.UNDERLINE_SINGLE, foreground = "blue")
         buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
         buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
         handler1 = buffer.connect("mark-set", self.article_text_selection_changed)
@@ -729,7 +730,8 @@ class SDictViewer(object):
         tags = widget.get_iter_at_location(x, y).get_tags()
         is_ref = False
         for tag in tags:
-            if tag.get_property("name") == "r":
+            tag_name = tag.get_property("name")
+            if tag_name == "r" or tag_name == "url":
                 is_ref = True
         if is_ref:
             text_window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))            
