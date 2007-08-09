@@ -35,7 +35,7 @@ import webbrowser
 
 gobject.threads_init()
 
-version = "0.4.3"
+version = "0.4.4"
 settings_dir  = ".sdictviewer"
 app_state_file = "app_state"
 old_settings_file_name = ".sdictviewer"
@@ -182,8 +182,25 @@ class ArticleParser(HTMLParser):
         print "HTML parsing error in article:\n", self.rawdata
         HTMLParser.error(self, message) 
         
+import threading
+
 class ArticleFormat:
-    
+    class Worker(threading.Thread):        
+        def __init__(self, formatter, dict, word, article, article_view, word_ref_callback):
+            super(ArticleFormat.Worker, self).__init__()
+            self.dict = dict
+            self.word = word
+            self.article = article
+            self.article_view = article_view
+            self.word_ref_callback = word_ref_callback
+            self.formatter = formatter
+
+        def run(self):
+            t0 = time.clock()
+            text_buffer = self.formatter.get_formatted_text_buffer_safe(self.dict, self.word, self.article, self.article_view, self.word_ref_callback)
+            print "formatting time: ", time.clock() - t0
+            gobject.idle_add(self.article_view.set_buffer, text_buffer)
+            
     def __init__(self, text_buffer_factory, external_link_callback):
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
         self.invalid_end_tag_re = re.compile('\s+[\'\"\w]+\s*>')
@@ -201,7 +218,17 @@ class ArticleFormat:
         return text.replace("<", "&lt;")
    
     def apply(self, dict, word, article, article_view, word_ref_callback):
-        t0 = time.clock();
+        self.article_view = article_view
+        loading = gtk.TextBuffer()
+        loading.set_text("Loading...")
+        article_view.set_buffer(loading)
+        worker = self.Worker(self, dict, word, article, article_view, word_ref_callback)
+        worker.start()
+        #text_buffer = self.get_formatted_text_buffer_safe(dict, word, article, article_view, word_ref_callback)
+        #article_view.set_buffer(text_buffer)
+        
+    
+    def get_formatted_text_buffer_safe(self, dict, word, article, article_view, word_ref_callback):
         try:
             text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
         except: 
@@ -212,9 +239,8 @@ class ArticleFormat:
                 text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
             except Exception, e:
                 text_buffer = self.text_buffer_factory.create_article_text_buffer()
-                text_buffer.set_text("(Error occured while formatting this article):\n"+str(e)+"\n"+article)
-        article_view.set_buffer(text_buffer)
-        print "formatting time: ", time.clock() - t0
+                text_buffer.set_text("(Error occured while formatting this article):\n"+str(e)+"\n"+article)  
+        return text_buffer   
         
     def get_formatted_text_buffer(self, dict, word, article, article_view, word_ref_callback):
         text_buffer = self.text_buffer_factory.create_article_text_buffer()
