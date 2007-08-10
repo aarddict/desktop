@@ -203,9 +203,11 @@ class ArticleFormat:
             print "formatting time: ", time.clock() - t0
             if not self.stopped:
                 gobject.idle_add(self.article_view.set_buffer, text_buffer)
+                del self.formatter.workers[self.dict]
             
         def stop(self):
             self.stopped = True
+            del self.formatter.workers[self.dict]
             
     def __init__(self, text_buffer_factory, external_link_callback):
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
@@ -214,7 +216,7 @@ class ArticleFormat:
         self.parser =  ArticleParser()   
         self.external_link_callback = external_link_callback
         self.http_link_re = re.compile("http://[^\s]+", re.UNICODE)
-        self.worker = None
+        self.workers = {}
    
     def repl_invalid_end(self, match):
         text = match.group(0)
@@ -225,17 +227,14 @@ class ArticleFormat:
         return text.replace("<", "&lt;")
    
     def apply(self, dict, word, article, article_view, word_ref_callback):
-        if self.worker:
-            self.worker.stop();
-            self.worker = None
+        if self.workers.has_key(dict):
+            self.workers[dict].stop();
         self.article_view = article_view
         loading = self.text_buffer_factory.create_article_text_buffer()
         loading.set_text("Loading...")
         article_view.set_buffer(loading)
-        self.worker = self.Worker(self, dict, word, article, article_view, word_ref_callback)
-        self.worker.start()
-        #text_buffer = self.get_formatted_text_buffer_safe(dict, word, article, article_view, word_ref_callback)
-        #article_view.set_buffer(text_buffer)
+        self.workers[dict] = self.Worker(self, dict, word, article, article_view, word_ref_callback)
+        self.workers[dict].start()
         
     
     def get_formatted_text_buffer_safe(self, dict, word, article, article_view, word_ref_callback):

@@ -150,6 +150,9 @@ class SDictionary:
     
     def __str__(self):
         return self.file_name
+    
+    def __hash__(self):
+        return self.key().__hash__()
         
     def key(self):
         return (self.title, self.version, self.file_name)
