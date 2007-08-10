@@ -451,7 +451,6 @@ class SDictViewer(object):
                 self.tabs.append_page(scrollable_view, label)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
-                self.apply_phonetic_font()
                 self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
                 #gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
                 self.add_to_history(word, lang)            
@@ -741,7 +740,11 @@ class SDictViewer(object):
         buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "darkgreen")
         buffer.create_tag("r", underline = pango.UNDERLINE_SINGLE, foreground = "brown4")
         buffer.create_tag("url", underline = pango.UNDERLINE_SINGLE, foreground = "steelblue4")
-        buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
+        tag_t = buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
+        if self.font:
+            font_desc = pango.FontDescription(self.font)
+            if font_desc:
+                tag_t.set_property("font-desc", font_desc)
         buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
         handler1 = buffer.connect("mark-set", self.article_text_selection_changed)
         handler2 = buffer.connect("mark-deleted", self.article_text_selection_changed)
