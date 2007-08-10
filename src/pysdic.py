@@ -213,7 +213,6 @@ class ArticleFormat:
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
         self.invalid_end_tag_re = re.compile('\s+[\'\"\w]+\s*>')
         self.text_buffer_factory = text_buffer_factory
-        self.parser =  ArticleParser()   
         self.external_link_callback = external_link_callback
         self.http_link_re = re.compile("http://[^\s]+", re.UNICODE)
         self.workers = {}
@@ -254,9 +253,10 @@ class ArticleFormat:
     def get_formatted_text_buffer(self, dict, word, article, article_view, word_ref_callback):
         text_buffer = self.text_buffer_factory.create_article_text_buffer()
         text_buffer.insert_with_tags_by_name(text_buffer.get_end_iter(), word, "b")
-        text_buffer.insert(text_buffer.get_end_iter(), "\n")            
-        self.parser.prepare(word, dict, text_buffer, word_ref_callback)
-        self.parser.feed(article);
+        text_buffer.insert(text_buffer.get_end_iter(), "\n")
+        parser =  ArticleParser()          
+        parser.prepare(word, dict, text_buffer, word_ref_callback)
+        parser.feed(article);
         t0 = time.clock();
         self.parse_http_links(text_buffer)
         print "parsing http links took: ", time.clock() - t0
