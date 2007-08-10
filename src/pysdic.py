@@ -194,12 +194,18 @@ class ArticleFormat:
             self.article_view = article_view
             self.word_ref_callback = word_ref_callback
             self.formatter = formatter
+            self.stopped = True
 
         def run(self):
+            self.stopped = False
             t0 = time.clock()
             text_buffer = self.formatter.get_formatted_text_buffer_safe(self.dict, self.word, self.article, self.article_view, self.word_ref_callback)
             print "formatting time: ", time.clock() - t0
-            gobject.idle_add(self.article_view.set_buffer, text_buffer)
+            if not self.stopped:
+                gobject.idle_add(self.article_view.set_buffer, text_buffer)
+            
+        def stop(self):
+            self.stopped = True
             
     def __init__(self, text_buffer_factory, external_link_callback):
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
@@ -208,6 +214,7 @@ class ArticleFormat:
         self.parser =  ArticleParser()   
         self.external_link_callback = external_link_callback
         self.http_link_re = re.compile("http://[^\s]+", re.UNICODE)
+        self.worker = None
    
     def repl_invalid_end(self, match):
         text = match.group(0)
@@ -218,12 +225,15 @@ class ArticleFormat:
         return text.replace("<", "&lt;")
    
     def apply(self, dict, word, article, article_view, word_ref_callback):
+        if self.worker:
+            self.worker.stop();
+            self.worker = None
         self.article_view = article_view
-        loading = gtk.TextBuffer()
+        loading = self.text_buffer_factory.create_article_text_buffer()
         loading.set_text("Loading...")
         article_view.set_buffer(loading)
-        worker = self.Worker(self, dict, word, article, article_view, word_ref_callback)
-        worker.start()
+        self.worker = self.Worker(self, dict, word, article, article_view, word_ref_callback)
+        self.worker.start()
         #text_buffer = self.get_formatted_text_buffer_safe(dict, word, article, article_view, word_ref_callback)
         #article_view.set_buffer(text_buffer)
         
