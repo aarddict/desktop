@@ -268,6 +268,7 @@ class SDictionary:
 
                
     def lookup(self, word):
+        t0 = time.clock()
         search_pos, starts_with = self.get_search_pos_for(word)
         if search_pos > -1:
             next_word = None
@@ -275,18 +276,18 @@ class SDictionary:
             current_pos = self.header.full_index_offset
             index_item = None
             i = -1
-            while next_word != word:
+            read_item = self.read_full_index_item
+            while True:
                 i += 1
                 current_pos += next_ptr
-                index_item = self.read_full_index_item(current_pos)
-                next_word = index_item.word
+                index_item = read_item(current_pos)
+                index_word = index_item.word
                 next_ptr = index_item.next_ptr
-                if next_word and not next_word.startswith(starts_with):
+                if not index_word or not index_word.startswith(starts_with):
                     break
-                if next_ptr == 0:
-                    break
-            if index_item != None and index_item.word == word:
-                return self.read_article(index_item.article_ptr)
+                if index_word == word:
+                    print "lookup", word, "in", self, "took: ", time.clock() - t0, ",", i, "words scanned" 
+                    return self.read_article(index_item.article_ptr)
         return None
                             
     def get_word_list(self, start_word, n):
@@ -297,35 +298,34 @@ class SDictionary:
             next_ptr = search_pos
             current_pos = self.header.full_index_offset
             index_item = None
-            while True:
+            count = 0
+            read_item = self.read_full_index_item
+            while count < n:
                 current_pos += next_ptr
-                index_item = self.read_full_index_item(current_pos)
-                next_word = index_item.word
+                index_item = read_item(current_pos)
+                index_word = index_item.word
                 next_ptr = index_item.next_ptr
-                if next_word and not next_word.startswith(starts_with):
+                if not index_word or not index_word.startswith(starts_with):
                     break                
-                if next_ptr == 0:
-                    break
-                if next_word.startswith(start_word):
-                    word_list.append(next_word)
-                if len(word_list) == n:
-                    break
+                if index_word.startswith(start_word):
+                    ++count
+                    word_list.append(index_word)
         return word_list
         
-            
     def read_full_index_item(self, pointer):
         if pointer >= self.header.articles_offset:
             print 'Warning: attempt to read word from illegal position in dict file'        
             return None
         f = self.file
+        read = f.read
         if f.tell() != pointer:
             f.seek(pointer)
-        next_word = read_short(f.read(2))
-        prev_word = read_short(f.read(2))
-        article_pointer = read_int(f.read(4))
+        next_word = read_short(read(2))
+        prev_word = read_short(read(2))
+        article_pointer = read_int(read(4))
         if next_word != 0:
             word_length = next_word - 8        
-            word = f.read(word_length)
+            word = read(word_length)
         else:
             word = None    
         return FullIndexItem(next_word, prev_word, word, article_pointer)
