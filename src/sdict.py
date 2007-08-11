@@ -308,7 +308,7 @@ class SDictionary:
                 if not index_word or not index_word.startswith(starts_with):
                     break                
                 if index_word.startswith(start_word):
-                    ++count
+                    count += 1
                     word_list.append(index_word)
         return word_list
         
