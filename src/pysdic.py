@@ -436,7 +436,10 @@ class SDictViewer(object):
             langs = [lang]
         else:
             langs = None
-        articles = self.dictionaries.lookup(word, langs)
+        try:
+            articles = word.read_articles()
+        except:
+            articles = self.dictionaries.lookup(word, langs)
         self.clear_tabs()
         result = False
         for dict, article in articles:        
@@ -451,7 +454,7 @@ class SDictViewer(object):
                 self.tabs.append_page(scrollable_view, label)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
-                self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
+                self.article_format.apply(dict, str(word), article, article_view, self.word_ref_clicked)
                 #gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
                 self.add_to_history(word, lang)            
                 result = True           
@@ -502,8 +505,8 @@ class SDictViewer(object):
     def update_completion(self, word, n = 20, select_if_one = True):        
         word = word.lstrip()
         self.word_completion.set_model(None)        
-        lang_word_list = self.dictionaries.get_word_list(word, n)
-        model = gtk.TreeStore(str)
+        lang_word_list = self.dictionaries.get_word_list_with_ptr(word, n)
+        model = gtk.TreeStore(object)
         for lang in lang_word_list.keys():
             iter = model.append(None, [lang])
             [model.append(iter, [word]) for word in lang_word_list[lang]]                    
@@ -554,10 +557,16 @@ class SDictViewer(object):
         word_completion.get_selection().connect("changed", self.word_selection_changed)
         renderer = gtk.CellRendererText()
         column = gtk.TreeViewColumn("", renderer, text=0)
+        column.set_cell_data_func(renderer, self.get_word_from_wordlookup, data=None)
         column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         word_completion.append_column(column)            
         word_completion.set_fixed_height_mode(True)
         return word_completion
+
+    def get_word_from_wordlookup(self, treeviewcolumn, cell_renderer, model, iter):
+        wordlookup = model[iter][0]
+        cell_renderer.set_property('text', str(wordlookup))
+        return        
 
     def create_word_input(self):
         word_input = gtk.ComboBoxEntry(gtk.TreeStore(str, str))
@@ -610,9 +619,9 @@ class SDictViewer(object):
             lang_iter = current_lang_iter
         if lang_iter:                    
             word_iter = model.iter_children(lang_iter)
-            while word_iter and model[word_iter][0] != word:
+            while word_iter and str(model[word_iter][0]) != word:
                 word_iter = model.iter_next(word_iter)
-            if word_iter and model[word_iter][0] == word:
+            if word_iter and str(model[word_iter][0]) == word:
                 self.word_completion.get_selection().select_iter(word_iter)            
                 word_path = model.get_path(word_iter)
                 self.word_completion.scroll_to_cell(word_path)

@@ -25,6 +25,7 @@ import time
 import marshal
 import os
 import os.path
+from itertools import groupby
 
 settings_dir  = ".sdictviewer"
 index_cache_dir = os.path.join(os.path.expanduser("~"),  settings_dir, "index_cache")
@@ -127,6 +128,26 @@ class DictFormatError(Exception):
          self.value = value
      def __str__(self):
          return repr(self.value)        
+
+class WordLookup:
+    def __init__(self, word, dict = None, article_ptr = None):
+        self.word = word
+        self.lookup = {}
+        if dict and article_ptr:
+            self.add_article(dict, article_ptr)
+        
+    def add_article(self, dict, article_ptr):
+        self.lookup[dict] = article_ptr
+        
+    def add_articles(self, other):
+        self.lookup.update(other.lookup)        
+        
+    def __str__(self):
+        return self.word
+    
+    def read_articles(self):
+        return [(dict,dict.read_article(article_ptr)) for dict, article_ptr in self.lookup.items()]
+        
         
 class SDictionary:         
     
@@ -289,6 +310,10 @@ class SDictionary:
                     print "lookup", word, "in", self, "took: ", time.clock() - t0, ",", i, "words scanned" 
                     return self.read_article(index_item.article_ptr)
         return None
+    
+    def lookup_by_ptr(self, ptr):
+        index_item = read_item(ptr)
+        return self.read_article(index_item.article_ptr)
                             
     def get_word_list(self, start_word, n):
         search_pos, starts_with = self.get_search_pos_for(start_word)
@@ -311,6 +336,28 @@ class SDictionary:
                     count += 1
                     word_list.append(index_word)
         return word_list
+    
+    def get_word_list_with_ptr(self, start_word, n):
+        search_pos, starts_with = self.get_search_pos_for(start_word)
+        word_list = []
+        if search_pos > -1:
+            next_word = None
+            next_ptr = search_pos
+            current_pos = self.header.full_index_offset
+            index_item = None
+            count = 0
+            read_item = self.read_full_index_item
+            while count < n:
+                current_pos += next_ptr
+                index_item = read_item(current_pos)
+                index_word = index_item.word
+                next_ptr = index_item.next_ptr
+                if not index_word or not index_word.startswith(starts_with):
+                    break                
+                if index_word.startswith(start_word):
+                    count += 1
+                    word_list.append(WordLookup(index_word, self, index_item.article_ptr))
+        return word_list    
         
     def read_full_index_item(self, pointer):
         if pointer >= self.header.articles_offset:
@@ -382,32 +429,39 @@ class SDictionaryCollection:
     
     def get_word_list(self, start_word, n):
         lang_word_lists = {}
-        #current_collate = locale.getlocale(locale.LC_COLLATE)
-        #print current_collate
         langs = self.get_langs()
-        #print langs
         for lang in langs:
-            #print 'lang', lang
             dicts = self.dictionaries[lang]
             word_list = []
-            for dict in dicts:
-                word_list.extend(dict.get_word_list(start_word, n))            
+            [word_list.extend(dict.get_word_list(start_word, n)) for dict in dicts]
             if len(dicts) > 1:
-                #locale.setlocale(locale.LC_COLLATE, (lang, ''))
-                #loc_name, enc = locale.getlocale(locale.LC_COLLATE)
-                #print "collate_locale: ", loc_name, enc
                 word_list = [w for w in set(word_list)]
-                #lang_word_lists[lang].sort(key=locale.strxfrm)                
                 word_list.sort()                
                 word_list = word_list[:n]
             if len(word_list) > 0:
                 lang_word_lists[lang] = word_list
-        #locale.setlocale(locale.LC_COLLATE, current_collate)
-            
-#        for l in lang_word_lists.values():
-#            word_list.extend(l)
-            
         return lang_word_lists
+    
+    def get_word_list_with_ptr(self, start_word, n):
+        lang_word_lists = {}
+        langs = self.get_langs()
+        for lang in langs:
+            dicts = self.dictionaries[lang]
+            word_list = []
+            [word_list.extend(dict.get_word_list_with_ptr(start_word, n)) for dict in dicts]
+            if len(dicts) > 1:
+                keyfunc = lambda word : str(word)
+                word_list.sort(key = keyfunc)
+                merged_word_list = []
+                for k, g in groupby(word_list, keyfunc):
+                    merged_word = WordLookup(k)
+                    for word in g:
+                        merged_word.add_articles(word)
+                    merged_word_list.append(merged_word)
+                word_list = merged_word_list[:n]
+            if len(word_list) > 0:
+                lang_word_lists[lang] = word_list
+        return lang_word_lists    
     
     def is_empty(self):
         return self.size() == 0
