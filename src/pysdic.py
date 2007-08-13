@@ -431,15 +431,13 @@ class SDictViewer(object):
             obj.disconnect(handler)
         obj.set_data("handlers", None)
     
-    def show_article_for(self, word, lang = None):
+    def show_article_for(self, wordlookup, lang = None):
         if lang:
             langs = [lang]
         else:
             langs = None
-        try:
-            articles = word.read_articles()
-        except:
-            articles = self.dictionaries.lookup(word, langs)
+        articles = wordlookup.read_articles()
+        word = str(wordlookup)
         self.clear_tabs()
         result = False
         for dict, article in articles:        
@@ -454,7 +452,7 @@ class SDictViewer(object):
                 self.tabs.append_page(scrollable_view, label)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
-                self.article_format.apply(dict, str(word), article, article_view, self.word_ref_clicked)
+                self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
                 #gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
                 self.add_to_history(word, lang)            
                 result = True           
