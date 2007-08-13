@@ -391,7 +391,7 @@ class SDictViewer(object):
         if first_lang: 
             word_iter = model.iter_children(first_lang)
             self.word_completion.get_selection().select_iter(word_iter)
-            self.word_completion.grab_focus()                
+            #self.word_completion.grab_focus()                
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
         if event.type == gtk.gdk.BUTTON_RELEASE:
@@ -617,9 +617,9 @@ class SDictViewer(object):
             lang_iter = current_lang_iter
         if lang_iter:                    
             word_iter = model.iter_children(lang_iter)
-            while word_iter and str(model[word_iter][0]) != word:
+            while word_iter and str(model[word_iter][0]) != str(word):
                 word_iter = model.iter_next(word_iter)
-            if word_iter and str(model[word_iter][0]) == word:
+            if word_iter and str(model[word_iter][0]) == str(word):
                 self.word_completion.get_selection().select_iter(word_iter)            
                 word_path = model.get_path(word_iter)
                 self.word_completion.scroll_to_cell(word_path)
