@@ -289,57 +289,7 @@ class SDictionary:
                 print ex            
         return search_pos, starts_with
 
-               
-    def lookup(self, word):
-        t0 = time.clock()
-        search_pos, starts_with = self.get_search_pos_for(word)
-        if search_pos > -1:
-            next_word = None
-            next_ptr = search_pos
-            current_pos = self.header.full_index_offset
-            index_item = None
-            i = -1
-            read_item = self.read_full_index_item
-            while True:
-                i += 1
-                current_pos += next_ptr
-                index_item = read_item(current_pos)
-                index_word = index_item.word
-                next_ptr = index_item.next_ptr
-                if not index_word or not index_word.startswith(starts_with):
-                    break
-                if index_word == word:
-                    print "lookup", word, "in", self, "took: ", time.clock() - t0, ",", i, "words scanned" 
-                    return self.read_article(index_item.article_ptr)
-        return None
-    
-    def lookup_by_ptr(self, ptr):
-        index_item = read_item(ptr)
-        return self.read_article(index_item.article_ptr)
-                            
     def get_word_list(self, start_word, n):
-        search_pos, starts_with = self.get_search_pos_for(start_word)
-        word_list = []
-        if search_pos > -1:
-            next_word = None
-            next_ptr = search_pos
-            current_pos = self.header.full_index_offset
-            index_item = None
-            count = 0
-            read_item = self.read_full_index_item
-            while count < n:
-                current_pos += next_ptr
-                index_item = read_item(current_pos)
-                index_word = index_item.word
-                next_ptr = index_item.next_ptr
-                if not index_word or not index_word.startswith(starts_with):
-                    break                
-                if index_word.startswith(start_word):
-                    count += 1
-                    word_list.append(index_word)
-        return word_list
-    
-    def get_word_list_with_ptr(self, start_word, n):
         t0 = time.clock()
         if len(start_word) > self.header.short_index_depth and self.last_starts_with and start_word.startswith(self.last_starts_with):
             search_pos, starts_with = self.last_search_pos, self.last_starts_with
@@ -360,7 +310,6 @@ class SDictionary:
                 index_item = read_item(current_pos)
                 index_word = index_item.word
                 next_ptr = index_item.next_ptr
-                print "Word found: ", index_word
                 if not index_word or not index_word.startswith(starts_with):
                     break                
                 if index_word.startswith(start_word):
@@ -368,7 +317,6 @@ class SDictionary:
                     if count == 1:
                         self.last_starts_with = index_word
                         self.last_search_pos = current_pos - self.header.full_index_offset
-                        print "last starts with:", self.last_starts_with, self.last_search_pos
                     word_list.append(WordLookup(index_word, self, index_item.article_ptr))
         print "get word list took ", time.clock() - t0
         return word_list    
@@ -448,21 +396,6 @@ class SDictionaryCollection:
             dicts = self.dictionaries[lang]
             word_list = []
             [word_list.extend(dict.get_word_list(start_word, n)) for dict in dicts]
-            if len(dicts) > 1:
-                word_list = [w for w in set(word_list)]
-                word_list.sort()                
-                word_list = word_list[:n]
-            if len(word_list) > 0:
-                lang_word_lists[lang] = word_list
-        return lang_word_lists
-    
-    def get_word_list_with_ptr(self, start_word, n):
-        lang_word_lists = {}
-        langs = self.get_langs()
-        for lang in langs:
-            dicts = self.dictionaries[lang]
-            word_list = []
-            [word_list.extend(dict.get_word_list_with_ptr(start_word, n)) for dict in dicts]
             if len(dicts) > 1:
                 keyfunc = lambda word : str(word)
                 word_list.sort(key = keyfunc)

@@ -503,7 +503,7 @@ class SDictViewer(object):
     def update_completion(self, word, n = 20, select_if_one = True):        
         word = word.lstrip()
         self.word_completion.set_model(None)        
-        lang_word_list = self.dictionaries.get_word_list_with_ptr(word, n)
+        lang_word_list = self.dictionaries.get_word_list(word, n)
         model = gtk.TreeStore(object)
         for lang in lang_word_list.keys():
             iter = model.append(None, [lang])
