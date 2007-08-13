@@ -165,6 +165,8 @@ class SDictionary:
         self.index_cache_file_name = os.path.join(index_cache_dir, os.path.basename(self.file_name)+'-'+str(self.version)+".index")
         
         self.short_index = self.load_short_index()
+        self.last_starts_with = None
+        self.last_search_pos = None
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -338,7 +340,13 @@ class SDictionary:
         return word_list
     
     def get_word_list_with_ptr(self, start_word, n):
-        search_pos, starts_with = self.get_search_pos_for(start_word)
+        t0 = time.clock()
+        if len(start_word) > self.header.short_index_depth and self.last_starts_with and start_word.startswith(self.last_starts_with):
+            search_pos, starts_with = self.last_search_pos, self.last_starts_with
+        else:
+            self.last_search_pos = None
+            self.last_starts_with = None
+            search_pos, starts_with = self.get_search_pos_for(start_word)
         word_list = []
         if search_pos > -1:
             next_word = None
@@ -352,11 +360,17 @@ class SDictionary:
                 index_item = read_item(current_pos)
                 index_word = index_item.word
                 next_ptr = index_item.next_ptr
+                print "Word found: ", index_word
                 if not index_word or not index_word.startswith(starts_with):
                     break                
                 if index_word.startswith(start_word):
                     count += 1
+                    if count == 1:
+                        self.last_starts_with = index_word
+                        self.last_search_pos = current_pos - self.header.full_index_offset
+                        print "last starts with:", self.last_starts_with, self.last_search_pos
                     word_list.append(WordLookup(index_word, self, index_item.article_ptr))
+        print "get word list took ", time.clock() - t0
         return word_list    
         
     def read_full_index_item(self, pointer):
