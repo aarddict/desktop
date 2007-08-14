@@ -394,7 +394,7 @@ class SDictViewer(object):
         word_completion.set_headers_visible(False)
         word_completion.get_selection().connect("changed", self.word_selection_changed)
         renderer = gtk.CellRendererText()
-        column = gtk.TreeViewColumn("", renderer, text=0)
+        column = gtk.TreeViewColumn("", renderer)
         column.set_cell_data_func(renderer, self.get_word_from_wordlookup, data=None)
         column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         word_completion.append_column(column)            
