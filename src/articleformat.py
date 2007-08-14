@@ -4,6 +4,13 @@ import gobject
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 
+class FormattingStoppedException(Exception):
+
+     def __init__(self):
+         self.value = "Formatting stopped"
+     def __str__(self):
+         return repr(self.value)   
+
 class ArticleParser(HTMLParser):
     
     def __init__(self):
@@ -18,6 +25,11 @@ class ArticleParser(HTMLParser):
         self.word = word
         self.dict = dict
         self.reset()     
+
+    def goahead(self, end):
+        if threading.currentThread().stopped:
+            raise FormattingStoppedException
+        HTMLParser.goahead(self, end);
         
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
@@ -88,11 +100,11 @@ class ArticleFormat:
             print "formatting time: ", time.clock() - t0
             if not self.stopped:
                 gobject.idle_add(self.article_view.set_buffer, text_buffer)
-                del self.formatter.workers[self.dict]
+                self.formatter.workers.pop(self.dict)
             
         def stop(self):
             self.stopped = True
-            del self.formatter.workers[self.dict]
+            self.formatter.workers.pop(self.dict)
             
     def __init__(self, text_buffer_factory, external_link_callback):
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
@@ -122,14 +134,20 @@ class ArticleFormat:
         
     
     def get_formatted_text_buffer_safe(self, dict, word, article, article_view, word_ref_callback):
+        text_buffer = None
         try:
             text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
-        except: 
+        except FormattingStoppedException:
+            pass 
+        except Exception, e: 
+            print e
             article, invalid_start_count = re.subn(self.invalid_start_tag_re, self.repl_invalid_start, article)
             article, invalid_end_count = re.subn(self.invalid_end_tag_re, self.repl_invalid_end, article)
             print "invalid start count: ", invalid_start_count, " invalid end count: ", invalid_end_count, "\n", article     
             try:
                 text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
+            except FormattingStoppedException:
+                pass
             except Exception, e:
                 text_buffer = self.text_buffer_factory.create_article_text_buffer()
                 text_buffer.set_text("(Error occured while formatting this article):\n"+str(e)+"\n"+article)  
