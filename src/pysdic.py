@@ -449,12 +449,12 @@ class SDictViewer(object):
         model = self.word_completion.get_model()
         if len (model) == 0:
             return
-        lang_iter = None
-        current_lang_iter = model.get_iter_first()
-        while current_lang_iter and model[current_lang_iter][0] != lang:
-            current_lang_iter = model.iter_next(current_lang_iter)
-        if current_lang_iter and model[current_lang_iter][0] == lang:
-            lang_iter = current_lang_iter
+        lang_iter = current_lang_iter = model.get_iter_first()
+        if model.iter_n_children(current_lang_iter) > 1:
+            while current_lang_iter and model[current_lang_iter][0] != lang:
+                current_lang_iter = model.iter_next(current_lang_iter)
+            if current_lang_iter and model[current_lang_iter][0] == lang:
+                lang_iter = current_lang_iter
         if lang_iter:                    
             word_iter = model.iter_children(lang_iter)
             while word_iter and str(model[word_iter][0]) != str(word):
