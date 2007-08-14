@@ -311,22 +311,25 @@ class SDictionary:
         return word_list    
         
     def read_full_index_item(self, pointer):
-        if pointer >= self.header.articles_offset:
-            print 'Warning: attempt to read word from illegal position in dict file'        
-            return None
-        f = self.file
-        read = f.read
-        if f.tell() != pointer:
-            f.seek(pointer)
-        next_word = read_short(read(2))
-        prev_word = read_short(read(2))
-        article_pointer = read_int(read(4))
-        if next_word != 0:
-            word_length = next_word - 8        
-            word = read(word_length)
-        else:
-            word = None    
-        return FullIndexItem(next_word, prev_word, word, article_pointer)
+        try:
+            f = self.file
+            read = f.read
+            if f.tell() != pointer:
+                f.seek(pointer)
+            next_word = unpack('<H', read(2))[0]
+            prev_word = unpack('<H', read(2))[0]
+            article_pointer = unpack('<I', read(4))[0]
+            if next_word != 0:
+                word_length = next_word - 8        
+                word = read(word_length)
+            else:
+                word = None    
+            return FullIndexItem(next_word, prev_word, word, article_pointer)
+        except Exception, e:
+            if pointer >= self.header.articles_offset:
+                print 'Warning: attempt to read word from illegal position in dict file'        
+                return None
+            print e
         
     def read_article(self, pointer):
         return self.read_unit(self.header.articles_offset + pointer)        
