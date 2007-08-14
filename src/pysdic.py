@@ -36,7 +36,7 @@ import webbrowser
 
 gobject.threads_init()
 
-version = "0.4.4"
+version = "0.4.5"
 settings_dir  = ".sdictviewer"
 app_state_file = "app_state"
 old_settings_file_name = ".sdictviewer"
