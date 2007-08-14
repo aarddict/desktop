@@ -450,7 +450,7 @@ class SDictViewer(object):
         if len (model) == 0:
             return
         lang_iter = current_lang_iter = model.get_iter_first()
-        if model.iter_n_children(current_lang_iter) > 1:
+        if len (model) > 1:
             while current_lang_iter and model[current_lang_iter][0] != lang:
                 current_lang_iter = model.iter_next(current_lang_iter)
             if current_lang_iter and model[current_lang_iter][0] == lang:
