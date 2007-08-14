@@ -95,9 +95,7 @@ class ArticleFormat:
 
         def run(self):
             self.stopped = False
-            t0 = time.clock()
             text_buffer = self.formatter.get_formatted_text_buffer_safe(self.dict, self.word, self.article, self.article_view, self.word_ref_callback)
-            print "formatting time: ", time.clock() - t0
             if not self.stopped:
                 gobject.idle_add(self.article_view.set_buffer, text_buffer)
                 self.formatter.workers.pop(self.dict)
@@ -160,9 +158,7 @@ class ArticleFormat:
         parser =  ArticleParser()          
         parser.prepare(word, dict, text_buffer, word_ref_callback)
         parser.feed(article);
-        t0 = time.clock();
         self.parse_http_links(text_buffer)
-        print "parsing http links took: ", time.clock() - t0
         return text_buffer
     
     def parse_http_links(self, text_buffer):

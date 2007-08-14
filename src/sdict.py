@@ -286,7 +286,6 @@ class SDictionary:
         return search_pos, starts_with
 
     def get_word_list(self, start_word, n):
-        t0 = time.clock()
         search_pos, starts_with = self.get_search_pos_for(start_word)
         word_list = []
         scan_count = 0
@@ -307,7 +306,6 @@ class SDictionary:
                 if index_word.startswith(start_word):
                     count += 1
                     word_list.append(WordLookup(index_word, self, index_item.article_ptr))
-        print "get word list took ", time.clock() - t0
         return word_list    
         
     def read_full_index_item(self, pointer):
