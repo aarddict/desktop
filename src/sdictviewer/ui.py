@@ -608,7 +608,7 @@ class SDictViewer(object):
                     self.select_word_on_open = None
                 else:
                     word, lang = self.get_selected_word()
-                self.schedule(self.update_completion_and_select, 0, self.word_input.child.get_text(), word, lang)
+                self.update_completion_and_select(self.word_input.child.get_text(), word, lang)
             return
         if not self.status_display:
             self.status_display = self.create_dict_loading_status_display()            
