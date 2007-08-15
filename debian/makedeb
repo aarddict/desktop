@@ -1,12 +1,14 @@
 #!/bin/sh
 mkdir -p usr/bin
+mkdir -p usr/lib/sdictviewer
 mkdir -p usr/share/applications/hildon/
 mkdir -p usr/share/dbus-1/services/
 mkdir -p usr/share/pixmaps
-cp ../src/*.py usr/bin || exit
+cp ../src/sdictviewer-maemo.py usr/bin/sdictviewer || exit
+cp -R ../src/sdictviewer/*.py usr/lib/sdictviewer || exit
 cp ../icons/sdictviewer.png usr/share/pixmaps/
 
-chmod +x usr/bin/sdictview-maemo.py
+chmod +x usr/bin/sdictviewer
 
 export LD_LIBRARY_PATH=/usr/lib
 
@@ -14,7 +16,7 @@ DIRS="usr"
 find $DIRS| grep \~ && rm -i $(find $DIRS| grep \~)
 
 PACKAGE=sdictviewer
-VERSION=$(grep "^version =" ../src/pysdic.py | sed s/version\ =\ \"// | sed s/\"//)
+VERSION=$(grep "^version =" ../src/sdictviewer/ui.py | sed s/version\ =\ \"// | sed s/\"//)
 SIZE=$(du -sc $DIRS|grep total|sed s/total//)
 
 echo $VERSION	
@@ -35,14 +37,14 @@ Version=$VERSION
 Encoding=UTF-8
 Name=SDict Viewer
 Type=Application
-Exec=/usr/bin/sdictview-maemo.py
+Exec=/usr/bin/sdictviewer
 Icon=sdictviewer
 X-Osso-Service=sdictviewer
 X-Osso-Type=application/x-executable" > usr/share/applications/hildon/sdictviewer.desktop
 
 echo "[D-BUS Service]
 Name=com.nokia.sdictviewer
-Exec=/usr/bin/sdictview-maemo.py" > usr/share/dbus-1/services/sdictviewer.service
+Exec=/usr/bin/sdictviewer" > usr/share/dbus-1/services/sdictviewer.service
 
 echo 2.0 > debian-binary
 
@@ -53,5 +55,5 @@ rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME
 ls -al $NAME
-rm debian-binary control control.tar.gz data.tar.gz
-rm -rfd usr
+#rm debian-binary control control.tar.gz data.tar.gz
+#rm -rfd usr

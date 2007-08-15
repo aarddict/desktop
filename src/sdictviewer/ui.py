@@ -22,8 +22,8 @@ pygtk.require('2.0')
 import gtk
 import pango
 import sdict
-import dict_info_ui
-import ui_util
+import dictinfo
+import util
 import articleformat
 import os.path
 import gobject
@@ -148,7 +148,7 @@ class SDictViewer(object):
         box.pack_start(input_box, False, False, 4)
         
         self.word_completion = self.create_word_completion()
-        box.pack_start(ui_util.create_scrolled_window(self.word_completion), True, True, 0)
+        box.pack_start(util.create_scrolled_window(self.word_completion), True, True, 0)
 
         split_pane = gtk.HPaned()        
         contentBox.pack_start(split_pane, True, True, 2)                        
@@ -285,7 +285,7 @@ class SDictViewer(object):
             if article: 
                 article_view = self.create_article_view()
                 article_view.set_property("can-focus", False)
-                scrollable_view = ui_util.create_scrolled_window(article_view)                
+                scrollable_view = util.create_scrolled_window(article_view)                
                 scrollable_view.set_property("can-focus", False)
                 label = gtk.Label(dict.title)
                 label.set_width_chars(6)
@@ -656,7 +656,7 @@ class SDictViewer(object):
             self.status_display.total_files = len(files)
         file = files.pop(0)
         self.status_display.set_message(file, "Loading %d of %d" % (self.status_display.total_files - len(files), self.status_display.total_files))
-        worker = ui_util.BackgroundWorker(lambda : sdict.SDictionary(file), self.status_display, self.collect_dict_callback, files)
+        worker = util.BackgroundWorker(lambda : sdict.SDictionary(file), self.status_display, self.collect_dict_callback, files)
         worker.start()
         
     def collect_dict_callback(self, dict, error, files):
@@ -720,7 +720,7 @@ class SDictViewer(object):
         return None
 
     def show_dict_info(self, widget):        
-        info_dialog = dict_info_ui.DictInfoDialog(self.dictionaries.get_dicts(), parent = self.window)
+        info_dialog = dictinfo.DictInfoDialog(self.dictionaries.get_dicts(), parent = self.window)
         info_dialog.run()
         info_dialog.destroy()
         

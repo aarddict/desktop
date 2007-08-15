@@ -18,8 +18,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2006-2007 Igor Tkach
 """
-import pysdic
-import sdict
+import sys
+sys.path.append('/usr/lib/sdictviewer/')
+
+from sdictviewer import ui
+import sdictviewer.hildon
+import hildon
+import osso
+import gtk
+import webbrowser
+
+osso_c = osso.Context("sdictviewer", ui.version, False)
+
 if __name__ == "__main__":    
-    viewer = pysdic.SDictViewer()
+    viewer = sdictviewer.hildon.HildonSDictViewer()
     viewer.main()
