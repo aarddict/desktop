@@ -23,6 +23,7 @@ sys.path.append('/usr/lib/')
 
 from sdictviewer import ui
 import sdictviewer.hildon
+import osso
 
 osso_c = osso.Context("sdictviewer", ui.version, False)
 
