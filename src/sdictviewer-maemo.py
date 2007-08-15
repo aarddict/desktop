@@ -22,11 +22,8 @@ import sys
 sys.path.append('/usr/lib/')
 
 from sdictviewer import ui
-import sdictviewer.hildon
-import osso
-
-osso_c = osso.Context("sdictviewer", ui.version, False)
+import sdictviewer.hildonui
 
 if __name__ == "__main__":    
-    viewer = sdictviewer.hildon.HildonSDictViewer()
+    viewer = sdictviewer.hildonui.HildonSDictViewer()
     viewer.main()
