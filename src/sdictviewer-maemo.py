@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2006-2007 Igor Tkach
 """
 import sys
-sys.path.append('/usr/lib/sdictviewer/')
+sys.path.append('/usr/lib/')
 
 from sdictviewer import ui
 import sdictviewer.hildon

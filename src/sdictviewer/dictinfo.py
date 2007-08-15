@@ -22,7 +22,7 @@ pygtk.require('2.0')
 import gtk
 import pango
 import sdict
-import ui_util
+import util
 import locale
 
 class DictDetailPane(gtk.HBox):
@@ -107,7 +107,7 @@ class DictInfoDialog(gtk.Dialog):
         for dict in dicts:
             dict_list.get_model().append([dict])
                 
-        box.pack_start(ui_util.create_scrolled_window(dict_list), True, True, 0)
+        box.pack_start(util.create_scrolled_window(dict_list), True, True, 0)
 
         split_pane = gtk.HPaned()        
         contentBox.pack_start(split_pane, True, True, 2)                        

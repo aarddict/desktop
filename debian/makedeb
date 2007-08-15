@@ -55,5 +55,5 @@ rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME
 ls -al $NAME
-#rm debian-binary control control.tar.gz data.tar.gz
-#rm -rfd usr
+rm debian-binary control control.tar.gz data.tar.gz
+rm -rfd usr
