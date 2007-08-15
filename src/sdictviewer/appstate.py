@@ -50,10 +50,10 @@ def load_app_state():
     return app_state
     
 class State:    
-    def __init__(self, dict_file = None, phonetic_font = None, word = None, history = [], recent = [], dict_files = [], last_dict_file_location = None):
-        self.dict_file = dict_file
+    def __init__(self, phonetic_font = None, word = None, selected_word = None, history = [], recent = [], dict_files = [], last_dict_file_location = None):
         self.phonetic_font = phonetic_font
         self.word = word
+        self.selected_word = selected_word
         self.history = history
         self.recent = recent
         self.dict_files = dict_files

@@ -119,7 +119,8 @@ class SDictViewer(object):
         self.word_input.child.grab_focus()
         try:
             app_state = load_app_state()     
-            if app_state:   
+            if app_state: 
+                self.select_word_on_open = app_state.selected_word
                 self.open_dicts(app_state.dict_files)
                 self.word_input.child.set_text(app_state.word)                
                 app_state.history.reverse()
@@ -144,7 +145,9 @@ class SDictViewer(object):
             hist_model = self.word_input.get_model()
             hist_model.foreach(self.history_to_list, history_list)
             dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()] 
-            save_app_state(State(None, self.font, word, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
+            selected_word, selected_word_lang = self.get_selected_word()
+            selected = (str(selected_word), selected_word_lang)
+            save_app_state(State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
         except Exception, ex:
             print 'Failed to store settings:', ex        
             raise
@@ -600,6 +603,12 @@ class SDictViewer(object):
             if self.status_display:
                 self.status_display.dismiss()
                 self.status_display = None
+                if self.select_word_on_open:
+                    word, lang = self.select_word_on_open
+                    self.select_word_on_open = None
+                else:
+                    word, lang = self.get_selected_word()
+                self.schedule(self.update_completion_and_select, 0, self.word_input.child.get_text(), word, lang)
             return
         if not self.status_display:
             self.status_display = self.create_dict_loading_status_display()            
@@ -638,11 +647,9 @@ class SDictViewer(object):
         if (self.dictionaries.has(dict)):
             print "Dictionary is already open"
             return
-        word, lang = self.get_selected_word()
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
         self.add_to_menu_remove(dict)
-        self.schedule(self.update_completion_and_select, 600, self.word_input.child.get_text(), word, lang)
         self.update_title()  
         
     def remove_dict(self, dict):          
