@@ -263,6 +263,7 @@ class SDictViewer(object):
             self.tabs.remove_page(-1)        
         self.dict_key_to_tab.clear()       
         self.update_copy_article_mi(self.tabs)
+        self.article_format.stop()
         return False 
     
     def remove_handlers(self, obj):

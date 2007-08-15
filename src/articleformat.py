@@ -11,6 +11,8 @@ class FormattingStoppedException(Exception):
      def __str__(self):
          return repr(self.value)   
 
+from math import sqrt
+
 class ArticleParser(HTMLParser):
     
     def __init__(self):
@@ -98,11 +100,10 @@ class ArticleFormat:
             text_buffer = self.formatter.get_formatted_text_buffer_safe(self.dict, self.word, self.article, self.article_view, self.word_ref_callback)
             if not self.stopped:
                 gobject.idle_add(self.article_view.set_buffer, text_buffer)
-                self.formatter.workers.pop(self.dict)
+                self.formatter.workers.pop(self.dict, None)
             
         def stop(self):
             self.stopped = True
-            self.formatter.workers.pop(self.dict)
             
     def __init__(self, text_buffer_factory, external_link_callback):
         self.invalid_start_tag_re = re.compile('<\s*[\'\"\w]+\s+')
@@ -111,6 +112,10 @@ class ArticleFormat:
         self.external_link_callback = external_link_callback
         self.http_link_re = re.compile("http://[^\s]+", re.UNICODE)
         self.workers = {}
+   
+    def stop(self):
+        [worker.stop() for worker in self.workers.itervalues()]
+        self.workers.clear()
    
     def repl_invalid_end(self, match):
         text = match.group(0)
@@ -121,8 +126,9 @@ class ArticleFormat:
         return text.replace("<", "&lt;")
    
     def apply(self, dict, word, article, article_view, word_ref_callback):
-        if self.workers.has_key(dict):
-            self.workers[dict].stop();
+        current_worker = self.workers.pop(dict, None)
+        if current_worker:
+            current_worker.stop()
         self.article_view = article_view
         loading = self.text_buffer_factory.create_article_text_buffer()
         loading.set_text("Loading...")
