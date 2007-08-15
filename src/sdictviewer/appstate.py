@@ -23,7 +23,6 @@ import pickle
 
 settings_dir  = ".sdictviewer"
 app_state_file = "app_state"
-old_settings_file_name = ".sdictviewer"
 
 def save_app_state(app_state):
     home_dir = os.path.expanduser('~')
@@ -44,21 +43,10 @@ def save_app_state(app_state):
 def load_app_state():
     home_dir = os.path.expanduser('~')
     settings = os.path.join(home_dir, settings_dir, app_state_file)
-    old_settings = False
     app_state = None
-    if not os.path.exists(settings):
-        #If there is no new style setting, try to read the old one.
-        settings = os.path.join(home_dir, old_settings_file_name)        
-        old_settings = True
     if os.path.exists(settings):        
         settings_file = file(settings, "r")
         app_state = pickle.load(settings_file)
-        if old_settings:
-            try:
-                os.remove(settings)
-                save_app_state(app_state)
-            except:
-                pass                    
     return app_state
     
 class State:    
