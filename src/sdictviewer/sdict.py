@@ -369,7 +369,7 @@ class SDictionaryCollection:
             for lang in langs:
                 dicts.extend(self.dictionaries[lang])
         else:
-            for list in self.dictionaries.values():
+            for list in self.dictionaries.itervalues():
                 dicts.extend(list)
         return dicts
     
