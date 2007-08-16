@@ -264,8 +264,8 @@ class SDictionary:
                 print 'Failed to decode short index item ', i, ', will ignore: ', str(ve)                
                 continue
             pointer_start = entry_start+s_index_depth*4
-            pointer = unpack('<I',short_index_str[pointer_start:pointer_start+4])[0]                        
-            short_index[len(short_word)][short_word.encode(self.encoding)] = pointer        
+            pointer = unpack('<I',short_index_str[pointer_start:pointer_start+4])[0]  
+            short_index[len(short_word)][short_word] = pointer        
         return short_index
             
     def get_search_pos_for(self, word):
@@ -277,10 +277,9 @@ class SDictionary:
             index = self.short_index[i]    
             try:
                 u_subword = u_word[:i]
-                subword = u_subword.encode(self.encoding)
-                if index.has_key(subword):
-                    search_pos = index[subword]
-                    starts_with = subword
+                if index.has_key(u_subword):
+                    search_pos = index[u_subword]
+                    starts_with = u_subword.encode(self.encoding)
             except UnicodeDecodeError, ex:
                 print ex            
         return search_pos, starts_with
