@@ -272,10 +272,10 @@ class SDictionary:
         search_pos = -1
         starts_with = ""
         s_index_depth = self.header.short_index_depth
+        u_word = word.decode(self.encoding)
         for i in xrange(1, s_index_depth + 1):
             index = self.short_index[i]    
             try:
-                u_word = word.decode(self.encoding)
                 u_subword = u_word[:i]
                 subword = u_subword.encode(self.encoding)
                 if index.has_key(subword):
