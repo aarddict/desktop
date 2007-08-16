@@ -146,7 +146,7 @@ class WordLookup:
         return self.word
     
     def read_articles(self):
-        return [(dict,dict.read_article(article_ptr)) for dict, article_ptr in self.lookup.items()]
+        return [(dict,dict.read_article(article_ptr)) for dict, article_ptr in self.lookup.iteritems()]
         
         
 class SDictionary:         
@@ -374,7 +374,7 @@ class SDictionaryCollection:
         return dicts
     
     def get_langs(self):
-        langs = self.dictionaries.keys()
+        langs = self.dictionaries.iterkeys()
         if not langs:
             langs = []
         return langs

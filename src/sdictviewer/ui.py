@@ -299,7 +299,7 @@ class SDictViewer(object):
         self.word_completion.set_model(None)        
         lang_word_list = self.dictionaries.get_word_list(word, n)
         model = gtk.TreeStore(object)
-        for lang in lang_word_list.keys():
+        for lang in lang_word_list.iterkeys():
             iter = model.append(None, [lang])
             [model.append(iter, [word]) for word in lang_word_list[lang]]                    
         self.word_completion.set_model(model)            
