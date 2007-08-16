@@ -11,8 +11,6 @@ class FormattingStoppedException(Exception):
      def __str__(self):
          return repr(self.value)   
 
-from math import sqrt
-
 class ArticleParser(HTMLParser):
     
     def __init__(self):
