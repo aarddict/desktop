@@ -366,11 +366,9 @@ class SDictionaryCollection:
     def get_dicts(self, langs = None):
         dicts = []
         if langs:
-            for lang in langs:
-                dicts.extend(self.dictionaries[lang])
+            [dicts.extend(self.dictionaries[lang]) for lang in langs]
         else:
-            for list in self.dictionaries.itervalues():
-                dicts.extend(list)
+            [dicts.extend(list) for list in self.dictionaries.itervalues()]
         return dicts
     
     def get_langs(self):
@@ -381,8 +379,7 @@ class SDictionaryCollection:
     
     def get_word_list(self, start_word, n):
         lang_word_lists = {}
-        langs = self.get_langs()
-        for lang in langs:
+        for lang in self.get_langs():
             dicts = self.dictionaries[lang]
             word_list = []
             [word_list.extend(dict.get_word_list(start_word, n)) for dict in dicts]
@@ -392,8 +389,7 @@ class SDictionaryCollection:
                 merged_word_list = []
                 for k, g in groupby(word_list, keyfunc):
                     merged_word = WordLookup(k)
-                    for word in g:
-                        merged_word.add_articles(word)
+                    [merged_word.add_articles(word) for word in g]
                     merged_word_list.append(merged_word)
                 word_list = merged_word_list[:n]
             if len(word_list) > 0:
