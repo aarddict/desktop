@@ -108,7 +108,7 @@ class ArticleFormat:
         self.invalid_end_tag_re = re.compile('\s+[\'\"\w]+\s*>')
         self.text_buffer_factory = text_buffer_factory
         self.external_link_callback = external_link_callback
-        self.http_link_re = re.compile("http://[^\s]+", re.UNICODE)
+        self.http_link_re = re.compile("http[s]?://[^\s]+", re.UNICODE)
         self.workers = {}
    
     def stop(self):
