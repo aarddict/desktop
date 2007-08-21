@@ -244,7 +244,7 @@ class SDictionary:
         short_index_str = self.file.read(index_entry_len*self.header.short_index_length)
         short_index_str = self.compression.decompress(short_index_str)                
         index_length = self.header.short_index_length
-        short_index = [{} for i in xrange(s_index_depth+1)]
+        short_index = [{} for i in xrange(s_index_depth+2)]
         depth_range = xrange(s_index_depth)        
         for i in xrange(index_length):            
             entry_start = start_index = i*index_entry_len
@@ -271,10 +271,8 @@ class SDictionary:
     def get_search_pos_for(self, word):
         search_pos = -1
         starts_with = ""
-        s_index_depth = self.header.short_index_depth
-        print "s_index_depth", s_index_depth, "len(self.short_index)", len(self.short_index)
         u_word = word.decode(self.encoding)
-        for i in xrange(1, s_index_depth + 1):
+        for i in xrange(1, len(self.short_index)):
             index = self.short_index[i]    
             try:
                 u_subword = u_word[:i]
@@ -288,16 +286,19 @@ class SDictionary:
     def get_word_list(self, start_word, n):
         t0 = time.time()
         search_pos, starts_with = self.get_search_pos_for(start_word)
-        print "get_search_pos_for", time.time() - t0
+        print "get_search_pos_for", time.time() - t0, "starts with", starts_with
         word_list = []
         scan_count = 0
+        t0 = time.time()
         if search_pos > -1:
             next_word = None
             next_ptr = search_pos
             current_pos = self.header.full_index_offset
             index_item = None
             count = 0
-            skipped = 0
+            skipped = []
+            distance_to_last_index_point = 0
+            last_skipped_item = None
             read_item = self.read_full_index_item
             while count < n:
                 current_pos += next_ptr
@@ -310,22 +311,41 @@ class SDictionary:
                     count += 1
                     word_list.append(WordLookup(index_word, self, index_item.article_ptr))
                 else:
-                    skipped += 1
-            print "skipped ", skipped               
+                    skipped.append((index_item, current_pos))
+            if len(skipped) > 200:
+                self.index(skipped, self.header.short_index_depth + 1)
+        print "get_word_list", time.time() - t0
         return word_list    
+     
+    def index(self, skipped_items, length):
+        while len(self.short_index) < length + 1:
+            self.short_index.append({})
+        prev_item = None
+        current_pos = 0
+        for item, current_pos in skipped_items:
+            if prev_item:
+                last_word = prev_item.word.decode(self.encoding)
+                current_word = item.word.decode(self.encoding)
+                last = last_word[:length]
+                current = current_word[:length]
+                print "test: ","last skipped started with", last , "current starts with", current
+                if last != current:
+                    print "Adding index point", current
+                    self.short_index[length][current] = current_pos - self.header.full_index_offset       
+            prev_item = item
         
     def read_full_index_item(self, pointer):
         try:
             f = self.file
-            read = f.read
             if f.tell() != pointer:
                 f.seek(pointer)
-            next_word = unpack('<H', read(2))[0]
-            prev_word = unpack('<H', read(2))[0]
-            article_pointer = unpack('<I', read(4))[0]
-            if next_word != 0:
+            s = f.read(8)
+            next_word = unpack('<H', s[:2])[0]
+            prev_word = unpack('<H', s[2:4])[0]
+            article_pointer = unpack('<I', s[4:])[0]
+            if next_word:
                 word_length = next_word - 8        
-                word = read(word_length)
+                word = f.read(word_length)
             else:
                 word = None    
             return FullIndexItem(next_word, prev_word, word, article_pointer)
