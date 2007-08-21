@@ -314,15 +314,20 @@ class SDictionary:
                     skipped.append((index_item, current_pos))
             if len(skipped) > 200:
                 self.index(skipped, self.header.short_index_depth + 1)
+            print "skipped", len(skipped)
         print "get_word_list", time.time() - t0
         return word_list    
      
     def index(self, skipped_items, length):
+        t0 = time.time()
         while len(self.short_index) < length + 1:
             self.short_index.append({})
         prev_item = None
         current_pos = 0
+        last_index_point_index = 0
+        i = -1
         for item, current_pos in skipped_items:
+            i += 1
             if prev_item:
                 last_word = prev_item.word.decode(self.encoding)
                 current_word = item.word.decode(self.encoding)
@@ -331,8 +336,14 @@ class SDictionary:
                 print "test: ","last skipped started with", last , "current starts with", current
                 if last != current:
                     print "Adding index point", current
-                    self.short_index[length][current] = current_pos - self.header.full_index_offset       
+                    self.short_index[length][current] = current_pos - self.header.full_index_offset
+                    if i - last_index_point_index > 200:
+                        self.index(skipped_items[last_index_point_index:i], length + 1)
+                    last_index_point_index = i     
             prev_item = item
+            if i == len(skipped_items) - 1 and i - last_index_point_index > 200:
+                self.index(skipped_items[last_index_point_index:], length + 1)
+        print len(skipped_items), "indexing with length", length, "took", time.time() - t0
         
     def read_full_index_item(self, pointer):
         try:
