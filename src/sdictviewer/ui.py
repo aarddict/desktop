@@ -118,6 +118,7 @@ class SDictViewer(object):
         self.window.show_all()
         self.word_input.child.grab_focus()
         try:
+            self.select_word_on_open = None
             app_state = load_app_state()     
             if app_state: 
                 self.select_word_on_open = app_state.selected_word

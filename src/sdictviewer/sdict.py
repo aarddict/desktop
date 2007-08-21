@@ -272,6 +272,7 @@ class SDictionary:
         search_pos = -1
         starts_with = ""
         s_index_depth = self.header.short_index_depth
+        print "s_index_depth", s_index_depth, "len(self.short_index)", len(self.short_index)
         u_word = word.decode(self.encoding)
         for i in xrange(1, s_index_depth + 1):
             index = self.short_index[i]    
@@ -285,7 +286,9 @@ class SDictionary:
         return search_pos, starts_with
 
     def get_word_list(self, start_word, n):
+        t0 = time.time()
         search_pos, starts_with = self.get_search_pos_for(start_word)
+        print "get_search_pos_for", time.time() - t0
         word_list = []
         scan_count = 0
         if search_pos > -1:
@@ -294,6 +297,7 @@ class SDictionary:
             current_pos = self.header.full_index_offset
             index_item = None
             count = 0
+            skipped = 0
             read_item = self.read_full_index_item
             while count < n:
                 current_pos += next_ptr
@@ -305,6 +309,9 @@ class SDictionary:
                 if index_word.startswith(start_word):
                     count += 1
                     word_list.append(WordLookup(index_word, self, index_item.article_ptr))
+                else:
+                    skipped += 1
+            print "skipped ", skipped               
         return word_list    
         
     def read_full_index_item(self, pointer):
