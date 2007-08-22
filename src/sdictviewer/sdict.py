@@ -332,14 +332,13 @@ class SDictionary:
         for word, current_pos in skipped_items:
             i += 1
             current_word_start =  word[:length]
-            if prev_word_start:
-                #print "test: ", last , "->", current
-                if prev_word_start != current_word_start:
-                    #print "Adding index point", current
-                    short_index_for_length[current_word_start] = current_pos
-                    if i - last_index_point_index > max_distance:
-                        self.index(skipped_items[last_index_point_index:i], length + 1, max_distance)
-                    last_index_point_index = i     
+            #print "test: ", last , "->", current
+            if prev_word_start != current_word_start:
+                #print "Adding index point", current
+                short_index_for_length[current_word_start] = current_pos
+                if i - last_index_point_index > max_distance:
+                    self.index(skipped_items[last_index_point_index:i], length + 1, max_distance)
+                last_index_point_index = i     
             prev_word_start = current_word_start
         if len(skipped_items) - 1 - last_index_point_index > max_distance:
             self.index(skipped_items[last_index_point_index:], length + 1, max_distance)
