@@ -298,27 +298,30 @@ class SDictionary:
             count = 0
             skipped = []
             distance_to_last_index_point = 0
-            last_skipped_item = None
             read_item = self.read_full_index_item
             while count < n:
                 current_pos += next_ptr
                 index_item = read_item(current_pos)
                 index_word = index_item.word
                 next_ptr = index_item.next_ptr
+                skipped.append((index_item, current_pos))
                 if not index_word or not index_word.startswith(starts_with):
                     break                
                 if index_word.startswith(start_word):
                     count += 1
                     word_list.append(WordLookup(index_word, self, index_item.article_ptr))
-                else:
-                    skipped.append((index_item, current_pos))
-            if len(skipped) > 200:
+            if len(word_list) == 0:
+                u_start_word = start_word.decode(self.encoding)
+                while len(self.short_index) < len(u_start_word) + 1:
+                    self.short_index.append({})
+                self.short_index[len(u_start_word)][u_start_word] = -1
+            if len(skipped) > 300:
                 self.index(skipped, self.header.short_index_depth + 1)
-            print "skipped", len(skipped)
+            print "skipped", len(skipped) - len(word_list)
         print "get_word_list", time.time() - t0
         return word_list    
      
-    def index(self, skipped_items, length):
+    def index(self, skipped_items, length, max_distance = 300):
         t0 = time.time()
         while len(self.short_index) < length + 1:
             self.short_index.append({})
@@ -326,6 +329,7 @@ class SDictionary:
         current_pos = 0
         last_index_point_index = 0
         i = -1
+        skipped_count = len(skipped_items)
         for item, current_pos in skipped_items:
             i += 1
             if prev_item:
@@ -333,17 +337,17 @@ class SDictionary:
                 current_word = item.word.decode(self.encoding)
                 last = last_word[:length]
                 current = current_word[:length]
-                print "test: ","last skipped started with", last , "current starts with", current
+                #print "test: ", last , "->", current
                 if last != current:
-                    print "Adding index point", current
+                    #print "Adding index point", current
                     self.short_index[length][current] = current_pos - self.header.full_index_offset
-                    if i - last_index_point_index > 200:
+                    if i - last_index_point_index > max_distance:
                         self.index(skipped_items[last_index_point_index:i], length + 1)
                     last_index_point_index = i     
             prev_item = item
-            if i == len(skipped_items) - 1 and i - last_index_point_index > 200:
+            if i == skipped_count - 1 and i - last_index_point_index > max_distance:
                 self.index(skipped_items[last_index_point_index:], length + 1)
-        print len(skipped_items), "indexing with length", length, "took", time.time() - t0
+        print skipped_count, "indexing with length", length, "took", time.time() - t0
         
     def read_full_index_item(self, pointer):
         try:
