@@ -29,6 +29,7 @@ from itertools import groupby
 
 settings_dir  = ".sdictviewer"
 index_cache_dir = os.path.join(os.path.expanduser("~"),  settings_dir, "index_cache")
+AUTO_INDEX_THRESHOLD = 1000
 
 class GzipCompression:
     
@@ -304,7 +305,7 @@ class SDictionary:
                 index_item = read_item(current_pos)
                 index_word = index_item.word
                 next_ptr = index_item.next_ptr
-                skipped.append((index_item, current_pos))
+                skipped.append((index_word.decode(self.encoding), current_pos - self.header.full_index_offset))
                 if not index_word or not index_word.startswith(starts_with):
                     break                
                 if index_word.startswith(start_word):
@@ -315,39 +316,34 @@ class SDictionary:
                 while len(self.short_index) < len(u_start_word) + 1:
                     self.short_index.append({})
                 self.short_index[len(u_start_word)][u_start_word] = -1
-            if len(skipped) > 300:
+            if len(skipped) > AUTO_INDEX_THRESHOLD:
                 self.index(skipped, self.header.short_index_depth + 1)
             print "skipped", len(skipped) - len(word_list)
         print "get_word_list", time.time() - t0
         return word_list    
      
-    def index(self, skipped_items, length, max_distance = 300):
+    def index(self, skipped_items, length, max_distance = AUTO_INDEX_THRESHOLD):
         t0 = time.time()
-        while len(self.short_index) < length + 1:
+        short_index = self.short_index
+        while len(short_index) < length + 1:
             self.short_index.append({})
-        prev_item = None
-        current_pos = 0
-        last_index_point_index = 0
-        i = -1
-        skipped_count = len(skipped_items)
-        for item, current_pos in skipped_items:
+        short_index_for_length = short_index[length]
+        prev_word_start = None; last_index_point_index = 0; i = -1
+        for word, current_pos in skipped_items:
             i += 1
-            if prev_item:
-                last_word = prev_item.word.decode(self.encoding)
-                current_word = item.word.decode(self.encoding)
-                last = last_word[:length]
-                current = current_word[:length]
+            current_word_start =  word[:length]
+            if prev_word_start:
                 #print "test: ", last , "->", current
-                if last != current:
+                if prev_word_start != current_word_start:
                     #print "Adding index point", current
-                    self.short_index[length][current] = current_pos - self.header.full_index_offset
+                    short_index_for_length[current_word_start] = current_pos
                     if i - last_index_point_index > max_distance:
-                        self.index(skipped_items[last_index_point_index:i], length + 1)
+                        self.index(skipped_items[last_index_point_index:i], length + 1, max_distance)
                     last_index_point_index = i     
-            prev_item = item
-            if i == skipped_count - 1 and i - last_index_point_index > max_distance:
-                self.index(skipped_items[last_index_point_index:], length + 1)
-        print skipped_count, "indexing with length", length, "took", time.time() - t0
+            prev_word_start = current_word_start
+        if len(skipped_items) - 1 - last_index_point_index > max_distance:
+            self.index(skipped_items[last_index_point_index:], length + 1, max_distance)
+        print len(skipped_items), "indexing with length", length, "took", time.time() - t0
         
     def read_full_index_item(self, pointer):
         try:
