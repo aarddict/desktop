@@ -118,7 +118,10 @@ class DictFormatError(Exception):
      def __init__(self, value):
          self.value = value
      def __str__(self):
-         return repr(self.value)        
+         return repr(self.value)      
+
+class LookupStoppedException(Exception):  
+    pass
 
 class WordLookup:
     def __init__(self, word, dict = None, article_ptr = None):
@@ -154,6 +157,7 @@ class SDictionary:
         self.copyright = self.read_unit(self.header.copyright_offset)
         self.index_cache_file_name = os.path.join(index_cache_dir, os.path.basename(self.file_name)+'-'+str(self.version)+".index")
         self.short_index = self.load_short_index()
+        self.stopped = True
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -163,6 +167,9 @@ class SDictionary:
     
     def __hash__(self):
         return self.key().__hash__()
+
+    def stop_lookup(self):
+        self.stopped = True
         
     def key(self):
         return (self.title, self.version, self.file_name)
@@ -274,6 +281,7 @@ class SDictionary:
         return search_pos, starts_with
 
     def get_word_list(self, start_word, n):
+        self.stopped = False
         t0 = time.time()
         search_pos, starts_with = self.get_search_pos_for(start_word)
         print "get_search_pos_for", time.time() - t0, "starts with", starts_with
@@ -289,6 +297,8 @@ class SDictionary:
             distance_to_last_index_point = 0
             read_item = self.read_full_index_item
             while count < n:
+                if self.stopped:
+                    raise LookupStoppedException()
                 current_pos += next_ptr
                 next_ptr, index_word, article_ptr = read_item(current_pos)
                 skipped.append((index_word, current_pos))
@@ -297,6 +307,8 @@ class SDictionary:
                 if index_word.startswith(start_word):
                     count += 1
                     word_list.append(WordLookup(index_word, self, article_ptr))
+            if self.stopped:
+                raise LookupStoppedException()
             if len(word_list) == 0:
                 u_start_word = start_word.decode(self.encoding)
                 while len(self.short_index) < len(u_start_word) + 1:
@@ -356,10 +368,8 @@ class SDictionaryCollection:
     
     def __init__(self):
         self.dictionaries = {}
+        self.stopped = True
     
-    def lookup(self, word, languages):
-        return [(dict, dict.lookup(word)) for dict in self.get_dicts(languages)]
-        
     def add(self, dict):
         lang = dict.header.word_lang
         if not self.dictionaries.has_key(lang):
@@ -389,8 +399,11 @@ class SDictionaryCollection:
         return dicts
     
     def get_word_list(self, start_word, n):
+        self.stopped = False
         lang_word_lists = {}
         for lang, dicts in self.dictionaries.iteritems():
+            if self.stopped:
+                raise LookupStoppedException()
             word_list = []
             [word_list.extend(dict.get_word_list(start_word, n)) for dict in dicts]
             if len(dicts) > 1:
@@ -405,6 +418,10 @@ class SDictionaryCollection:
             if len(word_list) > 0:
                 lang_word_lists[lang] = word_list
         return lang_word_lists    
+    
+    def stop_lookup(self):
+        [dict.stop_lookup() for dict in self.get_dicts()]
+        self.stopped = True
     
     def is_empty(self):
         return self.size() == 0

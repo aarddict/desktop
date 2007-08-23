@@ -32,6 +32,7 @@ import xml.sax.saxutils
 import re
 import time
 import webbrowser
+import threading
 
 gobject.threads_init()
 
@@ -66,12 +67,33 @@ class DialogStatusDisplay:
             
     def after_task_end(self):
         pass
+
+class UpdateCompletionWorker(threading.Thread):        
+    def __init__(self, dictionaries, word, max_word_count, to_select, callback):
+        super(UpdateCompletionWorker, self).__init__()
+        self.stopped = True
+        self.dictionaries = dictionaries
+        self.callback = callback
+        self.word = word
+        self.max_word_count = max_word_count
+        self.to_select = to_select 
+
+    def run(self):
+        self.stopped = False
+        lang_word_list = self.dictionaries.get_word_list(self.word, self.max_word_count)
+        if not self.stopped:
+            gobject.idle_add(self.callback, lang_word_list, self.to_select)
+        
+    def stop(self):
+        self.stopped = True
+        self.dictionaries.stop_lookup()
     
 class SDictViewer(object):
              
     def __init__(self):
         self.status_display = None
         self.dictionaries = sdict.SDictionaryCollection()
+        self.update_completion_worker = None
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.font = None
@@ -192,7 +214,7 @@ class SDictViewer(object):
             self.word_input.handler_block(self.word_change_handler) 
             self.word_input.child.set_text(word)
             self.word_input.handler_unblock(self.word_change_handler) 
-            self.update_completion_and_select(word, word, dict.header.word_lang)
+            self.update_completion(word, (word, dict.header.word_lang))
                 
     def add_to_history(self, word, lang):        
         model = self.word_input.get_model()
@@ -295,18 +317,31 @@ class SDictViewer(object):
                 selected_lang = current_model[current_model.iter_parent(selected)][0]                            
         return (selected_word, selected_lang)
                                         
-    def update_completion(self, word, n = 20, select_if_one = True):        
+    def update_completion(self, word, to_select = None, n = 20): 
+        if self.update_completion_worker:
+            self.update_completion_worker.stop()
+            self.update_completion_worker = None       
         word = word.lstrip()
-        self.word_completion.set_model(None)        
-        lang_word_list = self.dictionaries.get_word_list(word, n)
+        model = gtk.TreeStore(object)
+        model.append(None, ["Looking up " + word + "..."])
+        self.word_completion.set_model(model)        
+        self.update_completion_worker = UpdateCompletionWorker(self.dictionaries, word, n, to_select, self.update_completion_callback)
+        self.update_completion_worker.start()
+        return False
+            
+    def update_completion_callback(self, lang_word_list, to_select):  
         model = gtk.TreeStore(object)
         for lang in lang_word_list.iterkeys():
             iter = model.append(None, [lang])
             [model.append(iter, [word]) for word in lang_word_list[lang]]                    
         self.word_completion.set_model(model)            
         self.word_completion.expand_all()
-        if select_if_one and len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
-            self.select_first_word_in_completion()  
+        if to_select:
+            word, lang = to_select
+            self.select_word(word, lang)
+        else:
+            if len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
+                self.select_first_word_in_completion()                
 
     def create_clear_button(self):
         return self.create_button(gtk.STOCK_CLEAR, self.clear_word_input) 
@@ -391,14 +426,14 @@ class SDictViewer(object):
         word = active_row[0]
         lang = active_row[1]
         #use schedule instead of direct call to interrupt already scheduled update if any
-        self.schedule(self.update_completion_and_select, 0, word, word, lang)        
-        self.update_completion(word, select_if_one = False)
-        self.select_word(word, lang)        
+        self.schedule(self.update_completion, 0, word, (word, lang))        
+        #self.update_completion(word, select_if_one = False)
+        #self.select_word(word, lang)        
         
-    def update_completion_and_select(self, completion_word, word, lang):
-        self.update_completion(completion_word, select_if_one = False)
-        self.select_word(word, lang)        
-        return False
+    #def update_completion_and_select(self, completion_word, word, lang):
+    #    self.update_completion(completion_word, select_if_one = False)
+    #    self.select_word(word, lang)        
+    #    return False
         
     def select_word(self, word, lang):        
         model = self.word_completion.get_model()
@@ -609,7 +644,7 @@ class SDictViewer(object):
                     self.select_word_on_open = None
                 else:
                     word, lang = self.get_selected_word()
-                self.update_completion_and_select(self.word_input.child.get_text(), word, lang)
+                self.update_completion(self.word_input.child.get_text(), (word, lang))
             return
         if not self.status_display:
             self.status_display = self.create_dict_loading_status_display()            
@@ -668,7 +703,7 @@ class SDictViewer(object):
             del self.dict_key_to_tab[key]
         dict.close()
         dict.remove_index_cache_file()
-        self.update_completion_and_select(self.word_input.child.get_text(), word, lang)
+        self.update_completion(self.word_input.child.get_text(), (word, lang))
         self.update_title()
         
     def get_tab_for_dict(self, dict_key):
