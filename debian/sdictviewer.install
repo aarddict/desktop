@@ -1,0 +1,4 @@
+[install]
+repo_name = SDict Viewer
+repo_deb_3 = deb http://sdictviewer.sourceforge.net/ bora user
+package = sdictviewer
