@@ -145,7 +145,8 @@ class SDictViewer(object):
             if app_state: 
                 self.select_word_on_open = app_state.selected_word
                 self.open_dicts(app_state.dict_files)
-                self.word_input.child.set_text(app_state.word)                
+                self.word_input.child.set_text(app_state.word)        
+                self.word_input.child.set_position(-1)        
                 app_state.history.reverse()
                 [self.add_to_history(w, l) for w, l in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
@@ -213,6 +214,7 @@ class SDictViewer(object):
         if event.type == gtk.gdk.BUTTON_RELEASE:
             self.word_input.handler_block(self.word_change_handler) 
             self.word_input.child.set_text(word)
+            self.word_input.child.set_position(-1)
             self.word_input.handler_unblock(self.word_change_handler) 
             self.update_completion(word, (word, dict.header.word_lang))
                 
