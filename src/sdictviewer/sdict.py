@@ -63,10 +63,7 @@ def read_str(s, fe):
     return raw.replace('\x00', '');
 
 def read_int(s, fe = None):      
-    if fe:
-        raw = read_raw(s, fe)
-    else:
-        raw = s
+    raw = read_raw(s, fe) if fe else s
     return unpack('<I', raw)[0]    
 
 def read_short(raw):  
@@ -81,13 +78,6 @@ class FormatElement:
         self.length = length
         self.elementType = elementType
 
-class FullIndexItem:
-    def __init__(self, next_ptr, prev_ptr, word, article_ptr):
-        self.next_ptr = next_ptr
-        self.prev_ptr = prev_ptr
-        self.word = word
-        self.article_ptr = article_ptr
-    
 class Header:
                     
     f_signature = FormatElement(0x0, 4)
@@ -204,7 +194,6 @@ class SDictionary:
         
         # fall back to the old method
         short_index = self.read_short_index()
-        
         # if we could not read the cache, then maybe the cache folder does not exist
         # try to make a cache folder, before attempting to write a file into it
         home_dir = os.path.expanduser('~')
@@ -268,6 +257,27 @@ class SDictionary:
             pointer = unpack('<I',short_index_str[pointer_start:pointer_start+4])[0]  
             short_index[len(short_word)][short_word] = pointer        
         return short_index
+       
+    def optimize_index(self):
+        t0 = time.clock()
+        read_item = self.read_full_index_item
+        deepest_index = self.short_index[self.header.short_index_depth]
+        prev = None
+        for cur in deepest_index.iteritems():
+            if prev:
+                starts_with, pos = cur
+                prev_starts_with, prev_pos = prev
+                print "index", prev_starts_with, "to", starts_with
+                word_list = []
+                current_pos = prev_pos
+                while current_pos < pos or not index_word:
+                    next_ptr, index_word, article_ptr = read_item(current_pos + self.header.full_index_offset)           
+                    current_pos += next_ptr
+                    word_list.append((index_word.decode(self.encoding), current_pos))
+                if len (word_list) > AUTO_INDEX_THRESHOLD:
+                    self.index(word_list, self.header.short_index_depth + 1)
+            prev = cur
+        print "optimize index took", time.clock() - t0
             
     def get_search_pos_for(self, word):
         search_pos = -1
@@ -320,14 +330,14 @@ class SDictionary:
         print "get_word_list", time.time() - t0
         return word_list    
      
-    def index(self, skipped_items, length, max_distance = AUTO_INDEX_THRESHOLD):
+    def index(self, items, length, max_distance = AUTO_INDEX_THRESHOLD):
         t0 = time.time()
         short_index = self.short_index
         while len(short_index) < length + 1:
             self.short_index.append({})
         short_index_for_length = short_index[length]
         prev_word_start = None; last_index_point_index = 0; i = -1
-        for word, current_pos in skipped_items:
+        for word, current_pos in items:
             i += 1
             current_word_start =  word[:length]
             #print "test: ", last , "->", current
@@ -335,29 +345,21 @@ class SDictionary:
                 #print "Adding index point", current
                 short_index_for_length[current_word_start] = current_pos
                 if i - last_index_point_index > max_distance:
-                    self.index(skipped_items[last_index_point_index:i], length + 1, max_distance)
+                    self.index(items[last_index_point_index:i], length + 1, max_distance)
                 last_index_point_index = i     
             prev_word_start = current_word_start
-        if len(skipped_items) - 1 - last_index_point_index > max_distance:
-            self.index(skipped_items[last_index_point_index:], length + 1, max_distance)
-        print len(skipped_items), "indexing with length", length, "took", time.time() - t0
+        if len(items) - 1 - last_index_point_index > max_distance:
+            self.index(items[last_index_point_index:], length + 1, max_distance)
+        print len(items), "indexing with length", length, "took", time.time() - t0
         
     def read_full_index_item(self, pointer):
         try:
             f = self.file
-            if f.tell() != pointer:
-                f.seek(pointer)
+            f.seek(pointer)
             s = f.read(8)
             next_word = unpack('<H', s[:2])[0]
-            #prev_word = unpack('<H', s[2:4])[0]
-            #prev_word = None
             article_pointer = unpack('<I', s[4:])[0]
-            if next_word:
-                word_length = next_word - 8        
-                word = f.read(word_length)
-            else:
-                word = None    
-            #return FullIndexItem(next_word, prev_word, word, article_pointer)
+            word = f.read(next_word - 8) if next_word else None
             return next_word, word, article_pointer
         except Exception, e:
             if pointer >= self.header.articles_offset:
@@ -407,16 +409,9 @@ class SDictionaryCollection:
             [dicts.extend(list) for list in self.dictionaries.itervalues()]
         return dicts
     
-    def get_langs(self):
-        langs = self.dictionaries.iterkeys()
-        if not langs:
-            langs = []
-        return langs
-    
     def get_word_list(self, start_word, n):
         lang_word_lists = {}
-        for lang in self.get_langs():
-            dicts = self.dictionaries[lang]
+        for lang, dicts in self.dictionaries.iteritems():
             word_list = []
             [word_list.extend(dict.get_word_list(start_word, n)) for dict in dicts]
             if len(dicts) > 1:
