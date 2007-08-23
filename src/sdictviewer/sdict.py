@@ -295,28 +295,26 @@ class SDictionary:
             next_word = None
             next_ptr = search_pos
             current_pos = self.header.full_index_offset
-            index_item = None
             count = 0
             skipped = []
             distance_to_last_index_point = 0
             read_item = self.read_full_index_item
             while count < n:
                 current_pos += next_ptr
-                index_item = read_item(current_pos)
-                index_word = index_item.word
-                next_ptr = index_item.next_ptr
-                skipped.append((index_word.decode(self.encoding), current_pos - self.header.full_index_offset))
+                next_ptr, index_word, article_ptr = read_item(current_pos)
+                skipped.append((index_word, current_pos))
                 if not index_word or not index_word.startswith(starts_with):
                     break                
                 if index_word.startswith(start_word):
                     count += 1
-                    word_list.append(WordLookup(index_word, self, index_item.article_ptr))
+                    word_list.append(WordLookup(index_word, self, article_ptr))
             if len(word_list) == 0:
                 u_start_word = start_word.decode(self.encoding)
                 while len(self.short_index) < len(u_start_word) + 1:
                     self.short_index.append({})
                 self.short_index[len(u_start_word)][u_start_word] = -1
             if len(skipped) > AUTO_INDEX_THRESHOLD:
+                skipped = [(w.decode(self.encoding), p - self.header.full_index_offset) for w, p in skipped]
                 self.index(skipped, self.header.short_index_depth + 1)
             print "skipped", len(skipped) - len(word_list)
         print "get_word_list", time.time() - t0
@@ -351,14 +349,16 @@ class SDictionary:
                 f.seek(pointer)
             s = f.read(8)
             next_word = unpack('<H', s[:2])[0]
-            prev_word = unpack('<H', s[2:4])[0]
+            #prev_word = unpack('<H', s[2:4])[0]
+            #prev_word = None
             article_pointer = unpack('<I', s[4:])[0]
             if next_word:
                 word_length = next_word - 8        
                 word = f.read(word_length)
             else:
                 word = None    
-            return FullIndexItem(next_word, prev_word, word, article_pointer)
+            #return FullIndexItem(next_word, prev_word, word, article_pointer)
+            return next_word, word, article_pointer
         except Exception, e:
             if pointer >= self.header.articles_offset:
                 print 'Warning: attempt to read word from illegal position in dict file'        
