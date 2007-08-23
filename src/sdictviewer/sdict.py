@@ -258,27 +258,6 @@ class SDictionary:
             short_index[len(short_word)][short_word] = pointer        
         return short_index
        
-    def optimize_index(self):
-        t0 = time.clock()
-        read_item = self.read_full_index_item
-        deepest_index = self.short_index[self.header.short_index_depth]
-        prev = None
-        for cur in deepest_index.iteritems():
-            if prev:
-                starts_with, pos = cur
-                prev_starts_with, prev_pos = prev
-                print "index", prev_starts_with, "to", starts_with
-                word_list = []
-                current_pos = prev_pos
-                while current_pos < pos or not index_word:
-                    next_ptr, index_word, article_ptr = read_item(current_pos + self.header.full_index_offset)           
-                    current_pos += next_ptr
-                    word_list.append((index_word.decode(self.encoding), current_pos))
-                if len (word_list) > AUTO_INDEX_THRESHOLD:
-                    self.index(word_list, self.header.short_index_depth + 1)
-            prev = cur
-        print "optimize index took", time.clock() - t0
-            
     def get_search_pos_for(self, word):
         search_pos = -1
         starts_with = ""
