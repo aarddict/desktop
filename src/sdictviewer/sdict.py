@@ -411,6 +411,8 @@ class SDictionaryCollection:
                 word_list.sort(key = keyfunc)
                 merged_word_list = []
                 for k, g in groupby(word_list, keyfunc):
+                    if self.stopped:
+                        raise LookupStoppedException() 
                     merged_word = WordLookup(k)
                     [merged_word.add_articles(word) for word in g]
                     merged_word_list.append(merged_word)

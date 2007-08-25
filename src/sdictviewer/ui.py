@@ -80,7 +80,11 @@ class UpdateCompletionWorker(threading.Thread):
 
     def run(self):
         self.stopped = False
-        lang_word_list = self.dictionaries.get_word_list(self.word, self.max_word_count)
+        try:
+            lang_word_list = self.dictionaries.get_word_list(self.word, self.max_word_count)
+        except sdict.LookupStoppedException:
+            print "==> Lookup for", self.word, "stopped"
+            return
         if not self.stopped:
             gobject.idle_add(self.callback, lang_word_list, self.to_select)
         
