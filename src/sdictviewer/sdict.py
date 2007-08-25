@@ -320,6 +320,29 @@ class SDictionary:
             print "skipped", len(skipped) - len(word_list)
         print "get_word_list", time.time() - t0
         return word_list    
+
+    def get_word_list_iter(self, start_word):
+        search_pos, starts_with = self.get_search_pos_for(start_word)
+        if search_pos > -1:
+            current_pos = self.header.full_index_offset + search_pos
+            read_item = self.read_full_index_item
+            next_ptr, index_word, article_ptr = read_item(current_pos)
+            while index_word and index_word.startswith(starts_with):
+                current_pos += next_ptr
+                next_ptr, index_word, article_ptr = read_item(current_pos)
+                if index_word.startswith(start_word):
+                    yield WordLookup(index_word, self, article_ptr)
+                else:
+                    yield (index_word, current_pos)
+        
+            #if len(word_list) == 0:
+            #    u_start_word = start_word.decode(self.encoding)
+            #    while len(self.short_index) < len(u_start_word) + 1:
+            #        self.short_index.append({})
+            #    self.short_index[len(u_start_word)][u_start_word] = -1
+            #if len(skipped) > AUTO_INDEX_THRESHOLD:
+            #    skipped = [(w.decode(self.encoding), p - self.header.full_index_offset) for w, p in skipped]
+            #    self.index(skipped, self.header.short_index_depth + 1)
      
     def index(self, items, length, max_distance = AUTO_INDEX_THRESHOLD):
         t0 = time.time()
@@ -363,27 +386,31 @@ class SDictionary:
     
     def close(self):
         self.file.close()        
+
+class DictionariesByLang(dict):
+    def __missing__ (self, key):
+        value = []
+        self.__setitem__(key, value)
+        return value
+        
+class WordLookupByWord(dict):
+    def __missing__(self, word):
+        value = WordLookup(word)
+        self.__setitem__(word, value)
+        return value
         
 class SDictionaryCollection:
     
     def __init__(self):
-        self.dictionaries = {}
+        self.dictionaries = DictionariesByLang()
         self.stopped = True
     
     def add(self, dict):
-        lang = dict.header.word_lang
-        if not self.dictionaries.has_key(lang):
-            self.dictionaries[lang] = []
-        self.dictionaries[lang].append(dict)
+        self.dictionaries[dict.header.word_lang].append(dict)
         
     def has(self, dict):
-        if self.dictionaries.has_key(dict.header.word_lang):
-            lang_dicts = self.dictionaries[dict.header.word_lang]
-            for d in lang_dicts:
-                if d == dict:
-                    print "%s eq %s" % (d, dict)
-                    return True
-        return False                
+        lang_dicts = self.dictionaries[dict.header.word_lang]
+        return lang_dicts.count(dict) == 1
     
     def remove(self, dict):        
         self.dictionaries[dict.header.word_lang].remove(dict)
@@ -397,6 +424,9 @@ class SDictionaryCollection:
         else:
             [dicts.extend(list) for list in self.dictionaries.itervalues()]
         return dicts
+    
+    def langs(self):
+        return self.dictionaries.keys()
     
     def get_word_list(self, start_word, n):
         self.stopped = False
@@ -420,6 +450,30 @@ class SDictionaryCollection:
             if len(word_list) > 0:
                 lang_word_lists[lang] = word_list
         return lang_word_lists    
+
+    def get_word_list2(self, lang, start_word, n):
+        dicts = self.dictionaries[lang]
+        word_lookups = WordLookupByWord(); skipped = []
+        for dict in dicts:
+            count = 0
+            for item in dict.get_word_list_iter():
+                if isinstance(item, WordLookup):
+                    word_lookups[item.word].add_articles(word)
+                    count += 1
+                    if count >= n: break
+                else:
+                    skipped.append(item)
+        result = list(word_lookups.itervalues()())
+        result.sort(key=str)
+        return result, skipped
+    
+    def get_word_list3(self, lang, start_word, max_from_one_dict = 20):
+        for dict in self.dictionaries[lang]:
+            count = 0
+            for item in dict.get_word_list_iter(start_word):
+                count += (1 if isinstance(item, WordLookup) else 0)
+                yield item
+                if count >= max_from_one_dict: break
     
     def stop_lookup(self):
         [dict.stop_lookup() for dict in self.get_dicts()]

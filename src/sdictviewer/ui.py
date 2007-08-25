@@ -69,28 +69,35 @@ class DialogStatusDisplay:
         pass
 
 class UpdateCompletionWorker(threading.Thread):        
-    def __init__(self, dictionaries, word, max_word_count, to_select, callback):
+    def __init__(self, dictionaries, start_word, max_word_count, to_select, callback):
         super(UpdateCompletionWorker, self).__init__()
         self.stopped = True
         self.dictionaries = dictionaries
         self.callback = callback
-        self.word = word
+        self.start_word = start_word
         self.max_word_count = max_word_count
         self.to_select = to_select 
 
     def run(self):
         self.stopped = False
-        try:
-            lang_word_list = self.dictionaries.get_word_list(self.word, self.max_word_count)
-        except sdict.LookupStoppedException:
-            print "==> Lookup for", self.word, "stopped"
-            return
+        lang_word_list = {}
+        for lang in self.dictionaries.langs():
+            word_lookups = sdict.WordLookupByWord()
+            for item in self.dictionaries.get_word_list3(lang, self.start_word):
+                if self.stopped:
+                    print "=== Lookup for", self.start_word, "stopped"
+                    return 
+                if isinstance(item, sdict.WordLookup):
+                    word_lookups[item.word].add_articles(item)
+            word_list = word_lookups.values()
+            word_list.sort(key=str)
+            lang_word_list[lang] = word_list
         if not self.stopped:
             gobject.idle_add(self.callback, lang_word_list, self.to_select)
         
     def stop(self):
         self.stopped = True
-        self.dictionaries.stop_lookup()
+        #self.dictionaries.stop_lookup()
     
 class SDictViewer(object):
              
@@ -673,6 +680,8 @@ class SDictViewer(object):
                 self.show_error("Dictionary Open Failed", str(error))
             except ValueError:
                 self.show_error("Dictionary Open Failed", str(error))
+            except Exception:
+                self.show_error("Unknown Error", str(error))
         self.open_dicts(files)
         
         
