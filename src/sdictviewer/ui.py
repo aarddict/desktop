@@ -91,7 +91,7 @@ class UpdateCompletionWorker(threading.Thread):
                     word_lookups[item.word].add_articles(item)
             word_list = word_lookups.values()
             word_list.sort(key=str)
-            lang_word_list[lang] = word_list
+            if len (word_list) > 0: lang_word_list[lang] = word_list
         if not self.stopped:
             gobject.idle_add(self.callback, lang_word_list, self.to_select)
         
