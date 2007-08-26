@@ -142,7 +142,15 @@ class WordLookup:
     def read_articles(self):
         return [(dict,dict.read_article(article_ptr)) for dict, article_ptr in self.lookup.iteritems()]
         
+class SkippedWord:
+    def __init__(self, dict, word, full_index_ptr):
+        self.dict = dict
+        self.word = word
+        self.full_index_ptr = full_index_ptr
         
+    def __str__(self):
+        return self.word
+    
 class SDictionary:         
     
     def __init__(self, file_name, encoding = "utf-8"):    
@@ -333,7 +341,7 @@ class SDictionary:
                 if index_word.startswith(start_word):
                     yield WordLookup(index_word, self, article_ptr)
                 else:
-                    yield (index_word, current_pos)
+                    yield SkippedWord(self, index_word, current_pos - self.header.full_index_offset)
         
             #if len(word_list) == 0:
             #    u_start_word = start_word.decode(self.encoding)
