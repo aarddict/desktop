@@ -79,8 +79,10 @@ class UpdateCompletionWorker(threading.Thread):
         self.to_select = to_select 
 
     def run(self):
+        print "UpdateCompletionWorker: will look in", self.dictionaries.size(), "dictionaries"
         self.stopped = False
         lang_word_list = {}
+        skipped = util.ListMap()
         for lang in self.dictionaries.langs():
             word_lookups = sdict.WordLookupByWord()
             for item in self.dictionaries.get_word_list3(lang, self.start_word):
@@ -89,11 +91,18 @@ class UpdateCompletionWorker(threading.Thread):
                     return 
                 if isinstance(item, sdict.WordLookup):
                     word_lookups[item.word].add_articles(item)
+                else:
+                    skipped[item.dict].append(item)
             word_list = word_lookups.values()
             word_list.sort(key=str)
             if len (word_list) > 0: lang_word_list[lang] = word_list
+            for dict, skipped_words in skipped.iteritems():
+                if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
+                    dict.index(skipped_words)
         if not self.stopped:
             gobject.idle_add(self.callback, lang_word_list, self.to_select)
+        else:
+            print "Word list update finished, but stop request was received, will not update UI"
         
     def stop(self):
         self.stopped = True
@@ -342,9 +351,11 @@ class SDictViewer(object):
         self.update_completion_worker.start()
         return False
             
-    def update_completion_callback(self, lang_word_list, to_select):  
+    def update_completion_callback(self, lang_word_list, to_select):
+        print "Update completion", len(lang_word_list), "languages"
         model = gtk.TreeStore(object)
         for lang in lang_word_list.iterkeys():
+            print "Found", len(lang_word_list[lang]), "for", lang
             iter = model.append(None, [lang])
             [model.append(iter, [word]) for word in lang_word_list[lang]]                    
         self.word_completion.set_model(model)            

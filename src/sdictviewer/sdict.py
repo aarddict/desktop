@@ -26,10 +26,14 @@ import marshal
 import os
 import os.path
 from itertools import groupby
+from Queue import Queue 
+import threading
 
 settings_dir  = ".sdictviewer"
 index_cache_dir = os.path.join(os.path.expanduser("~"),  settings_dir, "index_cache")
 AUTO_INDEX_THRESHOLD = 1000
+
+indexing_q = Queue(5)
 
 class GzipCompression:
     
@@ -166,6 +170,7 @@ class SDictionary:
         self.index_cache_file_name = os.path.join(index_cache_dir, os.path.basename(self.file_name)+'-'+str(self.version)+".index")
         self.short_index = self.load_short_index()
         self.stopped = True
+        threading.Thread(target = self.indexer).start()
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -324,7 +329,7 @@ class SDictionary:
                 self.short_index[len(u_start_word)][u_start_word] = -1
             if len(skipped) > AUTO_INDEX_THRESHOLD:
                 skipped = [(w.decode(self.encoding), p - self.header.full_index_offset) for w, p in skipped]
-                self.index(skipped, self.header.short_index_depth + 1)
+                self.do_index(skipped)
             print "skipped", len(skipped) - len(word_list)
         print "get_word_list", time.time() - t0
         return word_list    
@@ -343,17 +348,10 @@ class SDictionary:
                 else:
                     yield SkippedWord(self, index_word, current_pos - self.header.full_index_offset)
         
-            #if len(word_list) == 0:
-            #    u_start_word = start_word.decode(self.encoding)
-            #    while len(self.short_index) < len(u_start_word) + 1:
-            #        self.short_index.append({})
-            #    self.short_index[len(u_start_word)][u_start_word] = -1
-            #if len(skipped) > AUTO_INDEX_THRESHOLD:
-            #    skipped = [(w.decode(self.encoding), p - self.header.full_index_offset) for w, p in skipped]
-            #    self.index(skipped, self.header.short_index_depth + 1)
-     
-    def index(self, items, length, max_distance = AUTO_INDEX_THRESHOLD):
+    def do_index(self, items, length = None, max_distance = AUTO_INDEX_THRESHOLD):
         t0 = time.time()
+        if not length:
+            length = self.header.short_index_depth + 1
         short_index = self.short_index
         while len(short_index) < length + 1:
             self.short_index.append({})
@@ -373,6 +371,16 @@ class SDictionary:
         if len(items) - 1 - last_index_point_index > max_distance:
             self.index(items[last_index_point_index:], length + 1, max_distance)
         print len(items), "indexing with length", length, "took", time.time() - t0
+    
+    def index(self, items):
+        print str(self),"will index", len(items), "items" 
+        items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
+        indexing_q.put(items_to_index)
+        
+    def indexer(self):
+        while True:
+            items_to_index = indexing_q.get(block=True)
+            self.do_index(items_to_index)
         
     def read_full_index_item(self, pointer):
         try:

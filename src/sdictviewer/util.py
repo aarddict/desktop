@@ -20,6 +20,13 @@ Copyright (C) 2006-2007 Igor Tkach
 import threading
 import gobject
 import gtk
+
+class ListMap(dict):
+    def __missing__ (self, key):
+        value = []
+        self.__setitem__(key, value)
+        return value
+
 class BackgroundWorker(threading.Thread):
     def __init__(self, task, task_listener, callback, data = None):
         super(BackgroundWorker, self).__init__()
