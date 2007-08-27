@@ -114,7 +114,7 @@ class SDictViewer(object):
     def __init__(self):
         self.status_display = None
         self.dictionaries = sdict.SDictionaryCollection()
-        self.update_completion_worker = None
+        #self.update_completion_worker = None
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.font = None
@@ -127,6 +127,12 @@ class SDictViewer(object):
         open_dict_worker_thread = threading.Thread(target = self.open_dict_worker)
         open_dict_worker_thread.setDaemon(True)
         open_dict_worker_thread.start()
+        self.update_completion_q = Queue(1)
+        print "self.update_completion_q", self.update_completion_q
+        update_completion_thread = threading.Thread(target = self.update_completion_worker)
+        update_completion_thread.setDaemon(True)
+        update_completion_thread.start()
+        print "update_completion_thread", update_completion_thread
                                  
         contentBox = gtk.VBox(False, 0)
         self.create_menu_items()
@@ -344,17 +350,55 @@ class SDictViewer(object):
                 selected_word = current_model[selected][0]
                 selected_lang = current_model[current_model.iter_parent(selected)][0]                            
         return (selected_word, selected_lang)
+          
+    def update_completion_worker(self):
+        print "Starting update completion worker"
+        while True:
+            print "Getting next update completion task"
+            start_word, to_select = self.update_completion_q.get()
+            self.update_completion_stopped = False      
+            print "update_completion_worker: will look for", start_word, "in", self.dictionaries.size(), "dictionaries"
+            lang_word_list = {}
+            skipped = util.ListMap()
+            for lang in self.dictionaries.langs():
+                word_lookups = sdict.WordLookupByWord()
+                for item in self.dictionaries.get_word_list3(lang, start_word):
+                    if self.update_completion_stopped:
+                        print "=== Lookup for", start_word, "stopped"
+                        return 
+                    if isinstance(item, sdict.WordLookup):
+                        word_lookups[item.word].add_articles(item)
+                    else:
+                        skipped[item.dict].append(item)
+                word_list = word_lookups.values()
+                word_list.sort(key=str)
+                if len (word_list) > 0: lang_word_list[lang] = word_list
+    #            for dict, skipped_words in skipped.iteritems():
+    #                if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
+    #                    dict.index(skipped_words)
+            if not self.update_completion_stopped:
+                gobject.idle_add(self.update_completion_callback, lang_word_list, to_select)
+            else:
+                print "Word list update finished, but stop request was received, will not update UI"
+            self.update_completion_stopped = True
+            self.update_completion_q.task_done()
+        print "Finished update completion worker"
+            
+            
                                         
-    def update_completion(self, word, to_select = None, n = 20): 
-        if self.update_completion_worker:
-            self.update_completion_worker.stop()
-            self.update_completion_worker = None       
+    def update_completion(self, word, to_select = None, n = 20):
+        print "update_completion:", word 
+        self.update_completion_stopped = True
+        self.update_completion_q.put((word, to_select))  
+        #if self.update_completion_worker:
+        #    self.update_completion_worker.stop()
+        #    self.update_completion_worker = None       
         word = word.lstrip()
         model = gtk.TreeStore(object)
         model.append(None, ["Looking up " + word + "..."])
         self.word_completion.set_model(model)        
-        self.update_completion_worker = UpdateCompletionWorker(self.dictionaries, word, n, to_select, self.update_completion_callback)
-        self.update_completion_worker.start()
+        #self.update_completion_worker = UpdateCompletionWorker(self.dictionaries, word, n, to_select, self.update_completion_callback)
+        #self.update_completion_worker.start()
         return False
             
     def update_completion_callback(self, lang_word_list, to_select):
