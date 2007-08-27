@@ -97,9 +97,9 @@ class UpdateCompletionWorker(threading.Thread):
             word_list = word_lookups.values()
             word_list.sort(key=str)
             if len (word_list) > 0: lang_word_list[lang] = word_list
-            for dict, skipped_words in skipped.iteritems():
-                if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
-                    dict.index(skipped_words)
+#            for dict, skipped_words in skipped.iteritems():
+#                if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
+#                    dict.index(skipped_words)
         if not self.stopped:
             gobject.idle_add(self.callback, lang_word_list, self.to_select)
         else:

@@ -282,17 +282,20 @@ class SDictionary:
        
     def get_search_pos_for(self, word):
         print "get_search_pos_for: current thread is", threading.currentThread()
-        search_pos = -1
-        starts_with = ""
+        search_pos, starts_with = -1, None
         u_word = word.decode(self.encoding)
         print "get_search_pos_for: word is", word
         for i in xrange(1, len(self.short_index)):
             index = self.short_index[i]    
             try:
                 u_subword = u_word[:i]
+                print "subword:", u_subword
                 if index.has_key(u_subword):
                     search_pos = index[u_subword]
+                    print "at pos", search_pos
                     starts_with = u_subword.encode(self.encoding)
+                else:
+                    print "not in index"
             except UnicodeDecodeError, ex:
                 print ex            
         return search_pos, starts_with
@@ -342,9 +345,10 @@ class SDictionary:
         search_pos, starts_with = self.get_search_pos_for(start_word)
         print "Starts with", starts_with, "search pos", search_pos
         if search_pos > -1:
-            current_pos = self.header.full_index_offset + search_pos
+            current_pos = self.header.full_index_offset
             read_item = self.read_full_index_item
-            next_ptr, index_word, article_ptr = read_item(current_pos)
+            next_ptr = search_pos
+            index_word = starts_with
             found = False 
             while index_word and index_word.startswith(starts_with):
                 current_pos += next_ptr
