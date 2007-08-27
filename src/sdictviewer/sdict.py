@@ -170,7 +170,9 @@ class SDictionary:
         self.index_cache_file_name = os.path.join(index_cache_dir, os.path.basename(self.file_name)+'-'+str(self.version)+".index")
         self.short_index = self.load_short_index()
         self.stopped = True
-        threading.Thread(target = self.indexer).start()
+        indexing_thread = threading.Thread(target = self.indexer)
+        indexing_thread.setDaemon(True)
+        indexing_thread.start()
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -340,13 +342,21 @@ class SDictionary:
             current_pos = self.header.full_index_offset + search_pos
             read_item = self.read_full_index_item
             next_ptr, index_word, article_ptr = read_item(current_pos)
+            found = False 
             while index_word and index_word.startswith(starts_with):
                 current_pos += next_ptr
                 next_ptr, index_word, article_ptr = read_item(current_pos)
                 if index_word.startswith(start_word):
+                    found = True
                     yield WordLookup(index_word, self, article_ptr)
                 else:
                     yield SkippedWord(self, index_word, current_pos - self.header.full_index_offset)
+            if not found:
+                u_start_word = start_word.decode(self.encoding)
+                while len(self.short_index) < len(u_start_word) + 1:
+                    self.short_index.append({})
+                self.short_index[len(u_start_word)][u_start_word] = -1
+                
         
     def do_index(self, items, length = None, max_distance = AUTO_INDEX_THRESHOLD):
         t0 = time.time()
@@ -365,11 +375,11 @@ class SDictionary:
                 #print "Adding index point", current
                 short_index_for_length[current_word_start] = current_pos
                 if i - last_index_point_index > max_distance:
-                    self.index(items[last_index_point_index:i], length + 1, max_distance)
+                    self.do_index(items[last_index_point_index:i], length + 1, max_distance)
                 last_index_point_index = i     
             prev_word_start = current_word_start
         if len(items) - 1 - last_index_point_index > max_distance:
-            self.index(items[last_index_point_index:], length + 1, max_distance)
+            self.do_index(items[last_index_point_index:], length + 1, max_distance)
         print len(items), "indexing with length", length, "took", time.time() - t0
     
     def index(self, items):
@@ -379,8 +389,9 @@ class SDictionary:
         
     def indexer(self):
         while True:
-            items_to_index = indexing_q.get(block=True)
+            items_to_index = indexing_q.get()
             self.do_index(items_to_index)
+            indexing_q.task_done()
         
     def read_full_index_item(self, pointer):
         try:
