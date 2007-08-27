@@ -360,8 +360,7 @@ class SDictionary:
                     yield SkippedWord(self, index_word, current_pos - self.header.full_index_offset)
             if not found:
                 u_start_word = start_word.decode(self.encoding)
-                while len(self.short_index) < len(u_start_word) + 1:
-                    self.short_index.append({})
+                self.ensure_index_depth(len(u_start_word))
                 self.short_index[len(u_start_word)][u_start_word] = -1
                 
         
@@ -370,8 +369,7 @@ class SDictionary:
         if not length:
             length = self.header.short_index_depth + 1
         short_index = self.short_index
-        while len(short_index) < length + 1:
-            self.short_index.append({})
+        self.ensure_index_depth(length)
         short_index_for_length = short_index[length]
         prev_word_start = None; last_index_point_index = 0; i = -1
         for word, current_pos in items:
@@ -389,6 +387,10 @@ class SDictionary:
             self.do_index(items[last_index_point_index:], length + 1, max_distance)
         print len(items), "indexing with length", length, "took", time.time() - t0
     
+    def ensure_index_depth(self, depth):
+        while len(self.short_index) < depth + 1:
+            self.short_index.append({})
+                
     def index(self, items):
         print str(self),"will index", len(items), "items" 
         items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
