@@ -33,6 +33,7 @@ import re
 import time
 import webbrowser
 import threading
+from Queue import Queue
 
 gobject.threads_init()
 
@@ -107,7 +108,7 @@ class UpdateCompletionWorker(threading.Thread):
     def stop(self):
         self.stopped = True
         #self.dictionaries.stop_lookup()
-    
+
 class SDictViewer(object):
              
     def __init__(self):
@@ -122,6 +123,10 @@ class SDictViewer(object):
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
+        self.open_q = Queue()
+        open_dict_worker_thread = threading.Thread(target = self.open_dict_worker)
+        open_dict_worker_thread.setDaemon(True)
+        open_dict_worker_thread.start()
                                  
         contentBox = gtk.VBox(False, 0)
         self.create_menu_items()
@@ -189,6 +194,7 @@ class SDictViewer(object):
             hist_model = self.word_input.get_model()
             hist_model.foreach(self.history_to_list, history_list)
             dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()] 
+            [dict.close() for dict in self.dictionaries.get_dicts()]
             selected_word, selected_word_lang = self.get_selected_word()
             selected = (str(selected_word), selected_word_lang)
             save_app_state(State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
@@ -431,8 +437,7 @@ class SDictViewer(object):
         return word_input
     
     def format_history_item(self, celllayout, cell, model, iter, user_data = None):
-        word  = model[iter][0]
-        lang  = model[iter][1]
+        word, lang  = model[iter]
         word = xml.sax.saxutils.escape(word)
         cell.set_property('markup', '<span>%s</span> <span foreground="darkgrey">(<i>%s</i>)</span>' % (word, lang)) 
         
@@ -446,9 +451,7 @@ class SDictViewer(object):
             self.schedule(self.update_completion, 600, self.word_input.child.get_text())            
             #self.update_completion(self.word_input.child.get_text())
             return
-        active_row = self.word_input.get_model()[active]
-        word = active_row[0]
-        lang = active_row[1]
+        word, lang = self.word_input.get_model()[active]
         #use schedule instead of direct call to interrupt already scheduled update if any
         self.schedule(self.update_completion, 0, word, (word, lang))        
         #self.update_completion(word, select_if_one = False)
@@ -642,10 +645,11 @@ class SDictViewer(object):
         if not self.file_chooser_dlg:
             self.file_chooser_dlg = self.create_file_chooser_dlg()
             self.file_chooser_dlg.set_title("Open Dictionary")
-        if self.file_chooser_dlg.run() == gtk.RESPONSE_OK:
+        response = self.file_chooser_dlg.run()
+        self.file_chooser_dlg.hide()        
+        if response == gtk.RESPONSE_OK:
             fileName = self.file_chooser_dlg.get_filename()
             self.open_dict(fileName)
-        self.file_chooser_dlg.hide()        
         
     def create_file_chooser_dlg(self):
         dlg = gtk.FileChooserDialog(parent = self.window, action = gtk.FILE_CHOOSER_ACTION_OPEN)        
@@ -655,47 +659,56 @@ class SDictViewer(object):
             dlg.set_filename(self.last_dict_file_location)        
         return dlg
     
+    def open_dict_worker(self):
+        while True:
+            file = self.open_q.get(block = True)
+            print "open_dict_worker will open", file
+            try:
+                dict = sdict.SDictionary(file)
+                gobject.idle_add(self.add_dict, dict)
+            except Exception, e:
+                self.report_open_error(e)
+            finally:
+                self.open_q.task_done()
+    
+    def report_open_error(self, error):
+        self.open_errors.append(error)
+    
+    def open_dicts_thread(self, *files):
+         for file in files:
+            self.open_q.put_nowait(file)
+         self.open_q.join()
+         gobject.idle_add(self.open_dicts_done)
+    
+    def open_dicts_done(self):
+        self.status_display.dismiss()
+        self.status_display = None
+        if len(self.open_errors) > 0:
+            error_text = ""
+            for error in self.open_errors:
+                error_text += str(error) + "\n"               
+            self.show_error("Open Failed", error_text)
+            self.open_errors = None        
+        if self.select_word_on_open:
+            word, lang = self.select_word_on_open
+            self.select_word_on_open = None
+        else:
+            word, lang = self.get_selected_word()
+        self.update_completion(self.word_input.child.get_text(), (word, lang))
+        
     def open_dict(self, file):
         self.open_dicts([file])
                 
     def open_dicts(self, files):
-        if len(files) == 0:
-            if self.status_display:
-                self.status_display.dismiss()
-                self.status_display = None
-                if self.select_word_on_open:
-                    word, lang = self.select_word_on_open
-                    self.select_word_on_open = None
-                else:
-                    word, lang = self.get_selected_word()
-                self.update_completion(self.word_input.child.get_text(), (word, lang))
-            return
-        if not self.status_display:
-            self.status_display = self.create_dict_loading_status_display()            
-            self.status_display.total_files = len(files)
-        file = files.pop(0)
-        self.status_display.set_message(file, "Loading %d of %d" % (self.status_display.total_files - len(files), self.status_display.total_files))
-        worker = util.BackgroundWorker(lambda : sdict.SDictionary(file), self.status_display, self.collect_dict_callback, files)
-        worker.start()
-        
-    def collect_dict_callback(self, dict, error, files):
-        if not error:
-            self.add_dict(dict)
-        else:
-            print "Failed to open dictionary: ", error
-            try: 
-                raise error
-            except IOError:
-                self.show_error("Dictionary Open Failed", "%s: %s" % (error.strerror, error.filename))
-            except sdict.DictFormatError:
-                self.show_error("Dictionary Open Failed", str(error))
-            except ValueError:
-                self.show_error("Dictionary Open Failed", str(error))
-            except Exception:
-                self.show_error("Unknown Error", str(error))
-        self.open_dicts(files)
-        
-        
+        self.open_errors = []
+        self.status_display = self.create_dict_loading_status_display()            
+        self.status_display.total_files = len(files)
+        self.status_display.set_message("Please wait...", "Loading")
+        open_dict_thread = threading.Thread(target = self.open_dicts_thread, args = files)
+        open_dict_thread.setDaemon(True)
+        open_dict_thread.start()
+        self.status_display.show()
+
     def create_dict_loading_status_display(self):            
         return DialogStatusDisplay(self.get_dialog_parent())
         
@@ -706,6 +719,7 @@ class SDictViewer(object):
         dlg.destroy()
     
     def add_dict(self, dict):
+        print "Adding", dict
         if (self.dictionaries.has(dict)):
             print "Dictionary is already open"
             return
