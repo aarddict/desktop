@@ -281,9 +281,11 @@ class SDictionary:
         return short_index
        
     def get_search_pos_for(self, word):
+        print "get_search_pos_for: current thread is", threading.currentThread()
         search_pos = -1
         starts_with = ""
         u_word = word.decode(self.encoding)
+        print "get_search_pos_for: word is", word
         for i in xrange(1, len(self.short_index)):
             index = self.short_index[i]    
             try:
@@ -338,6 +340,7 @@ class SDictionary:
 
     def get_word_list_iter(self, start_word):
         search_pos, starts_with = self.get_search_pos_for(start_word)
+        print "Starts with", starts_with, "search pos", search_pos
         if search_pos > -1:
             current_pos = self.header.full_index_offset + search_pos
             read_item = self.read_full_index_item

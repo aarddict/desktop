@@ -169,9 +169,9 @@ class SDictViewer(object):
             app_state = load_app_state()     
             if app_state: 
                 self.select_word_on_open = app_state.selected_word
-                self.open_dicts(app_state.dict_files)
                 self.word_input.child.set_text(app_state.word)        
                 self.word_input.child.set_position(-1)        
+                self.open_dicts(app_state.dict_files)
                 app_state.history.reverse()
                 [self.add_to_history(w, l) for w, l in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
