@@ -31,7 +31,7 @@ import util
 
 settings_dir  = ".sdictviewer"
 index_cache_dir = os.path.join(os.path.expanduser("~"),  settings_dir, "index_cache")
-AUTO_INDEX_THRESHOLD = 1000
+INDEXING_THRESHOLD = 1000
 
 class GzipCompression:
     
@@ -151,7 +151,7 @@ class SkippedWord:
         self.full_index_ptr = full_index_ptr
         
     def __str__(self):
-        return self.word
+        return self.word +" [skipped]"
     
 class SDictionary:         
     
@@ -287,6 +287,7 @@ class SDictionary:
 
     def get_word_list_iter(self, start_word):
         search_pos, starts_with = self.get_search_pos_for(start_word)
+        print "search_pos: %s, starts_with %s" % (search_pos, starts_with)
         if search_pos > -1:
             current_pos = self.header.full_index_offset
             read_item = self.read_full_index_item
@@ -299,21 +300,22 @@ class SDictionary:
                 if index_word.startswith(start_word):
                     found = True
                     yield WordLookup(index_word, self, article_ptr)
-                else:
-                    yield SkippedWord(self, index_word, current_pos - self.header.full_index_offset)
+                yield SkippedWord(self, index_word, current_pos - self.header.full_index_offset)
             if not found:
                 u_start_word = start_word.decode(self.encoding)
                 self.ensure_index_depth(len(u_start_word))
                 self.short_index[len(u_start_word)][u_start_word] = -1
                 
+    def index(self, items):
+        if len(items) > INDEXING_THRESHOLD:
+            t0 = time.time()
+            items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
+            for stats in self.do_index(items_to_index, self.header.short_index_depth + 1, INDEXING_THRESHOLD): yield stats
+            print "indexing %d items took %s s" % (len(items), time.time() - t0)
         
-    def do_index(self, items, length = None, max_distance = AUTO_INDEX_THRESHOLD, convert = True):
+    def do_index(self, items, length, max_distance):
         t0 = time.time()
-        print str(self),"will index", len(items), "items" 
-        if convert:
-            items = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
-        if not length:
-            length = self.header.short_index_depth + 1
+        print "[do_index] %s will index %d items with depth %d" % (str(self), len(items), length) 
         short_index = self.short_index
         self.ensure_index_depth(length)
         short_index_for_length = short_index[length]
@@ -323,17 +325,20 @@ class SDictionary:
             i += 1
             current_word_start =  word[:length]
             yield (length, i, item_count)
-            #print "test: ", last , "->", current
+            #print "test: '%s'->'%s'" % (prev_word_start , current_word_start)
             if prev_word_start != current_word_start:
-                #print "Adding index point", current
+                #print "Adding index point '%s'" % current_word_start
+                if short_index_for_length.has_key(current_word_start):
+                    print "[do_index] this list was indexed before, stopping"
+                    break
                 short_index_for_length[current_word_start] = current_pos
                 if i - last_index_point_index > max_distance:
-                    self.do_index(items[last_index_point_index:i], length + 1, max_distance, False)
+                    for stats in self.do_index(items[last_index_point_index:i], length + 1, max_distance): yield stats
                 last_index_point_index = i     
             prev_word_start = current_word_start
-        if len(items) - 1 - last_index_point_index > max_distance:
-            self.do_index(items[last_index_point_index:], length + 1, max_distance, False)
-        print item_count, "indexing with length", length, "took", time.time() - t0
+        if item_count - 1 - last_index_point_index > max_distance:
+            for stats in self.do_index(items[last_index_point_index:], length + 1, max_distance): yield stats
+        #print "indexing %d items with depth %d took %s s" % (item_count, length, time.time() - t0)
     
     def ensure_index_depth(self, depth):
         while len(self.short_index) < depth + 1:
@@ -398,8 +403,8 @@ class SDictionaryCollection:
         for dict in self.dictionaries[lang]:
             count = 0
             for item in dict.get_word_list_iter(start_word):
-                count += (1 if isinstance(item, WordLookup) else 0)
                 yield item
+                count += (1 if isinstance(item, WordLookup) else 0)
                 if count >= max_from_one_dict: break
     
     def stop_lookup(self):

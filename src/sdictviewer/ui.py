@@ -330,16 +330,15 @@ class SDictViewer(object):
                 word_list.sort(key=str)
                 if len (word_list) > 0: lang_word_list[lang] = word_list
                 for dict, skipped_words in skipped.iteritems():
-                    if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
-                        for stats in dict.do_index(skipped_words):
-                            if self.update_completion_stopped: 
-                                print "=== Indexing of", len(skipped_words), "in",dict, "stopped"
-                                break    
+                    print "skipped %d words in %s" % (len(skipped_words), dict)
+                    for stats in dict.index(skipped_words):
+                        if self.update_completion_stopped: 
+                            print "=== Indexing of", len(skipped_words), "in",dict, "stopped"
+                            break    
             if not self.update_completion_stopped:
                 gobject.idle_add(self.update_completion_callback, lang_word_list, to_select)
             else:
                 print "=== Word list update finished, but stop request was received, will not update UI"
-            self.update_completion_stopped = True
             self.update_completion_q.task_done()
                                         
     def update_completion(self, word, to_select = None, n = 20):
@@ -652,7 +651,7 @@ class SDictViewer(object):
             print "open_dict_worker will open", file
             try:
                 dict = sdict.SDictionary(file)
-                gobject.idle_add(self.add_dict, dict)
+                self.add_dict(dict)
             except Exception, e:
                 self.report_open_error(e)
             finally:
@@ -712,8 +711,8 @@ class SDictViewer(object):
             return
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
-        self.add_to_menu_remove(dict)
-        self.update_title()  
+        gobject.idle_add(self.add_to_menu_remove, dict)
+        gobject.idle_add(self.update_title)
         
     def remove_dict(self, dict):          
         word, lang = self.get_selected_word()
