@@ -352,12 +352,14 @@ class SDictViewer(object):
             [model.append(iter, [word]) for word in lang_word_list[lang]]                    
         self.word_completion.set_model(model)            
         self.word_completion.expand_all()
+        
+        selected = False
         if to_select:
             word, lang = to_select
-            self.select_word(word, lang)
-        else:
-            if len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
-                self.select_first_word_in_completion()                
+            selected = self.select_word(word, lang)
+            
+        if not selected and len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
+            self.select_first_word_in_completion()                
 
     def create_clear_button(self):
         return self.create_button(gtk.STOCK_CLEAR, self.clear_word_input) 
@@ -444,7 +446,7 @@ class SDictViewer(object):
     def select_word(self, word, lang):        
         model = self.word_completion.get_model()
         if len (model) == 0:
-            return
+            return False
         lang_iter = current_lang_iter = model.get_iter_first()
         if len (model) > 1:
             while current_lang_iter and model[current_lang_iter][0] != lang:
@@ -459,6 +461,8 @@ class SDictViewer(object):
                 self.word_completion.get_selection().select_iter(word_iter)            
                 word_path = model.get_path(word_iter)
                 self.word_completion.scroll_to_cell(word_path)
+                return True
+        return False
 
     def create_menu_items(self):
         self.mi_open = gtk.MenuItem("Add...")
