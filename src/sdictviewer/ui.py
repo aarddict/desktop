@@ -43,18 +43,21 @@ app_name = "SDict Viewer"
 class DialogStatusDisplay:
     
     def __init__(self, parent):
-        self.loading_dialog = None        
+        self.loading_dialog = None   
+        self.message_limit = 60     
         self.parent = parent
-        self.loading_dialog = gtk.MessageDialog(parent=self.parent, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_INFO)        
-        self.shown = False
+        self.loading_dialog = gtk.MessageDialog(parent=self.parent, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_INFO) 
+        self.loading_dialog.set_markup(" "*self.message_limit)
         
     def show(self):        
-        self.shown = True
         self.loading_dialog.run()
         
     def set_message(self, message, title):
-        self.title = title
-        self.loading_dialog.set_title(self.title)
+        self.loading_dialog.set_title(title)
+        if len(message) > self.message_limit:
+            message = message[:self.message_limit] + "..."
+        else:
+            message += " "*(self.message_limit - len(message))
         self.loading_dialog.set_markup(message)
             
     def dismiss(self):
@@ -62,13 +65,6 @@ class DialogStatusDisplay:
             self.loading_dialog.destroy()
             self.loading_dialog = None            
             
-    def before_task_start(self):
-        if not self.shown:
-            self.show()
-            
-    def after_task_end(self):
-        pass
-
 class SDictViewer(object):
              
     def __init__(self):
@@ -268,10 +264,6 @@ class SDictViewer(object):
         self.tabs.show_all()
         return result  
             
-    def collect_anonymous_tags(self, tag, list):
-        if tag.get_property('name') == None:
-            list.append(tag)
-    
     def word_selection_changed(self, selection):
         if selection.count_selected_rows() == 0:
             self.schedule(self.clear_tabs, 200)
@@ -347,15 +339,15 @@ class SDictViewer(object):
         self.update_completion_q.put((word, to_select))  
         word = word.lstrip()
         model = gtk.TreeStore(object)
-        model.append(None, ["Looking up " + word + "..."])
+        model.append(None, ["Looking up..."])
         self.word_completion.set_model(model)        
         return False
             
     def update_completion_callback(self, lang_word_list, to_select):
-        print "Update completion", len(lang_word_list), "languages"
+        print "[update_completion_callback] Completion found in %s language(s)" % len(lang_word_list)
         model = gtk.TreeStore(object)
         for lang in lang_word_list.iterkeys():
-            print "Found", len(lang_word_list[lang]), "for", lang
+            print "[update_completion_callback] %d words in %s" % (len(lang_word_list[lang]), lang)
             iter = model.append(None, [lang])
             [model.append(iter, [word]) for word in lang_word_list[lang]]                    
         self.word_completion.set_model(model)            
@@ -647,11 +639,12 @@ class SDictViewer(object):
     
     def open_dict_worker(self):
         while True:
-            file = self.open_q.get(block = True)
-            print "open_dict_worker will open", file
+            file = self.open_q.get()
             try:
                 dict = sdict.SDictionary(file)
-                self.add_dict(dict)
+                gobject.idle_add(self.update_status_display, dict.title)
+                dict.load()
+                self. add_dict(dict)
             except Exception, e:
                 self.report_open_error(e)
             finally:
@@ -694,6 +687,10 @@ class SDictViewer(object):
         open_dict_thread.setDaemon(True)
         open_dict_thread.start()
         self.status_display.show()
+        
+    def update_status_display(self, message):
+        if self.status_display:
+            self.status_display.set_message(message, "Loading")
 
     def create_dict_loading_status_display(self):            
         return DialogStatusDisplay(self.get_dialog_parent())
@@ -705,7 +702,6 @@ class SDictViewer(object):
         dlg.destroy()
     
     def add_dict(self, dict):
-        print "Adding", dict
         if (self.dictionaries.has(dict)):
             print "Dictionary is already open"
             return

@@ -166,7 +166,6 @@ class SDictionary:
         self.version = self.read_unit(self.header.version_offset)  
         self.copyright = self.read_unit(self.header.copyright_offset)
         self.index_cache_file_name = os.path.join(index_cache_dir, os.path.basename(self.file_name)+'-'+str(self.version)+".index")
-        self.short_index = self.load_short_index()
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -187,6 +186,9 @@ class SDictionary:
         s = f.read(record_length)
         s = self.compression.decompress(s)
         return s
+
+    def load(self):
+        self.short_index = self.load_short_index()
 
     def load_short_index(self):
         #"try to read index from a cache, if that failes fall back to read_short_index(self), and try to write a cache"
@@ -287,7 +289,7 @@ class SDictionary:
 
     def get_word_list_iter(self, start_word):
         search_pos, starts_with = self.get_search_pos_for(start_word)
-        print "search_pos: %s, starts_with %s" % (search_pos, starts_with)
+        #print "search_pos: %s, starts_with %s" % (search_pos, starts_with)
         if search_pos > -1:
             current_pos = self.header.full_index_offset
             read_item = self.read_full_index_item
@@ -311,11 +313,11 @@ class SDictionary:
             t0 = time.time()
             items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
             for stats in self.do_index(items_to_index, self.header.short_index_depth + 1, INDEXING_THRESHOLD): yield stats
-            print "indexing %d items took %s s" % (len(items), time.time() - t0)
+            print "[index] indexing %d items took %s s" % (len(items), time.time() - t0)
         
     def do_index(self, items, length, max_distance):
-        t0 = time.time()
-        print "[do_index] %s will index %d items with depth %d" % (str(self), len(items), length) 
+        #t0 = time.time()
+        #print "[do_index] %s will index %d items with depth %d" % (str(self), len(items), length) 
         short_index = self.short_index
         self.ensure_index_depth(length)
         short_index_for_length = short_index[length]
