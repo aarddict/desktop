@@ -69,46 +69,6 @@ class DialogStatusDisplay:
     def after_task_end(self):
         pass
 
-class UpdateCompletionWorker(threading.Thread):        
-    def __init__(self, dictionaries, start_word, max_word_count, to_select, callback):
-        super(UpdateCompletionWorker, self).__init__()
-        self.stopped = True
-        self.dictionaries = dictionaries
-        self.callback = callback
-        self.start_word = start_word
-        self.max_word_count = max_word_count
-        self.to_select = to_select 
-
-    def run(self):
-        print "UpdateCompletionWorker: will look in", self.dictionaries.size(), "dictionaries"
-        self.stopped = False
-        lang_word_list = {}
-        skipped = util.ListMap()
-        for lang in self.dictionaries.langs():
-            word_lookups = sdict.WordLookupByWord()
-            for item in self.dictionaries.get_word_list3(lang, self.start_word):
-                if self.stopped:
-                    print "=== Lookup for", self.start_word, "stopped"
-                    return 
-                if isinstance(item, sdict.WordLookup):
-                    word_lookups[item.word].add_articles(item)
-                else:
-                    skipped[item.dict].append(item)
-            word_list = word_lookups.values()
-            word_list.sort(key=str)
-            if len (word_list) > 0: lang_word_list[lang] = word_list
-#            for dict, skipped_words in skipped.iteritems():
-#                if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
-#                    dict.index(skipped_words)
-        if not self.stopped:
-            gobject.idle_add(self.callback, lang_word_list, self.to_select)
-        else:
-            print "Word list update finished, but stop request was received, will not update UI"
-        
-    def stop(self):
-        self.stopped = True
-        #self.dictionaries.stop_lookup()
-
 class SDictViewer(object):
              
     def __init__(self):
@@ -128,11 +88,9 @@ class SDictViewer(object):
         open_dict_worker_thread.setDaemon(True)
         open_dict_worker_thread.start()
         self.update_completion_q = Queue(1)
-        print "self.update_completion_q", self.update_completion_q
         update_completion_thread = threading.Thread(target = self.update_completion_worker)
         update_completion_thread.setDaemon(True)
         update_completion_thread.start()
-        print "update_completion_thread", update_completion_thread
                                  
         contentBox = gtk.VBox(False, 0)
         self.create_menu_items()
@@ -304,7 +262,6 @@ class SDictViewer(object):
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
                 self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
-                #gobject.idle_add(lambda : article_view.scroll_to_iter(article_view.get_buffer().get_start_iter(), 0))
                 self.add_to_history(word, lang)            
                 result = True           
         self.update_copy_article_mi(self.tabs)
@@ -352,9 +309,8 @@ class SDictViewer(object):
         return (selected_word, selected_lang)
           
     def update_completion_worker(self):
-        print "Starting update completion worker"
         while True:
-            print "Getting next update completion task"
+            print "Waiting for next update completion task"
             start_word, to_select = self.update_completion_q.get()
             self.update_completion_stopped = False      
             print "update_completion_worker: will look for", start_word, "in", self.dictionaries.size(), "dictionaries"
@@ -362,7 +318,7 @@ class SDictViewer(object):
             skipped = util.ListMap()
             for lang in self.dictionaries.langs():
                 word_lookups = sdict.WordLookupByWord()
-                for item in self.dictionaries.get_word_list3(lang, start_word):
+                for item in self.dictionaries.get_word_list_iter(lang, start_word):
                     if self.update_completion_stopped:
                         print "=== Lookup for", start_word, "stopped"
                         return 
@@ -376,30 +332,24 @@ class SDictViewer(object):
                 for dict, skipped_words in skipped.iteritems():
                     if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
                         for stats in dict.do_index(skipped_words):
-                            if self.update_completion_stopped: break    
+                            if self.update_completion_stopped: 
+                                print "=== Indexing of", len(skipped_words), "in",dict, "stopped"
+                                break    
             if not self.update_completion_stopped:
                 gobject.idle_add(self.update_completion_callback, lang_word_list, to_select)
             else:
-                print "Word list update finished, but stop request was received, will not update UI"
+                print "=== Word list update finished, but stop request was received, will not update UI"
             self.update_completion_stopped = True
             self.update_completion_q.task_done()
-        print "Finished update completion worker"
-            
-            
                                         
     def update_completion(self, word, to_select = None, n = 20):
         print "update_completion:", word 
         self.update_completion_stopped = True
         self.update_completion_q.put((word, to_select))  
-        #if self.update_completion_worker:
-        #    self.update_completion_worker.stop()
-        #    self.update_completion_worker = None       
         word = word.lstrip()
         model = gtk.TreeStore(object)
         model.append(None, ["Looking up " + word + "..."])
         self.word_completion.set_model(model)        
-        #self.update_completion_worker = UpdateCompletionWorker(self.dictionaries, word, n, to_select, self.update_completion_callback)
-        #self.update_completion_worker.start()
         return False
             
     def update_completion_callback(self, lang_word_list, to_select):

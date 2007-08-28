@@ -27,13 +27,11 @@ import os
 import os.path
 from itertools import groupby
 from Queue import Queue 
-import threading
+import util
 
 settings_dir  = ".sdictviewer"
 index_cache_dir = os.path.join(os.path.expanduser("~"),  settings_dir, "index_cache")
 AUTO_INDEX_THRESHOLD = 1000
-
-indexing_q = Queue(5)
 
 class GzipCompression:
     
@@ -169,10 +167,6 @@ class SDictionary:
         self.copyright = self.read_unit(self.header.copyright_offset)
         self.index_cache_file_name = os.path.join(index_cache_dir, os.path.basename(self.file_name)+'-'+str(self.version)+".index")
         self.short_index = self.load_short_index()
-        self.stopped = True
-        indexing_thread = threading.Thread(target = self.indexer)
-        indexing_thread.setDaemon(True)
-        indexing_thread.start()
         
     def __eq__(self, other):
         return self.key() == other.key()
@@ -183,9 +177,6 @@ class SDictionary:
     def __hash__(self):
         return self.key().__hash__()
 
-    def stop_lookup(self):
-        self.stopped = True
-        
     def key(self):
         return (self.title, self.version, self.file_name)
         
@@ -281,65 +272,18 @@ class SDictionary:
         return short_index
        
     def get_search_pos_for(self, word):
-        print "get_search_pos_for: current thread is", threading.currentThread()
         search_pos, starts_with = -1, None
         u_word = word.decode(self.encoding)
-        print "get_search_pos_for: word is", word
         for i in xrange(1, len(self.short_index)):
             index = self.short_index[i]    
             try:
                 u_subword = u_word[:i]
-                print "subword:", u_subword
                 if index.has_key(u_subword):
                     search_pos = index[u_subword]
-                    print "at pos", search_pos
                     starts_with = u_subword.encode(self.encoding)
-                else:
-                    print "not in index"
             except UnicodeDecodeError, ex:
                 print ex            
         return search_pos, starts_with
-
-    def get_word_list(self, start_word, n):
-        self.stopped = False
-        t0 = time.time()
-        search_pos, starts_with = self.get_search_pos_for(start_word)
-        print "get_search_pos_for", time.time() - t0, "starts with", starts_with
-        word_list = []
-        scan_count = 0
-        t0 = time.time()
-        if search_pos > -1:
-            next_word = None
-            next_ptr = search_pos
-            current_pos = self.header.full_index_offset
-            count = 0
-            skipped = []
-            distance_to_last_index_point = 0
-            read_item = self.read_full_index_item
-            while count < n:
-                if self.stopped:
-                    raise LookupStoppedException()
-                current_pos += next_ptr
-                next_ptr, index_word, article_ptr = read_item(current_pos)
-                skipped.append((index_word, current_pos))
-                if not index_word or not index_word.startswith(starts_with):
-                    break                
-                if index_word.startswith(start_word):
-                    count += 1
-                    word_list.append(WordLookup(index_word, self, article_ptr))
-            if self.stopped:
-                raise LookupStoppedException()
-            if len(word_list) == 0:
-                u_start_word = start_word.decode(self.encoding)
-                while len(self.short_index) < len(u_start_word) + 1:
-                    self.short_index.append({})
-                self.short_index[len(u_start_word)][u_start_word] = -1
-            if len(skipped) > AUTO_INDEX_THRESHOLD:
-                skipped = [(w.decode(self.encoding), p - self.header.full_index_offset) for w, p in skipped]
-                self.do_index(skipped)
-            print "skipped", len(skipped) - len(word_list)
-        print "get_word_list", time.time() - t0
-        return word_list    
 
     def get_word_list_iter(self, start_word):
         search_pos, starts_with = self.get_search_pos_for(start_word)
@@ -396,18 +340,6 @@ class SDictionary:
         while len(self.short_index) < depth + 1:
             self.short_index.append({})
                 
-    #def index(self, items):
-        #print str(self),"will index", len(items), "items" 
-        #items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
-        #self.do_index(items_to_index)
-        #indexing_q.put(items_to_index)
-        
-    def indexer(self):
-        while True:
-            items_to_index = indexing_q.get()
-            self.do_index(items_to_index)
-            indexing_q.task_done()
-        
     def read_full_index_item(self, pointer):
         try:
             f = self.file
@@ -429,12 +361,6 @@ class SDictionary:
     def close(self):
         self.file.close()        
 
-class DictionariesByLang(dict):
-    def __missing__ (self, key):
-        value = []
-        self.__setitem__(key, value)
-        return value
-        
 class WordLookupByWord(dict):
     def __missing__(self, word):
         value = WordLookup(word)
@@ -444,8 +370,7 @@ class WordLookupByWord(dict):
 class SDictionaryCollection:
     
     def __init__(self):
-        self.dictionaries = DictionariesByLang()
-        self.stopped = True
+        self.dictionaries = util.ListMap()
     
     def add(self, dict):
         self.dictionaries[dict.header.word_lang].append(dict)
@@ -470,46 +395,7 @@ class SDictionaryCollection:
     def langs(self):
         return self.dictionaries.keys()
     
-    def get_word_list(self, start_word, n):
-        self.stopped = False
-        lang_word_lists = {}
-        for lang, dicts in self.dictionaries.iteritems():
-            if self.stopped:
-                raise LookupStoppedException()
-            word_list = []
-            [word_list.extend(dict.get_word_list(start_word, n)) for dict in dicts]
-            if len(dicts) > 1:
-                keyfunc = lambda word : str(word)
-                word_list.sort(key = keyfunc)
-                merged_word_list = []
-                for k, g in groupby(word_list, keyfunc):
-                    if self.stopped:
-                        raise LookupStoppedException() 
-                    merged_word = WordLookup(k)
-                    [merged_word.add_articles(word) for word in g]
-                    merged_word_list.append(merged_word)
-                word_list = merged_word_list[:n]
-            if len(word_list) > 0:
-                lang_word_lists[lang] = word_list
-        return lang_word_lists    
-
-    def get_word_list2(self, lang, start_word, n):
-        dicts = self.dictionaries[lang]
-        word_lookups = WordLookupByWord(); skipped = []
-        for dict in dicts:
-            count = 0
-            for item in dict.get_word_list_iter():
-                if isinstance(item, WordLookup):
-                    word_lookups[item.word].add_articles(word)
-                    count += 1
-                    if count >= n: break
-                else:
-                    skipped.append(item)
-        result = list(word_lookups.itervalues()())
-        result.sort(key=str)
-        return result, skipped
-    
-    def get_word_list3(self, lang, start_word, max_from_one_dict = 20):
+    def get_word_list_iter(self, lang, start_word, max_from_one_dict = 20):
         for dict in self.dictionaries[lang]:
             count = 0
             for item in dict.get_word_list_iter(start_word):
