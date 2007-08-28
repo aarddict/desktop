@@ -310,18 +310,18 @@ class SDictViewer(object):
           
     def update_completion_worker(self):
         while True:
-            print "Waiting for next update completion task"
+            print "[update_completion_worker] Waiting for next update completion task"
             start_word, to_select = self.update_completion_q.get()
             self.update_completion_stopped = False      
-            print "update_completion_worker: will look for", start_word, "in", self.dictionaries.size(), "dictionaries"
+            print "[update_completion_worker] Will look for '%s' in %d dictionaries" % (start_word, self.dictionaries.size())
             lang_word_list = {}
             skipped = util.ListMap()
             for lang in self.dictionaries.langs():
                 word_lookups = sdict.WordLookupByWord()
                 for item in self.dictionaries.get_word_list_iter(lang, start_word):
                     if self.update_completion_stopped:
-                        print "=== Lookup for", start_word, "stopped"
-                        return 
+                        print "[update_completion_worker] === Lookup for", start_word, "stopped"
+                        break 
                     if isinstance(item, sdict.WordLookup):
                         word_lookups[item.word].add_articles(item)
                     else:
@@ -330,19 +330,19 @@ class SDictViewer(object):
                 word_list.sort(key=str)
                 if len (word_list) > 0: lang_word_list[lang] = word_list
                 for dict, skipped_words in skipped.iteritems():
-                    print "skipped %d words in %s" % (len(skipped_words), dict)
+                    print "[update_completion_worker] Skipped %d words in %s" % (len(skipped_words), dict)
                     for stats in dict.index(skipped_words):
                         if self.update_completion_stopped: 
-                            print "=== Indexing of", len(skipped_words), "in",dict, "stopped"
+                            print "[update_completion_worker] === Indexing of", len(skipped_words), "in",dict, "stopped"
                             break    
             if not self.update_completion_stopped:
                 gobject.idle_add(self.update_completion_callback, lang_word_list, to_select)
             else:
-                print "=== Word list update finished, but stop request was received, will not update UI"
+                print "[update_completion_worker] === Word list update finished, but stop request was received, will not update UI"
             self.update_completion_q.task_done()
                                         
     def update_completion(self, word, to_select = None, n = 20):
-        print "update_completion:", word 
+        print "[update_completion] requested for '%s'" % word 
         self.update_completion_stopped = True
         self.update_completion_q.put((word, to_select))  
         word = word.lstrip()
