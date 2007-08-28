@@ -287,7 +287,6 @@ class SDictionary:
 
     def get_word_list_iter(self, start_word):
         search_pos, starts_with = self.get_search_pos_for(start_word)
-        print "Starts with", starts_with, "search pos", search_pos
         if search_pos > -1:
             current_pos = self.header.full_index_offset
             read_item = self.read_full_index_item

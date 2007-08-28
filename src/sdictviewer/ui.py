@@ -449,13 +449,6 @@ class SDictViewer(object):
         word, lang = self.word_input.get_model()[active]
         #use schedule instead of direct call to interrupt already scheduled update if any
         self.schedule(self.update_completion, 0, word, (word, lang))        
-        #self.update_completion(word, select_if_one = False)
-        #self.select_word(word, lang)        
-        
-    #def update_completion_and_select(self, completion_word, word, lang):
-    #    self.update_completion(completion_word, select_if_one = False)
-    #    self.select_word(word, lang)        
-    #    return False
         
     def select_word(self, word, lang):        
         model = self.word_completion.get_model()
@@ -630,10 +623,9 @@ class SDictViewer(object):
             tag_name = tag.get_property("name")
             if tag_name == "r" or tag_name == "url":
                 is_ref = True
-        if is_ref:
-            text_window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))            
-        else:
-            text_window.set_cursor(None)
+                break
+        cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if is_ref else None
+        text_window.set_cursor(cursor)
         return False
         
     def select_dict_file(self, widget):
