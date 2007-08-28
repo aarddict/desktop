@@ -373,9 +373,10 @@ class SDictViewer(object):
                 word_list = word_lookups.values()
                 word_list.sort(key=str)
                 if len (word_list) > 0: lang_word_list[lang] = word_list
-    #            for dict, skipped_words in skipped.iteritems():
-    #                if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
-    #                    dict.index(skipped_words)
+                for dict, skipped_words in skipped.iteritems():
+                    if len(skipped_words) > sdict.AUTO_INDEX_THRESHOLD:
+                        for stats in dict.do_index(skipped_words):
+                            if self.update_completion_stopped: break    
             if not self.update_completion_stopped:
                 gobject.idle_add(self.update_completion_callback, lang_word_list, to_select)
             else:

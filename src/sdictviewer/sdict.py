@@ -364,37 +364,43 @@ class SDictionary:
                 self.short_index[len(u_start_word)][u_start_word] = -1
                 
         
-    def do_index(self, items, length = None, max_distance = AUTO_INDEX_THRESHOLD):
+    def do_index(self, items, length = None, max_distance = AUTO_INDEX_THRESHOLD, convert = True):
         t0 = time.time()
+        print str(self),"will index", len(items), "items" 
+        if convert:
+            items = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
         if not length:
             length = self.header.short_index_depth + 1
         short_index = self.short_index
         self.ensure_index_depth(length)
         short_index_for_length = short_index[length]
         prev_word_start = None; last_index_point_index = 0; i = -1
+        item_count = len(items)
         for word, current_pos in items:
             i += 1
             current_word_start =  word[:length]
+            yield (length, i, item_count)
             #print "test: ", last , "->", current
             if prev_word_start != current_word_start:
                 #print "Adding index point", current
                 short_index_for_length[current_word_start] = current_pos
                 if i - last_index_point_index > max_distance:
-                    self.do_index(items[last_index_point_index:i], length + 1, max_distance)
+                    self.do_index(items[last_index_point_index:i], length + 1, max_distance, False)
                 last_index_point_index = i     
             prev_word_start = current_word_start
         if len(items) - 1 - last_index_point_index > max_distance:
-            self.do_index(items[last_index_point_index:], length + 1, max_distance)
-        print len(items), "indexing with length", length, "took", time.time() - t0
+            self.do_index(items[last_index_point_index:], length + 1, max_distance, False)
+        print item_count, "indexing with length", length, "took", time.time() - t0
     
     def ensure_index_depth(self, depth):
         while len(self.short_index) < depth + 1:
             self.short_index.append({})
                 
-    def index(self, items):
-        print str(self),"will index", len(items), "items" 
-        items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
-        indexing_q.put(items_to_index)
+    #def index(self, items):
+        #print str(self),"will index", len(items), "items" 
+        #items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
+        #self.do_index(items_to_index)
+        #indexing_q.put(items_to_index)
         
     def indexer(self):
         while True:
