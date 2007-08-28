@@ -209,6 +209,9 @@ class SDictionary:
         
         # fall back to the old method
         short_index = self.read_short_index()
+        return short_index
+
+    def save_index(self):
         # if we could not read the cache, then maybe the cache folder does not exist
         # try to make a cache folder, before attempting to write a file into it
         home_dir = os.path.expanduser('~')
@@ -228,12 +231,13 @@ class SDictionary:
             index_file = open(self.index_cache_file_name, 'wb')
             marshal.dump(self.title, index_file)
             marshal.dump(self.version, index_file)
-            marshal.dump(short_index, index_file)
-           #print "wrote", self.index_cache_file_name
-        except:
-            #print "could not write", self.index_cache_file_name
+            marshal.dump(self.short_index, index_file)
+            print "wrote", self.index_cache_file_name
+        except Exception, e:
+            print "could not write", self.index_cache_file_name
+            print e
             pass
-        return short_index
+
 
     def remove_index_cache_file(self):
         # should be done after the file is closed, to avoid raising an exception on windows
@@ -364,7 +368,8 @@ class SDictionary:
     def read_article(self, pointer):
         return self.read_unit(self.header.articles_offset + pointer)        
     
-    def close(self):
+    def close(self, save_index = True):
+        if save_index: self.save_index()
         self.file.close()        
 
 class WordLookupByWord(dict):
