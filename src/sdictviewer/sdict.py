@@ -192,7 +192,7 @@ class SDictionary:
         self.short_index = self.load_short_index()
 
     def load_short_index(self):
-        #"try to read index from a cache, if that failes fall back to read_short_index(self), and try to write a cache"
+        #"try to read index from a cache, if that failes fall back to read_short_index(self)
         try:
             with open(self.index_cache_file_name, 'rb') as index_file:
                 # check that the cached version matches the file we are reading
@@ -207,25 +207,12 @@ class SDictionary:
         except:
             print "could not read", self.index_cache_file_name
             pass
-        # fall back to the old method
         short_index = self.read_short_index()
         return short_index
 
     def save_index(self):
-        # if we could not read the cache, then maybe the cache folder does not exist
-        # try to make a cache folder, before attempting to write a file into it
-        home_dir = os.path.expanduser('~')
-        settings_dir_path = os.path.join(home_dir, settings_dir)
-        if not os.path.exists(settings_dir_path):
-            try:
-                os.mkdir(settings_dir_path)
-            except:
-                pass        
         if not os.path.exists(index_cache_dir):
-            try:
-                os.mkdir(index_cache_dir)
-            except:
-                pass 
+            os.makedirs(index_cache_dir)
         with open(self.index_cache_file_name, 'wb') as index_file:
             marshal.dump(self.title, index_file)
             marshal.dump(self.version, index_file)
