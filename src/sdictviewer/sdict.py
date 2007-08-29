@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2006-2007 Igor Tkach
 """
+from __future__ import with_statement
 import zlib
 import bz2
 from struct import unpack
@@ -193,20 +194,19 @@ class SDictionary:
     def load_short_index(self):
         #"try to read index from a cache, if that failes fall back to read_short_index(self), and try to write a cache"
         try:
-            index_file = open(self.index_cache_file_name, 'rb')
-            # check that the cached version matches the file we are reading
-            read_title = marshal.load(index_file)
-            read_version = marshal.load(index_file)
-            if (read_title != self.title) or (read_version != self.version):
-                print "title or version missmatch in cached file"
-                raise ValueError
-            short_index = marshal.load(index_file)
-            #print "read cache from", self.index_cache_file_name
-            return short_index
+            with open(self.index_cache_file_name, 'rb') as index_file:
+                # check that the cached version matches the file we are reading
+                read_title = marshal.load(index_file)
+                read_version = marshal.load(index_file)
+                if (read_title != self.title) or (read_version != self.version):
+                    print "title or version missmatch in cached file"
+                    raise ValueError
+                short_index = marshal.load(index_file)
+                #print "read cache from", self.index_cache_file_name
+                return short_index
         except:
             print "could not read", self.index_cache_file_name
             pass
-        
         # fall back to the old method
         short_index = self.read_short_index()
         return short_index
@@ -226,17 +226,11 @@ class SDictionary:
                 os.mkdir(index_cache_dir)
             except:
                 pass 
-      
-        try:
-            index_file = open(self.index_cache_file_name, 'wb')
+        with open(self.index_cache_file_name, 'wb') as index_file:
             marshal.dump(self.title, index_file)
             marshal.dump(self.version, index_file)
             marshal.dump(self.short_index, index_file)
             print "wrote", self.index_cache_file_name
-        except Exception, e:
-            print "could not write", self.index_cache_file_name
-            print e
-            pass
 
 
     def remove_index_cache_file(self):
