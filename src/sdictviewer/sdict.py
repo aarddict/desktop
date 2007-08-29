@@ -334,9 +334,6 @@ class SDictionary:
             #print "test: '%s'->'%s'" % (prev_word_start , current_word_start)
             if prev_word_start != current_word_start:
                 #print "Adding index point '%s'" % current_word_start
-                if short_index_for_length.has_key(current_word_start):
-                    print "[do_index] this list was indexed before, stopping"
-                    break
                 short_index_for_length[current_word_start] = current_pos
                 if i - last_index_point_index > max_distance:
                     for stats in self.do_index(items[last_index_point_index:i], length + 1, max_distance): yield stats
