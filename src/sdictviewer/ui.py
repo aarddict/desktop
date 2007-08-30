@@ -313,12 +313,10 @@ class SDictViewer(object):
     def get_selected_word(self):
         selection = self.word_completion.get_selection()
         current_model, selected = selection.get_selected()
-        selected_lang = None
-        selected_word = None
-        if selected:
-            if not current_model.iter_has_child(selected):
-                selected_word = current_model[selected][0]
-                selected_lang = current_model[current_model.iter_parent(selected)][0]                            
+        selected_lang, selected_word = None, None
+        if selected and not current_model.iter_has_child(selected):
+            selected_word = current_model[selected][0]
+            selected_lang = current_model[current_model.iter_parent(selected)][0]                            
         return (selected_word, selected_lang)
     
     def check_update_completion_timeout(self):
