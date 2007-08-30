@@ -148,20 +148,34 @@ class SDictViewer(object):
         self.mi_copy_article_to_clipboard.set_sensitive(notebook.get_n_pages() > 0)
              
     def destroy(self, widget, data=None):
+        errors = []
+        word = self.word_input.child.get_text()
+        history_list = []
+        hist_model = self.word_input.get_model()
+        hist_model.foreach(self.history_to_list, history_list)
+        selected_word, selected_word_lang = self.get_selected_word()
+        selected = (str(selected_word), selected_word_lang)
+        dict_files = []
+        for dict in self.dictionaries.get_dicts():
+            dict_files.append(dict.file_name)
+            try:
+                dict.close()
+            except Exception, e:
+                errors.append(e)
         try:
-            word = self.word_input.child.get_text()
-            history_list = []
-            hist_model = self.word_input.get_model()
-            hist_model.foreach(self.history_to_list, history_list)
-            dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()] 
-            [dict.close() for dict in self.dictionaries.get_dicts()]
-            selected_word, selected_word_lang = self.get_selected_word()
-            selected = (str(selected_word), selected_word_lang)
             save_app_state(State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
-        except Exception, ex:
-            print 'Failed to store settings:', ex        
-            raise
+        except Exception, e:
+            errors.append(e)
+        if len(errors) > 0:
+            msg = self.errors_to_text(errors)
+            self.show_error("Failed to Save State", msg)
         gtk.main_quit()                  
+        
+    def errors_to_text(self, errors):
+        text = ""
+        for e in errors:
+            text += str(e) + "\n"  
+        return text     
         
     def on_key_press(self, widget, event, *args):
         if event.keyval == gtk.keysyms.Escape:
@@ -667,10 +681,7 @@ class SDictViewer(object):
         self.status_display.dismiss()
         self.status_display = None
         if len(self.open_errors) > 0:
-            error_text = ""
-            for error in self.open_errors:
-                error_text += str(error) + "\n"               
-            self.show_error("Open Failed", error_text)
+            self.show_error("Open Failed", self.errors_to_text(self.open_errors))
             self.open_errors = None        
         if self.select_word_on_open:
             word, lang = self.select_word_on_open
