@@ -116,6 +116,11 @@ class SDictViewer(object):
 #        self.tabs.connect("page-added", self.update_copy_article_mi)
 #        self.tabs.connect("page-removed", self.update_copy_article_mi)
         split_pane.add(self.tabs)
+        
+        self.statusbar = gtk.Statusbar()
+        contentBox.pack_start(self.statusbar, False, True, 0)
+        self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
+        self.update_completion_worker_ctx_id = self.statusbar.get_context_id("update completion worker")
                         
         self.add_content(contentBox)
         self.update_title()
@@ -336,10 +341,12 @@ class SDictViewer(object):
     
     def update_completion_worker(self):
         while True:
+            gobject.idle_add(self.statusbar.pop, self.update_completion_worker_ctx_id)
             print "[update_completion_worker] Waiting for next update completion task"
             start_word, to_select = self.update_completion_q.get()
             self.update_completion_stopped = False      
             self.update_completion_t0 = time.time()
+            t0=time.clock()
             print "[update_completion_worker] Will look for '%s' in %d dictionaries" % (start_word, self.dictionaries.size())
             lang_word_list = {}
             skipped = util.ListMap()
@@ -367,6 +374,7 @@ class SDictViewer(object):
             else:
                 print "[update_completion_worker] === Word list update finished, but stop request was received, will not update UI"
             self.update_completion_t0 = None
+            gobject.idle_add(self.statusbar.push, self.update_completion_worker_ctx_id, "Lookup took %s s" % (time.clock() - t0))
             self.update_completion_q.task_done()
                                         
     def update_completion(self, word, to_select = None, n = 20):
@@ -374,9 +382,8 @@ class SDictViewer(object):
         self.update_completion_stopped = True
         self.update_completion_q.put((word, to_select))  
         word = word.lstrip()
-        model = gtk.TreeStore(object)
-        model.append(None, ["Looking up..."])
-        self.word_completion.set_model(model)        
+        self.statusbar.push(self.update_completion_ctx_id, 'Looking up "%s"...' % word)
+        self.word_completion.set_model(None)        
         return False
             
     def update_completion_callback(self, lang_word_list, to_select):
@@ -388,14 +395,13 @@ class SDictViewer(object):
             [model.append(iter, [word]) for word in lang_word_list[lang]]                    
         self.word_completion.set_model(model)            
         self.word_completion.expand_all()
-        
         selected = False
         if to_select:
             word, lang = to_select
             selected = self.select_word(word, lang)
-            
         if not selected and len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
-            self.select_first_word_in_completion()                
+            self.select_first_word_in_completion()  
+        self.statusbar.pop(self.update_completion_ctx_id)              
 
     def create_clear_button(self):
         return self.create_button(gtk.STOCK_CLEAR, self.clear_word_input) 
