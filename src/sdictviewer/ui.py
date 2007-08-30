@@ -329,14 +329,10 @@ class SDictViewer(object):
     def check_update_completion_timeout(self):
         if self.update_completion_t0:
             elapsed = time.time() - self.update_completion_t0
-            print "[check_update_completion_timeout] Update completion running for", elapsed, "s" 
             if elapsed > UPDATE_COMPLETION_TIMEOUT_S:
-                print "Lookup takes too long, giving up"
+                print "[check_update_completion_timeout] Lookup takes too long, giving up"
                 self.update_completion_stopped = True
                 self.update_completion_q.join()
-                model = gtk.TreeStore(object)
-                model.append(None, ["Timed out"])
-                self.word_completion.set_model(model)
         return True     
     
     def update_completion_worker(self):
@@ -368,13 +364,16 @@ class SDictViewer(object):
                     for stats in dict.index(skipped_words):
                         if self.update_completion_stopped: 
                             print "[update_completion_worker] === Indexing of", len(skipped_words), "in",dict, "stopped"
-                            break    
+                            break  
             if not self.update_completion_stopped:
+                statusmsg = "Lookup took %s s" % (time.clock() - t0) 
                 gobject.idle_add(self.update_completion_callback, lang_word_list, to_select)
             else:
+                statusmsg = "Lookup interrupted after %s s" % (time.clock() - t0) 
                 print "[update_completion_worker] === Word list update finished, but stop request was received, will not update UI"
             self.update_completion_t0 = None
-            gobject.idle_add(self.statusbar.push, self.update_completion_worker_ctx_id, "Lookup took %s s" % (time.clock() - t0))
+            
+            gobject.idle_add(self.statusbar.push, self.update_completion_worker_ctx_id, statusmsg)
             self.update_completion_q.task_done()
                                         
     def update_completion(self, word, to_select = None, n = 20):
