@@ -72,6 +72,7 @@ class DialogStatusDisplay:
 class SDictViewer(object):
              
     def __init__(self):
+        self.update_completion_stopped = True
         self.lookup_stop_requested = False
         self.update_completion_t0 = None
         self.status_display = None
@@ -88,7 +89,7 @@ class SDictViewer(object):
         self.statusbar = gtk.Statusbar()
         self.statusbar.set_has_resize_grip(False)
         self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
-        self.update_completion_worker_ctx_id = self.statusbar.get_context_id("update completion worker")
+        self.update_completion_timeout_ctx_id = self.statusbar.get_context_id("update completion timeout")
 
         self.start_worker_threads()
                                  
@@ -164,6 +165,7 @@ class SDictViewer(object):
         self.mi_copy_article_to_clipboard.set_sensitive(notebook.get_n_pages() > 0)
              
     def destroy(self, widget, data=None):
+        self.stop_lookup()
         errors = []
         word = self.word_input.child.get_text()
         history_list = []
@@ -206,7 +208,7 @@ class SDictViewer(object):
         word, lang = model[iter]
         history_list.append((word, lang))
         
-    def do_word_lookup(self, word, lang):
+    def do_show_word_article(self, word, lang):
         self.show_article_for(word, lang)
         return False
                     
@@ -310,7 +312,7 @@ class SDictViewer(object):
         lang_iter = model.iter_parent(iter)
         if lang_iter:
             lang = model[lang_iter][0]
-        self.schedule(self.do_word_lookup, 200, word, lang)
+        self.schedule(self.do_show_word_article, 200, word, lang)
     
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
@@ -331,81 +333,86 @@ class SDictViewer(object):
         return (selected_word, selected_lang)
     
     def stop_lookup(self):
-        self.lookup_stop_requested = True
-        self.update_completion_q.join()
-        self.lookup_stop_requested = False
+        if not self.update_completion_stopped:
+            message_id = self.statusbar.push(self.update_completion_ctx_id, 'Stopping current lookup...')
+            self.lookup_stop_requested = True
+            self.update_completion_q.join()
+            self.lookup_stop_requested = False
+            self.statusbar.remove(self.update_completion_ctx_id, message_id)
 
     def check_update_completion_timeout(self):
         if self.update_completion_t0:
-            elapsed = time.clock() - self.update_completion_t0
+            elapsed = time.time() - self.update_completion_t0
             if elapsed > UPDATE_COMPLETION_TIMEOUT_S:
-                print "[check_update_completion_timeout] Lookup takes too long, giving up"
                 self.stop_lookup()
+                self.statusbar.push(self.update_completion_timeout_ctx_id, 'Lookup stopped: it was taking too long')
         return True     
     
     def update_completion_worker(self):
         while True:
-            self.update_completion_stopped = False
             print "[update_completion_worker] Waiting for next update completion task"
             start_word, to_select = self.update_completion_q.get()
-            print "[update_completion_worker] Will look for '%s' in %d dictionaries" % (start_word, self.dictionaries.size())
-            lang_word_list = {}
-            skipped = util.ListMap()
-            for lang in self.dictionaries.langs():
-                word_lookups = sdict.WordLookupByWord()
-                for item in self.dictionaries.get_word_list_iter(lang, start_word):
+            self.update_completion_t0 = time.time()
+            self.update_completion_stopped = False
+            print '[update_completion_worker] Will look for "%s" in %d dictionaries' % (start_word, self.dictionaries.size())
+            lang_word_list, interrupted = self.do_lookup(start_word, to_select)
+            if not interrupted:
+                gobject.idle_add(self.update_completion_callback, lang_word_list, to_select, start_word, time.time() - self.update_completion_t0)
+            else:
+                print '[update_completion_worker] === Lookup for "%s" interrupted' % start_word
+            self.update_completion_t0 = None
+            self.update_completion_stopped = True
+            self.update_completion_q.task_done()
+    
+    def do_lookup(self, start_word, to_select):
+        interrupted = False
+        lang_word_list = {}
+        skipped = util.ListMap()
+        for lang in self.dictionaries.langs():
+            word_lookups = sdict.WordLookupByWord()
+            for item in self.dictionaries.get_word_list_iter(lang, start_word):
+                time.sleep(0)
+                if self.lookup_stop_requested:
+                    interrupted = True
+                    return (lang_word_list, interrupted)
+                if isinstance(item, sdict.WordLookup):
+                    word_lookups[item.word].add_articles(item)
+                else:
+                    skipped[item.dict].append(item)
+            word_list = word_lookups.values()
+            word_list.sort(key=str)
+            if len (word_list) > 0: lang_word_list[lang] = word_list
+            for dict, skipped_words in skipped.iteritems():
+                print "[update_completion_worker] Skipped %d words in %s" % (len(skipped_words), dict)
+                for stats in dict.index(skipped_words):
                     time.sleep(0)
                     if self.lookup_stop_requested:
-                        print "self.lookup_stop_requested", self.lookup_stop_requested
-                        self.update_completion_stopped = True
-                        print "[update_completion_worker] === Lookup for", start_word, "stopped"
-                        break 
-                    if isinstance(item, sdict.WordLookup):
-                        word_lookups[item.word].add_articles(item)
-                    else:
-                        skipped[item.dict].append(item)
-                word_list = word_lookups.values()
-                word_list.sort(key=str)
-                if len (word_list) > 0: lang_word_list[lang] = word_list
-                for dict, skipped_words in skipped.iteritems():
-                    print "[update_completion_worker] Skipped %d words in %s" % (len(skipped_words), dict)
-                    for stats in dict.index(skipped_words):
-                        time.sleep(0)
-                        if self.lookup_stop_requested:
-                            self.update_completion_stopped = True
-                            print "[update_completion_worker] === Indexing of", len(skipped_words), "in",dict, "stopped"
-                            break 
-            gobject.idle_add(self.update_completion_callback, lang_word_list, to_select, start_word)
-            time.sleep(0.01)
-            self.update_completion_q.task_done()
+                        interrupted = True
+                        print "[update_completion_worker] === Indexing of", len(skipped_words), "in",dict, "stopped"
+                        return (lang_word_list, interrupted)
+        return (lang_word_list, interrupted)
                                         
-    def update_completion(self, word, to_select = None, n = 20):
+    def update_completion(self, word, to_select = None):
         self.statusbar.pop(self.update_completion_ctx_id) 
-        self.word_completion.set_model(None)        
-        word = word.lstrip()
-        self.statusbar.push(self.update_completion_ctx_id, 'Stopping current lookup...')
-        print "[update_completion] requested for '%s'" % word 
+        self.statusbar.pop(self.update_completion_timeout_ctx_id)
+        self.word_completion.set_model(None)   
         self.stop_lookup()
-        self.statusbar.pop(self.update_completion_ctx_id)
-        if not word or len(word) == 0:
-            return
-        self.statusbar.push(self.update_completion_ctx_id, 'Looking up "%s"...' % word)
-        self.update_completion_t0 = time.clock()
-        self.update_completion_q.put((word, to_select))  
+        word = word.lstrip()
+        print "[update_completion] requested for '%s'" % word 
+        if word and len(word) > 0:
+            self.statusbar.push(self.update_completion_ctx_id, 'Looking up "%s"...' % word)
+            self.update_completion_q.put((word, to_select))  
         return False
-            
-    def update_completion_callback(self, lang_word_list, to_select, start_word):
+    
+    def update_completion_callback(self, lang_word_list, to_select, start_word, lookup_time):
         self.statusbar.pop(self.update_completion_ctx_id)  
+        msg_params = (start_word, lookup_time) 
+        statusmsg = '%s: looked up in %.2f s' % msg_params
         count = 0  
         for word_list in lang_word_list.itervalues():
             count += len(word_list)       
-        msg_params = (start_word, time.clock() - self.update_completion_t0) 
-        statusmsg = 'Lookup "%s" took %s s' % msg_params if not self.update_completion_stopped else 'Lookup "%s" interrupted after %s s' % msg_params
-        if count == 0:
-            statusmsg += ', nothing found'
+        if count == 0: statusmsg += ', nothing found'
         self.statusbar.push(self.update_completion_ctx_id, statusmsg) 
-        self.update_completion_t0 = None
-
         model = gtk.TreeStore(object)
         for lang in lang_word_list.iterkeys():
             print "[update_completion_callback] %d words in %s" % (len(lang_word_list[lang]), lang)
