@@ -83,16 +83,7 @@ class SDictViewer(object):
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
-        self.open_q = Queue()
-        open_dict_worker_thread = threading.Thread(target = self.open_dict_worker)
-        open_dict_worker_thread.setDaemon(True)
-        open_dict_worker_thread.start()
-        self.update_completion_q = Queue(1)
-        update_completion_thread = threading.Thread(target = self.update_completion_worker)
-        update_completion_thread.setDaemon(True)
-        update_completion_thread.start()
-        
-        gobject.timeout_add(UPDATE_COMPLETION_TIMEOUT_CHECK_MS, self.check_update_completion_timeout)
+        self.start_worker_threads()
                                  
         contentBox = gtk.VBox(False, 0)
         self.create_menu_items()
@@ -144,6 +135,17 @@ class SDictViewer(object):
                 
         except Exception, ex:
             print 'Failed to load application state:', ex                     
+    
+    def start_worker_threads(self):
+        self.open_q = Queue()
+        open_dict_worker_thread = threading.Thread(target = self.open_dict_worker)
+        open_dict_worker_thread.setDaemon(True)
+        open_dict_worker_thread.start()
+        self.update_completion_q = Queue(1)
+        update_completion_thread = threading.Thread(target = self.update_completion_worker)
+        update_completion_thread.setDaemon(True)
+        update_completion_thread.start()
+        gobject.timeout_add(UPDATE_COMPLETION_TIMEOUT_CHECK_MS, self.check_update_completion_timeout)
          
     def external_link_callback(self, tag, widget, event, iter, url):
         if event.type == gtk.gdk.BUTTON_RELEASE:
