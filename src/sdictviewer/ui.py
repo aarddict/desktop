@@ -83,6 +83,9 @@ class SDictViewer(object):
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
+        
+        self.statusbar = gtk.Statusbar()
+        self.statusbar.set_has_resize_grip(False)
         self.start_worker_threads()
                                  
         contentBox = gtk.VBox(False, 0)
@@ -117,7 +120,6 @@ class SDictViewer(object):
 #        self.tabs.connect("page-removed", self.update_copy_article_mi)
         split_pane.add(self.tabs)
         
-        self.statusbar = gtk.Statusbar()
         contentBox.pack_start(self.statusbar, False, True, 0)
         self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
         self.update_completion_worker_ctx_id = self.statusbar.get_context_id("update completion worker")
