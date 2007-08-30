@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2006-2007 Igor Tkach
 """
-
+from __future__ import with_statement
 import os.path
 import pickle
 
@@ -27,26 +27,18 @@ app_state_file = "app_state"
 def save_app_state(app_state):
     home_dir = os.path.expanduser('~')
     settings_dir_path = os.path.join(home_dir, settings_dir)
-    if not os.path.exists(settings_dir_path):
-        try:
-            os.mkdir(settings_dir_path)
-        except:
-            pass        
+    if not os.path.exists(settings_dir_path): os.mkdir(settings_dir_path)
     settings = os.path.join(home_dir, settings_dir, app_state_file)
-    try:
-        settings_file = file(settings, "w")
+    with file(settings, "w") as settings_file:
         pickle.dump(app_state, settings_file)
-        return
-    except IOError:
-        pass    
     
 def load_app_state():
     home_dir = os.path.expanduser('~')
     settings = os.path.join(home_dir, settings_dir, app_state_file)
     app_state = None
     if os.path.exists(settings):        
-        settings_file = file(settings, "r")
-        app_state = pickle.load(settings_file)
+        with file(settings, "r") as settings_file:
+            app_state = pickle.load(settings_file)
     return app_state
     
 class State:    
