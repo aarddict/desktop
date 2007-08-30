@@ -129,8 +129,7 @@ class SDictViewer(object):
             app_state = load_app_state()     
             if app_state: 
                 self.select_word_on_open = app_state.selected_word
-                self.word_input.child.set_text(app_state.word)        
-                self.word_input.child.set_position(-1)        
+                self.set_word_input(app_state.word)
                 self.open_dicts(app_state.dict_files)
                 app_state.history.reverse()
                 [self.add_to_history(w, l) for w, l in app_state.history]
@@ -212,11 +211,14 @@ class SDictViewer(object):
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
         if event.type == gtk.gdk.BUTTON_RELEASE:
-            self.word_input.handler_block(self.word_change_handler) 
-            self.word_input.child.set_text(word)
-            self.word_input.child.set_position(-1)
-            self.word_input.handler_unblock(self.word_change_handler) 
+            self.set_word_input(word)
             self.update_completion(word, (word, dict.header.word_lang))
+            
+    def set_word_input(self, word, supress_update = True):
+        if supress_update: self.word_input.handler_block(self.word_change_handler)
+        self.word_input.child.set_text(word)
+        self.word_input.child.set_position(-1)    
+        if supress_update: self.word_input.handler_unblock(self.word_change_handler) 
                 
     def add_to_history(self, word, lang):        
         model = self.word_input.get_model()
