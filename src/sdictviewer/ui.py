@@ -40,11 +40,15 @@ gobject.threads_init()
 version = "0.4.5"
 app_name = "SDict Viewer"
 
+UPDATE_COMPLETION_TIMEOUT_S = 30.0
+UPDATE_COMPLETION_TIMEOUT_CHECK_MS = 5000
+STATUS_MESSAGE_TRUNCATE_LEN = 60
+
 class DialogStatusDisplay:
     
     def __init__(self, parent):
         self.loading_dialog = None   
-        self.message_limit = 60     
+        self.message_limit = STATUS_MESSAGE_TRUNCATE_LEN     
         self.parent = parent
         self.loading_dialog = gtk.MessageDialog(parent=self.parent, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_INFO) 
         self.loading_dialog.set_markup(" "*self.message_limit)
@@ -68,9 +72,9 @@ class DialogStatusDisplay:
 class SDictViewer(object):
              
     def __init__(self):
+        self.update_completion_t0 = None
         self.status_display = None
         self.dictionaries = sdict.SDictionaryCollection()
-        #self.update_completion_worker = None
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.font = None
@@ -87,6 +91,8 @@ class SDictViewer(object):
         update_completion_thread = threading.Thread(target = self.update_completion_worker)
         update_completion_thread.setDaemon(True)
         update_completion_thread.start()
+        
+        gobject.timeout_add(UPDATE_COMPLETION_TIMEOUT_CHECK_MS, self.check_update_completion_timeout)
                                  
         contentBox = gtk.VBox(False, 0)
         self.create_menu_items()
@@ -207,7 +213,6 @@ class SDictViewer(object):
         if first_lang: 
             word_iter = model.iter_children(first_lang)
             self.word_completion.get_selection().select_iter(word_iter)
-            #self.word_completion.grab_focus()                
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
         if event.type == gtk.gdk.BUTTON_RELEASE:
@@ -315,12 +320,26 @@ class SDictViewer(object):
                 selected_word = current_model[selected][0]
                 selected_lang = current_model[current_model.iter_parent(selected)][0]                            
         return (selected_word, selected_lang)
-          
+    
+    def check_update_completion_timeout(self):
+        if self.update_completion_t0:
+            elapsed = time.time() - self.update_completion_t0
+            print "[check_update_completion_timeout] Update completion running for", elapsed, "s" 
+            if elapsed > UPDATE_COMPLETION_TIMEOUT_S:
+                print "Lookup takes too long, giving up"
+                self.update_completion_stopped = True
+                self.update_completion_q.join()
+                model = gtk.TreeStore(object)
+                model.append(None, ["Timed out"])
+                self.word_completion.set_model(model)
+        return True     
+    
     def update_completion_worker(self):
         while True:
             print "[update_completion_worker] Waiting for next update completion task"
             start_word, to_select = self.update_completion_q.get()
             self.update_completion_stopped = False      
+            self.update_completion_t0 = time.time()
             print "[update_completion_worker] Will look for '%s' in %d dictionaries" % (start_word, self.dictionaries.size())
             lang_word_list = {}
             skipped = util.ListMap()
@@ -347,6 +366,7 @@ class SDictViewer(object):
                 gobject.idle_add(self.update_completion_callback, lang_word_list, to_select)
             else:
                 print "[update_completion_worker] === Word list update finished, but stop request was received, will not update UI"
+            self.update_completion_t0 = None
             self.update_completion_q.task_done()
                                         
     def update_completion(self, word, to_select = None, n = 20):
