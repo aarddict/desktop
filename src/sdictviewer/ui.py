@@ -86,6 +86,9 @@ class SDictViewer(object):
         
         self.statusbar = gtk.Statusbar()
         self.statusbar.set_has_resize_grip(False)
+        self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
+        self.update_completion_worker_ctx_id = self.statusbar.get_context_id("update completion worker")
+
         self.start_worker_threads()
                                  
         contentBox = gtk.VBox(False, 0)
@@ -121,8 +124,6 @@ class SDictViewer(object):
         split_pane.add(self.tabs)
         
         contentBox.pack_start(self.statusbar, False, True, 0)
-        self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
-        self.update_completion_worker_ctx_id = self.statusbar.get_context_id("update completion worker")
                         
         self.add_content(contentBox)
         self.update_title()
