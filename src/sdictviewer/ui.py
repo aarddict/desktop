@@ -158,8 +158,14 @@ class SDictViewer(object):
         gobject.timeout_add(UPDATE_COMPLETION_TIMEOUT_CHECK_MS, self.check_update_completion_timeout)
          
     def external_link_callback(self, tag, widget, event, iter, url):
-        if event.type == gtk.gdk.BUTTON_RELEASE:
-            webbrowser.open(url)         
+        if event.type == gtk.gdk.BUTTON_PRESS:
+            widget.armed_link = url
+        if event.type == gtk.gdk.MOTION_NOTIFY:
+            widget.armed_link = None
+        if event.type == gtk.gdk.BUTTON_RELEASE and hasattr(widget, "armed_link"):
+            if widget.armed_link == url:
+                webbrowser.open(url)
+            widget.armed_link = None
              
     def update_copy_article_mi(self, notebook = None, child = None, page_num = None):
         self.mi_copy_article_to_clipboard.set_sensitive(notebook.get_n_pages() > 0)
@@ -239,9 +245,15 @@ class SDictViewer(object):
             self.word_completion.get_selection().select_iter(word_iter)
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
-        if event.type == gtk.gdk.BUTTON_RELEASE:
-            self.set_word_input(word)
-            self.update_completion(word, (word, dict.header.word_lang))
+        if event.type == gtk.gdk.BUTTON_PRESS:
+            widget.armed_link = word
+        if event.type == gtk.gdk.MOTION_NOTIFY:
+            widget.armed_link = None
+        if event.type == gtk.gdk.BUTTON_RELEASE and hasattr(widget, "armed_link"):
+            if widget.armed_link == word:
+                self.set_word_input(word)
+                self.update_completion(word, (word, dict.header.word_lang))
+            widget.armed_link = None
             
     def set_word_input(self, word, supress_update = True):
         if supress_update: self.word_input.handler_block(self.word_change_handler)
