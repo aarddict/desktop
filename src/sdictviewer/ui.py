@@ -166,28 +166,39 @@ class SDictViewer(object):
              
     def destroy(self, widget, data=None):
         self.stop_lookup()
-        errors = []
         word = self.word_input.child.get_text()
         history_list = []
         hist_model = self.word_input.get_model()
         hist_model.foreach(self.history_to_list, history_list)
         selected_word, selected_word_lang = self.get_selected_word()
         selected = (str(selected_word), selected_word_lang)
-        dict_files = []
+        dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
+        state = State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location)
+        threading.Thread(target = self.save_state_worker, args = [state]).start()
+        self.status_display = self.create_dict_loading_status_display()
+        self.status_display.set_message("Saving Application State", "Please wait...")
+        self.status_display.show()
+        
+    def save_state_worker(self, state):
+        time.sleep(0)
+        errors = []
         for dict in self.dictionaries.get_dicts():
-            dict_files.append(dict.file_name)
             try:
                 dict.close()
             except Exception, e:
                 errors.append(e)
         try:
-            save_app_state(State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location))
+            save_app_state(state)
         except Exception, e:
             errors.append(e)
+        gobject.idle_add(self.shutdown_ui, errors)
+        
+    def shutdown_ui(self, errors):     
+        self.status_display.dismiss()                    
         if len(errors) > 0:
             msg = self.errors_to_text(errors)
             self.show_error("Failed to Save State", msg)
-        gtk.main_quit()                  
+        gtk.main_quit() 
         
     def errors_to_text(self, errors):
         text = ""
