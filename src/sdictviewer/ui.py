@@ -479,13 +479,17 @@ class SDictViewer(object):
         return button                
    
     def create_top_level_widget(self):
-        window = gtk.Window(gtk.WINDOW_TOPLEVEL)    
-        window.connect("destroy", self.destroy)
+        window = gtk.Window(gtk.WINDOW_TOPLEVEL)  
+        window.connect("event", self.window_event)  
         window.set_border_width(2)                
         window.resize(640, 480)
         window.set_position(gtk.WIN_POS_CENTER)        
         window.connect("key-press-event", self.on_key_press)
         return window
+    
+    def window_event(self, window, event, data = None):
+        if event.type == gtk.gdk.DELETE:
+            self.destroy(window, data)
     
     def add_content(self, content_box):
         self.window.add(content_box)        
