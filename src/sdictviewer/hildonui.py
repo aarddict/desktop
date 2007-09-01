@@ -36,7 +36,7 @@ class HildonSDictViewer(ui.SDictViewer):
         window.connect("key-press-event", self.on_key_press)
         window.connect("window-state-event", self.on_window_state_change)
         app.add_window(window)        
-        window.connect("destroy", self.destroy)
+        window.connect("event", self.window_event)
         return window
     
     def on_window_state_change(self, widget, event, *args):             

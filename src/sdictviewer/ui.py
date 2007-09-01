@@ -32,7 +32,7 @@ import xml.sax.saxutils
 import re
 import time
 import webbrowser
-import threading
+from threading import Thread
 from Queue import Queue
 
 gobject.threads_init()
@@ -148,11 +148,11 @@ class SDictViewer(object):
     
     def start_worker_threads(self):
         self.open_q = Queue()
-        open_dict_worker_thread = threading.Thread(target = self.open_dict_worker)
+        open_dict_worker_thread = Thread(target = self.open_dict_worker)
         open_dict_worker_thread.setDaemon(True)
         open_dict_worker_thread.start()
         self.update_completion_q = Queue(1)
-        update_completion_thread = threading.Thread(target = self.update_completion_worker)
+        update_completion_thread = Thread(target = self.update_completion_worker)
         update_completion_thread.setDaemon(True)
         update_completion_thread.start()
         gobject.timeout_add(UPDATE_COMPLETION_TIMEOUT_CHECK_MS, self.check_update_completion_timeout)
@@ -162,6 +162,13 @@ class SDictViewer(object):
              
     def destroy(self, widget, data=None):
         self.stop_lookup()
+        Thread(target = self.save_state_worker).start()
+        self.status_display = self.create_dict_loading_status_display()
+        self.status_display.set_message("Saving Application State", "Please wait...")
+        self.status_display.show()
+        
+    def save_state_worker(self):
+        time.sleep(0.01)
         word = self.word_input.child.get_text()
         history_list = []
         hist_model = self.word_input.get_model()
@@ -170,13 +177,6 @@ class SDictViewer(object):
         selected = (str(selected_word), selected_word_lang)
         dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
         state = State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location)
-        threading.Thread(target = self.save_state_worker, args = [state]).start()
-        self.status_display = self.create_dict_loading_status_display()
-        self.status_display.set_message("Saving Application State", "Please wait...")
-        self.status_display.show()
-        
-    def save_state_worker(self, state):
-        time.sleep(0)
         errors = []
         for dict in self.dictionaries.get_dicts():
             try:
@@ -490,6 +490,7 @@ class SDictViewer(object):
     def window_event(self, window, event, data = None):
         if event.type == gtk.gdk.DELETE:
             self.destroy(window, data)
+            return True
     
     def add_content(self, content_box):
         self.window.add(content_box)        
@@ -762,10 +763,10 @@ class SDictViewer(object):
         self.open_errors.append(error)
     
     def open_dicts_thread(self, *files):
-         for file in files:
-            self.open_q.put_nowait(file)
-         self.open_q.join()
-         gobject.idle_add(self.open_dicts_done)
+        for file in files:
+            self.open_q.put(file)
+        self.open_q.join()
+        gobject.idle_add(self.open_dicts_done)
     
     def open_dicts_done(self):
         self.status_display.dismiss()
@@ -788,7 +789,7 @@ class SDictViewer(object):
         self.status_display = self.create_dict_loading_status_display()            
         self.status_display.total_files = len(files)
         self.status_display.set_message("Please wait...", "Loading")
-        open_dict_thread = threading.Thread(target = self.open_dicts_thread, args = files)
+        open_dict_thread = Thread(target = self.open_dicts_thread, args = files)
         open_dict_thread.setDaemon(True)
         open_dict_thread.start()
         self.status_display.show()
