@@ -44,31 +44,6 @@ UPDATE_COMPLETION_TIMEOUT_S = 60.0
 UPDATE_COMPLETION_TIMEOUT_CHECK_MS = 5000
 STATUS_MESSAGE_TRUNCATE_LEN = 60
 
-class DialogStatusDisplay:
-    
-    def __init__(self, parent):
-        self.loading_dialog = None   
-        self.message_limit = STATUS_MESSAGE_TRUNCATE_LEN     
-        self.parent = parent
-        self.loading_dialog = gtk.MessageDialog(parent=self.parent, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_INFO) 
-        self.loading_dialog.set_markup(" "*self.message_limit)
-        
-    def show(self):        
-        self.loading_dialog.run()
-        
-    def set_message(self, message, title):
-        self.loading_dialog.set_title(title)
-        if len(message) > self.message_limit:
-            message = message[:self.message_limit] + "..."
-        else:
-            message += " "*(self.message_limit - len(message))
-        self.loading_dialog.set_markup(message)
-            
-    def dismiss(self):
-        if self.loading_dialog:
-            self.loading_dialog.destroy()
-            self.loading_dialog = None            
-            
 class SDictViewer(object):
              
     def __init__(self):
@@ -163,16 +138,16 @@ class SDictViewer(object):
     def destroy(self, widget, data=None):
         self.stop_lookup()
         Thread(target = self.save_state_worker).start()
-        self.status_display = self.create_dict_loading_status_display()
-        self.status_display.set_message("Saving Application State", "Please wait...")
-        self.status_display.show()
+        self.show_status_display("Saving application state...", "Exiting")
         
     def save_state_worker(self):
-        time.sleep(0.01)
+        time.sleep(0)
         word = self.word_input.child.get_text()
         history_list = []
         hist_model = self.word_input.get_model()
+        time.sleep(0)
         hist_model.foreach(self.history_to_list, history_list)
+        time.sleep(0)
         selected_word, selected_word_lang = self.get_selected_word()
         selected = (str(selected_word), selected_word_lang)
         dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
@@ -190,7 +165,7 @@ class SDictViewer(object):
         gobject.idle_add(self.shutdown_ui, errors)
         
     def shutdown_ui(self, errors):     
-        self.status_display.dismiss()                    
+        self.hide_status_display()                    
         if len(errors) > 0:
             msg = self.errors_to_text(errors)
             self.show_error("Failed to Save State", msg)
@@ -769,8 +744,7 @@ class SDictViewer(object):
         gobject.idle_add(self.open_dicts_done)
     
     def open_dicts_done(self):
-        self.status_display.dismiss()
-        self.status_display = None
+        self.hide_status_display()
         if len(self.open_errors) > 0:
             self.show_error("Open Failed", self.errors_to_text(self.open_errors))
             self.open_errors = None        
@@ -786,21 +760,35 @@ class SDictViewer(object):
                 
     def open_dicts(self, files):
         self.open_errors = []
-        self.status_display = self.create_dict_loading_status_display()            
-        self.status_display.total_files = len(files)
-        self.status_display.set_message("Please wait...", "Loading")
         open_dict_thread = Thread(target = self.open_dicts_thread, args = files)
         open_dict_thread.setDaemon(True)
         open_dict_thread.start()
-        self.status_display.show()
+        self.show_status_display('Please wait...', 'Loading')
+    
+    def show_status_display(self, message, title = None):
+        self.status_display = gtk.MessageDialog(self.get_dialog_parent())  
+        self.status_display.set_title(title)   
+        self.status_display.set_markup(message)
+        self.status_display.set_position(gtk.WIN_POS_CENTER_ALWAYS)
+        #for reasons unknown the label used for text is selectable, shows cursor and comes up with text selected
+        self.make_labels_unselectable(self.status_display.vbox)
+        self.status_display.run()
+        
+    def make_labels_unselectable(self, container):
+        for child in container.get_children():
+            if isinstance(child, gtk.Label):
+                child.set_selectable(False)
+            if isinstance(child, gtk.Container):
+                self.make_labels_unselectable(child) 
         
     def update_status_display(self, message):
         if self.status_display:
-            self.status_display.set_message(message, "Loading")
+            self.status_display.set_markup(message)
+            
+    def hide_status_display(self):
+        self.status_display.destroy();
+        self.status_display = None
 
-    def create_dict_loading_status_display(self):            
-        return DialogStatusDisplay(self.get_dialog_parent())
-        
     def show_error(self, title, text):
         dlg = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE, message_format=text)
         dlg.set_title(title)
