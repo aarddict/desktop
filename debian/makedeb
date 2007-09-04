@@ -1,4 +1,5 @@
 #!/bin/sh
+DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml"
 mkdir -p usr/bin
 mkdir -p usr/lib/sdictviewer
 mkdir -p usr/share/applications/hildon/
@@ -50,7 +51,7 @@ echo 2.0 > debian-binary
 
 tar -zcvf data.tar.gz ./usr 
 tar -zcvf control.tar.gz control
-NAME="$PACKAGE"-"$VERSION"-py"$PYVERSION".deb
+NAME="$PACKAGE"-"$VERSION".deb
 rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME
