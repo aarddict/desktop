@@ -34,6 +34,7 @@ import time
 import webbrowser
 from threading import Thread
 from Queue import Queue
+from math import fabs
 
 gobject.threads_init()
 
@@ -232,7 +233,7 @@ class SDictViewer(object):
                 armed_ref, armed_coords = widget.armed_link
                 armed_x, armed_y = armed_coords
                 evt_x, evt_y = event.get_coords()
-                if armed_x != evt_x or armed_y != evt_y:  
+                if fabs(armed_x - evt_x) > 1 or fabs(armed_y - evt_y) > 1:  
                     widget.armed_link = None
             if event.type == gtk.gdk.BUTTON_RELEASE:
                 armed_ref, armed_coords = widget.armed_link
