@@ -38,7 +38,7 @@ from math import fabs
 
 gobject.threads_init()
 
-version = "0.4.5"
+version = "0.5.0"
 app_name = "SDict Viewer"
 
 UPDATE_COMPLETION_TIMEOUT_S = 120.0
