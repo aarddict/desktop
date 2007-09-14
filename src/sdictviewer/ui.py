@@ -45,6 +45,22 @@ UPDATE_COMPLETION_TIMEOUT_S = 120.0
 UPDATE_COMPLETION_TIMEOUT_CHECK_MS = 5000
 STATUS_MESSAGE_TRUNCATE_LEN = 60
 
+class ArticleView(gtk.TextView):
+    
+    def __init__(self, drag_handler):
+        gtk.TextView.__init__(self)
+        self.drag_handler = drag_handler
+        self.set_wrap_mode(gtk.WRAP_WORD)
+        self.set_editable(False)        
+        self.set_cursor_visible(False)
+        self.set_data("handlers", [])
+    
+    def set_buffer(self, buffer):
+        gtk.TextView.set_buffer(self, buffer)
+        handler = self.connect_after("event", self.drag_handler)
+        self.get_data("handlers").append(handler)
+        
+
 class SDictViewer(object):
              
     def __init__(self):
@@ -302,7 +318,7 @@ class SDictViewer(object):
                 self.tabs.append_page(scrollable_view, label)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
-                self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked, self.article_drag_handler)
+                self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
                 self.add_to_history(word, lang)            
                 result = True           
         self.update_copy_article_mi(self.tabs)
@@ -656,21 +672,16 @@ class SDictViewer(object):
         self.window.set_title(title)
 
     def create_article_view(self):
-        article_view = gtk.TextView()
-        article_view.set_wrap_mode(gtk.WRAP_WORD)
-        article_view.set_editable(False)        
-        article_view.set_cursor_visible(False)
+        article_view = ArticleView(self.article_drag_handler)
         article_view.set_buffer(self.create_article_text_buffer())
-        handlers = []
         if self.supports_cursor_changes():        
-            handlers.append(article_view.connect("motion_notify_event", self.on_mouse_motion))
-        article_view.set_data("handlers", handlers)
+            article_view.get_data("handlers").append(article_view.connect("motion_notify_event", self.on_mouse_motion))
         return article_view   
     
     def supports_cursor_changes(self):
         return True         
     
-    def article_drag_handler(self, tag, widget, event, iter):
+    def article_drag_handler(self, widget, event):
         if self.mi_drag_selects.get_active():
             return False
         if event.type == gtk.gdk._2BUTTON_PRESS or event.type == gtk.gdk._3BUTTON_PRESS:
@@ -749,8 +760,7 @@ class SDictViewer(object):
         return False
     
     def pointer_over_ref(self, textview):
-        text_window = textview.get_window(gtk.TEXT_WINDOW_TEXT)
-        x, y, flags = text_window.get_pointer()                    
+        x, y = textview.get_pointer()                    
         x, y = textview.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
         tags = textview.get_iter_at_location(x, y).get_tags()
         for tag in tags:
