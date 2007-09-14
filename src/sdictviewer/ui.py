@@ -59,7 +59,11 @@ class ArticleView(gtk.TextView):
         gtk.TextView.set_buffer(self, buffer)
         handler = self.connect_after("event", self.drag_handler)
         self.get_data("handlers").append(handler)
-        
+    
+    def clear_selection(self):
+        b = self.get_buffer()
+        b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
+    
 
 class SDictViewer(object):
              
@@ -935,13 +939,8 @@ class SDictViewer(object):
     def toggle_drag_selects(self, widget):
         self.mi_drag_selects.toggled()
         if not self.mi_drag_selects.get_active():
-            self.tabs.foreach(self.clear_selection)
+            self.tabs.foreach(lambda scroll_window: scroll_window.get_child().clear_selection())
     
-    def clear_selection(self, scroll_window):
-        article_view = scroll_window.get_child()
-        b = article_view.get_buffer()
-        b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
-        
     def main(self):
         gtk.main()            
         
