@@ -214,24 +214,13 @@ class SDictViewer(object):
             self.word_completion.get_selection().select_iter(word_iter)
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
-        print "word_ref_handler", event.get_coords()
-        #print "word_ref_clicked", event.type, event.get_coords(), word
         if self.is_link_click(widget, event, word):
             self.set_word_input(word)
             self.update_completion(word, (word, dict.header.word_lang))
-        #if self.mi_drag_selects.get_active():
-        #    return False
-        #if event.type == gtk.gdk.BUTTON_PRESS or event.type == gtk.gdk.BUTTON_RELEASE:
-        #    return True
         
     def external_link_callback(self, tag, widget, event, iter, url):
-        #print "external_link_callback", event.type, event.get_coords(), url
         if self.is_link_click(widget, event, url):
             self.open_external_link(url)
-        #if self.mi_drag_selects.get_active():
-        #    return False
-        #if event.type == gtk.gdk.BUTTON_PRESS or event.type == gtk.gdk.BUTTON_RELEASE:
-        #    return True
   
     def open_external_link(self, url):
         webbrowser.open(url)
@@ -673,8 +662,7 @@ class SDictViewer(object):
         article_view.set_cursor_visible(False)
         article_view.set_buffer(self.create_article_text_buffer())
         handlers = []
-        #handlers.append(article_view.connect("event", self.article_drag_handler))
-        if self.supports_cursor_changes:        
+        if self.supports_cursor_changes():        
             handlers.append(article_view.connect("motion_notify_event", self.on_mouse_motion))
         article_view.set_data("handlers", handlers)
         return article_view   
@@ -683,30 +671,28 @@ class SDictViewer(object):
         return True         
     
     def article_drag_handler(self, tag, widget, event, iter):
-        print "article_drag_handler", event.get_coords()
         if self.mi_drag_selects.get_active():
             return False
         if event.type == gtk.gdk._2BUTTON_PRESS or event.type == gtk.gdk._3BUTTON_PRESS:
             return True
         if event.type == gtk.gdk.BUTTON_PRESS:
             self.last_drag_coords = event.get_coords()
-            #return False if self.pointer_over_ref(widget) else True
             return True
         if event.type == gtk.gdk.BUTTON_RELEASE:
             self.last_drag_coords = None
             if self.article_drag_started:
                 self.article_drag_started = False
-            #return False if self.pointer_over_ref(widget) else True
             return True
-        
         if event.type == gtk.gdk.MOTION_NOTIFY:
             if not self.last_drag_coords:
-                return
-            x, y = coords = event.get_coords()
+                return False
+            #need to get pointer from the widget to receive next mouse motion event
+            x, y = coords = widget.get_pointer()
             x0, y0 = self.last_drag_coords
             if not self.article_drag_started:
                 if fabs(x-x0) > 1 or fabs(y-y0) > 1:
                     self.article_drag_started = True
+
             if self.article_drag_started:
                 scroll_window = widget.get_parent()
                 self.last_drag_coords = coords
@@ -726,6 +712,7 @@ class SDictViewer(object):
                     if vvalue > maxvvalue: vvalue = maxvvalue
                     if vvalue < v.lower: vvalue = v.lower
                     v.set_value(vvalue)
+            return False
     
     def create_article_text_buffer(self):
         buffer = gtk.TextBuffer()
