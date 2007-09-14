@@ -141,6 +141,8 @@ class SDictViewer(object):
                 [self.add_to_history(w, l) for w, l in app_state.history]
                 self.set_phonetic_font(app_state.phonetic_font)
                 self.last_dict_file_location = app_state.last_dict_file_location
+                if hasattr(app_state, 'drag_selects'):
+                    self.mi_drag_selects.set_active(app_state.drag_selects)
                 
         except Exception, ex:
             print 'Failed to load application state:', ex                     
@@ -175,7 +177,7 @@ class SDictViewer(object):
         selected_word, selected_word_lang = self.get_selected_word()
         selected = (str(selected_word), selected_word_lang)
         dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
-        state = State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location)
+        state = State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location, self.mi_drag_selects.get_active())
         errors = []
         for dict in self.dictionaries.get_dicts():
             try:

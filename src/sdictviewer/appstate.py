@@ -42,7 +42,7 @@ def load_app_state():
     return app_state
     
 class State:    
-    def __init__(self, phonetic_font = None, word = None, selected_word = None, history = [], recent = [], dict_files = [], last_dict_file_location = None):
+    def __init__(self, phonetic_font = None, word = None, selected_word = None, history = [], recent = [], dict_files = [], last_dict_file_location = None, drag_selects = True):
         self.phonetic_font = phonetic_font
         self.word = word
         self.selected_word = selected_word
@@ -50,3 +50,4 @@ class State:
         self.recent = recent
         self.dict_files = dict_files
         self.last_dict_file_location = last_dict_file_location
+        self.drag_selects = drag_selects
