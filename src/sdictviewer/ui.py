@@ -62,6 +62,9 @@ class SDictViewer(object):
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
         
+        self.article_drag_started = False
+        self.last_drag_coords = None
+        
         self.statusbar = gtk.Statusbar()
         self.statusbar.set_has_resize_grip(False)
         self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
@@ -211,15 +214,24 @@ class SDictViewer(object):
             self.word_completion.get_selection().select_iter(word_iter)
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
+        print "word_ref_handler", event.get_coords()
         #print "word_ref_clicked", event.type, event.get_coords(), word
         if self.is_link_click(widget, event, word):
             self.set_word_input(word)
             self.update_completion(word, (word, dict.header.word_lang))
-            
+        #if self.mi_drag_selects.get_active():
+        #    return False
+        #if event.type == gtk.gdk.BUTTON_PRESS or event.type == gtk.gdk.BUTTON_RELEASE:
+        #    return True
+        
     def external_link_callback(self, tag, widget, event, iter, url):
         #print "external_link_callback", event.type, event.get_coords(), url
         if self.is_link_click(widget, event, url):
             self.open_external_link(url)
+        #if self.mi_drag_selects.get_active():
+        #    return False
+        #if event.type == gtk.gdk.BUTTON_PRESS or event.type == gtk.gdk.BUTTON_RELEASE:
+        #    return True
   
     def open_external_link(self, url):
         webbrowser.open(url)
@@ -301,7 +313,7 @@ class SDictViewer(object):
                 self.tabs.append_page(scrollable_view, label)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
-                self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
+                self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked, self.article_drag_handler)
                 self.add_to_history(word, lang)            
                 result = True           
         self.update_copy_article_mi(self.tabs)
@@ -566,6 +578,9 @@ class SDictViewer(object):
         self.mi_select_phonetic_font = gtk.MenuItem("Phonetic Font...")
         self.mi_select_phonetic_font.connect("activate", self.select_phonetic_font)
 
+        self.mi_drag_selects = gtk.CheckMenuItem("Drag Selects")
+        self.mi_drag_selects.connect("activate", self.toggle_drag_selects)
+
         self.mn_copy = gtk.Menu()
         self.mn_copy_item =gtk.MenuItem("Copy")
         self.mn_copy_item.set_submenu(self.mn_copy)
@@ -603,6 +618,7 @@ class SDictViewer(object):
         mn_options_item.set_submenu(mn_options)
         
         mn_options.append(self.mi_select_phonetic_font)
+        mn_options.append(self.mi_drag_selects)
         return (mn_dict_item, mn_options_item, mn_help_item)        
 
     def copy_selected_to_clipboard(self, widget):
@@ -656,9 +672,60 @@ class SDictViewer(object):
         article_view.set_editable(False)        
         article_view.set_cursor_visible(False)
         article_view.set_buffer(self.create_article_text_buffer())
-        handler = article_view.connect("motion_notify_event", self.on_mouse_motion)        
-        article_view.set_data("handlers", [handler])
-        return article_view            
+        handlers = []
+        #handlers.append(article_view.connect("event", self.article_drag_handler))
+        if self.supports_cursor_changes:        
+            handlers.append(article_view.connect("motion_notify_event", self.on_mouse_motion))
+        article_view.set_data("handlers", handlers)
+        return article_view   
+    
+    def supports_cursor_changes(self):
+        return True         
+    
+    def article_drag_handler(self, tag, widget, event, iter):
+        print "article_drag_handler", event.get_coords()
+        if self.mi_drag_selects.get_active():
+            return False
+        if event.type == gtk.gdk._2BUTTON_PRESS or event.type == gtk.gdk._3BUTTON_PRESS:
+            return True
+        if event.type == gtk.gdk.BUTTON_PRESS:
+            self.last_drag_coords = event.get_coords()
+            #return False if self.pointer_over_ref(widget) else True
+            return True
+        if event.type == gtk.gdk.BUTTON_RELEASE:
+            self.last_drag_coords = None
+            if self.article_drag_started:
+                self.article_drag_started = False
+            #return False if self.pointer_over_ref(widget) else True
+            return True
+        
+        if event.type == gtk.gdk.MOTION_NOTIFY:
+            if not self.last_drag_coords:
+                return
+            x, y = coords = event.get_coords()
+            x0, y0 = self.last_drag_coords
+            if not self.article_drag_started:
+                if fabs(x-x0) > 1 or fabs(y-y0) > 1:
+                    self.article_drag_started = True
+            if self.article_drag_started:
+                scroll_window = widget.get_parent()
+                self.last_drag_coords = coords
+                hstep = x0 - x
+                if hstep != 0:
+                    h = scroll_window.get_hadjustment()
+                    hvalue = h.get_value() + hstep
+                    maxhvalue = h.upper - h.page_size
+                    if hvalue > maxhvalue: hvalue = maxhvalue
+                    if hvalue < h.lower: hvalue = h.lower
+                    h.set_value(hvalue)
+                vstep = y0 - y
+                if vstep != 0:
+                    v = scroll_window.get_vadjustment()
+                    vvalue = v.get_value() + vstep
+                    maxvvalue = v.upper - v.page_size
+                    if vvalue > maxvvalue: vvalue = maxvvalue
+                    if vvalue < v.lower: vvalue = v.lower
+                    v.set_value(vvalue)
     
     def create_article_text_buffer(self):
         buffer = gtk.TextBuffer()
@@ -690,18 +757,19 @@ class SDictViewer(object):
         self.mi_copy_to_clipboard.set_sensitive(sensitive)
     
     def on_mouse_motion(self, widget, event, data = None):
-        text_window = widget.get_window(gtk.TEXT_WINDOW_TEXT)
+        cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if self.pointer_over_ref(widget) else None
+        widget.get_window(gtk.TEXT_WINDOW_TEXT).set_cursor(cursor)
+        return False
+    
+    def pointer_over_ref(self, textview):
+        text_window = textview.get_window(gtk.TEXT_WINDOW_TEXT)
         x, y, flags = text_window.get_pointer()                    
-        x, y = widget.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
-        tags = widget.get_iter_at_location(x, y).get_tags()
-        is_ref = False
+        x, y = textview.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
+        tags = textview.get_iter_at_location(x, y).get_tags()
         for tag in tags:
             tag_name = tag.get_property("name")
             if tag_name == "r" or tag_name == "url":
-                is_ref = True
-                break
-        cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if is_ref else None
-        text_window.set_cursor(cursor)
+                return True
         return False
         
     def select_dict_file(self, widget):
@@ -866,6 +934,16 @@ class SDictViewer(object):
                 text_buffer = page.get_child().get_buffer()            
                 tag_table = text_buffer.get_tag_table()
                 tag_table.lookup("t").set_property("font-desc", font_desc)
+    
+    def toggle_drag_selects(self, widget):
+        self.mi_drag_selects.toggled()
+        if not self.mi_drag_selects.get_active():
+            self.tabs.foreach(self.clear_selection)
+    
+    def clear_selection(self, scroll_window):
+        article_view = scroll_window.get_child()
+        b = article_view.get_buffer()
+        b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
         
     def main(self):
         gtk.main()            

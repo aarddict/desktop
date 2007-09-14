@@ -83,19 +83,20 @@ import threading
 
 class ArticleFormat:
     class Worker(threading.Thread):        
-        def __init__(self, formatter, dict, word, article, article_view, word_ref_callback):
+        def __init__(self, formatter, dict, word, article, article_view, word_ref_callback, all_handler):
             super(ArticleFormat.Worker, self).__init__()
             self.dict = dict
             self.word = word
             self.article = article
             self.article_view = article_view
             self.word_ref_callback = word_ref_callback
+            self.all_handler = all_handler
             self.formatter = formatter
             self.stopped = True
 
         def run(self):
             self.stopped = False
-            text_buffer = self.formatter.get_formatted_text_buffer_safe(self.dict, self.word, self.article, self.article_view, self.word_ref_callback)
+            text_buffer = self.formatter.get_formatted_text_buffer_safe(self.dict, self.word, self.article, self.article_view, self.word_ref_callback, self.all_handler)
             if not self.stopped:
                 gobject.idle_add(self.article_view.set_buffer, text_buffer)
                 self.formatter.workers.pop(self.dict, None)
@@ -123,7 +124,7 @@ class ArticleFormat:
         text = match.group(0)
         return text.replace("<", "&lt;")
    
-    def apply(self, dict, word, article, article_view, word_ref_callback):
+    def apply(self, dict, word, article, article_view, word_ref_callback, all_handler):
         current_worker = self.workers.pop(dict, None)
         if current_worker:
             current_worker.stop()
@@ -131,14 +132,14 @@ class ArticleFormat:
         loading = self.text_buffer_factory.create_article_text_buffer()
         loading.set_text("Loading...")
         article_view.set_buffer(loading)
-        self.workers[dict] = self.Worker(self, dict, word, article, article_view, word_ref_callback)
+        self.workers[dict] = self.Worker(self, dict, word, article, article_view, word_ref_callback, all_handler)
         self.workers[dict].start()
         
     
-    def get_formatted_text_buffer_safe(self, dict, word, article, article_view, word_ref_callback):
+    def get_formatted_text_buffer_safe(self, dict, word, article, article_view, word_ref_callback, all_handler):
         text_buffer = None
         try:
-            text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback)
+            text_buffer = self.get_formatted_text_buffer(dict, word, article, article_view, word_ref_callback, all_handler)
         except FormattingStoppedException:
             pass 
         except Exception, e: 
@@ -152,10 +153,10 @@ class ArticleFormat:
                 pass
             except Exception, e:
                 text_buffer = self.text_buffer_factory.create_article_text_buffer()
-                text_buffer.set_text("(Error occured while formatting this article):\n"+str(e)+"\n"+article)  
+                text_buffer.set_text("(Error occured while formatting this article):\n"+str(e)+"\n"+article)
         return text_buffer   
         
-    def get_formatted_text_buffer(self, dict, word, article, article_view, word_ref_callback):
+    def get_formatted_text_buffer(self, dict, word, article, article_view, word_ref_callback, all_handler):
         text_buffer = self.text_buffer_factory.create_article_text_buffer()
         text_buffer.insert_with_tags_by_name(text_buffer.get_end_iter(), word, "b")
         text_buffer.insert(text_buffer.get_end_iter(), "\n")
@@ -163,6 +164,10 @@ class ArticleFormat:
         parser.prepare(word, dict, text_buffer, word_ref_callback)
         parser.feed(article);
         self.parse_http_links(text_buffer)
+        tag_all = text_buffer.create_tag("all")
+        tag_all.connect("event", all_handler)
+        text_start, text_end = text_buffer.get_bounds()
+        text_buffer.apply_tag(tag_all, text_start, text_end)          
         return text_buffer
     
     def parse_http_links(self, text_buffer):
