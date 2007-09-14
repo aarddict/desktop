@@ -54,6 +54,7 @@ class ArticleView(gtk.TextView):
         self.set_editable(False)        
         self.set_cursor_visible(False)
         self.set_data("handlers", [])
+        self.article_drag_started = False
     
     def set_buffer(self, buffer):
         gtk.TextView.set_buffer(self, buffer)
@@ -82,7 +83,6 @@ class SDictViewer(object):
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
         
-        self.article_drag_started = False
         self.last_drag_coords = None
         
         self.statusbar = gtk.Statusbar()
@@ -249,20 +249,21 @@ class SDictViewer(object):
     
     def is_link_click(self, widget, event, reference):
         result = False
-        if event.type == gtk.gdk.BUTTON_PRESS:
-            widget.armed_link = (reference, event.get_coords())
-        if hasattr(widget, "armed_link") and widget.armed_link:        
-            if event.type == gtk.gdk.MOTION_NOTIFY:
-                armed_ref, armed_coords = widget.armed_link
-                armed_x, armed_y = armed_coords
-                evt_x, evt_y = event.get_coords()
-                if fabs(armed_x - evt_x) > 1 or fabs(armed_y - evt_y) > 1:  
+        if not widget.article_drag_started:            
+            if event.type == gtk.gdk.BUTTON_PRESS:
+                widget.armed_link = (reference, event.get_coords())
+            if hasattr(widget, "armed_link") and widget.armed_link:        
+                if event.type == gtk.gdk.MOTION_NOTIFY:
+                    armed_ref, armed_coords = widget.armed_link
+                    armed_x, armed_y = armed_coords
+                    evt_x, evt_y = event.get_coords()
+                    if fabs(armed_x - evt_x) > 1 or fabs(armed_y - evt_y) > 1:  
+                        widget.armed_link = None
+                if event.type == gtk.gdk.BUTTON_RELEASE:
+                    armed_ref, armed_coords = widget.armed_link
+                    if armed_ref == reference:
+                        result = True
                     widget.armed_link = None
-            if event.type == gtk.gdk.BUTTON_RELEASE:
-                armed_ref, armed_coords = widget.armed_link
-                if armed_ref == reference:
-                    result = True
-                widget.armed_link = None
         return result
             
     def set_word_input(self, word, supress_update = True):
@@ -697,8 +698,8 @@ class SDictViewer(object):
             return True
         if event.type == gtk.gdk.BUTTON_RELEASE:
             self.last_drag_coords = None
-            if self.article_drag_started:
-                self.article_drag_started = False
+            if widget.article_drag_started:
+                widget.article_drag_started = False
             return True
         if event.type == gtk.gdk.MOTION_NOTIFY:
             if not self.last_drag_coords:
@@ -706,11 +707,11 @@ class SDictViewer(object):
             #need to get pointer from the widget to receive next mouse motion event
             x, y = coords = widget.get_pointer()
             x0, y0 = self.last_drag_coords
-            if not self.article_drag_started:
+            if not widget.article_drag_started:
                 if fabs(x-x0) > 1 or fabs(y-y0) > 1:
-                    self.article_drag_started = True
+                    widget.article_drag_started = True
 
-            if self.article_drag_started:
+            if widget.article_drag_started:
                 scroll_window = widget.get_parent()
                 self.last_drag_coords = coords
                 hstep = x0 - x
