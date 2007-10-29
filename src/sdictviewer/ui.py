@@ -55,6 +55,7 @@ class ArticleView(gtk.TextView):
         self.set_cursor_visible(False)
         self.set_data("handlers", [])
         self.article_drag_started = False
+        self.last_drag_coords = None
     
     def set_buffer(self, buffer):
         handlers = self.get_data("handlers")
@@ -104,8 +105,6 @@ class SDictViewer(object):
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
-        
-        self.last_drag_coords = None
         
         self.statusbar = gtk.Statusbar()
         self.statusbar.set_has_resize_grip(False)
@@ -709,26 +708,26 @@ class SDictViewer(object):
         if event.type == gtk.gdk._2BUTTON_PRESS or event.type == gtk.gdk._3BUTTON_PRESS:
             return True
         if event.type == gtk.gdk.BUTTON_PRESS:
-            self.last_drag_coords = event.get_coords()
+            widget.last_drag_coords = event.get_coords()
             return True
         if event.type == gtk.gdk.BUTTON_RELEASE:
-            self.last_drag_coords = None
+            widget.last_drag_coords = None
             if widget.article_drag_started:
                 widget.article_drag_started = False
             return True
         if event.type == gtk.gdk.MOTION_NOTIFY:
-            if not self.last_drag_coords:
+            if not widget.last_drag_coords:
                 return False
             #need to get pointer from the widget to receive next mouse motion event
             x, y = coords = widget.get_pointer()
-            x0, y0 = self.last_drag_coords
+            x0, y0 = widget.last_drag_coords
             if not widget.article_drag_started:
                 if fabs(x-x0) > 1 or fabs(y-y0) > 1:
                     widget.article_drag_started = True
 
             if widget.article_drag_started:
                 scroll_window = widget.get_parent()
-                self.last_drag_coords = coords
+                widget.last_drag_coords = coords
                 hstep = x0 - x
                 if hstep != 0:
                     h = scroll_window.get_hadjustment()
