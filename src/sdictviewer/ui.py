@@ -57,13 +57,35 @@ class ArticleView(gtk.TextView):
         self.article_drag_started = False
     
     def set_buffer(self, buffer):
+        handlers = self.get_data("handlers")
+        if handlers == None:
+            #this article view is already discarded
+            return
         gtk.TextView.set_buffer(self, buffer)
         handler = self.connect_after("event", self.drag_handler)
-        self.get_data("handlers").append(handler)
+        handlers.append(handler)
+    
+    def connect(self, signal, callback):
+        handlers = self.get_data("handlers")
+        if handlers == None:
+            #this article view is already discarded
+            return        
+        handler = gtk.TextView.connect(self, signal, callback)
+        handlers.append(handler)
     
     def clear_selection(self):
         b = self.get_buffer()
         b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
+    
+    def remove_handlers(self):
+        self.__remove_handlers__(self)
+        self.__remove_handlers__(self.get_buffer())
+        
+    def __remove_handlers__(self, obj):
+        handlers = obj.get_data("handlers")
+        for handler in handlers:
+            obj.disconnect(handler)
+        obj.set_data("handlers", None)
     
 
 class SDictViewer(object):
@@ -272,7 +294,8 @@ class SDictViewer(object):
         self.word_input.child.set_position(-1)    
         if supress_update: self.word_input.handler_unblock(self.word_change_handler) 
                 
-    def add_to_history(self, word, lang):        
+    def add_to_history(self, word, lang):
+        self.word_input.handler_block(self.word_change_handler)        
         model = self.word_input.get_model()
         insert = True;
         for row in model:
@@ -284,26 +307,19 @@ class SDictViewer(object):
         history_size = model.iter_n_children(None)
         if history_size > 10:
             del model[history_size - 1]
+        self.word_input.handler_unblock(self.word_change_handler)
                 
     def clear_tabs(self):
         while self.tabs.get_n_pages() > 0:            
             last_page = self.tabs.get_nth_page(self.tabs.get_n_pages() - 1)
             article_view = last_page.get_child()
-            self.remove_handlers(article_view)
-            text_buffer = article_view.get_buffer()
-            self.remove_handlers(text_buffer)
+            article_view.remove_handlers()
             self.tabs.remove_page(-1)        
         self.dict_key_to_tab.clear()       
         self.update_copy_article_mi(self.tabs)
         self.article_format.stop()
         return False 
-    
-    def remove_handlers(self, obj):
-        handlers = obj.get_data("handlers")
-        for handler in handlers:
-            obj.disconnect(handler)
-        obj.set_data("handlers", None)
-    
+        
     def show_article_for(self, wordlookup, lang = None):
         if lang:
             langs = [lang]
@@ -334,7 +350,7 @@ class SDictViewer(object):
             
     def word_selection_changed(self, selection):
         if selection.count_selected_rows() == 0:
-            self.schedule(self.clear_tabs, 200)
+            self.clear_tabs()
             return
         model, iter = selection.get_selected()        
         if model.iter_has_child(iter):
@@ -535,14 +551,13 @@ class SDictViewer(object):
         cell.set_property('markup', '<span>%s</span> <span foreground="darkgrey">(<i>%s</i>)</span>' % (word, lang)) 
         
         
-    def word_selected_in_history(self, widget, data = None):                
+    def word_selected_in_history(self, widget, data = None):       
         active = self.word_input.get_active()
         if active == -1:
             #removing selection prevents virtual keaboard from disapppearing
             self.clear_tabs();
             self.word_completion.get_selection().unselect_all()
             self.schedule(self.update_completion, 600, self.word_input.child.get_text())            
-            #self.update_completion(self.word_input.child.get_text())
             return
         word, lang = self.word_input.get_model()[active]
         #use schedule instead of direct call to interrupt already scheduled update if any
@@ -682,7 +697,7 @@ class SDictViewer(object):
         article_view = ArticleView(self.article_drag_handler)
         article_view.set_buffer(self.create_article_text_buffer())
         if self.supports_cursor_changes():        
-            article_view.get_data("handlers").append(article_view.connect("motion_notify_event", self.on_mouse_motion))
+            article_view.connect("motion_notify_event", self.on_mouse_motion)
         return article_view   
     
     def supports_cursor_changes(self):
