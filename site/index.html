@@ -16,7 +16,7 @@ a:visited {
 
 <div
 	style="border: thin solid blue; background-color: #eeeeff; float: right; padding: 5px;">
-<div><a href="http://dl.sharesource.org/sdictviewer/sdictviewer-0.5.1.deb">Download</a></div>
+<div><a href="http://dl.sharesource.org/sdictviewer/sdictviewer-0.5.2.deb">Download</a></div>
 <div style="font-size: x-small">
 	<a href="http://pymaemo.garage.maemo.org/installation.html">Install Python Runtime first</a><br/>
 	(Python 2.5 is required)
@@ -25,7 +25,7 @@ a:visited {
 <div><a href="http://sourceforge.net/news/?group_id=165272">News</a></div>
 <div><a href="http://hg.sharesource.org/sdictviewer/">Browse
 Source Code</a></div>
-<div><a href="http://dl.sharesource.org/sdictviewer/sdictviewer-0.5.1-src.zip">Download
+<div><a href="http://dl.sharesource.org/sdictviewer/sdictviewer-0.5.2-src.zip">Download
 Source Code</a></div>
 </div>
 
@@ -34,9 +34,10 @@ Source Code</a></div>
 	style="margin-right: 10px; vertical-align: middle; "></img>SDict Viewer</h1>
 <p>SDict Viewer is a viewer for dictionaries in open format
 developed by <a href="http://axmasoft.com">AXMA Soft</a>. Primary goal
-of the project is to provide usable dictionary application for <a
-	href="http://www.nokia.com/770">Nokia 770</a> and <a
-	href="http://www.nokia.com/N800">Nokia N800</a> running <a
+of the project is to provide usable dictionary application for Nokia Internet Tablets (<a
+	href="http://www.nokia.com/770">770</a>, <a
+	href="http://www.nokia.com/N800">N800</a> and <a
+	href="http://www.nokia.com/N810">N810</a>) running <a
 	href="http://www.maemo.org">Maemo</a>. Because SDict Viewer is written
 in <a href="http://python.org">Python</a> and its user interface is
 implemented in <a href="http://pygtk.org">PyGTK</a>, it should be
@@ -48,7 +49,7 @@ for download at <a href="http://sdict.com">http://sdict.com</a></p>
 <h2>Features</h2>
 <ul>
 	<li>Works with dictionaries in AXMASoft's open dictionary format.
-	Get dictionaries <a href="http://sdict.com/">here</a></li>
+	Get dictionaries at <a href="http://sdict.com/">Sdictionary community site</a></li>
 	<li>Works with multiple dictionaries at the same time</li>
 	<li>Rich article text formatting</li>
 	<li>Hyperlinks in article text: references to other articles and external links (any string that starts with http://, opens in external web browser)</li>
@@ -140,22 +141,22 @@ resource for various unicode fonts.</p>
 	relatively long time. This is mostly due to the fact that most
 	dictionaries use only 3 level short index. When a number of words that
 	starts with the same 3 letters is large the further down the list the
-	word is the longer its lookup takes.</li>
+	word is the longer its lookup takes. Starting from 0.5.0 SDict Viewer indexes under-indexed portions of dictionaries 
+	on the fly as it encounters them, so first lookup may be very slow, subsequent lookups of the same or similar words 
+	are usually much faster.</li>
 	<li>References to other articles may not work in some cases: a
 	word in one form may be tagged as reference, but dictionary only
 	contains this word in a different form. Current dictionary format
 	doesn't provide any additional information to properly resolve the
 	reference. How often a user may encounter this depends a lot on a
 	specific dictionary and specific language.</li>
-	<li>Formatting large articles with lots of links is slow. This is not noticeable with 
-	most dictionaries, but can be quite painful with some Wikipedia articles.</li>
 	<li>Scrolling large articles is slow.</li>
 	<li>No user preferences. The only option right now is which font
 	to use for phonetic transcription. Most things should work well enough
 	for most users right away, and if they don't - it's better to fix it
 	then to wash one's hands and expose it as preference. On the other
 	hand, it is nice to have preferences for some things. So what kind of
-	preferences the applicaiton will get in the future largely depends on
+	preferences the application will get in the future largely depends on
 	user feedback and the time I have (or don't have).</li>
 </ul>
 </div>
