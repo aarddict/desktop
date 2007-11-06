@@ -199,7 +199,7 @@ class SDictionary:
                 read_title = marshal.load(index_file)
                 read_version = marshal.load(index_file)
                 if (read_title != self.title) or (read_version != self.version):
-                    print "title or version missmatch in cached file"
+                    print "title or version mismatch in cached file"
                     raise ValueError
                 short_index = marshal.load(index_file)
                 #print "read cache from", self.index_cache_file_name
@@ -275,17 +275,14 @@ class SDictionary:
     def get_word_list_iter(self, start_word):
         search_pos, starts_with = self.get_search_pos_for(start_word)
         #print "search_pos: %s, starts_with %s" % (search_pos, starts_with)
-        if not isinstance(search_pos, list):
+        if not isinstance(search_pos, set):
             search_pos = [search_pos]
-            dont_limit_starts_with = True
-        else:
-            #This means we deal with broken portion of dictionary were words with the same beginnings 
-            #are not grouped, so we can't fully use index items that were not in the original short index 
-            dont_limit_starts_with = False
         found = False
         for pos in search_pos:
-            for item in self.__word_list_iter__(start_word, pos, starts_with, dont_limit_starts_with):
+            #print "=== Looking for %s, starts with %s from pos %d" % (start_word, starts_with, pos)
+            for item in self.__word_list_iter__(start_word, pos, starts_with):
                 if not found and isinstance(item, WordLookup):
+                    #print "====> Found", item
                     found = True
                 yield item
         if not found:
@@ -293,27 +290,27 @@ class SDictionary:
             self.ensure_index_depth(len(u_start_word))
             self.short_index[len(u_start_word)][u_start_word] = -1   
     
-    def __word_list_iter__(self, start_word, search_pos, starts_with, dont_limit_starts_with):
+    def __word_list_iter__(self, start_word, search_pos, starts_with):
         #print "start word: %s, search_pos: %s, starts_with %s" % (start_word, search_pos, starts_with)
         if search_pos > -1:
             current_pos = self.header.full_index_offset
             read_item = self.read_full_index_item
             next_ptr = search_pos
             index_word = starts_with
-            sw = starts_with if dont_limit_starts_with else starts_with[:self.header.short_index_depth]
-            while index_word and index_word.startswith(sw):
+            while index_word and index_word.startswith(starts_with):
                 current_pos += next_ptr
                 next_ptr, index_word, article_ptr = read_item(current_pos)
-                if index_word.startswith(start_word):
-                    yield WordLookup(index_word, self, article_ptr)
-                yield SkippedWord(self, index_word, current_pos - self.header.full_index_offset)
+                if index_word: 
+                    if index_word.startswith(start_word):
+                        yield WordLookup(index_word, self, article_ptr)
+                    yield SkippedWord(self, index_word, current_pos - self.header.full_index_offset)
                 
     def index(self, items):
         if len(items) > INDEXING_THRESHOLD:
             t0 = time.time()
             items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
             for stats in self.do_index(items_to_index, self.header.short_index_depth + 1, INDEXING_THRESHOLD): yield stats
-            print "[index] indexing %d items took %s s" % (len(items), time.time() - t0)
+            #print "[index] indexing %d items took %s s" % (len(items), time.time() - t0)
         
     def do_index(self, items, length, max_distance):
         #t0 = time.time()
@@ -330,20 +327,21 @@ class SDictionary:
             #print "test: '%s'->'%s'" % (prev_word_start , current_word_start)
             if prev_word_start != current_word_start:
                 if not short_index_for_length.has_key(current_word_start):
-                    #print "Adding index point '%s'" % current_word_start
                     short_index_for_length[current_word_start] = current_pos
+                    #print "Adding index point %d for '%s': %s" % (current_pos, current_word_start, short_index_for_length[current_word_start]) 
                 else:
                     # This means the portion of word list being indexed is not sorted,
                     # that is words that start with the same substring are not grouped together, that
                     # is we deal with broken dictionary.
                     existing_index_point = short_index_for_length[current_word_start]
-                    # Keeping the list of all index points for the same word start allows
-                    # to lookup words and build completion lists still albeit in an awkward manner
-                    if isinstance(existing_index_point, list):
-                        existing_index_point.append(current_pos)
-                    else:
-                        short_index_for_length[current_word_start] = [existing_index_point]
-                    #print "Index point '%s' is already in the index (word list is not sorted), converting to list of pointers" % current_word_start
+                    if existing_index_point != current_pos:
+                        # Keeping the set of all index points for the same word start allows
+                        # to lookup words and build completion lists still albeit in an awkward manner
+                        if isinstance(existing_index_point, set):
+                            existing_index_point.add(current_pos)
+                        else:
+                            short_index_for_length[current_word_start] = set([existing_index_point, current_pos])
+                        #print "Adding %d to set of pointers for '%s': %s" % (current_pos, current_word_start, short_index_for_length[current_word_start])
                 if i - last_index_point_index > max_distance:
                     for stats in self.do_index(items[last_index_point_index:i], length + 1, max_distance): yield stats
                 last_index_point_index = i     
