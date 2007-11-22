@@ -35,6 +35,7 @@ import webbrowser
 from threading import Thread
 from Queue import Queue
 from math import fabs
+from sdictviewer import detect_format 
 
 gobject.threads_init()
 
@@ -101,7 +102,6 @@ class SDictViewer(object):
         self.window = self.create_top_level_widget()                               
         self.font = None
         self.last_dict_file_location = None
-        self.article_format = articleformat.ArticleFormat(self, self.external_link_callback)
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
@@ -110,6 +110,9 @@ class SDictViewer(object):
         self.statusbar.set_has_resize_grip(False)
         self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
         self.update_completion_timeout_ctx_id = self.statusbar.get_context_id("update completion timeout")
+
+        self.dict_formats = {}
+        self.article_formatters = {}
 
         self.start_worker_threads()
                                  
@@ -316,7 +319,7 @@ class SDictViewer(object):
             self.tabs.remove_page(-1)        
         self.dict_key_to_tab.clear()       
         self.update_copy_article_mi(self.tabs)
-        self.article_format.stop()
+        [article_format.stop() for article_format in self.article_formatters.itervalues()]
         return False 
         
     def show_article_for(self, wordlookup, lang = None):
@@ -340,7 +343,8 @@ class SDictViewer(object):
                 self.tabs.append_page(scrollable_view, label)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
-                self.article_format.apply(dict, word, article, article_view, self.word_ref_clicked)
+                article_format = self.article_formatters[self.dict_formats[dict]]
+                article_format.apply(dict, word, article, article_view)
                 self.add_to_history(word, lang)            
                 result = True           
         self.update_copy_article_mi(self.tabs)
@@ -812,10 +816,15 @@ class SDictViewer(object):
         while True:
             file = self.open_q.get()
             try:
-                dict = sdict.SDictionary(file)
-                gobject.idle_add(self.update_status_display, dict.title)
-                dict.load()
-                self. add_dict(dict)
+                #dict = sdict.SDictionary(file)
+                fmt = detect_format(file)
+                if fmt:
+                    dict = fmt.open(file)
+                    gobject.idle_add(self.update_status_display, dict.title)
+                    dict.load()
+                    self.add_dict(dict, fmt)
+                else:
+                    raise Exception("Unknown format")
             except Exception, e:
                 self.report_open_error(e)
             finally:
@@ -882,12 +891,15 @@ class SDictViewer(object):
         dlg.run()
         dlg.destroy()
     
-    def add_dict(self, dict):
+    def add_dict(self, dict, fmt):
         if (self.dictionaries.has(dict)):
             print "Dictionary is already open"
             return
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
+        self.dict_formats[dict] = fmt
+        if not self.article_formatters.has_key(fmt):
+            self.article_formatters[fmt] = fmt.create_article_formatter(self, self.word_ref_clicked, self.external_link_callback)
         gobject.idle_add(self.add_to_menu_remove, dict)
         gobject.idle_add(self.update_title)
         
@@ -899,7 +911,8 @@ class SDictViewer(object):
             old_mi = self.recent_menu_items[key]
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]                
-        self.dictionaries.remove(dict)       
+        self.dictionaries.remove(dict) 
+        del self.dict_formats[dict]      
         tab = self.get_tab_for_dict(key)
         if tab:
             self.tabs.remove_page(tab) 
