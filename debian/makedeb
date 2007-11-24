@@ -1,12 +1,18 @@
 #!/bin/sh
 DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml"
 mkdir -p usr/bin
-mkdir -p usr/lib/sdictviewer
+mkdir -p usr/lib/sdictviewer/formats/pdi
+mkdir -p usr/lib/sdictviewer/formats/dct
 mkdir -p usr/share/applications/hildon/
 mkdir -p usr/share/dbus-1/services/
 mkdir -p usr/share/pixmaps
 cp ../src/sdictviewer-maemo.py usr/bin/sdictviewer || exit
 cp -R ../src/sdictviewer/*.py usr/lib/sdictviewer || exit
+cp -R ../src/sdictviewer/formats/*.py usr/lib/sdictviewer/formats || exit
+cp -R ../src/sdictviewer/formats/dct/*.py usr/lib/sdictviewer/formats/dct || exit
+cp -R ../src/sdictviewer/formats/pdi/*.py usr/lib/sdictviewer/formats/pdi || exit
+
+
 cp ../src/sdictviewer/allkeys.txt usr/lib/sdictviewer || exit
 cp ../icons/sdictviewer.png usr/share/pixmaps/
 
