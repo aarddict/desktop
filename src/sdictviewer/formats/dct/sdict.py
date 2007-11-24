@@ -21,14 +21,14 @@ from __future__ import with_statement
 import zlib
 import bz2
 from struct import unpack
-import locale
 import time
 import marshal
 import os
 import os.path
 from itertools import groupby
 from Queue import Queue 
-import util
+from sdictviewer.dictutil import *
+
 
 settings_dir  = ".sdictviewer"
 index_cache_dir = os.path.join(os.path.expanduser("~"),  settings_dir, "index_cache")
@@ -117,40 +117,6 @@ class Header:
     
 compressions = {0:NoCompression(), 1:GzipCompression(), 2:Bzip2Compression()}
         
-class DictFormatError(Exception):
-     def __init__(self, value):
-         self.value = value
-     def __str__(self):
-         return repr(self.value)      
-
-class WordLookup:
-    def __init__(self, word, dict = None, article_ptr = None):
-        self.word = word
-        self.lookup = {}
-        if dict and article_ptr:
-            self.add_article(dict, article_ptr)
-        
-    def add_article(self, dict, article_ptr):
-        self.lookup[dict] = article_ptr
-        
-    def add_articles(self, other):
-        self.lookup.update(other.lookup)        
-        
-    def __str__(self):
-        return self.word
-    
-    def read_articles(self):
-        return [(dict,dict.read_article(article_ptr)) for dict, article_ptr in self.lookup.iteritems()]
-        
-class SkippedWord:
-    def __init__(self, dict, word, full_index_ptr):
-        self.dict = dict
-        self.word = word
-        self.full_index_ptr = full_index_ptr
-        
-    def __str__(self):
-        return self.word +" [skipped]"
-    
 class SDictionary:         
     
     def __init__(self, file_name, encoding = "utf-8"):    
@@ -371,48 +337,4 @@ class SDictionary:
     
     def close(self, save_index = True):
         if save_index: self.save_index()
-        self.file.close()        
-
-class SDictionaryCollection:
-    
-    def __init__(self):
-        self.dictionaries = util.ListMap()
-    
-    def add(self, dict):
-        self.dictionaries[dict.header.word_lang].append(dict)
-        
-    def has(self, dict):
-        lang_dicts = self.dictionaries[dict.header.word_lang]
-        return lang_dicts.count(dict) == 1
-    
-    def remove(self, dict):        
-        self.dictionaries[dict.header.word_lang].remove(dict)
-        if len(self.dictionaries[dict.header.word_lang]) == 0:
-            del self.dictionaries[dict.header.word_lang]
-    
-    def get_dicts(self, langs = None):
-        dicts = []
-        if langs:
-            [dicts.extend(self.dictionaries[lang]) for lang in langs]
-        else:
-            [dicts.extend(list) for list in self.dictionaries.itervalues()]
-        return dicts
-    
-    def langs(self):
-        return self.dictionaries.keys()
-    
-    def get_word_list_iter(self, lang, start_word, max_from_one_dict = 20):
-        for dict in self.dictionaries[lang]:
-            count = 0
-            for item in dict.get_word_list_iter(start_word):
-                yield item
-                count += (1 if isinstance(item, WordLookup) else 0)
-                if count >= max_from_one_dict: break
-    
-    def is_empty(self):
-        return self.size() == 0
-    
-    def size(self):
-        return len(self.get_dicts())        
-        
-        
+        self.file.close()            

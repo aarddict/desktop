@@ -19,11 +19,7 @@ Copyright (C) 2006-2007 Igor Tkach
 """
 import pygtk
 pygtk.require('2.0')
-import gtk
-import pango
-import sdict
-import util
-import locale
+import gtk, pango, locale, ui
 
 class DictDetailPane(gtk.HBox):
     
@@ -107,7 +103,7 @@ class DictInfoDialog(gtk.Dialog):
         for dict in dicts:
             dict_list.get_model().append([dict])
                 
-        box.pack_start(util.create_scrolled_window(dict_list), True, True, 0)
+        box.pack_start(ui.create_scrolled_window(dict_list), True, True, 0)
 
         split_pane = gtk.HPaned()        
         contentBox.pack_start(split_pane, True, True, 2)                        

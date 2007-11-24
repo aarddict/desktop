@@ -19,12 +19,6 @@ Copyright (C) 2006-2007 Igor Tkach
 """
 import gtk
 
-class ListMap(dict):
-    def __missing__ (self, key):
-        value = []
-        self.__setitem__(key, value)
-        return value
-
 def create_scrolled_window(widget):
     scrolled_window = gtk.ScrolledWindow()
     scrolled_window.set_shadow_type(gtk.SHADOW_IN)

@@ -21,9 +21,8 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 import pango
-import sdict
+import dictutil
 import dictinfo
-import util
 import articleformat
 from appstate import *
 import gobject
@@ -39,12 +38,19 @@ from sdictviewer import detect_format
 
 gobject.threads_init()
 
-version = "0.5.2"
+version = "0.6.0"
 app_name = "SDict Viewer"
 
 UPDATE_COMPLETION_TIMEOUT_S = 120.0
 UPDATE_COMPLETION_TIMEOUT_CHECK_MS = 5000
 STATUS_MESSAGE_TRUNCATE_LEN = 60
+
+def create_scrolled_window(widget):
+    scrolled_window = gtk.ScrolledWindow()
+    scrolled_window.set_shadow_type(gtk.SHADOW_IN)
+    scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+    scrolled_window.add(widget)                                
+    return scrolled_window
 
 class ArticleView(gtk.TextView):
     
@@ -91,7 +97,7 @@ class ArticleView(gtk.TextView):
     
 class WordLookupByWord(dict):
     def __missing__(self, word):
-        value = sdict.WordLookup(word)
+        value = dictutil.WordLookup(word)
         self.__setitem__(word, value)
         return value
 
@@ -102,7 +108,7 @@ class SDictViewer(object):
         self.lookup_stop_requested = False
         self.update_completion_t0 = None
         self.status_display = None
-        self.dictionaries = sdict.SDictionaryCollection()
+        self.dictionaries = dictutil.DictionaryCollection()
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.font = None
@@ -138,7 +144,7 @@ class SDictViewer(object):
         box.pack_start(input_box, False, False, 4)
         
         self.word_completion = self.create_word_completion()
-        box.pack_start(util.create_scrolled_window(self.word_completion), True, True, 0)
+        box.pack_start(create_scrolled_window(self.word_completion), True, True, 0)
 
         split_pane = gtk.HPaned()        
         contentBox.pack_start(split_pane, True, True, 2)                        
@@ -339,7 +345,7 @@ class SDictViewer(object):
             if article: 
                 article_view = self.create_article_view()
                 article_view.set_property("can-focus", False)
-                scrollable_view = util.create_scrolled_window(article_view)                
+                scrollable_view = create_scrolled_window(article_view)                
                 scrollable_view.set_property("can-focus", False)
                 label = gtk.Label(dict.title)
                 label.set_width_chars(6)
@@ -424,7 +430,7 @@ class SDictViewer(object):
     def do_lookup(self, start_word, to_select):
         interrupted = False
         lang_word_list = {}
-        skipped = util.ListMap()
+        skipped = dictutil.ListMap()
         for lang in self.dictionaries.langs():
             word_lookups = WordLookupByWord()
             for item in self.dictionaries.get_word_list_iter(lang, start_word):
@@ -432,7 +438,8 @@ class SDictViewer(object):
                 if self.lookup_stop_requested:
                     interrupted = True
                     return (lang_word_list, interrupted)
-                if isinstance(item, sdict.WordLookup):
+                print item
+                if isinstance(item, dictutil.WordLookup):
                     word_lookups[item.word].add_articles(item)
                 else:
                     skipped[item.dict].append(item)
@@ -820,7 +827,6 @@ class SDictViewer(object):
         while True:
             file = self.open_q.get()
             try:
-                #dict = sdict.SDictionary(file)
                 fmt = detect_format(file)
                 if fmt:
                     dict = fmt.open(file)
@@ -942,7 +948,7 @@ class SDictViewer(object):
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
         dialog.set_version(version)
-        dialog.set_copyright("(C) 2006-2007 Igor Tkach\nPortions contributed by Sam Tygier")
+        dialog.set_copyright("(C) 2006-2007 Igor Tkach\nPortions contributed by Sam Tygier and Jeremy Mortis")
         dialog.set_website("http://sdictviewer.sf.net/")
         dialog.set_comments("Distributed under terms and conditions of GNU Public License Version 3")
         dialog.run()     

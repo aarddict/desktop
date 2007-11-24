@@ -1,6 +1,9 @@
 import sdictviewer
 from sdictviewer.formats import *
 
+from pyuca import Collator
+ucollator = Collator("sdictviewer/allkeys.txt")
+
 def detect_format(file_name):
     fmt_names = [fmt for fmt in dir(sdictviewer.formats) if not (fmt.startswith('__') or fmt.endswith('__'))]
     print "sdictviewer.formats", fmt_names

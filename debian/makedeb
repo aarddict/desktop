@@ -7,6 +7,7 @@ mkdir -p usr/share/dbus-1/services/
 mkdir -p usr/share/pixmaps
 cp ../src/sdictviewer-maemo.py usr/bin/sdictviewer || exit
 cp -R ../src/sdictviewer/*.py usr/lib/sdictviewer || exit
+cp ../src/sdictviewer/allkeys.txt usr/lib/sdictviewer || exit
 cp ../icons/sdictviewer.png usr/share/pixmaps/
 
 chmod +x usr/bin/sdictviewer
