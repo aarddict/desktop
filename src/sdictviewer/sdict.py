@@ -123,9 +123,6 @@ class DictFormatError(Exception):
      def __str__(self):
          return repr(self.value)      
 
-class LookupStoppedException(Exception):  
-    pass
-
 class WordLookup:
     def __init__(self, word, dict = None, article_ptr = None):
         self.word = word
@@ -376,12 +373,6 @@ class SDictionary:
         if save_index: self.save_index()
         self.file.close()        
 
-class WordLookupByWord(dict):
-    def __missing__(self, word):
-        value = WordLookup(word)
-        self.__setitem__(word, value)
-        return value
-        
 class SDictionaryCollection:
     
     def __init__(self):
@@ -417,10 +408,6 @@ class SDictionaryCollection:
                 yield item
                 count += (1 if isinstance(item, WordLookup) else 0)
                 if count >= max_from_one_dict: break
-    
-    def stop_lookup(self):
-        [dict.stop_lookup() for dict in self.get_dicts()]
-        self.stopped = True
     
     def is_empty(self):
         return self.size() == 0

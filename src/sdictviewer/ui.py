@@ -89,6 +89,11 @@ class ArticleView(gtk.TextView):
             obj.disconnect(handler)
         obj.set_data("handlers", None)
     
+class WordLookupByWord(dict):
+    def __missing__(self, word):
+        value = sdict.WordLookup(word)
+        self.__setitem__(word, value)
+        return value
 
 class SDictViewer(object):
              
@@ -234,7 +239,6 @@ class SDictViewer(object):
             self.tabs.prev_page()
         if event.keyval == gtk.keysyms.F8:
             self.tabs.next_page()
-        
         
     def history_to_list(self, model, path, iter, history_list):
         word, lang = model[iter]
@@ -416,13 +420,13 @@ class SDictViewer(object):
             self.update_completion_t0 = None
             self.update_completion_stopped = True
             self.update_completion_q.task_done()
-    
+
     def do_lookup(self, start_word, to_select):
         interrupted = False
         lang_word_list = {}
         skipped = util.ListMap()
         for lang in self.dictionaries.langs():
-            word_lookups = sdict.WordLookupByWord()
+            word_lookups = WordLookupByWord()
             for item in self.dictionaries.get_word_list_iter(lang, start_word):
                 time.sleep(0)
                 if self.lookup_stop_requested:
@@ -764,10 +768,10 @@ class SDictViewer(object):
             if font_desc:
                 tag_t.set_property("font-desc", font_desc)
         buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
+        buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
         handler1 = buffer.connect("mark-set", self.article_text_selection_changed)
         handler2 = buffer.connect("mark-deleted", self.article_text_selection_changed)
         buffer.set_data("handlers", (handler1, handler2))
-        tag_sub = buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
         return buffer     
     
     def article_text_selection_changed(self, *args):
