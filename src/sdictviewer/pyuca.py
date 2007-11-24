@@ -79,7 +79,7 @@ class Collator:
             candidate = os.path.join(dirname, filename)
             if os.path.isfile(candidate):
                 return candidate
-            raise Exception("Can't find file " + filename + " in " + str(sys.path))
+        raise Exception("Can't find file " + filename + " in " + str(sys.path))
 
     def load(self, filename):
 
