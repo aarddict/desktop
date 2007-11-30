@@ -35,6 +35,7 @@ from threading import Thread
 from Queue import Queue
 from math import fabs
 from sdictviewer import detect_format 
+from sdictviewer import ucollator
 
 gobject.threads_init()
 
@@ -443,7 +444,7 @@ class SDictViewer(object):
                 else:
                     skipped[item.dict].append(item)
             word_list = word_lookups.values()
-            word_list.sort(key=str)
+            word_list.sort(key=self.sort_key)
             if len (word_list) > 0: lang_word_list[lang] = word_list
             for dict, skipped_words in skipped.iteritems():
                 print "[update_completion_worker] Skipped %d words in %s" % (len(skipped_words), dict)
@@ -454,6 +455,9 @@ class SDictViewer(object):
                         print "[update_completion_worker] === Indexing of", len(skipped_words), "in",dict, "stopped"
                         return (lang_word_list, interrupted)
         return (lang_word_list, interrupted)
+    
+    def sort_key(self, word_lookup):
+        return ucollator.sort_key(str(word_lookup))
                                         
     def update_completion(self, word, to_select = None):
         self.statusbar.pop(self.update_completion_ctx_id) 
@@ -947,7 +951,7 @@ class SDictViewer(object):
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
         dialog.set_version(version)
-        dialog.set_copyright("(C) 2006-2007 Igor Tkach\nPortions contributed by Sam Tygier and Jeremy Mortis")
+        dialog.set_copyright("(C) 2006-2007 Igor Tkach\nPortions contributed by Sam Tygier and Jeremy Mortis\nUnicode Collation Algorithm implementation by James Tauber")
         dialog.set_website("http://sdictviewer.sf.net/")
         dialog.set_comments("Distributed under terms and conditions of GNU Public License Version 3")
         dialog.run()     
