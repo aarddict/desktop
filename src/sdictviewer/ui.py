@@ -438,7 +438,6 @@ class SDictViewer(object):
                 if self.lookup_stop_requested:
                     interrupted = True
                     return (lang_word_list, interrupted)
-                print item
                 if isinstance(item, dictutil.WordLookup):
                     word_lookups[item.word].add_articles(item)
                 else:
