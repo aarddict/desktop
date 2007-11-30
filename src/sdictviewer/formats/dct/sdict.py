@@ -250,8 +250,9 @@ class SDictionary:
                 yield item
         if not found:
             u_start_word = start_word.decode(self.encoding)
-            self.ensure_index_depth(len(u_start_word))
-            self.short_index[len(u_start_word)][u_start_word] = -1   
+            start_word_len = len(u_start_word)
+            self.ensure_index_depth(start_word_len)
+            self.short_index[start_word_len][u_start_word] = -1   
     
     def __word_list_iter__(self, start_word, search_pos, starts_with):
         #print "start word: %s, search_pos: %s, starts_with %s" % (start_word, search_pos, starts_with)
@@ -270,7 +271,7 @@ class SDictionary:
                 
     def index(self, items):
         if len(items) > INDEXING_THRESHOLD:
-            t0 = time.time()
+            #t0 = time.time()
             items_to_index = [(i.word.decode(self.encoding), i.full_index_ptr) for i in items]
             for stats in self.do_index(items_to_index, self.header.short_index_depth + 1, INDEXING_THRESHOLD): yield stats
             #print "[index] indexing %d items took %s s" % (len(items), time.time() - t0)
