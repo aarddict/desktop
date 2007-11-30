@@ -696,16 +696,16 @@ class SDictViewer(object):
         return self.window
 
     def update_title(self):
-        if self.dictionaries.is_empty():        
-            dict_title = "No dictionaries"
-        else:            
-            if self.dictionaries.size() == 1:
-                dict_title = ("%d dictionary") % self.dictionaries.size()
-            else:
-                dict_title = ("%d dictionaries") % self.dictionaries.size()
-        title = "%s - %s" % (dict_title, app_name)
+        dict_title = self.create_dict_title()
+        title = "%s - %s" % (app_name, dict_title)
         self.window.set_title(title)
-
+        
+    def create_dict_title(self):
+        size = self.dictionaries.size()
+        if size == 0:
+            return "No dictionaries"
+        return ("%d dictionary") % size if size == 1 else ("%d dictionaries") % size
+        
     def create_article_view(self):
         article_view = ArticleView(self.article_drag_handler)
         article_view.set_buffer(self.create_article_text_buffer())

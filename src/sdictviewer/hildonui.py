@@ -39,6 +39,9 @@ class HildonSDictViewer(ui.SDictViewer):
         window.connect("event", self.window_event)
         return window
     
+    def update_title(self):
+        self.window.set_title(self.create_dict_title())
+    
     def on_window_state_change(self, widget, event, *args):             
          if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
              self.window_in_fullscreen = True
