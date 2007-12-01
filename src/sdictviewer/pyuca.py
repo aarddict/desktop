@@ -118,7 +118,6 @@ class Collator:
     def sort_key(self, string, encoding="utf-8"):
 
         if type(string) is types.StringType:
-            print "sort_key converting to unicode"
             string = string.decode(encoding);
 
         string2 = unicodedata.normalize(self.normalize, string)
