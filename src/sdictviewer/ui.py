@@ -721,6 +721,8 @@ class SDictViewer(object):
         return True         
     
     def article_drag_handler(self, widget, event):
+        #need to get pointer from the widget to receive next mouse motion event
+        x, y = coords = widget.get_pointer()
         if self.mi_drag_selects.get_active():
             return False
         if event.type == gtk.gdk._2BUTTON_PRESS or event.type == gtk.gdk._3BUTTON_PRESS:
@@ -736,8 +738,6 @@ class SDictViewer(object):
         if event.type == gtk.gdk.MOTION_NOTIFY:
             if not widget.last_drag_coords:
                 return False
-            #need to get pointer from the widget to receive next mouse motion event
-            x, y = coords = widget.get_pointer()
             x0, y0 = widget.last_drag_coords
             if not widget.article_drag_started:
                 if fabs(x-x0) > 1 or fabs(y-y0) > 1:
