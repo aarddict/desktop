@@ -11,10 +11,9 @@ cp -R ../src/sdictviewer/*.py usr/lib/sdictviewer || exit
 cp -R ../src/sdictviewer/formats/*.py usr/lib/sdictviewer/formats || exit
 cp -R ../src/sdictviewer/formats/dct/*.py usr/lib/sdictviewer/formats/dct || exit
 cp -R ../src/sdictviewer/formats/pdi/*.py usr/lib/sdictviewer/formats/pdi || exit
-
-
-cp ../src/sdictviewer/allkeys.txt usr/lib/sdictviewer || exit
 cp ../icons/sdictviewer.png usr/share/pixmaps/
+
+python ./cleanallkeys.py -i ../src/sdictviewer/allkeys.txt -o usr/lib/sdictviewer/allkeys.txt
 
 chmod +x usr/bin/sdictviewer
 
