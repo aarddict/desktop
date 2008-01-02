@@ -414,16 +414,12 @@ class SDictViewer(object):
     
     def update_completion_worker(self):
         while True:
-            print "[update_completion_worker] Waiting for next update completion task"
             start_word, to_select = self.update_completion_q.get()
             self.update_completion_t0 = time.time()
             self.update_completion_stopped = False
-            print '[update_completion_worker] Will look for "%s" in %d dictionaries' % (start_word, self.dictionaries.size())
             lang_word_list, interrupted = self.do_lookup(start_word, to_select)
             if not interrupted:
                 gobject.idle_add(self.update_completion_callback, lang_word_list, to_select, start_word, time.time() - self.update_completion_t0)
-            else:
-                print '[update_completion_worker] === Lookup for "%s" interrupted' % start_word
             self.update_completion_t0 = None
             self.update_completion_stopped = True
             self.update_completion_q.task_done()
@@ -447,12 +443,10 @@ class SDictViewer(object):
             word_list.sort(key=self.sort_key)
             if len (word_list) > 0: lang_word_list[lang] = word_list
             for dict, skipped_words in skipped.iteritems():
-                print "[update_completion_worker] Skipped %d words in %s" % (len(skipped_words), dict)
                 for stats in dict.index(skipped_words):
                     time.sleep(0)
                     if self.lookup_stop_requested:
                         interrupted = True
-                        print "[update_completion_worker] === Indexing of", len(skipped_words), "in",dict, "stopped"
                         return (lang_word_list, interrupted)
         return (lang_word_list, interrupted)
     
@@ -465,7 +459,6 @@ class SDictViewer(object):
         self.word_completion.set_model(None)   
         self.stop_lookup()
         word = word.lstrip()
-        print "[update_completion] requested for '%s'" % word 
         if word and len(word) > 0:
             self.statusbar.push(self.update_completion_ctx_id, 'Looking up "%s"...' % word)
             self.update_completion_q.put((word, to_select))  
@@ -482,7 +475,6 @@ class SDictViewer(object):
         self.statusbar.push(self.update_completion_ctx_id, statusmsg) 
         model = gtk.TreeStore(object)
         for lang in lang_word_list.iterkeys():
-            print "[update_completion_callback] %d words in %s" % (len(lang_word_list[lang]), lang)
             iter = model.append(None, [lang])
             [model.append(iter, [word]) for word in lang_word_list[lang]]                    
         self.word_completion.set_model(model)            
@@ -906,7 +898,6 @@ class SDictViewer(object):
     
     def add_dict(self, dict, fmt):
         if (self.dictionaries.has(dict)):
-            print "Dictionary is already open"
             return
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
