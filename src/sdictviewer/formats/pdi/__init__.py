@@ -1,9 +1,11 @@
+from __future__ import with_statement
 import sdictviewer
 from . import pdi
 
 def can_open(file_name):
-    before, sep, after = file_name.rpartition(".")
-    return after == 'pdi'
+    with __builtins__['open'](file_name, "rb") as file:
+        sig = file.read(4)
+        return sig == 'pdi!'
 
 def open(file_name):
     return pdi.Dictionary(file_name)
