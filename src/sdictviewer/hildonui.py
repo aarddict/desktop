@@ -31,7 +31,12 @@ class HildonSDictViewer(ui.SDictViewer):
     def create_top_level_widget(self):
         app = hildon.Program()        
         window = hildon.Window()
-        gtk.set_application_name(ui.app_name)
+        try:
+            #This function has been omited twice already during significant 
+            #Pymaemo updates - hence try/except
+            gtk.set_application_name(ui.app_name)
+        except:
+            print 'Failed to set application name'
         self.window_in_fullscreen = False
         window.connect("key-press-event", self.on_key_press)
         window.connect("window-state-event", self.on_window_state_change)
