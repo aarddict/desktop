@@ -86,7 +86,7 @@ class DictionaryCollection:
     def langs(self):
         return self.dictionaries.keys()
     
-    def get_word_list_iter(self, lang, start_word, max_from_one_dict = 20):
+    def get_word_list_iter(self, lang, start_word, max_from_one_dict = 50):
         for dict in self.dictionaries[lang]:
             count = 0
             for item in dict.get_word_list_iter(start_word):
