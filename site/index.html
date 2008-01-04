@@ -1,5 +1,6 @@
 <html version="-//W3C//DTD HTML 4.01 Transitional//EN">
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>SDict Viewer</title>
 <style type="text/css">
 a:visited {
@@ -16,7 +17,7 @@ a:visited {
 
 <div
 	style="border: thin solid blue; background-color: #eeeeff; float: right; padding: 5px;">
-<div><a href="http://dl.sharesource.org/sdictviewer/sdictviewer-0.5.2.deb">Download</a></div>
+<div><a href="http://dl.sharesource.org/sdictviewer/sdictviewer-0.6.0.deb">Download</a></div>
 <div style="font-size: x-small">
 	<a href="http://pymaemo.garage.maemo.org/installation.html">Install Python Runtime first</a><br/>
 	(Python 2.5 is required)
@@ -25,7 +26,7 @@ a:visited {
 <div><a href="http://sourceforge.net/news/?group_id=165272">News</a></div>
 <div><a href="http://hg.sharesource.org/sdictviewer/">Browse
 Source Code</a></div>
-<div><a href="http://dl.sharesource.org/sdictviewer/sdictviewer-0.5.2-src.zip">Download
+<div><a href="http://dl.sharesource.org/sdictviewer/sdictviewer-0.6.0-src.zip">Download
 Source Code</a></div>
 </div>
 
@@ -50,12 +51,12 @@ for download at <a href="http://sdict.com">http://sdict.com</a></p>
 <ul>
 	<li>Works with dictionaries in AXMASoft's open dictionary format.
 	Get dictionaries at <a href="http://sdict.com/">Sdictionary community site</a></li>
-	<li>Works with multiple dictionaries at the same time</li>
-	<li>Rich article text formatting</li>
-	<li>Hyperlinks in article text: references to other articles and external links (any string that starts with http://, opens in external web browser)</li>
 	<li>Displays list of possible word completions as you type</li>
+	<li>Looks up words in multiple dictionaries and presents merged word completion list</li>
 	<li>Words in completion list are grouped by language</li>
 	<li>Displays multiple articles if word selected is present in multiple opened dictionaries</li>
+	<li>Rich article text formatting</li>
+	<li>Hyperlinks in article text: references to other articles and external links (any string that starts with http://, opens in external web browser)</li>
 	<li>Allows to copy full article or selected text to clipboard</li>
 	<li>Keeps word lookup history</li>
 	<li>Allows to select font for phonetic transcriptions (additional
@@ -99,18 +100,16 @@ for Maemo web site</a>.</p>
 <p>Download appropriate .deb package from <a
 	href="http://sourceforge.net/project/showfiles.php?group_id=165272">here</a>
 and install it through Application Manager in a usual fashion.</p>
-Version 0.1.0 is packaged for Internet Table OS 2005 (Maemo 1.1), all
-subsequent versions are for Internet Table OS 2006 (Maemo 2.x) and OS 2007 (Maemo 3.0).
+Version 0.1.0 is packaged for Internet Tablet OS 2005 (Maemo 1.1), all
+subsequent versions are for Internet Tablet OS 2006 (Maemo 2.x), OS 2007 (Maemo 3.0) and OS 2008 (Maemo 4.0).
 <h3>Other Platforms</h3>
 There are no installation packages for other platforms. You can download
-source code archive, unpack it and run sdictview.py. Windows and Mac OS X users will also need to
-download and install Python (2.4 or 2.5), GTK and PyGTK (any 2.6 version or greater
+source code archive, unpack it and run sdictviewer.py. Windows and Mac OS X users will also need to
+download and install Python 2.5, GTK and PyGTK (any 2.6 version or greater
 should be fine). Most Linux users are likely to have all these installed
 already. Please keep in mind the main focus of this project is Nokia
-770, so other platforms most likely will not get a lot of attention in
-the near future. Windows is especially problematic since it may be quite
-tedious to download and install all the libraries mentioned, and they
-don't always work as smoothly as they do on other platforms.</div>
+Internet Tablets, so there are no plans to do any formal releases for any other platforms. 
+</div>
 
 <div>
 <h3><a name="fonts">Fonts</a></h3>
@@ -135,21 +134,40 @@ resource for various unicode fonts.</p>
 <ul>
 	<li>When word lists from several dictionaries in the same language are merged
 	the resulting list may not be correctly sorted. Sorting applied uses non-language aware 
-	string comparisons. Maybe <a href="http://pyicu.osafoundation.org/">PyICU</a> is the way to do it properly, 
-	but I don't think Maemo port exists yet.</li>
+	string comparisons. Starting with 0.6.0 <a href="http://jtauber.com/">James Tauber's</a> 
+	<a href="http://jtauber.com/blog/2006/01/27/python_unicode_collation_algorithm/">implementation</a>
+	of <a href="http://unicode.org/reports/tr10/">Unicode Collation Algorithm</a> is used. This produces
+	more meaningful word list collation. For example, "natural" sort order (before 0.6.0) for Hungarian gives 
+	<div align="center" style="padding: 5 5 5 5">
+	<span style="font-family:monospace;background:lightgray;border:thin solid gray;padding: 3 3 3 3" align="center">
+	A B C CS D DZ DZS E F G GY H I J K L LY M N NY O P Q R S SZ T TY U V W X Y Z ZS Á É Í Ó Ö Ú Ü Ő Ű
+	</span> 
+	</div>
+	while UCA yields
+	<div align="center" style="padding: 5 5 5 5">
+	<span style="font-family:monospace;background:lightgray;border:thin solid gray;padding: 3 3 3 3" align="center">
+	A Á B C CS D DZ DZS E É F G GY H I Í J K L LY M N NY O Ó Ö Ő P Q R S SZ T TY U Ú Ü Ű V W X Y Z ZS
+	</span> 
+	</div>
+	which happens to be correct Hungarian alphabetic order, although in general UCA with default collation table
+	does <strong>not</strong> produce linguistically correct sort order.
+	We plan to implement linguistically correct sorting with <a href="http://pyicu.osafoundation.org/">PyICU</a> in 
+	new <a href="http://code.google.com/p/aarddict">AardDict</a> project.</li>
 	<li>In large dictionaries lookup of certain words may take a
 	relatively long time. This is mostly due to the fact that most
 	dictionaries use only 3 level short index. When a number of words that
 	starts with the same 3 letters is large the further down the list the
-	word is the longer its lookup takes. Starting from 0.5.0 SDict Viewer indexes under-indexed portions of dictionaries 
+	word is the longer its lookup takes. Starting with 0.5.0 SDict Viewer indexes under-indexed portions of dictionaries 
 	on the fly as it encounters them, so first lookup may be very slow, subsequent lookups of the same or similar words 
-	are usually much faster.</li>
+	are usually much faster.
+	New dictionary format for <a href="http://code.google.com/p/aarddict">AardDict</a> will solve this problem.
+	</li>
 	<li>References to other articles may not work in some cases: a
 	word in one form may be tagged as reference, but dictionary only
 	contains this word in a different form. Current dictionary format
 	doesn't provide any additional information to properly resolve the
 	reference. How often a user may encounter this depends a lot on a
-	specific dictionary and specific language.</li>
+	specific dictionary and specific language. This will be resolved in <a href="http://code.google.com/p/aarddict">AardDict</a>.</li>
 	<li>Scrolling large articles is slow.</li>
 	<li>No user preferences. The only option right now is which font
 	to use for phonetic transcription. Most things should work well enough
@@ -162,8 +180,17 @@ resource for various unicode fonts.</p>
 </div>
 
 <div>
+<h2>Future</h2>
+
+We plan SDict Viewer 0.6.0 to be the last release of SDict Viewer. Only critical bugs will be fixed. 
+All new development will be done in new project: <a href="http://code.google.com/p/aarddict">AardDict</a>. 
+Please submit all your enhancement requests to this new project.
+</div>
+
+<div>
 <h2>Links</h2>
 <ul>
+	<li><a href="http://code.google.com/p/aarddict">AardDict</a></li>
 	<li><a href="http://sdict.com/">AXMASoft's Sdictionary
 	community home</a></li>
 	<li><a href="http://axmasoft.com/">AXMASoft Ltd.</a></li>
@@ -177,14 +204,19 @@ resource for various unicode fonts.</p>
 	<li><a href="http://pygtk.org/">PyGTK: GTK+ for Python</a></li>
 	<li><a href="http://www.gimp.org/~tml/gimp/win32/">GTK+ for
 	Windows</a></li>
+	<li><a href="http://www.unicode.org">Unicode Home Page</a></li>
 </ul>
 </div>
 
 <div style="text-align: center; color: gray; font-size: x-small;">
-&copy; 2006-2007 Igor Tkach
+&copy; 2006-2008 Igor Tkach
 </div>
 <div style="text-align: center; color: gray; font-size: x-small;">
 Sdictionary format developed by <a href="http://axmasoft.com">AXMA Soft</a>
+</div>
+
+<div style="text-align: right; color: gray; font-size: xx-small;">
+Last updated January 4, 2008
 </div>
 </body>
 </html>
