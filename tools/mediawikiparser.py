@@ -116,7 +116,7 @@ def parse_links(s):
             return
                         
         link = s[left:right]
-        print "Link:", link.encode("utf-8")
+        #print "Link:", link.encode("utf-8")
             
         # recursively parse nested links
         link = parse_links(link[2:-2])
@@ -141,7 +141,10 @@ def parse_links(s):
             r = '<a href="' + p[0] + '">' + p[-1] + '</a>'
         else:
             r = ""
-            print "Unhandled link:", link.encode("utf-8")
+            try:
+                print "Unhandled link:", link.encode("utf-8")
+            except:
+                pass
 
         s = s[:left] + r + s[right:] 
         
