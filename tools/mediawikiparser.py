@@ -84,14 +84,14 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
 
     def translate_wiki_markup_to_html(self, text):
         
-        text = re.compile(r"\n", re.DOTALL).sub("<br>", self.text)
-        text = re.compile(r"\r").sub("", self.text)
-        text = re.compile('^#REDIRECT', re.IGNORECASE).sub("See:", self.text)
-        text = re.compile("===(.*?)===").sub(r"<h2>\1</h2>", self.text)
-        text = re.compile("==(.*?)==").sub(r"<h1>\1</h1>", self.text)
-        text = re.compile("'''''(.*?)'''''").sub(r"<b><i>\1</i></b>", self.text)
-        text = re.compile("'''(.*?)'''").sub(r"<b>\1</b>", self.text)
-        text = re.compile("''(.*?)''").sub(r"<i>\1</i>", self.text)
+        text = re.compile(r"\n", re.DOTALL).sub("<br>", text)
+        text = re.compile(r"\r").sub("", text)
+        text = re.compile('^#REDIRECT', re.IGNORECASE).sub("See:", text)
+        text = re.compile("===(.*?)===").sub(r"<h2>\1</h2>", text)
+        text = re.compile("==(.*?)==").sub(r"<h1>\1</h1>", text)
+        text = re.compile("'''''(.*?)'''''").sub(r"<b><i>\1</i></b>", text)
+        text = re.compile("'''(.*?)'''").sub(r"<b>\1</b>", text)
+        text = re.compile("''(.*?)''").sub(r"<i>\1</i>", text)
         text = parse_links(text)
         text = parse_curly(text)
         return text
