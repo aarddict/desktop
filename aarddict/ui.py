@@ -1,7 +1,6 @@
 """
-This file is part of SDict Viewer (http://sdictviewer.sf.net) - 
-a dictionary application that allows to use data bases 
-in AXMASoft's open dictionary format. 
+This file is part of AardDict (http://code.google.com/p/aarddict) - 
+a dictionary for Nokia Internet Tablets. 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Copyright (C) 2006-2007 Igor Tkach
+Copyright (C) 2006-2008 Igor Tkach
 """
 import pygtk
 pygtk.require('2.0')
@@ -34,13 +33,13 @@ import webbrowser
 from threading import Thread
 from Queue import Queue
 from math import fabs
-from sdictviewer import detect_format 
-from sdictviewer import ucollator
+from aarddict import detect_format 
+from aarddict import ucollator
 
 gobject.threads_init()
 
-version = "0.6.0"
-app_name = "SDict Viewer"
+version = "0.7.0"
+app_name = "Aard Dictionary"
 
 UPDATE_COMPLETION_TIMEOUT_S = 120.0
 UPDATE_COMPLETION_TIMEOUT_CHECK_MS = 5000
@@ -102,7 +101,7 @@ class WordLookupByWord(dict):
         self.__setitem__(word, value)
         return value
 
-class SDictViewer(object):
+class DictViewer(object):
              
     def __init__(self):
         self.update_completion_stopped = True
@@ -451,7 +450,7 @@ class SDictViewer(object):
         return (lang_word_list, interrupted)
     
     def sort_key(self, word_lookup):
-        return ucollator.sort_key(str(word_lookup))
+        return ucollator.getCollationKey(str(word_lookup))
                                         
     def update_completion(self, word, to_select = None):
         self.statusbar.pop(self.update_completion_ctx_id) 
@@ -942,8 +941,8 @@ class SDictViewer(object):
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
         dialog.set_version(version)
-        dialog.set_copyright("(C) 2006-2007 Igor Tkach\nPortions contributed by Sam Tygier and Jeremy Mortis\nUnicode Collation Algorithm implementation by James Tauber")
-        dialog.set_website("http://sdictviewer.sf.net/")
+        dialog.set_copyright("(C) 2006-2008 Igor Tkach, Jeremy Mortis\nUnicode Collation Algorithm implementation by James Tauber")
+        dialog.set_website("http://code.google.com/p/aarddict")
         dialog.set_comments("Distributed under terms and conditions of GNU Public License Version 3")
         dialog.run()     
         dialog.destroy()

@@ -1,7 +1,6 @@
 """
-This file is part of SDict Viewer (http://sdictviewer.sf.net) - 
-a dictionary application that allows to use data bases 
-in AXMASoft's open dictionary format. 
+This file is part of AardDict (http://code.google.com/p/aarddict) - 
+a dictionary for Nokia Internet Tablets. 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,10 +26,10 @@ import os
 import os.path
 from itertools import groupby
 from Queue import Queue 
-from sdictviewer.dictutil import *
+from aarddict.dictutil import *
 
 
-settings_dir  = ".sdictviewer"
+settings_dir  = ".aarddict"
 index_cache_dir = os.path.join(os.path.expanduser("~"),  settings_dir, "index_cache")
 INDEXING_THRESHOLD = 1000
 

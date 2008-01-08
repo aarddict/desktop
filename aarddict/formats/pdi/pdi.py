@@ -1,7 +1,6 @@
 """
-This file is part of SDict Viewer (http://sdictviewer.sf.net) - 
-a dictionary application that allows to use data bases 
-in AXMASoft's open dictionary format. 
+This file is part of AardDict (http://code.google.com/p/aarddict) - 
+a dictionary for Nokia Internet Tablets. 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,8 +22,8 @@ import zlib
 import bz2
 from struct import unpack
 import types
-import sdictviewer
-from sdictviewer.dictutil import *
+import aarddict
+from aarddict.dictutil import *
 
 
 class GzipCompression:
@@ -169,7 +168,7 @@ class Dictionary:
         self.version = self.read_unit(self.header.version_offset)  
         self.copyright = self.read_unit(self.header.copyright_offset)
         self.encoding = "utf-8"
-        self.collator = sdictviewer.ucollator
+        self.collator = aarddict.ucollator
         self.word_list = None
 
     def __eq__(self, other):

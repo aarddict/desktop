@@ -29,13 +29,13 @@ import optparse
 import sys
 import struct
 #import PyICU
-import pyuca
+import aarddict.pyuca
 import xml.sax
 import re
 import binascii
 import os
 import array
-from article import *
+from aarddict.article import *
 
 TITLE_MAX_SIZE = 255
 
@@ -152,10 +152,10 @@ if options.input_file:
 else:
     inputFile = sys.stdin
 
-collator4 = pyuca.Collator("allkeys.txt")
+collator4 = aarddict.pyuca.Collator("aarddict/allkeys.txt")
 collator4.setStrength(4)
 
-collator1 = pyuca.Collator("allkeys.txt")
+collator1 = aarddict.pyuca.Collator("aarddict/allkeys.txt")
 collator1.setStrength(1)
 
 sortex = SortExternal()

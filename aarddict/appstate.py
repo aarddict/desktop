@@ -1,7 +1,6 @@
 """
-This file is part of SDict Viewer (http://sdictviewer.sf.net) - 
-a dictionary application that allows to use data bases 
-in AXMASoft's open dictionary format. 
+This file is part of AardDict (http://code.google.com/p/aarddict) - 
+a dictionary for Nokia Internet Tablets. 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,11 +16,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2006-2007 Igor Tkach
 """
+
 from __future__ import with_statement
 import os.path
 import pickle
 
-settings_dir  = ".sdictviewer"
+settings_dir  = ".aarddict"
 app_state_file = "app_state"
 
 def save_app_state(app_state):

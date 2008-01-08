@@ -11,9 +11,9 @@ import re
 import xml.sax
 import xml.sax.handler
 
-from article import Article
-from article import Tag
-import pyuca
+from aarddict.article import Article
+from aarddict.article import Tag
+import aarddict.pyuca
 
 class XDXFParser(xml.sax.handler.ContentHandler):
 
@@ -81,7 +81,7 @@ def article_printer(title, article):
     
 if __name__ == '__main__':
 
-    collator = pyuca.Collator("allkeys.txt", strength = 1)
+    collator = aarddict.pyuca.Collator("aarddict/allkeys.txt", strength = 1)
    
     string = """
 <xdxf lang_from="FRE" lang_to="ENG" format="visual">
