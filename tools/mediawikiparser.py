@@ -33,7 +33,7 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
         entry = self.tagstack.pop()
         
         if entry[0] != tag:
-            sys.stderr.write("mismatched tag: " + repr(entry) + "\n")
+            sys.stderr.write("mismatched tag: " + tag + " " + repr(entry) + "\n")
             return
         
         if tag == "title":
@@ -78,7 +78,7 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
                 redirectKey = self.collator.getCollationKey(redirect)
                 titleKey = self.collator.getCollationKey(title)
                 if redirectKey == titleKey:
-                    sys.stderr.write("Weak redirect: " + repr(title) + " " + repr(redirect) + "\n")
+                    #sys.stderr.write("Weak redirect: " + repr(title) + " " + repr(redirect) + "\n")
                     return True
         return False
 
@@ -87,11 +87,11 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
         text = re.compile(r"\n", re.DOTALL).sub("<br>", text)
         text = re.compile(r"\r").sub("", text)
         text = re.compile('^#REDIRECT', re.IGNORECASE).sub("See:", text)
-        text = re.compile("===(.*?)===").sub(r"<h2>\1</h2>", text)
-        text = re.compile("==(.*?)==").sub(r"<h1>\1</h1>", text)
-        text = re.compile("'''''(.*?)'''''").sub(r"<b><i>\1</i></b>", text)
-        text = re.compile("'''(.*?)'''").sub(r"<b>\1</b>", text)
-        text = re.compile("''(.*?)''").sub(r"<i>\1</i>", text)
+        text = re.compile("===(.{,80}?)===").sub(r"<h2>\1</h2>", text)
+        text = re.compile("==(.{,80}?)==").sub(r"<h1>\1</h1>", text)
+        text = re.compile("'''''(.{,80}?)'''''").sub(r"<b><i>\1</i></b>", text)
+        text = re.compile("'''(.{,80}?)'''").sub(r"<b>\1</b>", text)
+        text = re.compile("''(.{,80}?)''").sub(r"<i>\1</i>", text)
         text = parse_links(text)
         text = parse_curly(text)
         return text
@@ -137,14 +137,8 @@ def parse_links(s):
         elif len(t) == 2:
             # link to other language wikipedia
             r = ""
-        elif t == "":
-            r = '<a href="' + p[0] + '">' + p[-1] + '</a>'
         else:
-            r = ""
-            try:
-                print "Unhandled link:", link.encode("utf-8")
-            except:
-                pass
+            r = '<a href="' + p[0] + '">' + p[-1] + '</a>'
 
         s = s[:left] + r + s[right:] 
         

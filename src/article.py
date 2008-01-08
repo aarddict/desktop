@@ -110,6 +110,7 @@ class ArticleTagParser(SGMLParser):
         SGMLParser.__init__(self)
         self.article = article
         self.tagstack = []
+        self.goodtags =  ['h1', 'h2', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
 
     def do_p(self, attrsList):
         self.article.text = self.article.text + "\n\n"
@@ -119,6 +120,12 @@ class ArticleTagParser(SGMLParser):
     
     def unknown_starttag(self, tag, attrsList):
 
+        if not tag in self.goodtags:
+            #sys.stderr.write("ignored SGML start tag: <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
+            return
+
+        #sys.stderr.write("SGML start tag: <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
+
         attrsDict = {}
         attrsDict.update(attrsList)
             
@@ -127,8 +134,19 @@ class ArticleTagParser(SGMLParser):
 
     def unknown_endtag(self, tag):
 
+        if not tag in self.goodtags:
+            #sys.stderr.write("ignored SGML end tag: <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
+            return
+
+        if tag == "br":
+            # i.e. <br/>
+            self.article.text = self.article.text + "\n"
+            return
+
+        #sys.stderr.write("SGML end tag  : <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
+
         if (len(self.tagstack) == 0) or (self.tagstack[-1].name != tag):
-            sys.stderr.write("Mismatched end tag: </" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
+            sys.stderr.write("Mismatched SGML end tag: </" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
             return
         t = self.tagstack.pop()
         t.end = len(self.article.text) - 1
