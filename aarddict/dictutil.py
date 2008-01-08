@@ -48,31 +48,23 @@ class WordLookup:
     def read_articles(self):
         return [(dict,dict.read_article(article_ptr)) for dict, article_ptr in self.lookup.iteritems()]
         
-class SkippedWord:
-    def __init__(self, dict, word, full_index_ptr):
-        self.dict = dict
-        self.word = word
-        self.full_index_ptr = full_index_ptr
-        
-    def __str__(self):
-        return self.word +" [skipped]"
-    
 class DictionaryCollection:
     
     def __init__(self):
         self.dictionaries = ListMap()
     
     def add(self, dict):
-        self.dictionaries[dict.header.word_lang].append(dict)
+        self.dictionaries[dict.index_language].append(dict)
         
     def has(self, dict):
-        lang_dicts = self.dictionaries[dict.header.word_lang]
+        lang_dicts = self.dictionaries[dict.index_language]
         return lang_dicts.count(dict) == 1
     
-    def remove(self, dict):        
-        self.dictionaries[dict.header.word_lang].remove(dict)
-        if len(self.dictionaries[dict.header.word_lang]) == 0:
-            del self.dictionaries[dict.header.word_lang]
+    def remove(self, dict):     
+        word_lang = dict.index_language   
+        self.dictionaries[word_lang].remove(dict)
+        if len(self.dictionaries[word_lang]) == 0:
+            del self.dictionaries[word_lang]
     
     def get_dicts(self, langs = None):
         dicts = []
@@ -89,8 +81,8 @@ class DictionaryCollection:
         for dict in self.dictionaries[lang]:
             count = 0
             for item in dict.get_word_list_iter(start_word):
-                yield item
-                count += (1 if isinstance(item, WordLookup) else 0)
+                yield WordLookup(item.word, item.dictionary, item.article_ptr)
+                count += 1
                 if count >= max_from_one_dict: break
     
     def is_empty(self):
