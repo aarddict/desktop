@@ -1,0 +1,9 @@
+[install]
+catalogues = s
+package = aarddict
+
+[s]
+name = SDict Viewer
+uri = http://sdictviewer.sourceforge.net/
+components = user
+dist = chinook

@@ -1,8 +1,7 @@
 #!/usr/bin/python
-
 """
-This file is part of Aarddict Dictionary Viewer
-(http://code.google.com/p/aarddict) 
+This file is part of AardDict (http://code.google.com/p/aarddict) - 
+a dictionary for Nokia Internet Tablets. 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

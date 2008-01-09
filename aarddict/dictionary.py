@@ -1,8 +1,8 @@
 #!/usr/bin/python
-
 """
-This file is part of Aarddict Dictionary Viewer
-(http://code.google.com/p/aarddict)
+This file is part of AardDict (http://code.google.com/p/aarddict) - 
+a dictionary for Nokia Internet Tablets. 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation version 3 of the License.
@@ -69,23 +69,35 @@ class Word:
     
     def getArticle(self):
         return self.dictionary.readArticle(self.article_ptr)
-        
+
 class Dictionary:         
-    
+
     def __init__(self, file_name, collator):    
         self.file_name = file_name
         self.file = open(file_name, "rb");
         self.fileid = self.file.read(5);
         if self.fileid != "aar10":
+            self.file.close()
             raise Exception(file_name + " is not a recognized aarddict dictionary file")
         self.metadataLength = int(self.file.read(8));
         self.metadataString = self.file.read(self.metadataLength)
+        print self.metadataString
         self.metadata = simplejson.loads(self.metadataString)
         self.collator = collator
         self.word_list = None
         self.article_offset = self.metadata["article_offset"]
         self.index_start = self.metadata["index_offset"]
         self.index_end = self.index_start + self.metadata["index_length"] - 1
+        
+        #Temporary fix
+        self.metadata["title"] = "Fake Title"
+        self.metadata["index_language"] = "en"
+        self.metadata["article_language"] = "en"
+        
+    title = property(lambda self: self.metadata["title"])
+    index_language = property(lambda self: self.metadata["index_language"])
+    article_language = property(lambda self: self.metadata["article_language"])    
+    version = property(lambda self: self.metadata["pdi_version"])
 
     def __eq__(self, other):
         return self.key() == other.key()
@@ -165,12 +177,12 @@ class Dictionary:
         word.article_ptr = article_ptr + self.metadata["article_offset"]
         return next_word_offset, word
         
-    def readArticle(self, pointer):
+    def read_article(self, pointer):
         a = article.Article()
         a.fromFile(self.file, pointer)
         return a
 
-    def close(self, save_index = True):
+    def close(self):
         self.file.close()        
 
 if __name__ == '__main__':

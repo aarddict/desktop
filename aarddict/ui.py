@@ -1,7 +1,6 @@
 """
-This file is part of SDict Viewer (http://sdictviewer.sf.net) - 
-a dictionary application that allows to use data bases 
-in AXMASoft's open dictionary format. 
+This file is part of AardDict (http://code.google.com/p/aarddict) - 
+a dictionary for Nokia Internet Tablets. 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Copyright (C) 2006-2007 Igor Tkach
+Copyright (C) 2006-2008 Igor Tkach
 """
 import pygtk
 pygtk.require('2.0')
@@ -34,13 +33,13 @@ import webbrowser
 from threading import Thread
 from Queue import Queue
 from math import fabs
-from sdictviewer import detect_format 
-from sdictviewer import ucollator
+from aarddict import ucollator
+from dictionary import Dictionary
 
 gobject.threads_init()
 
-version = "0.6.0"
-app_name = "SDict Viewer"
+version = "0.7.0"
+app_name = "Aard Dictionary"
 
 UPDATE_COMPLETION_TIMEOUT_S = 120.0
 UPDATE_COMPLETION_TIMEOUT_CHECK_MS = 5000
@@ -102,7 +101,7 @@ class WordLookupByWord(dict):
         self.__setitem__(word, value)
         return value
 
-class SDictViewer(object):
+class DictViewer(object):
              
     def __init__(self):
         self.update_completion_stopped = True
@@ -123,9 +122,8 @@ class SDictViewer(object):
         self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
         self.update_completion_timeout_ctx_id = self.statusbar.get_context_id("update completion timeout")
 
-        self.dict_formats = {}
-        self.article_formatters = {}
-
+        self.article_formatter = articleformat.ArticleFormat(self, self.word_ref_clicked, self.external_link_callback)
+        
         self.start_worker_threads()
                                  
         contentBox = gtk.VBox(False, 0)
@@ -273,7 +271,7 @@ class SDictViewer(object):
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
         if self.is_link_click(widget, event, word):
             self.set_word_input(word)
-            self.update_completion(word, (word, dict.header.word_lang))
+            self.update_completion(word, (word, dict.index_language))
         
     def external_link_callback(self, tag, widget, event, iter, url):
         if self.is_link_click(widget, event, url):
@@ -330,7 +328,7 @@ class SDictViewer(object):
             self.tabs.remove_page(-1)        
         self.dict_key_to_tab.clear()       
         self.update_copy_article_mi(self.tabs)
-        [article_format.stop() for article_format in self.article_formatters.itervalues()]
+        self.article_formatter.stop()
         return False 
         
     def show_article_for(self, wordlookup, lang = None):
@@ -354,8 +352,7 @@ class SDictViewer(object):
                 self.tabs.append_page(scrollable_view, label)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
-                article_format = self.article_formatters[self.dict_formats[dict]]
-                article_format.apply(dict, word, article, article_view)
+                self.article_formatter.apply(dict, word, article, article_view)
                 self.add_to_history(word, lang)            
                 result = True           
         self.update_copy_article_mi(self.tabs)
@@ -427,7 +424,6 @@ class SDictViewer(object):
     def do_lookup(self, start_word, to_select):
         interrupted = False
         lang_word_list = {}
-        skipped = dictutil.ListMap()
         for lang in self.dictionaries.langs():
             word_lookups = WordLookupByWord()
             for item in self.dictionaries.get_word_list_iter(lang, start_word):
@@ -435,23 +431,14 @@ class SDictViewer(object):
                 if self.lookup_stop_requested:
                     interrupted = True
                     return (lang_word_list, interrupted)
-                if isinstance(item, dictutil.WordLookup):
-                    word_lookups[item.word].add_articles(item)
-                else:
-                    skipped[item.dict].append(item)
+                word_lookups[item.word].add_articles(item)
             word_list = word_lookups.values()
             word_list.sort(key=self.sort_key)
             if len (word_list) > 0: lang_word_list[lang] = word_list
-            for dict, skipped_words in skipped.iteritems():
-                for stats in dict.index(skipped_words):
-                    time.sleep(0)
-                    if self.lookup_stop_requested:
-                        interrupted = True
-                        return (lang_word_list, interrupted)
         return (lang_word_list, interrupted)
     
     def sort_key(self, word_lookup):
-        return ucollator.sort_key(str(word_lookup))
+        return ucollator.getCollationKey(str(word_lookup))
                                         
     def update_completion(self, word, to_select = None):
         self.statusbar.pop(self.update_completion_ctx_id) 
@@ -759,6 +746,9 @@ class SDictViewer(object):
     def create_article_text_buffer(self):
         buffer = gtk.TextBuffer()
         buffer.create_tag("b", weight = pango.WEIGHT_BOLD)
+        buffer.create_tag("h1", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_XX_LARGE)
+        buffer.create_tag("h2", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_X_LARGE)
+        buffer.create_tag("h3", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_LARGE)
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
         buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "darkgreen")
@@ -822,14 +812,9 @@ class SDictViewer(object):
         while True:
             file = self.open_q.get()
             try:
-                fmt = detect_format(file)
-                if fmt:
-                    dict = fmt.open(file)
-                    gobject.idle_add(self.update_status_display, dict.title)
-                    dict.load()
-                    self.add_dict(dict, fmt)
-                else:
-                    raise Exception("Unknown format")
+                dict = Dictionary(file, ucollator)
+                gobject.idle_add(self.update_status_display, dict.title)
+                self.add_dict(dict)
             except Exception, e:
                 self.report_open_error(e)
             finally:
@@ -896,14 +881,11 @@ class SDictViewer(object):
         dlg.run()
         dlg.destroy()
     
-    def add_dict(self, dict, fmt):
+    def add_dict(self, dict):
         if (self.dictionaries.has(dict)):
             return
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
-        self.dict_formats[dict] = fmt
-        if not self.article_formatters.has_key(fmt):
-            self.article_formatters[fmt] = fmt.create_article_formatter(self, self.word_ref_clicked, self.external_link_callback)
         gobject.idle_add(self.add_to_menu_remove, dict)
         gobject.idle_add(self.update_title)
         
@@ -916,12 +898,11 @@ class SDictViewer(object):
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]                
         self.dictionaries.remove(dict) 
-        del self.dict_formats[dict]      
         tab = self.get_tab_for_dict(key)
         if tab:
             self.tabs.remove_page(tab) 
             del self.dict_key_to_tab[key]
-        dict.close(save_index = False)
+        dict.close()
         dict.remove_index_cache_file()
         self.update_completion(self.word_input.child.get_text(), (word, lang))
         self.update_title()
@@ -942,8 +923,8 @@ class SDictViewer(object):
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
         dialog.set_version(version)
-        dialog.set_copyright("(C) 2006-2007 Igor Tkach\nPortions contributed by Sam Tygier and Jeremy Mortis\nUnicode Collation Algorithm implementation by James Tauber")
-        dialog.set_website("http://sdictviewer.sf.net/")
+        dialog.set_copyright("(C) 2006-2008 Igor Tkach, Jeremy Mortis\nUnicode Collation Algorithm implementation by James Tauber")
+        dialog.set_website("http://code.google.com/p/aarddict")
         dialog.set_comments("Distributed under terms and conditions of GNU Public License Version 3")
         dialog.run()     
         dialog.destroy()

@@ -1,29 +1,30 @@
 #!/bin/sh
 DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml"
 mkdir -p usr/bin
-mkdir -p usr/lib/sdictviewer/formats/pdi
-mkdir -p usr/lib/sdictviewer/formats/dct
+mkdir -p usr/lib/aarddict/formats/pdi
+mkdir -p usr/lib/aarddict/formats/dct
 mkdir -p usr/share/applications/hildon/
 mkdir -p usr/share/dbus-1/services/
 mkdir -p usr/share/pixmaps
-cp ../src/sdictviewer-maemo.py usr/bin/sdictviewer || exit
-cp -R ../src/sdictviewer/*.py usr/lib/sdictviewer || exit
-cp -R ../src/sdictviewer/formats/*.py usr/lib/sdictviewer/formats || exit
-cp -R ../src/sdictviewer/formats/dct/*.py usr/lib/sdictviewer/formats/dct || exit
-cp -R ../src/sdictviewer/formats/pdi/*.py usr/lib/sdictviewer/formats/pdi || exit
-cp ../icons/sdictviewer.png usr/share/pixmaps/
+cp ../src/aarddict-maemo.py usr/bin/aarddict || exit
+cp -R ../src/aarddict/*.py usr/lib/aarddict || exit
+cp -R ../src/aarddict/formats/*.py usr/lib/aarddict/formats || exit
+cp -R ../src/aarddict/formats/dct/*.py usr/lib/aarddict/formats/dct || exit
+cp -R ../src/aarddict/formats/pdi/*.py usr/lib/aarddict/formats/pdi || exit
+cp ../icons/aarddict.png usr/share/pixmaps/
 
-python ./cleanallkeys.py -i ../src/sdictviewer/allkeys.txt -o usr/lib/sdictviewer/allkeys.txt
+python ../tools/trimallkeys.py -i ../src/aarddict/allkeys.txt -o usr/lib/aarddict/allkeys.txt
 
-chmod +x usr/bin/sdictviewer
+chmod +x usr/bin/aarddict
 
 export LD_LIBRARY_PATH=/usr/lib
 
 DIRS="usr"
 find $DIRS| grep \~ && rm -i $(find $DIRS| grep \~)
 
-PACKAGE=sdictviewer
-VERSION=$(grep "^version =" ../src/sdictviewer/ui.py | sed s/version\ =\ \"// | sed s/\"//)
+PACKAGE=aarddict
+VERSION=$(grep "^version =" ../src/aarddict/ui.py | sed s/version\ =\ \"// | sed s/\"//)
+APP_NAME=$(grep "^app_name =" ../src/aarddict/ui.py | sed s/app_name\ =\ \"// | sed s/\"//)
 SIZE=$(du -sc $DIRS|grep total|sed s/total//)
 
 echo $VERSION	
@@ -42,16 +43,16 @@ cat control
 echo "[Desktop Entry]
 Version=$VERSION
 Encoding=UTF-8
-Name=SDict Viewer
+Name=$APP_NAME
 Type=Application
-Exec=/usr/bin/sdictviewer
-Icon=sdictviewer
-X-Osso-Service=sdictviewer
-X-Osso-Type=application/x-executable" > usr/share/applications/hildon/sdictviewer.desktop
+Exec=/usr/bin/aarddict
+Icon=aarddict
+X-Osso-Service=aarddict
+X-Osso-Type=application/x-executable" > usr/share/applications/hildon/aarddict.desktop
 
 echo "[D-BUS Service]
-Name=com.nokia.sdictviewer
-Exec=/usr/bin/sdictviewer" > usr/share/dbus-1/services/sdictviewer.service
+Name=com.nokia.aarddict
+Exec=/usr/bin/aarddict" > usr/share/dbus-1/services/aarddict.service
 
 echo 2.0 > debian-binary
 
