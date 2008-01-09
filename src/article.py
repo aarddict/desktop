@@ -159,7 +159,11 @@ class ArticleTagParser(SGMLParser):
 if __name__ == '__main__':
     import sys
 
-    s = '<title>This is a title</title><br>\n<a href="there">this <i>and</i> <b>that</b></a>'
+    s = '<h1>This is a title</h1><br>\n<a href="there">this <i>and</i> <b>that</b></a>'
+
+    print s
+    print ""
+    
     article = Article()
 
     article.fromHTML(s)

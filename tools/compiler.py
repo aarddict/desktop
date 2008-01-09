@@ -161,7 +161,7 @@ collator1.setStrength(1)
 sortex = SortExternal()
 
 header = {
-    "pdi_version": "1.0",
+    "aarddict_version": "1.0",
     "character_encoding": "utf-8",
     "compression_type": options.compress,
     }
@@ -177,15 +177,15 @@ article_pointer = 0
 header["article_count"] =  0
 header["index_length"] =  0
 
-if options.input_format == "mediawiki":
-    from mediawikiparser import MediaWikiParser
-    xml.sax.parse(inputFile, MediaWikiParser(collator1, header, handle_article))
-elif options.input_format == "xdxf":
+if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
+    sys.stderr.write("Compiling %s as xdxf\n" % inputFile.name)
     from xdxfparser import XDXFParser
     xml.sax.parse(inputFile, XDXFParser(collator1, header, handle_article))
-else:
-    parser.error("--input-format must be 'mediawiki' or 'xdxf'")
-    raise Exception()
+
+else:  
+    sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
+    from mediawikiparser import MediaWikiParser
+    xml.sax.parse(inputFile, MediaWikiParser(collator1, header, handle_article))
 
 sys.stderr.write("\r" + str(header["article_count"]) + "\n")
 article_file.close()
@@ -205,7 +205,7 @@ header_length_1 = len(json_text)
 header["index_offset"] = 5 + 8 + header_length_1 + 60
 header["article_offset"] = header["index_offset"] + header["index_length"]
 	
-outputFile.write("pdi10")
+outputFile.write("aar10")
 json_text = simplejson.dumps(header)
 outputFile.write("%08i" % len(json_text))
 	

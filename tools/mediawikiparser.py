@@ -37,14 +37,13 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
             return
 
         if tag == "sitename":
-            metadata["title"] = self.clean(entry[1], oneline=True)
+            self.metadata["title"] = self.clean(entry[1], oneline=True)
 
         elif tag == "base":
-            print entry
             m = re.compile(r"http://(.*?)\.wikipedia").match(entry[1])
             if m:
-                metadata["index_language"] = m.group(1)
-                metadata["article_language"] = m.group(1)
+                self.metadata["index_language"] = m.group(1)
+                self.metadata["article_language"] = m.group(1)
         
         elif tag == "title":
             self.title = self.clean(entry[1], oneline=True)

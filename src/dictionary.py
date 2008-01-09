@@ -76,8 +76,8 @@ class Dictionary:
         self.file_name = file_name
         self.file = open(file_name, "rb");
         self.fileid = self.file.read(5);
-        if self.fileid != "pdi10":
-            raise Exception(file_name + " is not a recognized pdi file")
+        if self.fileid != "aar10":
+            raise Exception(file_name + " is not a recognized aarddict dictionary file")
         self.metadataLength = int(self.file.read(8));
         self.metadataString = self.file.read(self.metadataLength)
         self.metadata = simplejson.loads(self.metadataString)
@@ -97,7 +97,7 @@ class Dictionary:
         return self.key().__hash__()
 
     def key(self):
-        return (self.metadata["title"], self.metadata.get["pdi_version"], self.file_name)
+        return (self.metadata.get("title", "N/A"), self.metadata.get("aarddict_version", "N/A"), self.file_name)
        
     def find_index_entry(self, word):
         low = self.index_start
@@ -184,6 +184,8 @@ if __name__ == '__main__':
         collator1 = pyuca.Collator("allkeys.txt", strength = 1)
         d = Dictionary(sys.argv[1], collator1)
 
+        print d.metadata
+        
         i = d.get_word_list_iter(sys.argv[2])
         for word in i:
             print word, "==>",  word.getArticle().toJSON()
