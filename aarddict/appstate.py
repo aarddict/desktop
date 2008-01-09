@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Copyright (C) 2006-2007 Igor Tkach
+Copyright (C) 2006-2008 Igor Tkach
 """
 
 from __future__ import with_statement
@@ -41,13 +41,12 @@ def load_app_state():
             app_state = pickle.load(settings_file)
     return app_state
     
-class State:    
-    def __init__(self, phonetic_font = None, word = None, selected_word = None, history = [], recent = [], dict_files = [], last_dict_file_location = None, drag_selects = True):
-        self.phonetic_font = phonetic_font
-        self.word = word
-        self.selected_word = selected_word
-        self.history = history
-        self.recent = recent
-        self.dict_files = dict_files
-        self.last_dict_file_location = last_dict_file_location
-        self.drag_selects = drag_selects
+class State:  
+    drag_selects = True
+    phonetic_font = None
+    word = None
+    selected_word = None
+    history = []
+    recent = []
+    dict_files = []
+    last_dict_file_location = None    

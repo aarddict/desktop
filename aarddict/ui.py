@@ -211,7 +211,15 @@ class DictViewer(object):
         selected_word, selected_word_lang = self.get_selected_word()
         selected = (str(selected_word), selected_word_lang)
         dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
-        state = State(self.font, word, selected, history_list, self.recent_menu_items.keys(), dict_files, self.last_dict_file_location, self.mi_drag_selects.get_active())
+        state = State()
+        state.phonetic_font = self.font
+        state.word = word
+        state.selected_word = selected
+        state.history = history_list
+        state.recent = self.recent_menu_items.keys()
+        state.dict_files = dict_files
+        state.last_dict_file_location = self.last_dict_file_location
+        state.drag_selects = self.mi_drag_selects.get_active()
         errors = []
         for dict in self.dictionaries.get_dicts():
             try:
@@ -746,9 +754,9 @@ class DictViewer(object):
     def create_article_text_buffer(self):
         buffer = gtk.TextBuffer()
         buffer.create_tag("b", weight = pango.WEIGHT_BOLD)
-        buffer.create_tag("h1", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_XX_LARGE)
-        buffer.create_tag("h2", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_X_LARGE)
-        buffer.create_tag("h3", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_LARGE)
+        buffer.create_tag("h1", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_X_LARGE)
+        buffer.create_tag("h2", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_LARGE)
+        buffer.create_tag("h3", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_MEDIUM)
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
         buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "darkgreen")
