@@ -35,19 +35,29 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
         if entry[0] != tag:
             sys.stderr.write("mismatched tag: " + tag + " " + repr(entry) + "\n")
             return
+
+        if tag == "sitename":
+            metadata["title"] = self.clean(entry[1], oneline=True)
+
+        elif tag == "base":
+            print entry
+            m = re.compile(r"http://(.*?)\.wikipedia").match(entry[1])
+            if m:
+                metadata["index_language"] = m.group(1)
+                metadata["article_language"] = m.group(1)
         
-        if tag == "title":
+        elif tag == "title":
             self.title = self.clean(entry[1], oneline=True)
         
-        if tag == "text":
+        elif tag == "text":
             self.text = self.clean(entry[1])
                         
-        if tag == "page":
+        elif tag == "page":
             
             if self.weakRedirect(self.title, self.text):
                 return
             
-            self.text = self.translate_wiki_markup_to_html(self.text)
+            self.text = self.translateWikiMarkupToHTML(self.text)
 
             self.consumer(self.title, self.text)
             return
@@ -82,21 +92,21 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
                     return True
         return False
 
-    def translate_wiki_markup_to_html(self, text):
+    def translateWikiMarkupToHTML(self, text):
         
         text = re.compile(r"\n", re.DOTALL).sub("<br>", text)
         text = re.compile(r"\r").sub("", text)
-        text = re.compile('^#REDIRECT', re.IGNORECASE).sub("See:", text)
-        text = re.compile("===(.{,80}?)===").sub(r"<h2>\1</h2>", text)
-        text = re.compile("==(.{,80}?)==").sub(r"<h1>\1</h1>", text)
-        text = re.compile("'''''(.{,80}?)'''''").sub(r"<b><i>\1</i></b>", text)
-        text = re.compile("'''(.{,80}?)'''").sub(r"<b>\1</b>", text)
-        text = re.compile("''(.{,80}?)''").sub(r"<i>\1</i>", text)
-        text = parse_links(text)
-        text = parse_curly(text)
+        text = re.compile(r"^#REDIRECT", re.IGNORECASE).sub("See:", text)
+        text = re.compile(r"===(.{,80}?)===").sub(r"<h2>\1</h2>", text)
+        text = re.compile(r"==(.{,80}?)==").sub(r"<h1>\1</h1>", text)
+        text = re.compile(r"'''''(.{,80}?)'''''").sub(r"<b><i>\1</i></b>", text)
+        text = re.compile(r"'''(.{,80}?)'''").sub(r"<b>\1</b>", text)
+        text = re.compile(r"''(.{,80}?)''").sub(r"<i>\1</i>", text)
+        text = re.compile(r"\{\{.{,80}?\}\}").sub(r"", text)
+        text = parseLinks(text)
         return text
 
-def parse_links(s):
+def parseLinks(s):
     
     while 1:
         left = s.find("[[")
@@ -119,7 +129,7 @@ def parse_links(s):
         #print "Link:", link.encode("utf-8")
             
         # recursively parse nested links
-        link = parse_links(link[2:-2])
+        link = parseLinks(link[2:-2])
 
         p = link.split("|")
 
@@ -144,16 +154,8 @@ def parse_links(s):
         
     return s
 
-def parse_curly(s):
-                                
-    p = re.compile(r"\{([^\{]*?)\}")
-    s = p.sub(r"\1", s)
 
-    p = re.compile(r"\{([^\{]*?)\}")
-    s = p.sub(r"\1", s)
-    return s
-
-def article_printer(title, article):
+def articlePrinter(title, article):
     print "=================================="
     print title
     print "=================================="
@@ -164,11 +166,16 @@ if __name__ == '__main__':
 
     collator = pyuca.Collator("allkeys.txt", strength = 1)    
 
-    string = "<page><title>hiho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]]</text></page>"
+    string = "<mediawiki><siteinfo><sitename>Wikipedia</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo><page><title>hiho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text></page></mediawiki>"
+
+    print string
+    print ""
+
     metadata = {}
     
-    xml.sax.parseString(string, MediaWikiParser(collator, metadata, article_printer))
+    xml.sax.parseString(string, MediaWikiParser(collator, metadata, articlePrinter))
 
+    print metadata
     print "Done."
 
 
