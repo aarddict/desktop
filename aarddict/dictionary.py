@@ -68,7 +68,7 @@ class Word:
         return self.collationKey.startswith(other.collationKey)
     
     def getArticle(self):
-        return self.dictionary.readArticle(self.article_ptr)
+        return self.dictionary.read_article(self.article_ptr)
 
 class Dictionary:         
 
@@ -89,15 +89,10 @@ class Dictionary:
         self.index_start = self.metadata["index_offset"]
         self.index_end = self.index_start + self.metadata["index_length"] - 1
         
-        #Temporary fix
-        self.metadata["title"] = "Fake Title"
-        self.metadata["index_language"] = "en"
-        self.metadata["article_language"] = "en"
-        
     title = property(lambda self: self.metadata["title"])
     index_language = property(lambda self: self.metadata["index_language"])
     article_language = property(lambda self: self.metadata["article_language"])    
-    version = property(lambda self: self.metadata["pdi_version"])
+    version = property(lambda self: self.metadata["aarddict_version"])
 
     def __eq__(self, other):
         return self.key() == other.key()
