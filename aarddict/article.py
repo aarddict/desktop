@@ -144,7 +144,7 @@ class ArticleTagParser(SGMLParser):
             sys.stderr.write("Mismatched SGML end tag: </" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
             return
         t = self.tagstack.pop()
-        t.end = len(self.article.text) - 1
+        t.end = len(self.article.text)
         self.article.tags.append(t)
 
     def handle_data(self, data):
