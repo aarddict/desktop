@@ -45,10 +45,6 @@ class Article:
         self.tags = []
         p = ArticleTagParser(self)
         p.feed(string)
-        if __debug__:
-            f = open("debug.html", "w")
-            f.write(string)
-            f.close()
         
     def fromJSON(self,string):
         self.text, tagList = simplejson.loads(string)
