@@ -19,16 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-# http://pypi.python.org/pypi/PyICU/0.8.1
-# http://www.icu-project.org/apiref/icu4c
-# http://www.icu-project.org/apiref/icu4c/classCollator.html
-
 import simplejson
 from sortexternal import SortExternal
 import optparse
 import sys
 import struct
-#import PyICU
 import aarddict.pyuca
 import xml.sax
 import re
@@ -127,15 +122,6 @@ def make_full_index():
 	
         i_prev = i_next
     
-    sortkey = "\xFF"
-    title = "the end"
-    i_next = 4 + headerlen + len(sortkey) + 3 + len(title)
-    wunit = sep + struct.pack(headerpack, long(i_next), long(i_prev), 0, 0) + sortkey + "___" + title
-    outputFile.write(wunit)
-
-    if i_next != trailer_length:
-        raise Exception("inconsistent index trailer length " + str(i_next) + " " + str(trailer_length))
-
     sys.stderr.write("\r" + str(count) + "\n")
 
 #__main__
@@ -163,7 +149,7 @@ sortex = SortExternal()
 header = {
     "aarddict_version": "1.0",
     "character_encoding": "utf-8",
-    "compression_type": options.compress,
+    "compression_type": options.compress
     }
 
 trailer_length = 4 + struct.calcsize("LLhL") + 1 + 3 + 7
@@ -195,8 +181,6 @@ sys.stderr.write("Sorting index...\n")
 sortex.sort()
 
 sys.stderr.write("Writing header...\n")
-
-header["index_length"] = header["index_length"] + trailer_length
 
 json_text = simplejson.dumps(header)
 

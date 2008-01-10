@@ -29,14 +29,14 @@ import sys
 class Word:
     def __init__(self, dictionary, word, collationKey = None):
         self.dictionary = dictionary
-        self.encoding = dictionary.metadata.get("character_encoding", "utf-8")
+        self.encoding = dictionary.character_encoding
         self.collator = dictionary.collator
         self.article_ptr = None
         self.unicode = None
         self.word = None
         self.collationKey = collationKey
-        self.word_lang = dictionary.metadata.get("index_language", "en-US")
-        self.article_lang = dictionary.metadata.get("article_language", "en-US")
+        self.word_lang = dictionary.index_language
+        self.article_lang = dictionary.article_language
         
         if type(word) is types.UnicodeType:
             self.unicode = word
@@ -85,14 +85,15 @@ class Dictionary:
         self.metadata = simplejson.loads(self.metadataString)
         self.collator = collator
         self.word_list = None
-        self.article_offset = self.metadata["article_offset"]
         self.index_start = self.metadata["index_offset"]
-        self.index_end = self.index_start + self.metadata["index_length"] - 1
+        self.index_end = self.index_start + self.metadata["index_length"]
+        self.article_offset = self.metadata["article_offset"]
         
-    title = property(lambda self: self.metadata["title"])
-    index_language = property(lambda self: self.metadata["index_language"])
-    article_language = property(lambda self: self.metadata["article_language"])    
-    version = property(lambda self: self.metadata["aarddict_version"])
+    title = property(lambda self: self.metadata.get("title", "unknown"))
+    index_language = property(lambda self: self.metadata.get("index_language", "unknown"))
+    article_language = property(lambda self: self.metadata.get("article_language", "unknown"))    
+    version = property(lambda self: self.metadata.get("aarddict_version", "unknown"))
+    character_encoding = property(lambda self: self.metadata.get("character_encoding", "utf-8"))
 
     def __eq__(self, other):
         return self.key() == other.key()
@@ -104,7 +105,7 @@ class Dictionary:
         return self.key().__hash__()
 
     def key(self):
-        return (self.metadata.get("title", "N/A"), self.metadata.get("aarddict_version", "N/A"), self.file_name)
+        return (self.title, self.version, self.file_name)
        
     def find_index_entry(self, word):
         low = self.index_start
@@ -114,10 +115,9 @@ class Dictionary:
             prevprobe = probe
             probe = low + int((high-low)/2)
             probe = self.findword(probe)
-            if probe == prevprobe:
+            if (probe == prevprobe) or (probe == -1):
                 return low
             next_offset, probeword = self.read_full_index_item(probe)
-            #sys.stderr.write("probe: " + probeword + "\n")
             if probeword == word:
                 return probe
             if probeword > word:
@@ -128,30 +128,29 @@ class Dictionary:
     def findword(self, pos):
         self.file.seek(pos)
         b = ""
-        start = -1
-        while (start == -1) and (pos + len(b) < self.index_end):
-            b = ''.join([b, self.file.read(128)])
+        while True:
+            remaining = self.index_end - pos - len(b) - 35
+            if not remaining:
+                return -1
+            b = ''.join([b, self.file.read(min(128, remaining))])
             start = b.find("\xFD\xFD\xFD\xFD")
-        if start == -1:
-            raise Exception("could not find start position in long index: " + str(pos))
-        return pos + start
+            if start >= 0:
+                return pos + start
 
     
     def get_word_list_iter(self, start_string):
         start_word = Word(self, start_string)
         next_ptr = self.find_index_entry(start_word)
-        found = False 
         while True:
-            if next_ptr < 0:
+            if next_ptr >= self.index_end:
                 raise StopIteration
             next_offset, word = self.read_full_index_item(next_ptr)
-            #sys.stderr.write("Word: " + word + "\n")
+            #sys.stderr.write("Word: " + str(word) + "\n")
             if word.startswith(start_word):
-                found = True
                 yield word
             else:
-                #sys.stderr.write("Tossed: " + word + "\n")
-                if word > start_word:
+                #sys.stderr.write("Tossed: " + str(word) + "\n")
+                if (word > start_word):
                     raise StopIteration
             next_ptr += next_offset
 
@@ -166,10 +165,8 @@ class Dictionary:
         next_word_offset, prev_word_offset, fileno, article_ptr = struct.unpack(headerpack, s)
         s = f.read(next_word_offset - header_length - 4)
         key, word = s.split("___", 2)
-        #sys.stderr.write("next,prev,file,offset: " + str(next_word_offset) + " " + str(prev_word_offset) + " " + str(fileno) + " " + str(article_ptr) + " " repr(word) = "\n")
-            
         word = Word(self, word)
-        word.article_ptr = article_ptr + self.metadata["article_offset"]
+        word.article_ptr = article_ptr + self.article_offset
         return next_word_offset, word
         
     def read_article(self, pointer):
