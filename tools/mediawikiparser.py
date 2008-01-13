@@ -101,7 +101,7 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
         text = re.compile(r"'''''(.{,80}?)'''''").sub(r"<b><i>\1</i></b>", text)
         text = re.compile(r"'''(.{,80}?)'''").sub(r"<b>\1</b>", text)
         text = re.compile(r"''(.{,80}?)''").sub(r"<i>\1</i>", text)
-        text = re.compile(r"\{\{.{,80}?\}\}").sub(r"", text)
+        text = re.compile(r"\{\{.*?\}\}").sub(r"", text)
         text = parseLinks(text)
         return text
 
@@ -121,14 +121,16 @@ def parseLinks(s):
             right = right + 1
                         
         if (nest != 0):
-            print "Mismatched brackets:", str(left), str(right), str(nest)
-            return
+            sys.stderr.write("Mismatched brackets: %s %s %s\n" % (str(left), str(right), str(nest)))
+            return ""
                         
         link = s[left:right]
         #print "Link:", link.encode("utf-8")
             
         # recursively parse nested links
         link = parseLinks(link[2:-2])
+        if not link:
+            return ""
 
         p = link.split("|")
 
@@ -144,7 +146,7 @@ def parseLinks(s):
         elif t == "Category":
             r = ""
         elif len(t) == 2:
-            # link to other language wikipedia
+            # usually a link to other language wikipedia
             r = ""
         else:
             r = '<a href="' + p[0] + '">' + p[-1] + '</a>'

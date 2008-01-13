@@ -64,13 +64,12 @@ def getOptions():
 def handle_article(title, text):
     global header
     global article_pointer
-
     if header["article_count"] % 100 == 0:
         sys.stderr.write("\r" + str(header["article_count"]))
     header["article_count"] = header["article_count"] + 1
 	
     if (not title) or (not text):
-        sys.stderr.write("Skipped blank article: " +  title + "->" +  text +"\n")
+        sys.stderr.write("Skipped blank article: %s -> %s\n" % (repr(title), repr(text)))
         return
 		
     if len(title) > TITLE_MAX_SIZE:

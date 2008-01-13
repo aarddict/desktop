@@ -122,7 +122,8 @@ class ArticleTagParser(SGMLParser):
         #sys.stderr.write("SGML start tag: <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
 
         attrsDict = {}
-        attrsDict.update(attrsList)
+        for a in attrsList:
+            attrsDict[a[0]] = self.clean_utf8(a[1])
             
         t = Tag(tag, len(self.article.text), -1, attrsDict)
         self.tagstack.append(t)
@@ -149,8 +150,11 @@ class ArticleTagParser(SGMLParser):
 
     def handle_data(self, data):
 
-        self.article.text = self.article.text + data
+        self.article.text = self.article.text + self.clean_utf8(data)
 
+    def clean_utf8(self, s):
+        return s.decode("utf-8", "ignore").encode("utf-8")
+    
 if __name__ == '__main__':
     import sys
 
