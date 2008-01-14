@@ -441,12 +441,13 @@ class DictViewer(object):
                     return (lang_word_list, interrupted)
                 word_lookups[item.word].add_articles(item)
             word_list = word_lookups.values()
-            word_list.sort(key=self.sort_key)
+            #word_list.sort(key=self.sort_key)
+            word_list.sort(key = lambda w: w.word)
             if len (word_list) > 0: lang_word_list[lang] = word_list
         return (lang_word_list, interrupted)
     
-    def sort_key(self, word_lookup):
-        return ucollator.getCollationKey(str(word_lookup))
+    #def sort_key(self, word_lookup):
+    #    return ucollator.getCollationKey(str(word_lookup))
                                         
     def update_completion(self, word, to_select = None):
         self.statusbar.pop(self.update_completion_ctx_id) 
