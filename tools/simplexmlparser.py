@@ -57,13 +57,13 @@ class SimpleXMLParser:
 
             pos = self.buffer.find("<")
             if pos == -1:
-                self.CharacterDataHandler(self.buffer)
+                self.handleRawCharacterData(self.buffer)
                 self.buffer = ""
                 self.extendBuffer()
                 continue
 
             if pos > 0:
-                self.CharacterDataHandler(self.buffer[:pos])
+                self.handleRawCharacterData(self.buffer[:pos])
                 self.buffer = self.buffer[pos:]
 
             pos = self.buffer.find(">")
@@ -101,7 +101,10 @@ class SimpleXMLParser:
                 
     def makeAttrDict(self, s):
         attrDict = {}
-        tokens = shlex.split(s)
+        try:
+            tokens = shlex.split(s)
+        except:
+            return {}
         for t in tokens[1:]:
             sep = t.find("=")
             if sep == -1:
@@ -121,6 +124,13 @@ class SimpleXMLParser:
 
         sys.stderr.write("XML end tag: </%s>\n" % tag)
 
+    def handleRawCharacterData(self, data):
+        data = data.replace("&lt;", "<")
+        data = data.replace("&gt;", ">")
+        data = data.replace("&quot;", '"')
+        data = data.replace("&amp;", '&')
+        self.CharacterDataHandler(data)
+        
     def handleCharacterData(self, data):
 
         sys.stderr.write("data: '%s'\n" % data)
@@ -129,7 +139,7 @@ if __name__ == '__main__':
     import sys
 
     p = SimpleXMLParser() 
-    s = '<h1>This is a title</h1><br>\n<a href="there" class=x>this<br/><i>and</i> <b>that</i><span selected></b></a><minor /><a href="big daddy">yowza</a>'
+    s = '<h1>This is a &quot;title&quot;</h1><br>\n<a href="there" class=x>this<br/><i>and</i> <b>that</i><span selected></b></a><minor /><a href="big daddy">yowza</a>'
     print s
     
     p.parseString(s)

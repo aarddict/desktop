@@ -75,10 +75,17 @@ class HTMLParser(SimpleXMLParser):
 
         self.text = self.text + data
 
+    def getText(self):
+        text = self.text
+        return text
+
+    def getTags(self):
+        return self.tags
+    
 if __name__ == '__main__':
     import sys
 
-    s = '<h1>This is a département</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a>'
+    s = '<h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a>'
 
     print s
     print ""

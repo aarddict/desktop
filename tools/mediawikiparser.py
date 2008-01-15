@@ -22,6 +22,7 @@ class MediaWikiParser(SimpleXMLParser):
         self.metadata = metadata
         self.consumer = consumer
         self.tagstack = []
+        self.title = ""
         self.StartElementHandler = self.handleStartElement
         self.EndElementHandler = self.handleEndElement
         self.CharacterDataHandler = self.handleCharacterData
@@ -39,7 +40,7 @@ class MediaWikiParser(SimpleXMLParser):
         entry = self.tagstack.pop()
         
         if entry[0] != tag:
-            sys.stderr.write("mismatched tag: " + tag + " " + repr(entry) + "\n")
+            sys.stderr.write("mismatched tag: %s in %s at %s\n" % (repr(tag), repr(self.title), repr(entry)))
             return
 
         if tag == "sitename":
@@ -103,8 +104,8 @@ class MediaWikiParser(SimpleXMLParser):
 
     def translateWikiMarkupToHTML(self, text):
         
-        text = re.compile(r"\n", re.DOTALL).sub("<br>", text)
-        text = re.compile(r"\r").sub("", text)
+        text = text.replace("\n", "<br>")
+        text = text.replace("\r", "")
         text = re.compile(r"^#REDIRECT", re.IGNORECASE).sub("See:", text)
         text = re.compile(r"=====(.{,80}?)=====").sub(r"<h4>\1</h4>", text)
         text = re.compile(r"====(.{,80}?)====").sub(r"<h3>\1</h3>", text)
@@ -115,6 +116,7 @@ class MediaWikiParser(SimpleXMLParser):
         text = re.compile(r"''(.{,80}?)''").sub(r"<i>\1</i>", text)
         text = re.compile(r"\{\{.*?\}\}").sub(r"", text)
         text = parseLinks(text)
+
         return text
 
 def parseLinks(s):
@@ -174,7 +176,7 @@ if __name__ == '__main__':
 
     collator = aarddict.pyuca.Collator("aarddict/allkeys.txt", strength = 1)    
 
-    string = "<mediawiki><siteinfo><sitename>Wikipedia</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo><page><title>hiho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text></page></mediawiki>"
+    string = "<mediawiki><siteinfo><sitename>Wikipedia</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo><page><title>hi&amp;ho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text></page></x></mediawiki>"
 
     print string
     print ""
