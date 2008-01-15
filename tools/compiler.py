@@ -163,8 +163,8 @@ header["index_length"] =  0
 if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
     sys.stderr.write("Compiling %s as xdxf\n" % inputFile.name)
     from xdxfparser import XDXFParser
-    xml.sax.parse(inputFile, XDXFParser(collator1, header, handle_article))
-
+    p = XDXFParser(collator1, header, handle_article)
+    p.parseFile(inputFile)
 else:  
     sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
     from mediawikiparser import MediaWikiParser

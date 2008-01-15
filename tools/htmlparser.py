@@ -25,10 +25,6 @@ import sys
 class HTMLParser(SimpleXMLParser):
 
     def __init__(self):
-        SimpleXMLParser.__init__(self)
-        self.StartElementHandler = self.handleStartElement
-        self.EndElementHandler = self.handleEndElement
-        self.CharacterDataHandler = self.handleCharacterData
         self.goodtags =  ['h1', 'h2', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
         self.tags = []
         self.tagstack = []

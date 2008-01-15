@@ -23,10 +23,7 @@ import sys
 class SimpleXMLParser:
 
     def __init__(self):
-        self.StartElementHandler = self.handleStartElement
-        self.EndElementHandler = self.handleEndElement
-        self.CharacterDataHandler = self.handleCharacterData
-        self.file = None
+        pass
 
     def parseString(self, string):
         self.file = None
@@ -73,14 +70,14 @@ class SimpleXMLParser:
             tag = self.buffer[1:pos]
             if tag:
                 if tag[0] == '/':
-                    self.EndElementHandler(tag[1:])
+                    self.handleEndElement(tag[1:])
                 elif tag[-1] == '/':
                     tag = tag.replace(" ", "")
-                    self.StartElementHandler(tag[:-1], {})
-                    self.EndElementHandler(tag[:-1])
+                    self.handleStartElement(tag[:-1], {})
+                    self.handleEndElement(tag[:-1])
                 else:
                     tagElements = tag.split(" ", 1)
-                    self.StartElementHandler(tagElements[0], self.makeAttrDict(tag))
+                    self.handleStartElement(tagElements[0], self.makeAttrDict(tag))
 
             self.buffer = self.buffer[pos+1:]
 
@@ -136,7 +133,7 @@ class SimpleXMLParser:
         data = data.replace("&gt;", ">")
         data = data.replace("&quot;", '"')
         data = data.replace("&amp;", '&')
-        self.CharacterDataHandler(data)
+        self.handleCharacterData(data)
         
     def handleCharacterData(self, data):
 

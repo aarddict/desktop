@@ -71,8 +71,7 @@ class MediaWikiParser(SimpleXMLParser):
     def handleCharacterData(self, data):
 
         if not self.tagstack:
-            data = self.clean(data, oneline=True)
-            if data:
+            if data.strip():
                 sys.stderr.write("orphan data: '%s'\n" % data)
             return
         entry = self.tagstack.pop()
@@ -176,7 +175,7 @@ if __name__ == '__main__':
 
     collator = aarddict.pyuca.Collator("aarddict/allkeys.txt", strength = 1)    
 
-    string = "<mediawiki><siteinfo><sitename>Wikipedia</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo><page><title>hi&amp;ho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text></page></x></mediawiki>"
+    string = "<mediawiki><siteinfo><sitename>Wikipedia</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo><page><title>hi&amp;ho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text></page></x></mediawiki>\n \n \n"
 
     print string
     print ""
