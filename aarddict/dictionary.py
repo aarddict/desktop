@@ -192,6 +192,6 @@ if __name__ == '__main__':
         
         i = d.get_word_list_iter(sys.argv[2])
         for word in i:
-            print word, "==>",  word.getArticle().toJSON()
+            print word, "==>",  word.getArticle()
 
         print "Done."
