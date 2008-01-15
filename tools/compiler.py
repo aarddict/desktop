@@ -21,11 +21,11 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 
 import simplejson
 from sortexternal import SortExternal
+from htmlparser import HTMLParser
 import optparse
 import sys
 import struct
 import aarddict.pyuca
-import xml.sax
 import re
 import binascii
 import os
@@ -76,13 +76,6 @@ def handle_article(title, text):
         sys.stderr.write("Truncated title: " + title + "\n")
         title = title[:TITLEMAX_SIZE]
 
-    article = Article(title, compress = options.compress)
-    try:
-        article.fromHTML(text)
-    except Exception, e:
-        sys.stderr.write(str(e) + "\n")
-        return
-
     collationKeyString = collator4.getCollationKey(title).getBinaryString()
 
     # todo:  don't use field separators, or at least use final 3 underscores in a group
@@ -93,9 +86,14 @@ def handle_article(title, text):
     # actually write out the index
     header["index_length"] = header["index_length"] + 4 + struct.calcsize("LLhL") + len(collationKeyString) + 3 + len(title)
 
-    bytes_written = article.toFile(article_file)
-    article_pointer = article_pointer + bytes_written
-
+    parser = HTMLParser()
+    parser.parseString(text)
+    jsonstring = simplejson.dumps([parser.text, parser.tags])
+    if options.compress == "bz2":
+        jsonstring = bz2.compress(jsonstring)
+    #sys.stderr.write("write article: %i %i %s\n" % (article_file.tell(), len(jsonstring), title))
+    article_file.write(struct.pack("L", len(jsonstring)) + jsonstring)
+    article_pointer = article_pointer + struct.calcsize("L") + len(jsonstring)
 
 def make_full_index():
     global trailer_length
@@ -170,7 +168,9 @@ if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
 else:  
     sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
     from mediawikiparser import MediaWikiParser
-    xml.sax.parse(inputFile, MediaWikiParser(collator1, header, handle_article))
+    p = MediaWikiParser(collator1, header, handle_article)
+    p.parseFile(inputFile)
+
 
 sys.stderr.write("\r" + str(header["article_count"]) + "\n")
 article_file.close()
