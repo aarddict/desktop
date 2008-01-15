@@ -19,8 +19,6 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
 import sys
-import shlex
-import re
 
 class SimpleXMLParser:
 
@@ -101,10 +99,19 @@ class SimpleXMLParser:
                 
     def makeAttrDict(self, s):
         attrDict = {}
-        try:
-            tokens = shlex.split(s)
-        except:
-            return {}
+        tokens = s.split(" ")
+
+        # handle quoted strings containing spaces
+        i = 0
+        while i < len(tokens):
+            if tokens[i] == " ":
+                tokens.pop(i)
+            elif (tokens[i].count('"') == 1) and (i+1 < len(tokens)):
+                tokens[i] = tokens[i] + " " + tokens[i+1]
+                tokens.pop(i+1)
+            else:
+                i = i + 1
+
         for t in tokens[1:]:
             sep = t.find("=")
             if sep == -1:
