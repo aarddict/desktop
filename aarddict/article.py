@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# coding: utf-8
 """
 This file is part of AardDict (http://code.google.com/p/aarddict) - 
 a dictionary for Nokia Internet Tablets. 
@@ -18,8 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import os
-from sgmllib import SGMLParser
 import simplejson
 import bz2
 import struct
@@ -34,25 +33,11 @@ class Article:
         self.compress = compress
 
     def __str__(self):
-        s = "title: " + self.title + "\n"
-        s = s + "text: " + self.text + "\n"
+        s = "title: " + repr(self.title) + "\n"
+        s = s + "text: " + repr(self.text) + "\n"
         for tag in self.tags:
             s = s + "tag: " + str(tag) + "\n"
         return s
-
-    def fromHTML(self, string):
-        self.text = ""
-        self.tags = []
-        p = ArticleTagParser(self)
-        p.feed(string)
-        
-    def fromJSON(self,string):
-        self.text, tagList = simplejson.loads(string)
-        self.tags = []
-        for tagListItem in tagList:
-            tag = Tag()
-            tag.fromList(tagListItem)
-            self.tags.append(tag)
         
     def fromFile(self, file, offset):
         file.seek(offset)
@@ -63,23 +48,12 @@ class Article:
         else:
             s = bz2.decompress(file.read(record_length))
 
-        self.fromJSON(s)
-
-    def toJSON(self):
-        tagList = []
-        for tag in self.tags:
-            tagList.append(tag.toList())
-        return simplejson.dumps([self.text, tagList])
-
-    def toFile(self, file):
-        if self.compress == "bz2":
-            s = bz2.compress(self.toJSON())
-        else:
-            s = self.toJSON()
-
-        #sys.stderr.write("write article: " + file.tell() + " " + len(s) + " " + self.title)
-        file.write(struct.pack("L", len(s)) + s)
-        return struct.calcsize("L") + len(s)
+        self.text, tagList = simplejson.loads(s)
+        self.tags = []
+        for tagListItem in tagList:
+            tag = Tag()
+            tag.fromList(tagListItem)
+            self.tags.append(tag)
 
 class Tag:
 
@@ -90,7 +64,7 @@ class Tag:
         self.attributes = attributes
 
     def __str__(self):
-        return self.name + " " + str(self.start) + " " +  str(self.end) + " " + str(self.attributes)
+        return self.name + " " + str(self.start) + " " +  str(self.end) + " " + repr(self.attributes)
     
     def toList(self):
         return [self.name, self.start, self.end, self.attributes]
@@ -98,84 +72,7 @@ class Tag:
     def fromList(self, list):
         self.name, self.start, self.end, self.attributes = list
 
-    
-class ArticleTagParser(SGMLParser):
 
-    def __init__(self, article):
-        SGMLParser.__init__(self)
-        self.article = article
-        self.tagstack = []
-        self.goodtags =  ['h1', 'h2', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
-
-    def do_p(self, attrsList):
-        self.article.text = self.article.text + "\n\n"
-
-    def do_br(self, attrsList):
-        self.article.text = self.article.text + "\n"
-    
-    def unknown_starttag(self, tag, attrsList):
-
-        if not tag in self.goodtags:
-            #sys.stderr.write("ignored SGML start tag: <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
-            return
-
-        #sys.stderr.write("SGML start tag: <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
-
-        attrsDict = {}
-        for a in attrsList:
-            attrsDict[a[0]] = self.clean_utf8(a[1])
-            
-        t = Tag(tag, len(self.article.text), -1, attrsDict)
-        self.tagstack.append(t)
-
-    def unknown_endtag(self, tag):
-
-        if not tag in self.goodtags:
-            #sys.stderr.write("ignored SGML end tag: <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
-            return
-
-        if tag == "br":
-            # i.e. <br/>
-            self.article.text = self.article.text + "\n"
-            return
-
-        #sys.stderr.write("SGML end tag  : <" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
-
-        if (len(self.tagstack) == 0) or (self.tagstack[-1].name != tag):
-            sys.stderr.write("Mismatched SGML end tag: </" + tag + "> in " + self.article.title + " at \"" + self.article.text[-20:] + "\"\n")
-            return
-        t = self.tagstack.pop()
-        t.end = len(self.article.text)
-        self.article.tags.append(t)
-
-    def handle_data(self, data):
-
-        self.article.text = self.article.text + self.clean_utf8(data)
-
-    def clean_utf8(self, s):
-        return s.decode("utf-8", "ignore").encode("utf-8")
-    
-if __name__ == '__main__':
-    import sys
-
-    s = '<h1>This is a title</h1><br>\n<a href="there">this <i>and</i> <b>that</b></a>'
-
-    print s
-    print ""
-    
-    article = Article()
-
-    article.fromHTML(s)
-
-    print article
-
-    json = article.toJSON()
-    print json
-    
-    article.fromJSON(json)
-    print article
-
-    print "Done."
 
 
 
