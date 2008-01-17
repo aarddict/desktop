@@ -185,6 +185,10 @@ class CollationKey:
     def startswith(self, other):
         return self.key.tostring()[:len(other.key)] == other.key.tostring()
 
+    def set(self, string):
+        self.key = array.array("B")
+        self.key.fromstring(string)
+
 if __name__ == '__main__':
 
     import struct
@@ -201,5 +205,12 @@ if __name__ == '__main__':
     print ""
     print "str(ckb) = '" + str(ckb) + "'"
     print "cmp(cka,ckb) =", cmp(cka, ckb)
-        
+
+    print ""
+    ckc = collator.getCollationKey("hi there")
+    print str(ckc)
+    k = ckc.getBinaryString()
+    ckd = CollationKey()
+    ckd.set(k)
+    print str(ckd)
     print "Done."

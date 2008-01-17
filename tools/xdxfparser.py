@@ -8,14 +8,13 @@ import os
 import sys
 import re
 
-import xml.sax
-import xml.sax.handler
+from simplexmlparser import SimpleXMLParser
 
 from aarddict.article import Article
 from aarddict.article import Tag
 import aarddict.pyuca
 
-class XDXFParser(xml.sax.handler.ContentHandler):
+class XDXFParser(SimpleXMLParser):
 
     def __init__(self, collator, metadata, consumer):
         self.databucket = ""
@@ -24,17 +23,17 @@ class XDXFParser(xml.sax.handler.ContentHandler):
         self.consumer = consumer
         self.tagstack = []
 
-    def startElement(self, tag, attrs):
+    def handleStartElement(self, tag, attrs):
 
         if tag == "xdxf":
             if attrs.get("lang_from"):
-                self.metadata["index_language"] = attrs.get("lang_from").encode("utf-8")
+                self.metadata["index_language"] = attrs.get("lang_from")
             if attrs.get("lang_to"):
-                self.metadata["article_language"] = attrs.get("lang_to").encode("utf-8")
+                self.metadata["article_language"] = attrs.get("lang_to")
 
         self.tagstack.append([tag, ""])
 
-    def endElement(self, tag):
+    def handleEndElement(self, tag):
 
         entry = self.tagstack.pop()
 
@@ -55,14 +54,18 @@ class XDXFParser(xml.sax.handler.ContentHandler):
             self.ar = self.clean(entry[1])
             self.consumer(self.k, self.ar)
             
-    def characters(self, data):
+    def handleCharacterData(self, data):
 
+        if not self.tagstack:
+            if data.strip():
+                sys.stderr.write("Orphan data: " + repr(data) + "\n")
+            return
+            
         entry = self.tagstack.pop()
         entry[1] = entry[1] + data
         self.tagstack.append(entry)
 
     def clean(self, s, oneline = False):
-        s = s.encode("utf-8")
         s = re.compile(r"^\s*", re.MULTILINE).sub("", s)
         s = re.compile(r"\s*$", re.MULTILINE).sub("", s)
         s = re.compile(r"\n\n*").sub(r"\n",s)
@@ -96,7 +99,8 @@ Car</ar>
 
     metadata = {}
     
-    xml.sax.parseString(string, XDXFParser(collator, metadata, article_printer))
+    parser = XDXFParser(collator, metadata, article_printer)
+    parser.parseString(string)
 
     print metadata
     

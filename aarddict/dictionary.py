@@ -27,14 +27,14 @@ import struct
 import sys
 
 class Word:
-    def __init__(self, dictionary, word, collationKey = None):
+    def __init__(self, dictionary, word, collation_key = None):
         self.dictionary = dictionary
         self.encoding = dictionary.character_encoding
         self.collator = dictionary.collator
         self.article_ptr = None
         self.unicode = None
         self.word = None
-        self.collationKey = collationKey
+        self.collation_key = collation_key
         self.word_lang = dictionary.index_language
         self.article_lang = dictionary.article_language
         
@@ -49,23 +49,23 @@ class Word:
                 self.unicode = u"error"
                 sys.stderr.write("Unable to decode: " + self.encoding + " " + word + "\n")
 
-        if not self.collationKey: 
-            self.collationKey = self.dictionary.collator.getCollationKey(self.unicode)
+        if not self.collation_key: 
+            self.collation_key = self.dictionary.collator.getCollationKey(self.unicode)
 
     def __str__(self):
         return self.word
 
     def __eq__(self, other):
-        return self.collationKey == other.collationKey
+        return self.collation_key == other.collation_key
 
     def __cmp__(self, other):
-        return cmp(self.collationKey, other.collationKey)
+        return cmp(self.collation_key, other.collation_key)
 
     def __unicode__(self):
         return self.unicode
         
     def startswith(self, other):
-        return self.collationKey.startswith(other.collationKey)
+        return self.collation_key.startswith(other.collation_key)
     
     def getArticle(self):
         return self.dictionary.read_article(self.article_ptr)
@@ -165,7 +165,9 @@ class Dictionary:
         next_word_offset, prev_word_offset, fileno, article_ptr = struct.unpack(headerpack, s)
         s = f.read(next_word_offset - header_length - 4)
         key, word = s.split("___", 2)
-        word = Word(self, word)
+        collation_key = pyuca.CollationKey()
+        collation_key.set(key)
+        word = Word(self, word, collation_key = collation_key)
         word.article_ptr = article_ptr + self.article_offset
         return next_word_offset, word
         
@@ -192,6 +194,6 @@ if __name__ == '__main__':
         
         i = d.get_word_list_iter(sys.argv[2])
         for word in i:
-            print word, "==>",  word.getArticle().toJSON()
+            print word, "==>",  word.getArticle()
 
         print "Done."

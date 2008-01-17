@@ -7,33 +7,40 @@
 import os
 import sys
 import re
-
-import xml.sax
-import xml.sax.handler
+from simplexmlparser import SimpleXMLParser
 
 from aarddict.article import Article
 from aarddict.article import Tag
 import aarddict.pyuca
 
-class MediaWikiParser(xml.sax.handler.ContentHandler):
+class MediaWikiParser(SimpleXMLParser):
 
     def __init__(self, collator, metadata, consumer):
+        SimpleXMLParser.__init__(self)
         self.databucket = ""
         self.collator = collator
         self.metadata = metadata
         self.consumer = consumer
         self.tagstack = []
+        self.title = ""
+        self.StartElementHandler = self.handleStartElement
+        self.EndElementHandler = self.handleEndElement
+        self.CharacterDataHandler = self.handleCharacterData
 
-    def startElement(self, tag, attrs):
+    def handleStartElement(self, tag, attrs):
 
         self.tagstack.append([tag, ""])
 
 
-    def endElement(self, tag):
+    def handleEndElement(self, tag):
+
+        if not self.tagstack:
+            return
+        
         entry = self.tagstack.pop()
         
         if entry[0] != tag:
-            sys.stderr.write("mismatched tag: " + tag + " " + repr(entry) + "\n")
+            sys.stderr.write("mismatched tag: %s in %s at %s\n" % (repr(tag), repr(self.title), repr(entry)))
             return
 
         if tag == "sitename":
@@ -61,18 +68,21 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
             self.consumer(self.title, self.text)
             return
             
-    def characters(self, data):
+    def handleCharacterData(self, data):
 
+        if not self.tagstack:
+            if data.strip():
+                sys.stderr.write("orphan data: '%s'\n" % data)
+            return
         entry = self.tagstack.pop()
         entry[1] = entry[1] + data
         self.tagstack.append(entry)
 
 
     def clean(self, s, oneline = False):
-        s = s.encode("utf-8")
         s = re.compile(r"^\s*", re.MULTILINE).sub("", s)
         s = re.compile(r"\s*$", re.MULTILINE).sub("", s)
-        s = re.compile(r"\n\n*").sub(r"\n",s)
+        s = s.strip(" \n")
         if oneline:
             s = s.replace("\n", "")
         return s
@@ -93,16 +103,19 @@ class MediaWikiParser(xml.sax.handler.ContentHandler):
 
     def translateWikiMarkupToHTML(self, text):
         
-        text = re.compile(r"\n", re.DOTALL).sub("<br>", text)
-        text = re.compile(r"\r").sub("", text)
+        text = text.replace("\n", "<br>")
+        text = text.replace("\r", "")
         text = re.compile(r"^#REDIRECT", re.IGNORECASE).sub("See:", text)
+        text = re.compile(r"=====(.{,80}?)=====").sub(r"<h4>\1</h4>", text)
+        text = re.compile(r"====(.{,80}?)====").sub(r"<h3>\1</h3>", text)
         text = re.compile(r"===(.{,80}?)===").sub(r"<h2>\1</h2>", text)
         text = re.compile(r"==(.{,80}?)==").sub(r"<h1>\1</h1>", text)
         text = re.compile(r"'''''(.{,80}?)'''''").sub(r"<b><i>\1</i></b>", text)
         text = re.compile(r"'''(.{,80}?)'''").sub(r"<b>\1</b>", text)
         text = re.compile(r"''(.{,80}?)''").sub(r"<i>\1</i>", text)
-        text = re.compile(r"\{\{.{,80}?\}\}").sub(r"", text)
+        text = re.compile(r"\{\{.*?\}\}").sub(r"", text)
         text = parseLinks(text)
+
         return text
 
 def parseLinks(s):
@@ -121,14 +134,16 @@ def parseLinks(s):
             right = right + 1
                         
         if (nest != 0):
-            print "Mismatched brackets:", str(left), str(right), str(nest)
-            return
+            sys.stderr.write("Mismatched brackets: %s %s %s\n" % (str(left), str(right), str(nest)))
+            return ""
                         
         link = s[left:right]
         #print "Link:", link.encode("utf-8")
             
         # recursively parse nested links
         link = parseLinks(link[2:-2])
+        if not link:
+            return ""
 
         p = link.split("|")
 
@@ -136,25 +151,20 @@ def parseLinks(s):
 
         if c >= 0:
             t = p[0][:c]
-        else:
-            t = ""
-
-        if t == "Image":
-            r = '<img href="' + p[0][c+1:] + '">' + p[-1] + '</img>'
-        elif t == "Category":
-            r = ""
-        elif len(t) == 2:
-            # link to other language wikipedia
-            r = ""
+            if t == "Image":
+                r = '<img href="' + p[0][c+1:] + '">' + p[-1] + '</img>'
+            else:
+                r = ""
         else:
             r = '<a href="' + p[0] + '">' + p[-1] + '</a>'
+            
 
         s = s[:left] + r + s[right:] 
         
     return s
 
 
-def articlePrinter(title, article):
+def printArticle(title, article):
     print "=================================="
     print title
     print "=================================="
@@ -165,14 +175,15 @@ if __name__ == '__main__':
 
     collator = aarddict.pyuca.Collator("aarddict/allkeys.txt", strength = 1)    
 
-    string = "<mediawiki><siteinfo><sitename>Wikipedia</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo><page><title>hiho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text></page></mediawiki>"
+    string = "<mediawiki><siteinfo><sitename>Wikipedia</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo><page><title>hi&amp;ho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text></page></x></mediawiki>\n \n \n"
 
     print string
     print ""
 
     metadata = {}
-    
-    xml.sax.parseString(string, MediaWikiParser(collator, metadata, articlePrinter))
+
+    parser = MediaWikiParser(collator, metadata, printArticle)
+    parser.parseString(string)
 
     print metadata
     print "Done."
