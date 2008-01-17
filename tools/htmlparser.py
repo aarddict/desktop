@@ -60,7 +60,7 @@ class HTMLParser(SimpleXMLParser):
             return
 
         if (len(self.tagstack) == 0) or (self.tagstack[-1][0] != tag):
-            sys.stderr.write("Mismatched HTML end tag: </%s> at '%s'\n" % (tag, self.text[-20:]))
+            sys.stderr.write("Mismatched HTML end tag: </%s> at '%s %s'\n" % (tag, self.text[-20:], repr(self.tagstack)))
             return
 
         t = self.tagstack.pop()

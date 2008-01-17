@@ -86,6 +86,8 @@ def handle_article(title, text):
     # actually write out the index
     header["index_length"] = header["index_length"] + 4 + struct.calcsize("LLhL") + len(collationKeyString) + 3 + len(title)
 
+
+    #debug.write(text)
     parser = HTMLParser()
     parser.parseString(text)
     jsonstring = simplejson.dumps([parser.text, parser.tags])
@@ -122,6 +124,8 @@ def make_full_index():
     sys.stderr.write("\r" + str(count) + "\n")
 
 #__main__
+
+#debug = open("debug.html", "w")
 
 options, args = getOptions()
 

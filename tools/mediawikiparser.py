@@ -110,9 +110,9 @@ class MediaWikiParser(SimpleXMLParser):
         text = re.compile(r"====(.{,80}?)====").sub(r"<h3>\1</h3>", text)
         text = re.compile(r"===(.{,80}?)===").sub(r"<h2>\1</h2>", text)
         text = re.compile(r"==(.{,80}?)==").sub(r"<h1>\1</h1>", text)
-        text = re.compile(r"'''''(.{,80}?)'''''").sub(r"<b><i>\1</i></b>", text)
-        text = re.compile(r"'''(.{,80}?)'''").sub(r"<b>\1</b>", text)
-        text = re.compile(r"''(.{,80}?)''").sub(r"<i>\1</i>", text)
+        text = re.compile(r"'''''(.{,200}?)'''''").sub(r"<b><i>\1</i></b>", text)
+        text = re.compile(r"'''(.{,200}?)'''").sub(r"<b>\1</b>", text)
+        text = re.compile(r"''(.{,200}?)''").sub(r"<i>\1</i>", text)
         text = re.compile(r"\{\{.*?\}\}").sub(r"", text)
         text = parseLinks(text)
 

@@ -19,6 +19,7 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
 import sys
+import cStringIO
 
 class SimpleXMLParser:
 
@@ -26,50 +27,46 @@ class SimpleXMLParser:
         pass
 
     def parseString(self, string):
-        self.file = None
-        self.EOF = True
-        self.openTag = False
-        self.buffer = string
-        self._parse()
-
+        file = cStringIO.StringIO(string)
+        self.parseFile(file)
+        
     def parseFile(self, file):
         self.file = file
         self.EOF = False
-        self.openTag = False
         self.buffer = ""
         self.extendBuffer()
-        self._parse()
-    
-    def _parse(self):
-
+        
         while True:
-            if self.EOF:
-                if not self.buffer:
-                    break
-                if self.openTag:
-                    sys.stderr.write("incomplete XML tag: %s\n" % self.buffer)
-                    break
 
-            pos = self.buffer.find("<")
-            if pos == -1:
-                self.handleRawCharacterData(self.buffer)
-                self.buffer = ""
-                self.extendBuffer()
-                continue
-
-            if pos > 0:
-                self.handleRawCharacterData(self.buffer[:pos])
-                self.buffer = self.buffer[pos:]
-
-            pos = self.buffer.find(">")
-            if pos == -1:
-                self.openTag = True
-                self.extendBuffer()
-                continue
+            tagpos = self.scanTo("<")
             
-            tag = self.buffer[1:pos]
+            self.handleRawCharacterData(self.buffer[:tagpos])
+            self.buffer = self.buffer[tagpos:]
+
+            if self.EOF:
+                break
+
+            if not self.buffer:
+                continue
+
+            if self.buffer.startswith("<!--"):
+                endpos = self.scanTo("-->")
+                if self.buffer[endpos:endpos+3] != "-->":
+                    sys.stderr.write("Comment too long: %s\n" % (repr(self.buffer)))
+                self.buffer = self.buffer[endpos+3:]
+                continue
+
+            endpos = self.scanTo(">")
+            
+            if self.buffer[endpos] != ">":
+                sys.stderr.write("Tag too long: %s\n" % (repr(self.buffer)))
+                continue
+
+            tag = self.buffer[1:endpos]
             if tag:
+                tag = tag.replace("\n", " ")
                 if tag[0] == '/':
+                    tag = tag.replace(" ", "")
                     self.handleEndElement(tag[1:])
                 elif tag[-1] == '/':
                     tag = tag.replace(" ", "")
@@ -79,21 +76,25 @@ class SimpleXMLParser:
                     tagElements = tag.split(" ", 1)
                     self.handleStartElement(tagElements[0], self.makeAttrDict(tag))
 
-            self.buffer = self.buffer[pos+1:]
+            self.buffer = self.buffer[endpos+1:]
+            
+    def scanTo(self, string):
+        while not self.EOF:
+            pos = self.buffer.find(string)
+            if pos >= 0:
+                return pos
+            pos = len(self.buffer)
+            if pos > 10000:
+                return pos
+            self.extendBuffer()
+        return pos
 
     def extendBuffer(self):
-        if self.EOF:
-            return
-        if not self.file:
+        waslen = len(self.buffer)
+        self.buffer = "".join([self.buffer, self.file.readline()])
+        if waslen == len(self.buffer):
             self.EOF = True
-            return
-        newData = self.file.read(1024)
-        if not newData:
-            self.EOF = True
-        else:
-            self.buffer = self.buffer + newData
-        
-                
+
     def makeAttrDict(self, s):
         attrDict = {}
         tokens = s.split(" ")
@@ -143,7 +144,12 @@ if __name__ == '__main__':
     import sys
 
     p = SimpleXMLParser() 
-    s = '<h1>This is a &quot;title&quot;</h1><br>\n<a href="there" class=x>this<br/><i>and</i> <b>that</i><span selected></b></a><minor /><a href="big daddy">yowza</a>'
+    s = '''
+    <h1
+    >This is a &quot;title&quot;</h1><br>\n<a href="there"
+    class=x>this<br/><i>and</i>  <!---ignore me <really> -->
+    <b>that</i><span selected></b></a><minor /><a href="big daddy">yowza</a>
+    '''
     print s
     
     p.parseString(s)
