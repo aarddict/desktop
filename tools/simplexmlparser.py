@@ -34,35 +34,34 @@ class SimpleXMLParser:
         self.file = file
         self.EOF = False
         self.buffer = ""
-        self.extendBuffer()
+        self.bufpos = 0
+        self.tagpos = 0
         
         while True:
 
-            tagpos = self.scanTo("<")
+            self.tagpos = self.scanTo("<") 
             
-            self.handleRawCharacterData(self.buffer[:tagpos])
-            self.buffer = self.buffer[tagpos:]
+            if self.tagpos > self.bufpos:
+                self.handleRawCharacterData(self.buffer[self.bufpos:self.tagpos])
+                self.bufpos = self.tagpos
 
             if self.EOF:
                 break
 
-            if not self.buffer:
-                continue
+            endpos = self.scanTo(">") + 1
 
-            if self.buffer.startswith("<!--"):
-                endpos = self.scanTo("-->")
-                if self.buffer[endpos:endpos+3] != "-->":
-                    sys.stderr.write("Comment too long: %s\n" % (repr(self.buffer)))
-                self.buffer = self.buffer[endpos+3:]
+            if self.buffer[self.tagpos:self.tagpos+4] == "<!--":
+                while True:
+                    if self.EOF:
+                        break
+                    if self.buffer[endpos-2:endpos] == '-->':
+                        break
+                    self.bufpos = endpos
+                    endpos = self.scanTo(">") + 1
+                self.bufpos = endpos
                 continue
-
-            endpos = self.scanTo(">")
             
-            if self.buffer[endpos] != ">":
-                sys.stderr.write("Tag too long: %s\n" % (repr(self.buffer)))
-                continue
-
-            tag = self.buffer[1:endpos]
+            tag = self.buffer[self.tagpos+1:endpos-1]
             if tag:
                 tag = tag.replace("\n", " ")
                 if tag[0] == '/':
@@ -73,36 +72,43 @@ class SimpleXMLParser:
                     self.handleStartElement(tag[:-1], {})
                     self.handleEndElement(tag[:-1])
                 else:
-                    tagElements = tag.split(" ", 1)
-                    self.handleStartElement(tagElements[0], self.makeAttrDict(tag))
+                    tagElements = tag.split(" ")
+                    self.handleStartElement(tagElements[0], self.makeAttrDict(tagElements[1:]))
 
-            self.buffer = self.buffer[endpos+1:]
+            self.bufpos = endpos
             
     def scanTo(self, string):
-        while not self.EOF:
-            pos = self.buffer.find(string)
+        #sys.stderr.write("scanto: %s\n" % string)
+        scanpos = self.bufpos
+        while True:
+            pos = self.buffer.find(string, scanpos)
             if pos >= 0:
+                #sys.stderr.write("found: %s %i\n" % (string,pos))
                 return pos
-            pos = len(self.buffer)
-            if pos > 10000:
-                return pos
-            self.extendBuffer()
-        return pos
+            scanpos = len(self.buffer)
+            if self.EOF:
+                return scanpos
+            newdata = self.file.read(100000)
+            #sys.stderr.write("Read: %s\n" % (repr(newdata)))
+            if newdata == "":
+                self.EOF = True
+                #sys.stderr.write("eof: %s %i\n" % (string,scanpos))
+            if len(self.buffer) > 1000000:
+                raise Exception("SimpleXMLParser buffer overflow\n")
+            #sys.stderr.write("append: %s\n" % (newdata))
+            self.buffer = "".join([self.buffer[self.bufpos:], newdata])
+            scanpos = scanpos - self.bufpos
+            self.tagpos = self.tagpos - self.bufpos
+            self.bufpos = 0
+            
 
-    def extendBuffer(self):
-        waslen = len(self.buffer)
-        self.buffer = "".join([self.buffer, self.file.readline()])
-        if waslen == len(self.buffer):
-            self.EOF = True
-
-    def makeAttrDict(self, s):
+    def makeAttrDict(self, tokens):
         attrDict = {}
-        tokens = s.split(" ")
 
         # handle quoted strings containing spaces
         i = 0
         while i < len(tokens):
-            if tokens[i] == " ":
+            if tokens[i] == "":
                 tokens.pop(i)
             elif (tokens[i].count('"') == 1) and (i+1 < len(tokens)):
                 tokens[i] = tokens[i] + " " + tokens[i+1]
@@ -110,7 +116,7 @@ class SimpleXMLParser:
             else:
                 i = i + 1
 
-        for t in tokens[1:]:
+        for t in tokens:
             sep = t.find("=")
             if sep == -1:
                 name = t
@@ -130,10 +136,7 @@ class SimpleXMLParser:
         sys.stderr.write("XML end tag: </%s>\n" % tag)
 
     def handleRawCharacterData(self, data):
-        data = data.replace("&lt;", "<")
-        data = data.replace("&gt;", ">")
-        data = data.replace("&quot;", '"')
-        data = data.replace("&amp;", '&')
+        data = data.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&')
         self.handleCharacterData(data)
         
     def handleCharacterData(self, data):
@@ -148,6 +151,13 @@ if __name__ == '__main__':
     <h1
     >This is a &quot;title&quot;</h1><br>\n<a href="there"
     class=x>this<br/><i>and</i>  <!---ignore me <really> -->
+    asdfffffffffffsssssssssssssssssssssssssssssssssssssssssssssssss
+    ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+    fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
+    hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+    iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+    lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
     <b>that</i><span selected></b></a><minor /><a href="big daddy">yowza</a>
     '''
     print s
