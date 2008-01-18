@@ -48,19 +48,13 @@ class SimpleXMLParser:
             if self.EOF:
                 break
 
-            endpos = self.scanTo(">") + 1
-
             if self.buffer[self.tagpos:self.tagpos+4] == "<!--":
-                while True:
-                    if self.EOF:
-                        break
-                    if self.buffer[endpos-3:endpos] == '-->':
-                        break
-                    self.bufpos = endpos
-                    endpos = self.scanTo(">") + 1
+                endpos = self.scanTo("-->") + 3
                 self.bufpos = endpos
                 continue
-            
+          
+            endpos = self.scanTo(">") + 1
+  
             tag = self.buffer[self.tagpos+1:endpos-1]
             if tag:
                 tag = tag.replace("\n", " ")
@@ -157,7 +151,7 @@ if __name__ == '__main__':
     s = '''
     <h1
     >This is a &quot;title&quot;</h1><br>\n<a href="there"
-    class=x>this<br/><i class='yyy'>and</i>  <!---ignore me <really> -->
+    class=x>this<br/><i class='yyy'>and</i>  <!---ignore me <really> -->zz
     asdfffffffffffsssssssssssssssssssssssssssssssssssssssssssssssss
     ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
     fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff

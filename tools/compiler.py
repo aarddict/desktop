@@ -192,9 +192,9 @@ for line in f:
     languageCodeDict[codes[0]] = codes[2]
 f.close()
 
-if languageCodeDict[header["article_language"].lower()]:
+if header["article_language"].lower() in  languageCodeDict:
     header["article_language"] = languageCodeDict[header["article_language"].lower()]
-if languageCodeDict[header["index_language"].lower()]:
+if header["index_language"].lower() in  languageCodeDict:
     header["index_language"] = languageCodeDict[header["index_language"].lower()]
 
 json_text = simplejson.dumps(header)

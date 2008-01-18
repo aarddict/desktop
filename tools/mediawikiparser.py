@@ -17,15 +17,29 @@ class MediaWikiParser(SimpleXMLParser):
 
     def __init__(self, collator, metadata, consumer):
         SimpleXMLParser.__init__(self)
-        self.databucket = ""
         self.collator = collator
         self.metadata = metadata
         self.consumer = consumer
         self.tagstack = []
         self.title = ""
+        self.text = ""
         self.StartElementHandler = self.handleStartElement
         self.EndElementHandler = self.handleEndElement
         self.CharacterDataHandler = self.handleCharacterData
+
+        self.reRedirect = re.compile(r"^#REDIRECT", re.IGNORECASE)
+        self.reH4 = re.compile(r"=====(.{,80}?)=====")
+        self.reH3 = re.compile(r"====(.{,80}?)====")
+        self.reH2 = re.compile(r"===(.{,80}?)===")
+        self.reH1 = re.compile(r"==(.{,80}?)==")
+        self.reBI = re.compile(r"'''''(.{,200}?)'''''")
+        self.reB = re.compile(r"'''(.{,200}?)'''")
+        self.reI = re.compile(r"''(.{,200}?)''")
+        self.reCurly2 = re.compile(r"\{\{.*?\}\}")
+        self.reSquare2 = re.compile(r"\[\[(.*?)\]\]")
+        self.reLeadingSpaces = re.compile(r"^\s*", re.MULTILINE)
+        self.reTrailingSpaces = re.compile(r"\s*$", re.MULTILINE)
+
 
     def handleStartElement(self, tag, attrs):
 
@@ -80,18 +94,15 @@ class MediaWikiParser(SimpleXMLParser):
 
 
     def clean(self, s, oneline = False):
-        s = re.compile(r"^\s*", re.MULTILINE).sub("", s)
-        s = re.compile(r"\s*$", re.MULTILINE).sub("", s)
-        s = s.strip(" \n")
+        s = self.reLeadingSpaces.sub("", s)
+        s = self.reTrailingSpaces.sub("", s)
         if oneline:
             s = s.replace("\n", "")
         return s
     
     def weakRedirect(self, title, text):
-        p = re.compile(r"#REDIRECT", re.IGNORECASE)
-        if p.search(text):
-            p = re.compile(r"\[\[(.*?)\]\]")
-            m = p.search(text)
+        if self.reRedirect.search(text):
+            m = self.reSquare2.search(text)
             if m:
                 redirect = m.group(1)
                 redirectKey = self.collator.getCollationKey(redirect)
@@ -105,15 +116,15 @@ class MediaWikiParser(SimpleXMLParser):
         
         text = text.replace("\n", "<br>")
         text = text.replace("\r", "")
-        text = re.compile(r"^#REDIRECT", re.IGNORECASE).sub("See:", text)
-        text = re.compile(r"=====(.{,80}?)=====").sub(r"<h4>\1</h4>", text)
-        text = re.compile(r"====(.{,80}?)====").sub(r"<h3>\1</h3>", text)
-        text = re.compile(r"===(.{,80}?)===").sub(r"<h2>\1</h2>", text)
-        text = re.compile(r"==(.{,80}?)==").sub(r"<h1>\1</h1>", text)
-        text = re.compile(r"'''''(.{,200}?)'''''").sub(r"<b><i>\1</i></b>", text)
-        text = re.compile(r"'''(.{,200}?)'''").sub(r"<b>\1</b>", text)
-        text = re.compile(r"''(.{,200}?)''").sub(r"<i>\1</i>", text)
-        text = re.compile(r"\{\{.*?\}\}").sub(r"", text)
+        text = self.reRedirect.sub("See:", text)
+        text = self.reH4.sub(r"<h4>\1</h4>", text)
+        text = self.reH3.sub(r"<h3>\1</h3>", text)
+        text = self.reH2.sub(r"<h2>\1</h2>", text)
+        text = self.reH1.sub(r"<h1>\1</h1>", text)
+        text = self.reBI.sub(r"<b><i>\1</i></b>", text)
+        text = self.reB.sub(r"<b>\1</b>", text)
+        text = self.reI.sub(r"<i>\1</i>", text)
+        text = self.reCurly2.sub(r"", text)
         text = parseLinks(text)
 
         return text

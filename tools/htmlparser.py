@@ -25,6 +25,7 @@ import sys
 class HTMLParser(SimpleXMLParser):
 
     def __init__(self):
+        SimpleXMLParser.__init__(self)
         self.goodtags =  ['h1', 'h2', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
         self.tags = []
         self.tagstack = []
@@ -60,8 +61,12 @@ class HTMLParser(SimpleXMLParser):
             return
 
         if (len(self.tagstack) == 0) or (self.tagstack[-1][0] != tag):
-            sys.stderr.write("Mismatched HTML end tag: </%s> at '%s %s'\n" % (tag, self.text[-20:], repr(self.tagstack)))
-            return
+            if (len(self.tagstack) > 1) and (self.tagstack[-2][0] == tag):
+                t = self.tagstack.pop()
+                #sys.stderr.write("Discarded HTML end tag: </%s> at '%s'\n" % (t[0], self.text[-20:]))
+            else:
+                sys.stderr.write("Mismatched HTML end tag: </%s> at '%s %s'\n" % (tag, self.text[-20:], repr(self.tagstack)))
+                return
 
         t = self.tagstack.pop()
         t[2] = len(self.text)
