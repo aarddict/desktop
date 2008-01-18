@@ -54,7 +54,7 @@ class SimpleXMLParser:
                 while True:
                     if self.EOF:
                         break
-                    if self.buffer[endpos-2:endpos] == '-->':
+                    if self.buffer[endpos-3:endpos] == '-->':
                         break
                     self.bufpos = endpos
                     endpos = self.scanTo(">") + 1
@@ -113,6 +113,9 @@ class SimpleXMLParser:
             elif (tokens[i].count('"') == 1) and (i+1 < len(tokens)):
                 tokens[i] = tokens[i] + " " + tokens[i+1]
                 tokens.pop(i+1)
+            elif (tokens[i].count("'") == 1) and (i+1 < len(tokens)):
+                tokens[i] = tokens[i] + " " + tokens[i+1]
+                tokens.pop(i+1)
             else:
                 i = i + 1
 
@@ -124,6 +127,10 @@ class SimpleXMLParser:
             else:
                 name = t[:sep]
                 value = t[sep+1:]
+            if value and (value[0] == '"') and (value[-1] == '"'):
+                value = value[1:-1]
+            if value and (value[0] == "'") and (value[-1] == "'"):
+                value = value[1:-1]
             attrDict[name] = value
         return attrDict
     
@@ -150,7 +157,7 @@ if __name__ == '__main__':
     s = '''
     <h1
     >This is a &quot;title&quot;</h1><br>\n<a href="there"
-    class=x>this<br/><i>and</i>  <!---ignore me <really> -->
+    class=x>this<br/><i class='yyy'>and</i>  <!---ignore me <really> -->
     asdfffffffffffsssssssssssssssssssssssssssssssssssssssssssssssss
     ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
     fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
