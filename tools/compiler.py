@@ -185,6 +185,18 @@ sortex.sort()
 
 sys.stderr.write("Writing header...\n")
 
+f = open("ISO-639-2.txt", "r")
+languageCodeDict = {}
+for line in f:
+    codes = line.split('|')
+    languageCodeDict[codes[0]] = codes[2]
+f.close()
+
+if languageCodeDict[header["article_language"].lower()]:
+    header["article_language"] = languageCodeDict[header["article_language"].lower()]
+if languageCodeDict[header["index_language"].lower()]:
+    header["index_language"] = languageCodeDict[header["index_language"].lower()]
+
 json_text = simplejson.dumps(header)
 
 header_length_1 = len(json_text)
