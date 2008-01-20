@@ -158,7 +158,7 @@ class LangNotebook(gtk.Notebook):
     
 class ArticleView(gtk.TextView):
     
-    def __init__(self, drag_handler):
+    def __init__(self, drag_handler, selection_changed_callback, phonetic_font_desc):
         gtk.TextView.__init__(self)
         self.drag_handler = drag_handler
         self.set_wrap_mode(gtk.WRAP_WORD)
@@ -167,13 +167,19 @@ class ArticleView(gtk.TextView):
         self.set_data("handlers", [])
         self.article_drag_started = False
         self.last_drag_coords = None
+        self.selection_changed_callback = selection_changed_callback
+        self.phonetic_font_desc = phonetic_font_desc
     
     def set_buffer(self, buffer):
         handlers = self.get_data("handlers")
         if handlers == None:
             #this article view is already discarded
             return
+        handler1 = buffer.connect("mark-set", self.selection_changed_callback)
+        handler2 = buffer.connect("mark-deleted", self.selection_changed_callback)
+        buffer.set_data("handlers", (handler1, handler2))        
         gtk.TextView.set_buffer(self, buffer)
+        self.set_phonetic_font(self.phonetic_font_desc)
         handler = self.connect_after("event", self.drag_handler)
         handlers.append(handler)
     
@@ -190,10 +196,15 @@ class ArticleView(gtk.TextView):
         b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
     
     def remove_handlers(self):
-        self.__remove_handlers__(self)
-        self.__remove_handlers__(self.get_buffer())
+        self.__remove_handlers(self)
+        self.__remove_handlers(self.get_buffer())
         
-    def __remove_handlers__(self, obj):
+    def set_phonetic_font(self, font_desc):   
+        text_buffer = self.get_buffer()            
+        tag_table = text_buffer.get_tag_table()
+        tag_table.lookup("t").set_property("font-desc", font_desc)
+    
+    def __remove_handlers(self, obj):
         handlers = obj.get_data("handlers")
         for handler in handlers:
             obj.disconnect(handler)
@@ -215,7 +226,7 @@ class DictViewer(object):
         self.dictionaries = dictutil.DictionaryCollection()
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
-        self.font = None
+        self.phonetic_font_desc = None
         self.last_dict_file_location = None
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
@@ -226,7 +237,7 @@ class DictViewer(object):
         self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
         self.update_completion_timeout_ctx_id = self.statusbar.get_context_id("update completion timeout")
 
-        self.article_formatter = articleformat.ArticleFormat(self, self.word_ref_clicked, self.external_link_callback)
+        self.article_formatter = articleformat.ArticleFormat(self.word_ref_clicked, self.external_link_callback)
         
         self.start_worker_threads()
                                  
@@ -317,7 +328,7 @@ class DictViewer(object):
         selected = (str(selected_word), selected_word_lang)
         dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
         state = State()
-        state.phonetic_font = self.font
+        state.phonetic_font = self.phonetic_font_desc.to_string()
         state.word = word
         state.selected_word = selected
         state.history = history_list
@@ -752,8 +763,8 @@ class DictViewer(object):
         return ("%d dictionary") % size if size == 1 else ("%d dictionaries") % size
         
     def create_article_view(self):
-        article_view = ArticleView(self.article_drag_handler)
-        article_view.set_buffer(self.create_article_text_buffer())
+        article_view = ArticleView(self.article_drag_handler, self.article_text_selection_changed, self.phonetic_font_desc)
+        article_view.set_buffer(self.article_formatter.create_article_text_buffer())
         if self.supports_cursor_changes():        
             article_view.connect("motion_notify_event", self.on_mouse_motion)
         return article_view   
@@ -804,29 +815,6 @@ class DictViewer(object):
                     if vvalue < v.lower: vvalue = v.lower
                     v.set_value(vvalue)
             return False
-    
-    def create_article_text_buffer(self):
-        buffer = gtk.TextBuffer()
-        buffer.create_tag("b", weight = pango.WEIGHT_BOLD)
-        buffer.create_tag("h1", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_X_LARGE)
-        buffer.create_tag("h2", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_LARGE)
-        buffer.create_tag("h3", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_MEDIUM)
-        buffer.create_tag("i", style = pango.STYLE_ITALIC)
-        buffer.create_tag("u", underline = True)
-        buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "darkgreen")
-        buffer.create_tag("r", underline = pango.UNDERLINE_SINGLE, foreground = "brown4")
-        buffer.create_tag("url", underline = pango.UNDERLINE_SINGLE, foreground = "steelblue4")
-        tag_t = buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
-        if self.font:
-            font_desc = pango.FontDescription(self.font)
-            if font_desc:
-                tag_t.set_property("font-desc", font_desc)
-        buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
-        buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
-        handler1 = buffer.connect("mark-set", self.article_text_selection_changed)
-        handler2 = buffer.connect("mark-deleted", self.article_text_selection_changed)
-        buffer.set_data("handlers", (handler1, handler2))
-        return buffer     
     
     def article_text_selection_changed(self, *args):
         page_num = self.tabs.get_current_page() 
@@ -1005,22 +993,15 @@ class DictViewer(object):
         
     def select_phonetic_font(self, widget):
         dialog = gtk.FontSelectionDialog("Select Phonetic Font")        
-        if self.font:
-            dialog.set_font_name(self.font)                        
+        if self.phonetic_font_desc:
+            dialog.set_font_name(self.phonetic_font_desc.to_string())                        
         if dialog.run() == gtk.RESPONSE_OK:
             self.set_phonetic_font(dialog.get_font_name())
         dialog.destroy()
                 
     def set_phonetic_font(self, font_name):
-        self.font = font_name                    
-        self.apply_phonetic_font()
-    
-    def apply_phonetic_font(self):
-        font_desc = pango.FontDescription(self.font)
-        for page in self.tabs:
-            text_buffer = page.get_child().get_buffer()            
-            tag_table = text_buffer.get_tag_table()
-            tag_table.lookup("t").set_property("font-desc", font_desc)
+        self.phonetic_font_desc = pango.FontDescription(font_name)
+        self.tabs.foreach(lambda page: page.child.set_phonetic_font(self.phonetic_font_desc))
     
     def toggle_drag_selects(self, widget):
         self.mi_drag_selects.toggled()
