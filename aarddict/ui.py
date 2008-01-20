@@ -898,7 +898,6 @@ class DictViewer(object):
             self.open_errors = None   
         if self.lang_positions_on_open:
             for page in self.word_completion:
-                print page.lang, self.lang_positions_on_open[page.lang]
                 self.word_completion.reorder_child(page, self.lang_positions_on_open[page.lang])
             self.lang_positions_on_open = None
         if self.select_word_on_open:
