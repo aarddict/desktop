@@ -85,19 +85,15 @@ class LangNotebook(gtk.Notebook):
         return self[self.get_current_page()]
     
     def word_list(self, lang):
-        for page in self:
-            if page.lang == lang:
-                return page.child
-        return None
+        page = self.__page(lang)
+        return page.child if page else None
     
     def langs(self):
         return [page.lang for page in self]
     
     def has_lang(self, lang):
-        for page in self:
-            if page.lang == lang:
-                return True
-        return False
+        page = self.__page(lang)
+        return True if page else False
     
     def add_lang(self, lang):
         if not self.has_lang(lang):
@@ -122,6 +118,10 @@ class LangNotebook(gtk.Notebook):
         
     def __update_label(self, label, lang, count):
         label.set_text(self.label_pattern % (lang, count))
+        
+    def __page(self, lang):
+        for page in self: 
+            if page.lang == lang: return page        
                 
     def remove_lang(self, lang):
         for page in self:
@@ -132,6 +132,10 @@ class LangNotebook(gtk.Notebook):
             
     def current_lang(self):
         return self.current().lang
+    
+    def set_current_lang(self, lang):
+        page = self.__page(lang)
+        self.set_current_page(self.page_num(page))
     
     def __create_word_list(self):
         word_list = gtk.TreeView(gtk.ListStore(object))
@@ -265,9 +269,11 @@ class DictViewer(object):
         self.word_input.child.grab_focus()
         try:
             self.select_word_on_open = None
+            self.lang_positions_on_open = None
             app_state = load_app_state()     
             if app_state: 
                 self.select_word_on_open = app_state.selected_word
+                self.lang_positions_on_open = app_state.lang_positions
                 self.set_word_input(app_state.word)
                 self.open_dicts(app_state.dict_files)
                 app_state.history.reverse()
@@ -319,6 +325,9 @@ class DictViewer(object):
         state.dict_files = dict_files
         state.last_dict_file_location = self.last_dict_file_location
         state.drag_selects = self.mi_drag_selects.get_active()
+        state.lang_positions = {}
+        for page in self.word_completion:
+            state.lang_positions[page.lang] = self.word_completion.page_num(page)
         errors = []
         for dict in self.dictionaries.get_dicts():
             try:
@@ -632,6 +641,7 @@ class DictViewer(object):
                 word_list.get_selection().select_iter(word_iter)            
                 word_path = model.get_path(word_iter)
                 word_list.scroll_to_cell(word_path)
+                self.word_completion.set_current_lang(lang)
                 return True
         return False
 
@@ -885,12 +895,18 @@ class DictViewer(object):
         self.hide_status_display()
         if len(self.open_errors) > 0:
             self.show_error("Open Failed", self.errors_to_text(self.open_errors))
-            self.open_errors = None        
+            self.open_errors = None   
+        if self.lang_positions_on_open:
+            for page in self.word_completion:
+                print page.lang, self.lang_positions_on_open[page.lang]
+                self.word_completion.reorder_child(page, self.lang_positions_on_open[page.lang])
+            self.lang_positions_on_open = None
         if self.select_word_on_open:
             word, lang = self.select_word_on_open
             self.select_word_on_open = None
         else:
             word, lang = self.get_selected_word()
+            
         self.update_completion(self.word_input.child.get_text(), (word, lang))
         
     def open_dict(self, file):
