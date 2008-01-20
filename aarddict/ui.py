@@ -1017,13 +1017,10 @@ class DictViewer(object):
     
     def apply_phonetic_font(self):
         font_desc = pango.FontDescription(self.font)
-        if font_desc: 
-            count = self.tabs.get_n_pages()
-            for n in xrange(0,count):
-                page = self.tabs.get_nth_page(n)
-                text_buffer = page.get_child().get_buffer()            
-                tag_table = text_buffer.get_tag_table()
-                tag_table.lookup("t").set_property("font-desc", font_desc)
+        for page in self.tabs:
+            text_buffer = page.get_child().get_buffer()            
+            tag_table = text_buffer.get_tag_table()
+            tag_table.lookup("t").set_property("font-desc", font_desc)
     
     def toggle_drag_selects(self, widget):
         self.mi_drag_selects.toggled()
