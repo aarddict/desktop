@@ -367,9 +367,7 @@ class DictViewer(object):
         self.current_word_handler = gobject.timeout_add(timeout, f, *args)                
                         
     def select_first_word_in_completion(self):
-        if len(self.word_completion) == 0:
-            return;
-        word_list = self.word_completion.get_nth_page(self.word_completion.get_current_page()).child
+        word_list = self.word_completion.current().child
         model = word_list.get_model()
         first_word = model.get_iter_first()
         if first_word: 
@@ -533,19 +531,13 @@ class DictViewer(object):
                     return (lang_word_list, interrupted)
                 word_lookups[item.word].add_articles(item)
             word_list = word_lookups.values()
-            #word_list.sort(key=self.sort_key)
             word_list.sort(key = lambda w: w.word)
             if len (word_list) > 0: lang_word_list[lang] = word_list
         return (lang_word_list, interrupted)
     
-    #def sort_key(self, word_lookup):
-    #    return ucollator.getCollationKey(str(word_lookup))
-                                        
     def update_completion(self, word, to_select = None):
         self.statusbar.pop(self.update_completion_ctx_id) 
         self.statusbar.pop(self.update_completion_timeout_ctx_id)
-        #self.word_completion.set_model(None)   
-        #remove_all_pages(self.word_completion)
         self.word_completion.foreach(lambda s : s.child.get_model().clear())
         self.stop_lookup()
         word = word.lstrip()
@@ -738,9 +730,6 @@ class DictViewer(object):
         mi_dict.connect("activate", lambda f: self.remove_dict(dict))
         mi_dict.show_all()
 
-    def get_dialog_parent(self):
-        return self.window
-
     def update_title(self):
         dict_title = self.create_dict_title()
         title = "%s - %s" % (app_name, dict_title)
@@ -915,7 +904,7 @@ class DictViewer(object):
         self.show_status_display('Please wait...', 'Loading')
     
     def show_status_display(self, message, title = None):
-        self.status_display = gtk.MessageDialog(self.get_dialog_parent())  
+        self.status_display = gtk.MessageDialog(self.window)  
         self.status_display.set_title(title)   
         self.status_display.set_markup(message)
         self.status_display.set_position(gtk.WIN_POS_CENTER_ALWAYS)
