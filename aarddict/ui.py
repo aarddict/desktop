@@ -52,6 +52,106 @@ def create_scrolled_window(widget):
     scrolled_window.add(widget)                                
     return scrolled_window
 
+def create_button(stock_id, action):
+    button = gtk.Button(stock = stock_id)
+    settings = button.get_settings()
+    settings.set_property( "gtk-button-images", True )        
+    button.set_label('')
+    button.set_image(gtk.image_new_from_stock(stock_id, gtk.ICON_SIZE_SMALL_TOOLBAR))
+    button.set_relief(gtk.RELIEF_NONE)
+    button.set_focus_on_click(False)
+    button.connect("clicked", action);
+    return button  
+
+def remove_all_pages(notebook):
+    while notebook.get_n_pages() > 0:            
+        notebook.remove_page(-1)  
+
+class LangNotebook(gtk.Notebook):
+    
+    label_pattern = '%s (%d)'
+    
+    def __init__(self, word_selection_changed):
+        gtk.Notebook.__init__(self)
+        self.set_tab_pos(gtk.POS_TOP)
+        self.set_show_border(True)
+        self.word_selection_changed = word_selection_changed
+        self.connect("switch-page", self.__page_switched)
+    
+    def __getitem__(self, index):
+        return self.get_nth_page(index)
+
+    def current(self):
+        return self[self.get_current_page()]
+    
+    def word_list(self, lang):
+        for page in self:
+            if page.lang == lang:
+                return page.child
+        return None
+    
+    def langs(self):
+        return [page.lang for page in self]
+    
+    def has_lang(self, lang):
+        for page in self:
+            if page.lang == lang:
+                return True
+        return False
+    
+    def add_lang(self, lang):
+        if not self.has_lang(lang):
+            word_list = self.__create_word_list()
+            model = word_list.get_model()
+            label = gtk.Label()
+            self.__update_label(label, lang, len(model))
+            model.connect("row-inserted", self.__row_inserted, label, lang)
+            model.connect("row-deleted", self.__row_deleted, label, lang)
+            word_list.get_selection().connect("changed", self.word_selection_changed, lang)
+            page = create_scrolled_window(word_list)
+            page.lang = lang
+            self.append_page(page, label)  
+            self.set_tab_reorderable(page, True)
+        self.show_all()
+
+    def __row_inserted(self, model, path, iter, label, lang):
+        self.__update_label(label, lang, len(model))
+
+    def __row_deleted(self, model, path, label, lang):
+        self.__update_label(label, lang, len(model))
+        
+    def __update_label(self, label, lang, count):
+        label.set_text(self.label_pattern % (lang, count))
+                
+    def remove_lang(self, lang):
+        for page in self:
+            if page.lang == lang:
+                self.remove_page(self.page_num(page))
+                self.queue_draw_area(0,0,-1,-1)
+                return
+            
+    def current_lang(self):
+        return self.current().lang
+    
+    def __create_word_list(self):
+        word_list = gtk.TreeView(gtk.ListStore(object))
+        cell = gtk.CellRendererText()
+        column = gtk.TreeViewColumn(None, cell)
+        column.set_cell_data_func(cell, self.__wordlookup_to_text)
+        word_list.set_headers_visible(False)
+        word_list.append_column(column)
+        return word_list
+
+    def __wordlookup_to_text(self, treeviewcolumn, cell_renderer, model, iter):
+        wordlookup = model[iter][0]
+        cell_renderer.set_property('text', str(wordlookup))
+        return  
+    
+    def __page_switched(self, notebook, page_gpointer, page_num):
+        page = self.get_nth_page(page_num)
+        self.word_selection_changed(page.child.get_selection(), page.lang)
+        
+    
 class ArticleView(gtk.TextView):
     
     def __init__(self, drag_handler):
@@ -133,17 +233,17 @@ class DictViewer(object):
         box = gtk.VBox()        
         
         input_box = gtk.HBox()
-        btn_paste = self.create_paste_button()
+        btn_paste = create_button(gtk.STOCK_PASTE, self.paste_to_word_input)
         input_box.pack_start(btn_paste, False, False, 0)
         self.word_input = self.create_word_input()
         input_box.pack_start(self.word_input, True, True, 0)
-        btn_clear_input = self.create_clear_button()
+        btn_clear_input = create_button(gtk.STOCK_CLEAR, self.clear_word_input)
         input_box.pack_start(btn_clear_input, False, False, 2)
         
         box.pack_start(input_box, False, False, 4)
         
-        self.word_completion = self.create_word_completion()
-        box.pack_start(create_scrolled_window(self.word_completion), True, True, 0)
+        self.word_completion = LangNotebook(self.word_selection_changed)
+        box.pack_start(self.word_completion, True, True, 0)
 
         split_pane = gtk.HPaned()        
         contentBox.pack_start(split_pane, True, True, 2)                        
@@ -152,7 +252,6 @@ class DictViewer(object):
         self.tabs = gtk.Notebook()
         self.tabs.set_scrollable(True)
         self.tabs.popup_enable()
-        self.tabs.set_property("can-focus", False)
 #        page-added and page-removed is only available in PyGTK 2.10, doesn't work in Maemo
 #        self.tabs.connect("page-added", self.update_copy_article_mi)
 #        self.tabs.connect("page-removed", self.update_copy_article_mi)
@@ -268,13 +367,13 @@ class DictViewer(object):
         self.current_word_handler = gobject.timeout_add(timeout, f, *args)                
                         
     def select_first_word_in_completion(self):
-        model = self.word_completion.get_model()
-        if not model:
-            return
-        first_lang = model.get_iter_first()
-        if first_lang: 
-            word_iter = model.iter_children(first_lang)
-            self.word_completion.get_selection().select_iter(word_iter)
+        if len(self.word_completion) == 0:
+            return;
+        word_list = self.word_completion.get_nth_page(self.word_completion.get_current_page()).child
+        model = word_list.get_model()
+        first_word = model.get_iter_first()
+        if first_word: 
+            word_list.get_selection().select_iter(first_word)
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
         if self.is_link_click(widget, event, word):
@@ -367,20 +466,12 @@ class DictViewer(object):
         self.tabs.show_all()
         return result  
             
-    def word_selection_changed(self, selection):
+    def word_selection_changed(self, selection, lang):
         if selection.count_selected_rows() == 0:
             self.clear_tabs()
             return
         model, iter = selection.get_selected()        
-        if model.iter_has_child(iter):
-            #language name, not a word
-            self.schedule(self.clear_tabs, 200)
-            return
         word = model[iter][0]
-        lang = None
-        lang_iter = model.iter_parent(iter)
-        if lang_iter:
-            lang = model[lang_iter][0]
         self.schedule(self.do_show_word_article, 200, word, lang)
     
     def clear_word_input(self, btn, data = None):
@@ -393,12 +484,13 @@ class DictViewer(object):
         self.word_input.child.grab_focus()
           
     def get_selected_word(self):
-        selection = self.word_completion.get_selection()
+        selected_lang = self.word_completion.current_lang()
+        current_word_list = self.word_completion.word_list(selected_lang)
+        selection = current_word_list.get_selection()
         current_model, selected = selection.get_selected()
-        selected_lang, selected_word = None, None
-        if selected and not current_model.iter_has_child(selected):
+        selected_word = None
+        if selected:
             selected_word = current_model[selected][0]
-            selected_lang = current_model[current_model.iter_parent(selected)][0]                            
         return (selected_word, selected_lang)
     
     def stop_lookup(self):
@@ -452,7 +544,9 @@ class DictViewer(object):
     def update_completion(self, word, to_select = None):
         self.statusbar.pop(self.update_completion_ctx_id) 
         self.statusbar.pop(self.update_completion_timeout_ctx_id)
-        self.word_completion.set_model(None)   
+        #self.word_completion.set_model(None)   
+        #remove_all_pages(self.word_completion)
+        self.word_completion.foreach(lambda s : s.child.get_model().clear())
         self.stop_lookup()
         word = word.lstrip()
         if word and len(word) > 0:
@@ -469,12 +563,11 @@ class DictViewer(object):
             count += len(word_list)       
         if count == 0: statusmsg += ', nothing found'
         self.statusbar.push(self.update_completion_ctx_id, statusmsg) 
-        model = gtk.TreeStore(object)
+        #model = gtk.TreeStore(object)
         for lang in lang_word_list.iterkeys():
-            iter = model.append(None, [lang])
-            [model.append(iter, [word]) for word in lang_word_list[lang]]                    
-        self.word_completion.set_model(model)            
-        self.word_completion.expand_all()
+            word_list = self.word_completion.word_list(lang)
+            model = word_list.get_model()
+            [model.append((word,)) for word in lang_word_list[lang]]   
         selected = False
         if to_select:
             word, lang = to_select
@@ -482,23 +575,6 @@ class DictViewer(object):
         if not selected and len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
             self.select_first_word_in_completion()  
 
-    def create_clear_button(self):
-        return self.create_button(gtk.STOCK_CLEAR, self.clear_word_input) 
-
-    def create_paste_button(self):
-        return self.create_button(gtk.STOCK_PASTE, self.paste_to_word_input)
-    
-    def create_button(self, stock_id, action):
-        button = gtk.Button(stock = stock_id)
-        settings = button.get_settings()
-        settings.set_property( "gtk-button-images", True )        
-        button.set_label('')
-        button.set_image(gtk.image_new_from_stock(stock_id, gtk.ICON_SIZE_SMALL_TOOLBAR))
-        button.set_relief(gtk.RELIEF_NONE)
-        button.set_focus_on_click(False)
-        button.connect("clicked", action);
-        return button                
-   
     def create_top_level_widget(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)  
         window.connect("event", self.window_event)  
@@ -523,23 +599,6 @@ class DictViewer(object):
         menu_bar.show_all()
         content_box.pack_start(menu_bar, False, False, 2)           
 
-    def create_word_completion(self):
-        word_completion = gtk.TreeView()        
-        word_completion.set_headers_visible(False)
-        word_completion.get_selection().connect("changed", self.word_selection_changed)
-        renderer = gtk.CellRendererText()
-        column = gtk.TreeViewColumn("", renderer)
-        column.set_cell_data_func(renderer, self.get_word_from_wordlookup, data=None)
-        column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
-        word_completion.append_column(column)            
-        word_completion.set_fixed_height_mode(True)
-        return word_completion
-
-    def get_word_from_wordlookup(self, treeviewcolumn, cell_renderer, model, iter):
-        wordlookup = model[iter][0]
-        cell_renderer.set_property('text', str(wordlookup))
-        return        
-
     def create_word_input(self):
         word_input = gtk.ComboBoxEntry(gtk.TreeStore(str, str))
         word_input.clear()
@@ -559,9 +618,9 @@ class DictViewer(object):
     def word_selected_in_history(self, widget, data = None):       
         active = self.word_input.get_active()
         if active == -1:
-            #removing selection prevents virtual keaboard from disapppearing
             self.clear_tabs();
-            self.word_completion.get_selection().unselect_all()
+            #removing selection prevents virtual keaboard from disapppearing
+            #self.word_completion.get_selection().unselect_all()
             self.schedule(self.update_completion, 600, self.word_input.child.get_text())            
             return
         word, lang = self.word_input.get_model()[active]
@@ -569,23 +628,18 @@ class DictViewer(object):
         self.schedule(self.update_completion, 0, word, (word, lang))        
         
     def select_word(self, word, lang):        
-        model = self.word_completion.get_model()
-        if len (model) == 0:
+        if len(self.word_completion) == 0:
             return False
-        lang_iter = current_lang_iter = model.get_iter_first()
-        if len (model) > 1:
-            while current_lang_iter and model[current_lang_iter][0] != lang:
-                current_lang_iter = model.iter_next(current_lang_iter)
-            if current_lang_iter and model[current_lang_iter][0] == lang:
-                lang_iter = current_lang_iter
-        if lang_iter:                    
-            word_iter = model.iter_children(lang_iter)
+        word_list = self.word_completion.word_list(lang)
+        if word_list:                    
+            model = word_list.get_model()
+            word_iter = model.get_iter_first()
             while word_iter and str(model[word_iter][0]) != str(word):
                 word_iter = model.iter_next(word_iter)
             if word_iter and str(model[word_iter][0]) == str(word):
-                self.word_completion.get_selection().select_iter(word_iter)            
+                word_list.get_selection().select_iter(word_iter)            
                 word_path = model.get_path(word_iter)
-                self.word_completion.scroll_to_cell(word_path)
+                word_list.scroll_to_cell(word_path)
                 return True
         return False
 
@@ -895,6 +949,7 @@ class DictViewer(object):
             return
         self.last_dict_file_location = dict.file_name
         self.dictionaries.add(dict)
+        gobject.idle_add(self.word_completion.add_lang, dict.index_language)
         gobject.idle_add(self.add_to_menu_remove, dict)
         gobject.idle_add(self.update_title)
         
@@ -907,12 +962,18 @@ class DictViewer(object):
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]                
         self.dictionaries.remove(dict) 
+        current_langs = self.dictionaries.langs()
+        view_langs = self.word_completion.langs()
+        
+        for l in view_langs:
+            if l not in current_langs:
+                self.word_completion.remove_lang(l)
+        
         tab = self.get_tab_for_dict(key)
         if tab:
             self.tabs.remove_page(tab) 
             del self.dict_key_to_tab[key]
         dict.close()
-        dict.remove_index_cache_file()
         self.update_completion(self.word_input.child.get_text(), (word, lang))
         self.update_title()
         
