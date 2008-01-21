@@ -29,7 +29,7 @@ class HTMLParser(SimpleXMLParser):
         self.goodtags =  ['h1', 'h2', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
         self.tags = []
         self.tagstack = []
-        self.text = ""
+        self.text = u""
     
     def handleStartElement(self, tag, attrsDict):
 
@@ -74,7 +74,7 @@ class HTMLParser(SimpleXMLParser):
 
     def handleCharacterData(self, data):
 
-        self.text = self.text + data
+        self.text = self.text + data.decode("utf-8")
 
     def getText(self):
         text = self.text
