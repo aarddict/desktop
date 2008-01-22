@@ -46,6 +46,7 @@ class State:
     phonetic_font = None
     word = None
     selected_word = None
+    lang_positions = {}
     history = []
     recent = []
     dict_files = []

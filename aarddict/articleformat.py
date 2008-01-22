@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import gobject
+import gobject, gtk, pango
 
 class FormattingStoppedException(Exception):
 
@@ -49,8 +49,7 @@ class ArticleFormat:
         def stop(self):
             self.stopped = True
             
-    def __init__(self, text_buffer_factory, internal_link_callback, external_link_callback):
-        self.text_buffer_factory = text_buffer_factory
+    def __init__(self, internal_link_callback, external_link_callback):
         self.internal_link_callback = internal_link_callback
         self.external_link_callback = external_link_callback
         self.workers = {}
@@ -64,7 +63,7 @@ class ArticleFormat:
         if current_worker:
             current_worker.stop()
         self.article_view = article_view
-        loading = self.text_buffer_factory.create_article_text_buffer()
+        loading = self.create_article_text_buffer()
         loading.set_text("Loading...")
         article_view.set_buffer(loading)
         self.workers[dict] = self.Worker(self, dict, word, article, article_view)
@@ -81,7 +80,7 @@ class ArticleFormat:
         text_buffer.apply_tag(ref_tag, start, end) 
         
     def create_tagged_text_buffer(self, dict, article, article_view):
-        text_buffer = self.text_buffer_factory.create_article_text_buffer()
+        text_buffer = self.create_article_text_buffer()
         text_buffer.set_text(article.text)
         tags = article.tags
         for tag in tags:
@@ -92,4 +91,23 @@ class ArticleFormat:
             else:
                 text_buffer.apply_tag_by_name(tag.name, start, end)
         return text_buffer
-                
+        
+    def create_article_text_buffer(self):
+        buffer = gtk.TextBuffer()
+        buffer.create_tag("b", weight = pango.WEIGHT_BOLD)
+        buffer.create_tag("strong", weight = pango.WEIGHT_BOLD)
+        buffer.create_tag("h1", weight = pango.WEIGHT_ULTRABOLD, scale = pango.SCALE_X_LARGE, pixels_above_lines = 12, pixels_below_lines = 6)
+        buffer.create_tag("h2", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_LARGE, pixels_above_lines = 6, pixels_below_lines = 3)
+        buffer.create_tag("h3", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_MEDIUM, pixels_above_lines = 3, pixels_below_lines = 2)
+        buffer.create_tag("h4", weight = pango.WEIGHT_SEMIBOLD, scale = pango.SCALE_MEDIUM, pixels_above_lines = 3, pixels_below_lines = 2)
+        buffer.create_tag("h5", weight = pango.WEIGHT_SEMIBOLD, scale = pango.SCALE_MEDIUM, style = pango.STYLE_ITALIC, pixels_above_lines = 3, pixels_below_lines = 2)
+        buffer.create_tag("h6", scale = pango.SCALE_MEDIUM, underline = pango.UNDERLINE_SINGLE, pixels_above_lines = 3, pixels_below_lines = 2)
+        buffer.create_tag("i", style = pango.STYLE_ITALIC)
+        buffer.create_tag("u", underline = True)
+        buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "darkgreen")
+        buffer.create_tag("r", underline = pango.UNDERLINE_SINGLE, foreground = "brown4")
+        buffer.create_tag("url", underline = pango.UNDERLINE_SINGLE, foreground = "steelblue4")
+        buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
+        buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
+        buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
+        return buffer                
