@@ -130,12 +130,12 @@ def make_full_index():
 options, args = getOptions()
 
 if options.output_file:
-    outputFile = open(options.output_file, "wb")
+    outputFile = open(options.output_file, "wb", 4096)
 else:
     outputFile = sys.stdout
 
 if options.input_file:
-    inputFile = open(options.input_file, "rb")
+    inputFile = open(options.input_file, "rb", 4096)
 else:
     inputFile = sys.stdin
 
@@ -158,7 +158,7 @@ trailer_length = 4 + struct.calcsize("LLhL") + 1 + 3 + 7
 sys.stderr.write("Parsing input file...\n")
 
 article_filename = "compile.tmp"
-article_file = open(article_filename, "wb")
+article_file = open(article_filename, "wb", 4096)
 article_pointer = 0
 
 header["article_count"] =  0
@@ -216,7 +216,7 @@ sys.stderr.write("Writing index...\n")
 make_full_index()
 
 sys.stderr.write("Writing articles...\n")
-article_file = open(article_filename, "rb")
+article_file = open(article_filename, "rb", 4096)
 
 write_count = 0
 while 1:

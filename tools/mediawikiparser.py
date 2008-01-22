@@ -43,7 +43,7 @@ class MediaWikiParser(SimpleXMLParser):
 
     def handleStartElement(self, tag, attrs):
 
-        self.tagstack.append([tag, ""])
+        self.tagstack.append([tag, []])
 
 
     def handleEndElement(self, tag):
@@ -54,27 +54,29 @@ class MediaWikiParser(SimpleXMLParser):
         entry = self.tagstack.pop()
         
         if entry[0] != tag:
-            sys.stderr.write("mismatched tag: %s in %s at %s\n" % (repr(tag), repr(self.title), repr(entry)))
+            sys.stderr.write("Mismatched mediawiki tag: %s in %s at %s\n" % (repr(tag), repr(self.title), repr(entry)))
             return
 
+        entrytext = "".join(entry[1])
+
         if tag == "sitename":
-            self.metadata["title"] = self.clean(entry[1], oneline=True)
+            self.metadata["title"] = self.clean(entrytext, oneline=True)
 
         elif tag == "base":
-            m = re.compile(r"http://(.*?)\.wikipedia").match(entry[1])
+            m = re.compile(r"http://(.*?)\.wikipedia").match(entrytext)
             if m:
                 self.metadata["index_language"] = m.group(1)
                 self.metadata["article_language"] = m.group(1)
         
         elif tag == "title":
-            self.title = self.clean(entry[1], oneline=True)
+            self.title = self.clean(entrytext, oneline=True)
         
         elif tag == "text":
-            self.text = self.clean(entry[1])
+            self.text = self.clean(entrytext)
                         
         elif tag == "page":
             
-            if self.weakRedirect(self.title, self.text):
+            if self.weakRedirect(self.title, entrytext):
                 return
             
             self.text = self.translateWikiMarkupToHTML(self.text)
@@ -88,9 +90,7 @@ class MediaWikiParser(SimpleXMLParser):
             if data.strip():
                 sys.stderr.write("orphan data: '%s'\n" % data)
             return
-        entry = self.tagstack.pop()
-        entry[1] = entry[1] + data
-        self.tagstack.append(entry)
+        self.tagstack[-1][1].append(data)
 
 
     def clean(self, s, oneline = False):
@@ -149,7 +149,6 @@ def parseLinks(s):
             return ""
                         
         link = s[left:right]
-        #print "Link:", link.encode("utf-8")
             
         # recursively parse nested links
         link = parseLinks(link[2:-2])
@@ -186,7 +185,17 @@ if __name__ == '__main__':
 
     collator = aarddict.pyuca.Collator("aarddict/allkeys.txt", strength = 1)    
 
-    string = "<mediawiki><siteinfo><sitename>Wikipedia</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo><page><title>hi&amp;ho</title><text>''blah'' [[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text></page></x></mediawiki>\n \n \n"
+    string = """<mediawiki><siteinfo><sitename>Wikipedia
+</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo>
+<page><title>hi&amp;ho</title><text>''blah''
+[[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text>
+</page>
+<page><title>Page 2</title><text>''blah2''
+[[Image:what]] [[thing article|thing text]]]] bells go moo</text>
+</page>
+</x>
+</mediawiki>\n \n \n
+"""
 
     print string
     print ""

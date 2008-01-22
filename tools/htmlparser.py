@@ -24,13 +24,16 @@ import sys
 
 class HTMLParser(SimpleXMLParser):
 
+    text = property(lambda self: "".join(self.textBuffer))
+
     def __init__(self):
         SimpleXMLParser.__init__(self)
         self.goodtags =  ['h1', 'h2', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
         self.tags = []
-        self.tagstack = []
-        self.text = u""
-    
+        self.tagStack = []
+        self.textBuffer = []
+        self.textUnicodeLength = 0
+        
     def handleStartElement(self, tag, attrsDict):
 
         if not tag in self.goodtags:
@@ -39,15 +42,17 @@ class HTMLParser(SimpleXMLParser):
         #sys.stderr.write("HTML start tag: <%s> at '%s'\n" % (tag, self.text[-20:]))
 
         if tag == "p":
-            self.text = self.text + "\n\n"
+            self.textBuffer.append("\n\n")
+            self.textUnicodeLength = self.textUnicodeLength + 2
             return
 
         if tag == "br":
-            self.text = self.text + "\n"
+            self.textBuffer.append("\n")
+            self.textUnicodeLength = self.textUnicodeLength + 1
             return
             
-        t = [tag, len(self.text), -1, attrsDict]
-        self.tagstack.append(t)
+        t = [tag, self.textUnicodeLength, 0, attrsDict]
+        self.tagStack.append(t)
 
     def handleEndElement(self, tag):
 
@@ -60,33 +65,29 @@ class HTMLParser(SimpleXMLParser):
             # i.e. <br/> </p>
             return
 
-        if (len(self.tagstack) == 0) or (self.tagstack[-1][0] != tag):
-            if (len(self.tagstack) > 1) and (self.tagstack[-2][0] == tag):
-                t = self.tagstack.pop()
+        if (len(self.tagStack) == 0) or (self.tagStack[-1][0] != tag):
+            if (len(self.tagStack) > 1) and (self.tagStack[-2][0] == tag):
+                t = self.tagStack.pop()
                 #sys.stderr.write("Discarded HTML end tag: </%s> at '%s'\n" % (t[0], self.text[-20:]))
             else:
-                sys.stderr.write("Mismatched HTML end tag: </%s> at '%s %s'\n" % (tag, self.text[-20:], repr(self.tagstack)))
+                sys.stderr.write("Mismatched HTML end tag: </%s> at '%s %s'\n" % (tag, repr(self.text[-20:]), repr(self.tagStack)))
                 return
 
-        t = self.tagstack.pop()
-        t[2] = len(self.text)
+        t = self.tagStack.pop()
+        t[2] = self.textUnicodeLength
         self.tags.append(t)
 
     def handleCharacterData(self, data):
-
-        self.text = self.text + data.decode("utf-8")
-
-    def getText(self):
-        text = self.text
-        return text
-
-    def getTags(self):
-        return self.tags
+        
+        #sys.stderr.write("Data: %s\n" % repr(data))
+        u = data.decode("utf-8")
+        self.textUnicodeLength = self.textUnicodeLength + len(u)
+        self.textBuffer.append(data)
     
 if __name__ == '__main__':
     import sys
 
-    s = '<h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a>'
+    s = '<html><h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a></html>'
 
     print s
     print ""
