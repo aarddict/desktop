@@ -76,7 +76,7 @@ class MediaWikiParser(SimpleXMLParser):
                         
         elif tag == "page":
             
-            if self.weakRedirect(self.title, entrytext):
+            if self.weakRedirect(self.title, self.text):
                 return
             
             self.text = self.translateWikiMarkupToHTML(self.text)
@@ -101,6 +101,7 @@ class MediaWikiParser(SimpleXMLParser):
         return s
     
     def weakRedirect(self, title, text):
+        #sys.stderr.write("redirect?: " + repr(title) + " " + repr(text[:50]) + "\n")
         if self.reRedirect.search(text):
             m = self.reSquare2.search(text)
             if m:

@@ -81,7 +81,6 @@ class Dictionary:
             raise Exception(file_name + " is not a recognized aarddict dictionary file")
         self.metadataLength = int(self.file.read(8));
         self.metadataString = self.file.read(self.metadataLength)
-        print self.metadataString
         self.metadata = simplejson.loads(self.metadataString)
         self.collator = collator
         self.word_list = None
