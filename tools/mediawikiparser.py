@@ -146,7 +146,7 @@ def parseLinks(s):
             right = right + 1
                         
         if (nest != 0):
-            sys.stderr.write("Mismatched brackets: %s %s %s\n" % (str(left), str(right), str(nest)))
+            #sys.stderr.write("Mismatched brackets: %s %s %s\n" % (str(left), str(right), str(nest)))
             return ""
                         
         link = s[left:right]
@@ -170,7 +170,7 @@ def parseLinks(s):
             r = '<a href="' + p[0] + '">' + p[-1] + '</a>'
             
 
-        s = s[:left] + r + s[right:] 
+        s = "".join([s[:left] + r + s[right:]]) 
         
     return s
 
