@@ -75,7 +75,7 @@ class HTMLParser(SimpleXMLParser):
                 t = self.tagStack.pop()
                 #sys.stderr.write("Discarded HTML end tag: </%s> at '%s'\n" % (t[0], self.text[-20:]))
             else:
-                sys.stderr.write("Mismatched HTML end tag: </%s> at '%s %s'\n" % (tag, repr(self.text[-20:]), repr(self.tagStack)))
+                #sys.stderr.write("Mismatched HTML end tag: </%s> at '%s %s'\n" % (tag, repr(self.text[-20:]), repr(self.tagStack)))
                 return
 
         t = self.tagStack.pop()
@@ -93,8 +93,12 @@ class HTMLParser(SimpleXMLParser):
         if not self.tagBuffer:
             return
         tagBufferString = "".join(self.tagBuffer)
-        self.docBuffer.append(tagBufferString)
-        self.textUnicodeLength = self.textUnicodeLength + len(tagBufferString.decode("utf-8"))
+        try:
+            self.textUnicodeLength = self.textUnicodeLength + len(tagBufferString.decode("utf-8"))
+            self.docBuffer.append(tagBufferString)
+        except:
+            sys.stderr.write("Undecodable string: %s\n" % (repr(tagBufferString)))
+            
         self.tagBuffer = []
         
 if __name__ == '__main__':
