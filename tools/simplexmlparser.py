@@ -88,12 +88,12 @@ class SimpleXMLParser:
                 self.EOF = True
                 #sys.stderr.write("eof: %s %i\n" % (string,scanpos))
             if len(self.buffer) > 1000000:
-                raise Exception("SimpleXMLParser buffer overflow\n")
-            #sys.stderr.write("append: %s\n" % (newdata))
-            self.buffer = "".join([self.buffer[self.bufpos:], newdata])
-            scanpos = scanpos - self.bufpos
-            self.tagpos = self.tagpos - self.bufpos
-            self.bufpos = 0
+                sys.stderr.write("Simplexmlparser buffer overflow: %s\n" % self.buffer[-100:])
+            else:
+                self.buffer = "".join([self.buffer[self.bufpos:], newdata])
+                scanpos = scanpos - self.bufpos
+                self.tagpos = self.tagpos - self.bufpos
+                self.bufpos = 0
             
 
     def makeAttrDict(self, tokens):
