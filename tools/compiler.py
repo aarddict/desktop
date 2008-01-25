@@ -64,17 +64,32 @@ def getOptions():
 def handle_article(title, text):
     global header
     global article_pointer
+	
+    if (not title) or (not text):
+        sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
+        return
+    
+    #debug.write(text)
+    try:
+        parser = HTMLParser()
+        parser.parseString(text)
+        jsonstring = simplejson.dumps([parser.text.rstrip(), parser.tags])
+        if options.compress == "bz2":
+            jsonstring = bz2.compress(jsonstring)
+        #sys.stderr.write("write article: %i %i %s\n" % (article_file.tell(), len(jsonstring), title))    
+    except Exception, e:
+        sys.stderr.write("Failed to process article \"%s\": " % title)
+        sys.stderr.write(str(e))
+        sys.stderr.write("\n")
+        return
+    
     if header["article_count"] % 100 == 0:
         sys.stderr.write("\r" + str(header["article_count"]))
     header["article_count"] = header["article_count"] + 1
-	
-    if (not title) or (not text):
-        sys.stderr.write("Skipped blank article: %s -> %s\n" % (repr(title), repr(text)))
-        return
 		
-    if len(title) > TITLE_MAX_SIZE:
-        sys.stderr.write("Truncated title: " + title + "\n")
-        title = title[:TITLEMAX_SIZE]
+#    if len(title) > TITLE_MAX_SIZE:
+#        sys.stderr.write("Truncated title: " + title + "\n")
+#        title = title[:TITLE_MAX_SIZE]
 
     collationKeyString = collator4.getCollationKey(title).getBinaryString()
 
@@ -86,14 +101,6 @@ def handle_article(title, text):
     # actually write out the index
     header["index_length"] = header["index_length"] + 4 + struct.calcsize("LLhL") + len(collationKeyString) + 3 + len(title)
 
-
-    #debug.write(text)
-    parser = HTMLParser()
-    parser.parseString(text)
-    jsonstring = simplejson.dumps([parser.text, parser.tags])
-    if options.compress == "bz2":
-        jsonstring = bz2.compress(jsonstring)
-    #sys.stderr.write("write article: %i %i %s\n" % (article_file.tell(), len(jsonstring), title))
     article_file.write(struct.pack("L", len(jsonstring)) + jsonstring)
     article_pointer = article_pointer + struct.calcsize("L") + len(jsonstring)
 

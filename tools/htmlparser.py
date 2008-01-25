@@ -100,7 +100,7 @@ class HTMLParser(SimpleXMLParser):
             sys.stderr.write("Undecodable string: %s\n" % (repr(tagBufferString)))
             
         self.tagBuffer = []
-        
+
 if __name__ == '__main__':
     import sys
 

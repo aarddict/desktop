@@ -13,6 +13,10 @@ from aarddict.article import Article
 from aarddict.article import Tag
 import aarddict.pyuca
 
+import wikimarkup
+#import textwiki.parse
+#wiki_parser = textwiki.parser.Parser()
+
 class MediaWikiParser(SimpleXMLParser):
 
     def __init__(self, collator, metadata, consumer):
@@ -78,9 +82,11 @@ class MediaWikiParser(SimpleXMLParser):
             
             if self.weakRedirect(self.title, self.text):
                 return
-            
-            self.text = self.translateWikiMarkupToHTML(self.text)
-
+            try:
+                self.text = self.translateWikiMarkupToHTML(self.text).strip()
+            except Exception, e:
+                print e
+                self.text = ""
             self.consumer(self.title, self.text)
             return
             
@@ -101,8 +107,7 @@ class MediaWikiParser(SimpleXMLParser):
         return s
     
     def weakRedirect(self, title, text):
-        #sys.stderr.write("redirect?: " + repr(title) + " " + repr(text[:50]) + "\n")
-        if self.reRedirect.search(text):
+        if self.reRedirect.search(text): 
             m = self.reSquare2.search(text)
             if m:
                 redirect = m.group(1)
@@ -114,20 +119,23 @@ class MediaWikiParser(SimpleXMLParser):
         return False
 
     def translateWikiMarkupToHTML(self, text):
-        
-        text = text.replace("\n", "<br>")
-        text = text.replace("\r", "")
-        text = self.reRedirect.sub("See:", text)
-        text = self.reH4.sub(r"<h4>\1</h4>", text)
-        text = self.reH3.sub(r"<h3>\1</h3>", text)
-        text = self.reH2.sub(r"<h2>\1</h2>", text)
-        text = self.reH1.sub(r"<h1>\1</h1>", text)
-        text = self.reBI.sub(r"<b><i>\1</i></b>", text)
-        text = self.reB.sub(r"<b>\1</b>", text)
-        text = self.reI.sub(r"<i>\1</i>", text)
-        text = self.reCurly2.sub(r"", text)
-        text = parseLinks(text)
+#        text = wiki_parser.transform(text)
 
+        text = self.reRedirect.sub("See:", text)
+
+        text = wikimarkup.parse(text, False)
+        
+#        text = text.replace("\n", "<br>")
+#        text = text.replace("\r", "")
+#        text = self.reH4.sub(r"<h4>\1</h4>", text)
+#        text = self.reH3.sub(r"<h3>\1</h3>", text)
+#        text = self.reH2.sub(r"<h2>\1</h2>", text)
+#        text = self.reH1.sub(r"<h1>\1</h1>", text)
+#        text = self.reBI.sub(r"<b><i>\1</i></b>", text)
+#        text = self.reB.sub(r"<b>\1</b>", text)
+#        text = self.reI.sub(r"<i>\1</i>", text)
+#        text = self.reCurly2.sub(r"", text)
+        text = parseLinks(text)
         return text
 
 def parseLinks(s):
