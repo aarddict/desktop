@@ -157,6 +157,25 @@ def parseLinks(s):
         
     return s
 
+template_re = re.compile('\{\{([^\|]+)\|?(.*)\}\}')
+
+def parseTemplate(s):
+    m = template_re.search(s)
+    if m:
+        name = m.group(1)
+        params = {}
+        param_str = m.group(2)
+        param_pairs=param_str.split("|");
+        paramcount = 0
+        for pair in param_pairs:
+            key, sep, val = pair.partition("=")
+            if key:
+                if val:
+                    params[key] = val
+                else:
+                    paramcount += 1
+                    params[paramcount] = key
+        return name, params
 
 def printArticle(title, article):
     print "=================================="
