@@ -14,8 +14,6 @@ from aarddict.article import Tag
 import aarddict.pyuca
 
 import wikimarkup
-#import textwiki.parse
-#wiki_parser = textwiki.parser.Parser()
 
 class MediaWikiParser(SimpleXMLParser):
 
@@ -32,21 +30,12 @@ class MediaWikiParser(SimpleXMLParser):
         self.CharacterDataHandler = self.handleCharacterData
 
         self.reRedirect = re.compile(r"^#REDIRECT", re.IGNORECASE)
-        self.reH4 = re.compile(r"=====(.{,80}?)=====")
-        self.reH3 = re.compile(r"====(.{,80}?)====")
-        self.reH2 = re.compile(r"===(.{,80}?)===")
-        self.reH1 = re.compile(r"==(.{,80}?)==")
-        self.reBI = re.compile(r"'''''(.{,200}?)'''''")
-        self.reB = re.compile(r"'''(.{,200}?)'''")
-        self.reI = re.compile(r"''(.{,200}?)''")
-        self.reCurly2 = re.compile(r"\{\{.*?\}\}")
         self.reSquare2 = re.compile(r"\[\[(.*?)\]\]")
         self.reLeadingSpaces = re.compile(r"^\s*", re.MULTILINE)
         self.reTrailingSpaces = re.compile(r"\s*$", re.MULTILINE)
 
 
     def handleStartElement(self, tag, attrs):
-
         self.tagstack.append([tag, []])
 
 
@@ -119,22 +108,8 @@ class MediaWikiParser(SimpleXMLParser):
         return False
 
     def translateWikiMarkupToHTML(self, text):
-#        text = wiki_parser.transform(text)
-
         text = self.reRedirect.sub("See:", text)
-
         text = wikimarkup.parse(text, False)
-        
-#        text = text.replace("\n", "<br>")
-#        text = text.replace("\r", "")
-#        text = self.reH4.sub(r"<h4>\1</h4>", text)
-#        text = self.reH3.sub(r"<h3>\1</h3>", text)
-#        text = self.reH2.sub(r"<h2>\1</h2>", text)
-#        text = self.reH1.sub(r"<h1>\1</h1>", text)
-#        text = self.reBI.sub(r"<b><i>\1</i></b>", text)
-#        text = self.reB.sub(r"<b>\1</b>", text)
-#        text = self.reI.sub(r"<i>\1</i>", text)
-#        text = self.reCurly2.sub(r"", text)
         text = parseLinks(text)
         return text
 
