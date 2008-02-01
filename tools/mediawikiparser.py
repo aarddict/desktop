@@ -157,7 +157,7 @@ def parseLinks(s):
         
     return s
 
-template_re = re.compile('\{\{([^\|]+)\|?(.*)\}\}')
+template_re = re.compile(r'\{\{([^\|]+)\|?(.*)\}\}')
 
 def parseTemplate(s):
     m = template_re.search(s)
@@ -176,39 +176,4 @@ def parseTemplate(s):
                     paramcount += 1
                     params[paramcount] = key
         return name, params
-
-def printArticle(title, article):
-    print "=================================="
-    print title
-    print "=================================="
-    print article
-
-    
-if __name__ == '__main__':
-
-    collator = aarddict.pyuca.Collator("aarddict/allkeys.txt", strength = 1)    
-
-    string = """<mediawiki><siteinfo><sitename>Wikipedia
-</sitename><base>http://fr.wikipedia.org/boogy</base></siteinfo>
-<page><title>hi&amp;ho</title><text>''blah''
-[[Image:thing.png|right|See [[thing article|thing text]]]] cows {{go}} bong</text>
-</page>
-<page><title>Page 2</title><text>''blah2''
-[[Image:what]] [[thing article|thing text]]]] bells go moo</text>
-</page>
-</x>
-</mediawiki>\n \n \n
-"""
-
-    print string
-    print ""
-
-    metadata = {}
-
-    parser = MediaWikiParser(collator, metadata, printArticle)
-    parser.parseString(string)
-
-    print metadata
-    print "Done."
-
 
