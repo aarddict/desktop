@@ -48,12 +48,11 @@ class Article:
             s = bz2.decompress(file.read(record_length))
 
         self.text, tagList = compactjson.loads(s)
-        #print "============="
         #print self.text
         for tagListItem in tagList:
-            #print tagListItem
             tag = Tag()
             tag.fromList(tagListItem)
+            #print str(tag)
             self.tags.append(tag)
 
 class Tag:
@@ -72,7 +71,9 @@ class Tag:
 
     def fromList(self, list):
         self.name, self.start, self.end, self.attributes = list
-
+        if self.attributes == "":
+            self.attributes = {}
+        
 
 
 
