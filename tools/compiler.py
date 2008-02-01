@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import simplejson
+import compactjson
 from sortexternal import SortExternal
 from htmlparser import HTMLParser
 import optparse
@@ -70,18 +70,14 @@ def handle_article(title, text):
         return
     
     #debug.write(text)
-    try:
-        parser = HTMLParser()
-        parser.parseString(text)
-        jsonstring = simplejson.dumps([parser.text.rstrip(), parser.tags])
-        if options.compress == "bz2":
-            jsonstring = bz2.compress(jsonstring)
-        #sys.stderr.write("write article: %i %i %s\n" % (article_file.tell(), len(jsonstring), title))    
-    except Exception, e:
-        sys.stderr.write("Failed to process article \"%s\": " % title)
-        sys.stderr.write(str(e))
-        sys.stderr.write("\n")
-        return
+    
+    parser = HTMLParser()
+    parser.parseString(text)
+
+    jsonstring = compactjson.dumps([parser.text.rstrip(), parser.tags])
+    if options.compress == "bz2":
+        jsonstring = bz2.compress(jsonstring)
+    #sys.stderr.write("write article: %i %i %s\n" % (article_file.tell(), len(jsonstring), title))    
     
     if header["article_count"] % 100 == 0:
         sys.stderr.write("\r" + str(header["article_count"]))
@@ -204,7 +200,7 @@ if header["article_language"].lower() in  languageCodeDict:
 if header["index_language"].lower() in  languageCodeDict:
     header["index_language"] = languageCodeDict[header["index_language"].lower()]
 
-json_text = simplejson.dumps(header)
+json_text = compactjson.dumps(header)
 
 header_length_1 = len(json_text)
 
@@ -212,7 +208,7 @@ header["index_offset"] = 5 + 8 + header_length_1 + 60
 header["article_offset"] = header["index_offset"] + header["index_length"]
 	
 outputFile.write("aar10")
-json_text = simplejson.dumps(header)
+json_text = compactjson.dumps(header)
 outputFile.write("%08i" % len(json_text))
 	
 outputFile.write(json_text)
