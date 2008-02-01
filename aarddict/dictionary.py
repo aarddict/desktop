@@ -20,7 +20,7 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 
 from struct import unpack
 import types
-import simplejson
+import compactjson
 import article
 import pyuca
 import struct
@@ -81,7 +81,7 @@ class Dictionary:
             raise Exception(file_name + " is not a recognized aarddict dictionary file")
         self.metadataLength = int(self.file.read(8));
         self.metadataString = self.file.read(self.metadataLength)
-        self.metadata = simplejson.loads(self.metadataString)
+        self.metadata = compactjson.loads(self.metadataString)
         self.collator = collator
         self.word_list = None
         self.index_start = self.metadata["index_offset"]
