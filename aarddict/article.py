@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import simplejson
+import compactjson
 import bz2
 import struct
 import sys
@@ -42,15 +42,16 @@ class Article:
     def fromFile(self, file, offset):
         file.seek(offset)
         record_length = struct.unpack('L', file.read(struct.calcsize("L")))[0]
-        #sys.stderr.write("record length, offset: " + str(record_length) + " " + str(offset) + "\n")
         if self.compress == "bz2":
             s = file.read(record_length)
         else:
             s = bz2.decompress(file.read(record_length))
 
-        self.text, tagList = simplejson.loads(s)
-        self.tags = []
+        self.text, tagList = compactjson.loads(s)
+        #print "============="
+        #print self.text
         for tagListItem in tagList:
+            #print tagListItem
             tag = Tag()
             tag.fromList(tagListItem)
             self.tags.append(tag)
