@@ -35,7 +35,7 @@ class WikiParserTests(unittest.TestCase):
         self.parsed_text_2 = '''<p><i>blah2</i>\n<img href="what">Image:what</img> <a href="thing article">thing text</a>]] bells go moo\n</p>'''
         self.parse_results = []
          
-    def test_metadata_parsing(self):
+    def test_wiki_xml_dump_parsing(self):
        metadata = {}
        consumer = lambda title, text : (title, text)
        self.parser = MediaWikiParser(self.collator, metadata, self.parse_result_consumer)
