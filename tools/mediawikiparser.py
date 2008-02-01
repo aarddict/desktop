@@ -65,7 +65,7 @@ class MediaWikiParser(SimpleXMLParser):
             self.title = self.clean(entrytext, oneline=True)
         
         elif tag == "text":
-            self.text = self.clean(entrytext)
+            self.text = entrytext
                         
         elif tag == "page":
             
@@ -74,7 +74,7 @@ class MediaWikiParser(SimpleXMLParser):
             try:
                 self.text = self.translateWikiMarkupToHTML(self.text).strip()
             except Exception, e:
-                print e
+                sys.stderr.write("Unable to translate wiki markup: %s\n" % str(e))
                 self.text = ""
             self.consumer(self.title, self.text)
             return
@@ -89,11 +89,11 @@ class MediaWikiParser(SimpleXMLParser):
 
 
     def clean(self, s, oneline = False):
+        if oneline:
+            s = s.replace("\n", " ")
         s = self.reLeadingSpaces.sub("", s)
         s = self.reTrailingSpaces.sub("", s)
-        if oneline:
-            s = s.replace("\n", "")
-        return s
+        return s.strip()
     
     def weakRedirect(self, title, text):
         if self.reRedirect.search(text): 
