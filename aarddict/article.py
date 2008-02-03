@@ -26,10 +26,10 @@ import sys
 
 class Article:
 
-    def __init__(self, title = "", text = "", tags = [], compress = "none"):
+    def __init__(self, title = "", text = "", tags = None, compress = "none"):
         self.title = title
         self.text = text
-        self.tags = tags
+        self.tags = [] if tags is None else tags
         self.compress = compress
 
     def __str__(self):
