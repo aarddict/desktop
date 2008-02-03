@@ -75,11 +75,18 @@ class HildonDictViewer(ui.DictViewer):
         main_menu.show_all()
     
     def create_menus(self):           
-        return (self.mi_open, self.mn_remove_item, self.mi_info, self.mn_copy_item, self.mi_select_phonetic_font, self.mi_drag_selects, self.mi_about, self.mi_exit)
-    
+        return (self.mi_open, 
+                self.mn_remove_item, 
+                self.mi_info, 
+                self.mn_copy_item, 
+                self.mi_select_phonetic_font, 
+                self.mi_drag_selects, 
+                self.mi_about, 
+                self.mi_exit)
     
     def create_file_chooser_dlg(self):
-        return hildon.FileChooserDialog(self.window, gtk.FILE_CHOOSER_ACTION_OPEN);  
+        return hildon.FileChooserDialog(self.window, 
+                                        gtk.FILE_CHOOSER_ACTION_OPEN);  
     
     def open_external_link(self, url):
         webbrowser.open(url, context = osso_c)

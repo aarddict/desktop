@@ -293,7 +293,6 @@ class DictViewer(object):
                 self.last_dict_file_location = app_state.last_dict_file_location
                 if hasattr(app_state, 'drag_selects'):
                     self.mi_drag_selects.set_active(app_state.drag_selects)
-                
         except Exception, ex:
             print 'Failed to load application state:', ex                     
     
@@ -328,7 +327,8 @@ class DictViewer(object):
         selected = (str(selected_word), selected_word_lang)
         dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
         state = State()
-        state.phonetic_font = self.phonetic_font_desc.to_string()
+        if self.phonetic_font_desc:
+            state.phonetic_font = self.phonetic_font_desc.to_string()
         state.word = word
         state.selected_word = selected
         state.history = history_list
@@ -457,10 +457,7 @@ class DictViewer(object):
         return False 
         
     def show_article_for(self, wordlookup, lang = None):
-        if lang:
-            langs = [lang]
-        else:
-            langs = None
+        langs = (lang,) if lang else None
         articles = wordlookup.read_articles()
         word = str(wordlookup)
         self.clear_tabs()
@@ -562,11 +559,13 @@ class DictViewer(object):
         self.stop_lookup()
         word = word.lstrip()
         if word and len(word) > 0:
-            self.statusbar.push(self.update_completion_ctx_id, 'Looking up "%s"...' % word)
+            self.statusbar.push(self.update_completion_ctx_id, 
+                                'Looking up "%s"...' % word)
             self.update_completion_q.put((word, to_select))  
         return False
     
-    def update_completion_callback(self, lang_word_list, to_select, start_word, lookup_time):
+    def update_completion_callback(self, lang_word_list, to_select, 
+                                   start_word, lookup_time):
         self.statusbar.pop(self.update_completion_ctx_id)  
         msg_params = (start_word, lookup_time) 
         statusmsg = '%s: looked up in %.2f s' % msg_params
@@ -584,7 +583,7 @@ class DictViewer(object):
         if to_select:
             word, lang = to_select
             selected = self.select_word(word, lang)
-        if not selected and len (lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
+        if not selected and len(lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
             self.select_first_word_in_completion()  
 
     def create_top_level_widget(self):
@@ -742,7 +741,7 @@ class DictViewer(object):
         key = dict.key()
         title, version, file_name = key
         mi_dict = gtk.MenuItem("%s %s" % (title, version))                 
-        if self.recent_menu_items.has_key(key):
+        if key in self.recent_menu_items:
             old_mi = self.recent_menu_items[key]
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]
@@ -764,7 +763,6 @@ class DictViewer(object):
         
     def create_article_view(self):
         article_view = ArticleView(self.article_drag_handler, self.article_text_selection_changed, self.phonetic_font_desc)
-        article_view.set_buffer(self.article_formatter.create_article_text_buffer())
         if self.supports_cursor_changes():        
             article_view.connect("motion_notify_event", self.on_mouse_motion)
         return article_view   
@@ -948,8 +946,7 @@ class DictViewer(object):
     def remove_dict(self, dict):          
         word, lang = self.get_selected_word()
         key = dict.key()
-        title, version, file_name = key
-        if self.recent_menu_items.has_key(key):
+        if key in self.recent_menu_items:
             old_mi = self.recent_menu_items[key]
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]                
@@ -970,7 +967,7 @@ class DictViewer(object):
         self.update_title()
         
     def get_tab_for_dict(self, dict_key):
-        if self.dict_key_to_tab.has_key(dict_key):
+        if dict_key in self.dict_key_to_tab:
             tab_child = self.dict_key_to_tab[dict_key]
             return self.tabs.page_num(tab_child)
         return None

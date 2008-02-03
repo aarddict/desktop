@@ -17,11 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2006-2008 Igor Tkach
 """
 
-class ListMap(dict):
-    def __missing__ (self, key):
-        value = []
-        self.__setitem__(key, value)
-        return value
+from collections import defaultdict
 
 class DictFormatError(Exception):
      def __init__(self, value):
@@ -51,7 +47,7 @@ class WordLookup:
 class DictionaryCollection:
     
     def __init__(self):
-        self.dictionaries = ListMap()
+        self.dictionaries = defaultdict(list)
     
     def add(self, dict):
         self.dictionaries[dict.index_language].append(dict)
