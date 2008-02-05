@@ -31,6 +31,7 @@ import binascii
 import os
 import array
 from aarddict.article import *
+import tempfile
 
 TITLE_MAX_SIZE = 255
 
@@ -160,8 +161,8 @@ trailer_length = 4 + struct.calcsize("LLhL") + 1 + 3 + 7
 
 sys.stderr.write("Parsing input file...\n")
 
-article_filename = "compile.tmp"
-article_file = open(article_filename, "wb", 4096)
+
+article_file = tempfile.NamedTemporaryFile('w+b')
 article_pointer = 0
 
 header["article_count"] =  0
@@ -180,7 +181,6 @@ else:
 
 
 sys.stderr.write("\r" + str(header["article_count"]) + "\n")
-article_file.close()
 
 sys.stderr.write("Sorting index...\n")
 
@@ -219,7 +219,8 @@ sys.stderr.write("Writing index...\n")
 make_full_index()
 
 sys.stderr.write("Writing articles...\n")
-article_file = open(article_filename, "rb", 4096)
+article_file.flush()
+article_file.seek(0)
 
 write_count = 0
 while 1:
