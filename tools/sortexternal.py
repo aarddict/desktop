@@ -28,21 +28,21 @@ Copyright (C) 2008  Jeremy Mortis
 """
 
 from heapq import heapify, heappop, heappush
-from tempfile import gettempdir
+import tempfile 
 import os
 import sys
 import struct
 
-class VariableLengthRecordFile(file):
+class VariableLengthRecordFile():
 
-    def __init__(self, name, mode, bufsize = -1):
-        file.__init__(self, name, mode, bufsize)
+    def __init__(self, file):
+        self.file = file
         self.headerFormat = "i"
         self.headerLength = struct.calcsize(self.headerFormat)
     
     def readline(self):
 
-        header = self.read(self.headerLength)
+        header = self.file.read(self.headerLength)
         if header == "":
             return (-2, "")
 
@@ -50,37 +50,44 @@ class VariableLengthRecordFile(file):
         if recordLength == -1:
             return (-1, "")
 
-        return (1, self.read(recordLength))
+        return (1, self.file.read(recordLength))
 
     def writeline(self, s):
 
             
-        self.write(struct.pack(self.headerFormat, len(s)))
-        self.write(s)
+        self.file.write(struct.pack(self.headerFormat, len(s)))
+        self.file.write(s)
 
         #sys.stderr.write("wrote: %s %s\n" % (s, self.name))
 
     def mark(self):
         
-        self.write(struct.pack(self.headerFormat, -1))
+        self.file.write(struct.pack(self.headerFormat, -1))
 
+    def flush(self):
+
+        self.file.flush()
+
+    def seek(self, offset):
+
+        self.file.seek(offset)
+        
 class SortExternal:
 
     def __init__(self, buffer_size = 200000, filenum = 16):
         self.buffer_size = buffer_size
-        self.tempdir = gettempdir()
         self.chunk = []
         self.chunksize = 0
         
         self.inputChunkFiles = []
         self.outputChunkFiles = []
-        
+
         for i in range(filenum):
-            filename = os.path.join(self.tempdir, "sort-" + ('%06i'%i))
-            self.inputChunkFiles.append(VariableLengthRecordFile(filename,'w+b',64*1024))
+            file = tempfile.NamedTemporaryFile('w+b')
+            self.inputChunkFiles.append(VariableLengthRecordFile(file))
         for i in range(filenum, filenum * 2):
-            filename = os.path.join(self.tempdir, "sort-" + ('%06i'%i))
-            self.outputChunkFiles.append(VariableLengthRecordFile(filename,'w+b',64*1024))
+            file = tempfile.NamedTemporaryFile('w+b')
+            self.outputChunkFiles.append(VariableLengthRecordFile(file))
 
         self.currOutputFile = -1
         self.chunkDepth = 1
@@ -192,24 +199,6 @@ class SortExternal:
 
         return returnValue
         
-
-    def cleanup(self):
-
-        for chunkFile in self.inputChunkFiles:
-            try:
-                chunkFile.close()
-                os.remove(chunkFile.name)
-            except:
-                pass
-
-        for chunkFile in self.outputChunkFiles:
-            try:
-                chunkFile.close()
-                os.remove(chunkFile.name)
-            except:
-                pass
-
-
 if __name__ == '__main__':
     import random
     
