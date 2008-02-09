@@ -137,7 +137,7 @@ class SimpleXMLParser:
         sys.stderr.write("XML end tag: </%s>\n" % tag)
 
     def handleRawCharacterData(self, data):
-        data = data.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&')
+        data = data.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&').replace("&nbsp;", "\xE2\x80\x87")
         self.handleCharacterData(data)
         
     def handleCharacterData(self, data):
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
     iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
     lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-    <b>that</i><span selected></b></a><minor /><a href="big daddy">yowza</a>
+    <b>that</i><span selected></b></a><minor /><a href="big daddy">yow&nbsp;za</a>
     '''
     print s
     
