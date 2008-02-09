@@ -44,7 +44,7 @@ class HTMLParser(SimpleXMLParser):
 
         #sys.stderr.write("HTML start tag: <%s> at '%s'\n" % (tag, self.text[-20:]))
 
-        if tag == "p":
+        if tag == "p" and self.docBuffer:
             self.docBuffer.append("\n\n")
             self.textUnicodeLength = self.textUnicodeLength + 2
             return
@@ -104,7 +104,7 @@ class HTMLParser(SimpleXMLParser):
 if __name__ == '__main__':
     import sys
 
-    s = '<html><h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a></html>'
+    s = '<html><p>hiho<h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a></html>'
 
     print s
     print ""
