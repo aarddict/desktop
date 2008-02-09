@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import compactjson
+import aarddict.compactjson
 from sortexternal import SortExternal
 from htmlparser import HTMLParser
 import optparse
@@ -32,6 +32,7 @@ import os
 import array
 from aarddict.article import *
 import tempfile
+import anydbm
 
 TITLE_MAX_SIZE = 255
 
@@ -88,15 +89,32 @@ def handle_article(title, text):
 #        sys.stderr.write("Truncated title: " + title + "\n")
 #        title = title[:TITLE_MAX_SIZE]
 
-    collationKeyString = collator4.getCollationKey(title).getBinaryString()
-
     # todo:  don't use field separators, or at least use final 3 underscores in a group
 
-    sortex.put(collationKeyString + "___" + title + "___" + str(article_pointer))
+    collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
+
+    #sys.stderr.write("Text: %s\n" % parser.text[:40])
+    if parser.text.lstrip().startswith("See:"):
+        #sys.stderr.write("See: %s\n" % parser.text)
+        try:
+            redirectTitle = parser.tags[0][3]["href"]
+        except:
+            sys.stderr.write("Missing redirect target: %s\n" % title)
+            return
+        collationKeyString1 = collator1.getCollationKey(redirectTitle).getBinaryString()
+    else:
+        collationKeyString1 = collator1.getCollationKey(title).getBinaryString()
+        if collationKeyString1 in index_db:
+            sys.stderr.write("Duplicate key: %s\n" % title)
+        else:
+            #sys.stderr.write("Real article: %s\n" % title)
+            index_db[collationKeyString1] = str(article_pointer)
+        
+    sortex.put(collationKeyString4 + "___" + title + "___" + collationKeyString1)
 
     # index length calculated here because the header is written before we
     # actually write out the index
-    header["index_length"] = header["index_length"] + 4 + struct.calcsize("LLhL") + len(collationKeyString) + 3 + len(title)
+    header["index_length"] = header["index_length"] + 4 + struct.calcsize("LLhL") + len(collationKeyString4) + 3 + len(title)
 
     article_file.write(struct.pack("L", len(jsonstring)) + jsonstring)
     article_pointer = article_pointer + struct.calcsize("L") + len(jsonstring)
@@ -117,10 +135,17 @@ def make_full_index():
         if count % 100 == 0:
             sys.stderr.write("\r" + str(count))
         count = count + 1
-        sortkey, title, article_pointer = item.split("___", 3)
+        sortkey, title, articleCollationKey1 = item.split("___", 3)
+        try:
+            article_file = 0
+            article_pointer = index_db[articleCollationKey1]
+        except KeyError:
+            sys.stderr.write("Redirect not found: %s\n" % title)
+            article_file = -1
+            article_pointer = 0
         sys.stderr.write("sorted: " + title + "\n")
         i_next = 4 + headerlen + len(sortkey) + 3 + len(title)
-        wunit = sep + struct.pack(headerpack, long(i_next), long(i_prev), 0, long(article_pointer)) + sortkey + "___" + title
+        wunit = sep + struct.pack(headerpack, long(i_next), long(i_prev), article_file, long(article_pointer)) + sortkey + "___" + title
         outputFile.write(wunit)
 	
         i_prev = i_next
@@ -164,6 +189,10 @@ sys.stderr.write("Parsing input file...\n")
 
 article_file = tempfile.NamedTemporaryFile('w+b')
 article_pointer = 0
+
+index_db_tempdir = tempfile.mkdtemp()
+index_db_fullname = os.path.join(index_db_tempdir, "index.db")
+index_db = anydbm.open(index_db_fullname, 'n')
 
 header["article_count"] =  0
 header["index_length"] =  0
@@ -217,6 +246,12 @@ outputFile.write("-" * (header_length_1 + 60 - len(json_text)))
 
 sys.stderr.write("Writing index...\n")
 make_full_index()
+
+sortex.cleanup()
+
+index_db.close()
+os.remove(index_db_fullname)
+os.rmdir(index_db_tempdir)
 
 sys.stderr.write("Writing articles...\n")
 article_file.flush()
