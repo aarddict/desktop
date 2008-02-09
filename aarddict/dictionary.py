@@ -31,7 +31,7 @@ class Word:
         self.dictionary = dictionary
         self.encoding = dictionary.character_encoding
         self.collator = dictionary.collator
-        self.article_ptr = None
+        self.article_location = (None, None)
         self.unicode = None
         self.word = None
         self.collation_key = collation_key
@@ -68,25 +68,34 @@ class Word:
         return self.collation_key.startswith(other.collation_key)
     
     def getArticle(self):
-        return self.dictionary.read_article(self.article_ptr)
+        a = self.dictionary.read_article(self.article_location)
+        a.title = self.word 
+        return a
 
 class Dictionary:         
 
     def __init__(self, file_name, collator):    
         self.file_name = file_name
-        self.file = open(file_name, "rb");
-        self.fileid = self.file.read(5);
+        self.file = []
+        self.file.append(open(file_name, "rb"));
+        self.fileid = self.file[0].read(5);
         if self.fileid != "aar10":
-            self.file.close()
+            self.file[0].close()
             raise Exception(file_name + " is not a recognized aarddict dictionary file")
-        self.metadataLength = int(self.file.read(8));
-        self.metadataString = self.file.read(self.metadataLength)
+        self.metadataLength = int(self.file[0].read(8));
+        self.metadataString = self.file[0].read(self.metadataLength)
         self.metadata = compactjson.loads(self.metadataString)
         self.collator = collator
         self.word_list = None
         self.index_start = self.metadata["index_offset"]
         self.index_end = self.index_start + self.metadata["index_length"]
         self.article_offset = self.metadata["article_offset"]
+        n = 1
+        while True:
+            try:
+                self.file.append(open(file_name[:-1] + str(n), "rb"))
+            except:
+                break
         
     title = property(lambda self: self.metadata.get("title", "unknown"))
     index_language = property(lambda self: self.metadata.get("index_language", "unknown"))
@@ -125,13 +134,13 @@ class Dictionary:
                 low = probe
 
     def findword(self, pos):
-        self.file.seek(pos)
+        self.file[0].seek(pos)
         b = ""
         while True:
             remaining = self.index_end - pos - len(b) - 35
             if not remaining:
                 return -1
-            b = ''.join([b, self.file.read(min(128, remaining))])
+            b = ''.join([b, self.file[0].read(min(128, remaining))])
             start = b.find("\xFD\xFD\xFD\xFD")
             if start >= 0:
                 return pos + start
@@ -155,7 +164,7 @@ class Dictionary:
 
                 
     def read_full_index_item(self, pointer):
-        f = self.file
+        f = self.file[0]
         f.seek(pointer)
         sep = f.read(4)
         headerpack = 'LLhL'
@@ -167,16 +176,21 @@ class Dictionary:
         collation_key = pyuca.CollationKey()
         collation_key.set(key)
         word = Word(self, word, collation_key = collation_key)
-        word.article_ptr = article_ptr + self.article_offset
+        if fileno == 0:
+            word.article_location = (0, self.article_offset + article_ptr)
+        else:
+            word.article_location = (fileno, article_ptr)
         return next_word_offset, word
         
-    def read_article(self, pointer):
+    def read_article(self, location):
         a = article.Article()
-        a.fromFile(self.file, pointer)
+        if location[0] >= 0:
+            a.fromFile(self.file[location[0]], location[1])
         return a
 
     def close(self):
-        self.file.close()        
+        for f in self.file:
+            f.close()        
 
 if __name__ == '__main__':
 

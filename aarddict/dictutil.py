@@ -77,7 +77,7 @@ class DictionaryCollection:
         for dict in self.dictionaries[lang]:
             count = 0
             for item in dict.get_word_list_iter(start_word):
-                yield WordLookup(item.word, item.dictionary, item.article_ptr)
+                yield WordLookup(item.word, item.dictionary, item.article_location)
                 count += 1
                 if count >= max_from_one_dict: break
     
