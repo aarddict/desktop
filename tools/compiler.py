@@ -63,12 +63,13 @@ def getOptions():
 
     return parser.parse_args()
 
-def handle_article(title, text):
+def handleArticle(title, text):
     global header
-    global article_pointer
-	
+    global articlePointer
+    global aarFile, aarFileLength
+    
     if (not title) or (not text):
-        sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
+        #sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
         return
     
     #debug.write(text)
@@ -79,7 +80,7 @@ def handle_article(title, text):
     jsonstring = compactjson.dumps([parser.text.rstrip(), parser.tags])
     if options.compress == "bz2":
         jsonstring = bz2.compress(jsonstring)
-    #sys.stderr.write("write article: %i %i %s\n" % (article_file.tell(), len(jsonstring), title))    
+    #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
     
     if header["article_count"] % 100 == 0:
         sys.stderr.write("\r" + str(header["article_count"]))
@@ -101,29 +102,36 @@ def handle_article(title, text):
         except:
             sys.stderr.write("Missing redirect target: %s\n" % title)
             return
-        collationKeyString1 = collator1.getCollationKey(redirectTitle).getBinaryString()
     else:
-        collationKeyString1 = collator1.getCollationKey(title).getBinaryString()
-        if collationKeyString1 in index_db:
+        if title in indexDb:
             sys.stderr.write("Duplicate key: %s\n" % title)
         else:
             #sys.stderr.write("Real article: %s\n" % title)
-            index_db[collationKeyString1] = str(article_pointer)
+            indexDb[title] = str(articlePointer)
         
-    sortex.put(collationKeyString4 + "___" + title + "___" + collationKeyString1)
+    sortex.put(collationKeyString4 + "___" + title)
 
     # index length calculated here because the header is written before we
     # actually write out the index
-    header["index_length"] = header["index_length"] + 4 + struct.calcsize("LLhL") + len(collationKeyString4) + 3 + len(title)
+    header["index_length"] += 4 + struct.calcsize("LLhL") + len(collationKeyString4) + 3 + len(title)
 
-    article_file.write(struct.pack("L", len(jsonstring)) + jsonstring)
-    article_pointer = article_pointer + struct.calcsize("L") + len(jsonstring)
+    articleUnit = struct.pack("L", len(jsonstring)) + jsonstring
+    articleUnitLength = len(articleUnit)
+    if aarFileLength[-1] + articleUnitLength > aarFileLengthMax:
+        aarFile.append(open(aarExtraFilenamePrefix + ("%02i" % len(aarFile)), "w+b", 4096))
+        aarFileLength.append(0)
+        sys.stderr.write("New temp article file: %s\n" % aarFile[-1].name)
 
-def make_full_index():
-    global trailer_length
+    aarFile[-1].write(articleUnit)
+    aarFileLength[-1] += articleUnitLength
+    articlePointer += articleUnitLength
+
+def makeFullIndex():
+    global trailerLength
+    global aarFile, aarFileLength
     
-    i_prev = 0
-    i_next = 0
+    iPrev = 0
+    iNext = 0
 
     headerpack = "LLhL"
     headerlen = struct.calcsize(headerpack)
@@ -135,20 +143,27 @@ def make_full_index():
         if count % 100 == 0:
             sys.stderr.write("\r" + str(count))
         count = count + 1
-        sortkey, title, articleCollationKey1 = item.split("___", 3)
+        sortkey, title = item.split("___", 2)
         try:
-            article_file = 0
-            article_pointer = index_db[articleCollationKey1]
+            articlePointer = long(indexDb[title])
+            if makeSingleFile:
+                fileno = 0
+            else:
+                for fileno in range(1, len(aarFile)):
+                    if articlePointer < aarFileLength[fileno]:
+                        break
+                    articlePointer -= aarFileLength[fileno]
         except KeyError:
             sys.stderr.write("Redirect not found: %s\n" % title)
-            article_file = -1
-            article_pointer = 0
-        sys.stderr.write("sorted: " + title + "\n")
-        i_next = 4 + headerlen + len(sortkey) + 3 + len(title)
-        wunit = sep + struct.pack(headerpack, long(i_next), long(i_prev), article_file, long(article_pointer)) + sortkey + "___" + title
-        outputFile.write(wunit)
+            fileno = -1
+            articlePointer = 0
+        sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
+        iNext = 4 + headerlen + len(sortkey) + 3 + len(title)
+        wunit = sep + struct.pack(headerpack, long(iNext), long(iPrev), fileno, long(articlePointer)) + sortkey + "___" + title
+        aarFile[0].write(wunit)
+        aarFileLength[0] += len(wunit)
 	
-        i_prev = i_next
+        iPrev = iNext
     
     sys.stderr.write("\r" + str(count) + "\n")
 
@@ -157,17 +172,6 @@ def make_full_index():
 #debug = open("debug.html", "w")
 
 options, args = getOptions()
-
-if options.output_file:
-    outputFile = open(options.output_file, "wb", 4096)
-else:
-    outputFile = sys.stdout
-
-if options.input_file:
-    inputFile = open(options.input_file, "rb", 4096)
-else:
-    inputFile = sys.stdin
-
 collator4 = aarddict.pyuca.Collator("aarddict/allkeys.txt")
 collator4.setStrength(4)
 
@@ -182,17 +186,38 @@ header = {
     "compression_type": options.compress
     }
 
-trailer_length = 4 + struct.calcsize("LLhL") + 1 + 3 + 7
+trailerLength = 4 + struct.calcsize("LLhL") + 1 + 3 + 7
 
 sys.stderr.write("Parsing input file...\n")
 
+if options.input_file:
+    inputFile = open(options.input_file, "rb", 4096)
+else:
+    inputFile = sys.stdin
 
-article_file = tempfile.NamedTemporaryFile('w+b')
-article_pointer = 0
+aarFile = []
+aarFileLength = []
 
-index_db_tempdir = tempfile.mkdtemp()
-index_db_fullname = os.path.join(index_db_tempdir, "index.db")
-index_db = anydbm.open(index_db_fullname, 'n')
+if options.output_file:
+    aarFile.append(open(options.output_file, "w+b", 4096))
+    if options.output_file[-3:] == "aar":
+        aarExtraFilenamePrefix = options.output_file[:-2]
+    else:
+        aarExtraFilenamePrefix = options.output_file + ".a"
+else:
+    aarFile.append(sys.stdout)
+aarFileLength.append(0)
+
+aarFile.append(open(aarExtraFilenamePrefix + ("%02i" % len(aarFile)), "w+b", 4096))
+aarFileLength.append(0)
+
+aarFileLengthMax = 2000000000
+
+indexDbTempdir = tempfile.mkdtemp()
+indexDbFullname = os.path.join(indexDbTempdir, "index.db")
+indexDb = anydbm.open(indexDbFullname, 'n')
+
+articlePointer = 0L
 
 header["article_count"] =  0
 header["index_length"] =  0
@@ -200,12 +225,12 @@ header["index_length"] =  0
 if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
     sys.stderr.write("Compiling %s as xdxf\n" % inputFile.name)
     from xdxfparser import XDXFParser
-    p = XDXFParser(collator1, header, handle_article)
+    p = XDXFParser(collator1, header, handleArticle)
     p.parseFile(inputFile)
 else:  
     sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
     from mediawikiparser import MediaWikiParser
-    p = MediaWikiParser(collator1, header, handle_article)
+    p = MediaWikiParser(collator1, header, handleArticle)
     p.parseFile(inputFile)
 
 
@@ -229,47 +254,70 @@ if header["article_language"].lower() in  languageCodeDict:
 if header["index_language"].lower() in  languageCodeDict:
     header["index_language"] = languageCodeDict[header["index_language"].lower()]
 
-json_text = compactjson.dumps(header)
+makeSingleFile = (len(aarFile) == 2) and (aarFileLength[0] + aarFileLength[1] < aarFileLengthMax)
+if makeSingleFile:
+    header["file_count"] = 1
+else:
+    header["file_count"] = len(aarFile)
 
-header_length_1 = len(json_text)
+jsonText = compactjson.dumps(header)
+
+header_length_1 = len(jsonText)
 
 header["index_offset"] = 5 + 8 + header_length_1 + 60
 header["article_offset"] = header["index_offset"] + header["index_length"]
 	
-outputFile.write("aar10")
-json_text = compactjson.dumps(header)
-outputFile.write("%08i" % len(json_text))
+aarFile[0].write("aar10")
+aarFileLength[0] += 5
+
+jsonText = compactjson.dumps(header)
+aarFile[0].write("%08i" % len(jsonText))
+aarFileLength[0] += 8
 	
-outputFile.write(json_text)
+aarFile[0].write(jsonText)
+aarFileLength[0] += len(jsonText)
 	
-outputFile.write("-" * (header_length_1 + 60 - len(json_text)))
+filler = "-" * (header_length_1 + 60 - len(jsonText))
+aarFile[0].write(filler)
+aarFileLength[0] += len(filler)
 
 sys.stderr.write("Writing index...\n")
-make_full_index()
+makeFullIndex()
 
 sortex.cleanup()
 
-index_db.close()
-os.remove(index_db_fullname)
-os.rmdir(index_db_tempdir)
+indexDb.close()
+os.remove(indexDbFullname)
+os.rmdir(indexDbTempdir)
 
 sys.stderr.write("Writing articles...\n")
-article_file.flush()
-article_file.seek(0)
 
-write_count = 0
-while 1:
-    article_len = article_file.read(4)
-    if len(article_len) < 2:
-        break
-    if write_count % 100 == 0:
-        sys.stderr.write("\r" + str(write_count))
-    buffer = article_file.read(struct.unpack("i", article_len)[0])
-    outputFile.write(article_len + buffer)
-    write_count = write_count + 1
-sys.stderr.write("\r" + str(write_count) + "\n")
-article_file.close()
+writeCount = 0L
 
+if makeSingleFile:
+    sys.stderr.write("Combining output files\n")
+    aarFile[1].flush()
+    aarFile[1].seek(0)
+    while 1:
+        if writeCount % 100 == 0:
+            sys.stderr.write("\r" + str(writeCount))
+        writeCount += 1
+        articleLengthString = aarFile[1].read(4)
+        if len(articleLengthString) == 0:
+            break
+        articleLength = struct.unpack("i", articleLengthString)[0]
+        buffer = aarFile[1].read(articleLength)
+        aarFile[0].write(articleLengthString + buffer)
+        aarFileLength[0] += articleLength
+    sys.stderr.write("\r" + str(writeCount) + "\n")
+    aarFile[0].close()
+    aarFile[1].close()
+    os.remove(aarFile[1].name)    
+else:
+    sys.stderr.write("Created %i output files\n" % len(aarFile))
+    for f in aarFile:
+        f.close
+    
 sys.stderr.write("Done.\n")
 
 

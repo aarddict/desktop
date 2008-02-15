@@ -47,7 +47,7 @@ class Word:
                 self.unicode = self.word.decode(self.encoding)
             except UnicodeDecodeError:
                 self.unicode = u"error"
-                sys.stderr.write("Unable to decode: " + self.encoding + " " + word + "\n")
+                sys.stderr.write("Unable to decode: %s\n" % repr(self.word))
 
         if not self.collation_key: 
             self.collation_key = self.dictionary.collator.getCollationKey(self.unicode)
@@ -90,12 +90,8 @@ class Dictionary:
         self.index_start = self.metadata["index_offset"]
         self.index_end = self.index_start + self.metadata["index_length"]
         self.article_offset = self.metadata["article_offset"]
-        n = 1
-        while True:
-            try:
-                self.file.append(open(file_name[:-1] + str(n), "rb"))
-            except:
-                break
+        for i in range(1, self.metadata["file_count"]):
+            self.file.append(open(file_name[:-2] + ("%02i" % i), "rb"))
         
     title = property(lambda self: self.metadata.get("title", "unknown"))
     index_language = property(lambda self: self.metadata.get("index_language", "unknown"))
