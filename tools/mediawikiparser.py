@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# coding: utf-8
 
 # Process Wikipedia dump files
 #
@@ -33,6 +34,7 @@ class MediaWikiParser(SimpleXMLParser):
         self.reSquare2 = re.compile(r"\[\[(.*?)\]\]")
         self.reLeadingSpaces = re.compile(r"^\s*", re.MULTILINE)
         self.reTrailingSpaces = re.compile(r"\s*$", re.MULTILINE)
+        self.reQuotation = re.compile(r"^\{\{(quote|quotation) ?\|")
 
 
     def handleStartElement(self, tag, attrs):
@@ -69,13 +71,14 @@ class MediaWikiParser(SimpleXMLParser):
                         
         elif tag == "page":
             
-            if self.weakRedirect(self.title, self.text):
-                return
+            #if self.weakRedirect(self.title, self.text):
+            #    return
             try:
                 self.text = self.translateWikiMarkupToHTML(self.text).strip()
             except Exception, e:
                 sys.stderr.write("Unable to translate wiki markup: %s\n" % str(e))
                 self.text = ""
+            sys.stderr.write("Mediawiki article: %s\n" % self.title)
             self.consumer(self.title, self.text)
             return
             
@@ -111,12 +114,14 @@ class MediaWikiParser(SimpleXMLParser):
         text = self.reRedirect.sub("See:", text)
         text = wikimarkup.parse(text, False)
         text = parseLinks(text)
+        text = parseTemplates(text)
         return text
 
 def parseLinks(s):
-    
+
+    left = -1
     while 1:
-        left = s.find("[[")
+        left = s.find("[[", left + 1)
         if left < 0:
             break
         nest = 2
@@ -153,27 +158,70 @@ def parseLinks(s):
             r = '<a href="' + p[0] + '">' + p[-1] + '</a>'
             
 
-        s = "".join([s[:left] + r + s[right:]]) 
+        s = "".join([s[:left], r, s[right:]]) 
         
     return s
 
-template_re = re.compile(r'\{\{([^\|]+)\|?(.*)\}\}')
+def parseTemplates(s):
+    left = -1
+    while 1:
+        left = s.find("{{", left + 1)
+        if left < 0:
+            break
+        right = s.find("}}", left)
+        if right < 0:
+            break
+        right += 2
 
-def parseTemplate(s):
-    m = template_re.search(s)
-    if m:
-        name = m.group(1)
-        params = {}
-        param_str = m.group(2)
-        param_pairs=param_str.split("|");
-        paramcount = 0
-        for pair in param_pairs:
-            key, sep, val = pair.partition("=")
-            if key:
-                if val:
-                    params[key] = val
-                else:
-                    paramcount += 1
-                    params[paramcount] = key
-        return name, params
+        template = s[left:right]
+
+        # sys.stderr.write("Template: %s\n" % template)
+        # default behaviour is to remove templates
+        template = ""
+        
+        s = "".join([s[:left], template, s[right:]]) 
+        
+    return s
+
+def printDoc(title, text):
+    print repr(title)
+    print repr(text)
+
+if __name__ == '__main__':
+    import sys
+
+    s = """
+<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.3/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.3/ http://www.mediawiki.org/xml/export-0.3.xsd" version="0.3" xml:lang="fr">
+<siteinfo>
+<sitename>Wikipédia</sitename>
+<base>http://fr.wikipedia.org/wiki/Accueil</base>
+<generator>MediaWiki 1.12alpha</generator>
+</siteinfo>
+<page>
+<title>Antoine Meillet</title>
+<id>3</id>
+<revision>
+<id>19601668</id>
+<timestamp>2007-08-10T21:17:41Z</timestamp>
+<contributor>
+<username>Gribeco</username>
+<id>24358</id>
+</contributor>
+<minor />
+<text xml:space="preserve">'''PJ''' [[nov]] [[Moul]] here is a line.
+The main {{export}} of any {{country}} is the people.
+</text>
+</revision>
+</page>
+</mediawiki>
+"""
+   
+    print s
+    print ""
+    
+    collator = aarddict.pyuca.Collator("aarddict/allkeys.txt")    
+    parser = MediaWikiParser(collator, {}, printDoc)
+    parser.parseString(s)
+    
+    print "Done."
 
