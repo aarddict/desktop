@@ -100,16 +100,17 @@ def handleArticle(title, text):
         try:
             redirectTitle = parser.tags[0][3]["href"]
         except:
-            sys.stderr.write("Missing redirect target: %s\n" % title)
+            #sys.stderr.write("Missing redirect target: %s\n" % title)
             return
     else:
+        redirectTitle = ""
         if title in indexDb:
             sys.stderr.write("Duplicate key: %s\n" % title)
         else:
-            #sys.stderr.write("Real article: %s\n" % title)
+            sys.stderr.write("Real article: %s\n" % title)
             indexDb[title] = str(articlePointer)
-        
-    sortex.put(collationKeyString4 + "___" + title)
+
+    sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
 
     # index length calculated here because the header is written before we
     # actually write out the index
@@ -143,9 +144,13 @@ def makeFullIndex():
         if count % 100 == 0:
             sys.stderr.write("\r" + str(count))
         count = count + 1
-        sortkey, title = item.split("___", 2)
+        sortkey, title, redirectTitle = item.split("___", 3)
+        if redirectTitle:
+            target = redirectTitle
+        else:
+            target = title
         try:
-            articlePointer = long(indexDb[title])
+            articlePointer = long(indexDb[target])
             if makeSingleFile:
                 fileno = 0
             else:
@@ -154,10 +159,10 @@ def makeFullIndex():
                         break
                     articlePointer -= aarFileLength[fileno]
         except KeyError:
-            sys.stderr.write("Redirect not found: %s\n" % title)
+            sys.stderr.write("Redirect not found: %s %s\n" % (repr(title), repr(redirectTitle)))
             fileno = -1
             articlePointer = 0
-        sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
+        #sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
         iNext = 4 + headerlen + len(sortkey) + 3 + len(title)
         wunit = sep + struct.pack(headerpack, long(iNext), long(iPrev), fileno, long(articlePointer)) + sortkey + "___" + title
         aarFile[0].write(wunit)
@@ -293,6 +298,9 @@ os.rmdir(indexDbTempdir)
 sys.stderr.write("Writing articles...\n")
 
 writeCount = 0L
+
+sys.stderr.write("File length %i %i\n" % (header["article_offset"], aarFile[0].tell()))
+
 
 if makeSingleFile:
     sys.stderr.write("Combining output files\n")
