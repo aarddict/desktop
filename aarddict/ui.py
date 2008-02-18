@@ -35,6 +35,7 @@ from Queue import Queue
 from math import fabs
 from aarddict import ucollator
 from dictionary import Dictionary
+import functools
 
 gobject.threads_init()
 
@@ -222,6 +223,8 @@ class WordLookupByWord(dict):
 class DictViewer(object):
              
     def __init__(self):
+        self.select_word_exact = functools.partial(self.__select_word, eq_func = self.__exact_eq)
+        self.select_word_weak = functools.partial(self.__select_word, eq_func = self.__weak_eq)
         self.update_completion_stopped = True
         self.lookup_stop_requested = False
         self.update_completion_t0 = None
@@ -642,25 +645,22 @@ class DictViewer(object):
         self.schedule(self.update_completion, 0, word, (word, lang))        
         
     def select_word(self, word, lang):  
-        return True if self.__select_word(word, lang, self.__exact_eq)\
-                    else self.__select_word(word, lang, self.__weak_eq)
+        return True if self.select_word_exact(word, lang)\
+                    else self.select_word_weak(word, lang)
 
     def __select_word(self, word, lang, eq_func):     
-        print 'select word', word, lang, eq_func
-        if len(self.word_completion) == 0:
-            return False
         word_list = self.word_completion.word_list(lang)
         if word_list:                    
             model = word_list.get_model()
             word_iter = model.get_iter_first()
-            while word_iter and not eq_func(model[word_iter][0], word):
+            while word_iter:
+                if eq_func(model[word_iter][0], word):
+                    word_list.get_selection().select_iter(word_iter)            
+                    word_path = model.get_path(word_iter)
+                    word_list.scroll_to_cell(word_path)
+                    self.word_completion.set_current_lang(lang)
+                    return True
                 word_iter = model.iter_next(word_iter)
-            if word_iter and eq_func(model[word_iter][0], word):
-                word_list.get_selection().select_iter(word_iter)            
-                word_path = model.get_path(word_iter)
-                word_list.scroll_to_cell(word_path)
-                self.word_completion.set_current_lang(lang)
-                return True
         return False
     
     def __exact_eq(self, word_lookup1, word_lookup2):
