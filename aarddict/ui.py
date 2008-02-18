@@ -629,7 +629,6 @@ class DictViewer(object):
         word = xml.sax.saxutils.escape(word)
         cell.set_property('markup', '<span>%s</span> <span foreground="darkgrey">(<i>%s</i>)</span>' % (word, lang)) 
         
-        
     def word_selected_in_history(self, widget, data = None):       
         active = self.word_input.get_active()
         if active == -1:
@@ -642,22 +641,33 @@ class DictViewer(object):
         #use schedule instead of direct call to interrupt already scheduled update if any
         self.schedule(self.update_completion, 0, word, (word, lang))        
         
-    def select_word(self, word, lang):        
+    def select_word(self, word, lang):  
+        return True if self.__select_word(word, lang, self.__exact_eq)\
+                    else self.__select_word(word, lang, self.__weak_eq)
+
+    def __select_word(self, word, lang, eq_func):     
+        print 'select word', word, lang, eq_func
         if len(self.word_completion) == 0:
             return False
         word_list = self.word_completion.word_list(lang)
         if word_list:                    
             model = word_list.get_model()
             word_iter = model.get_iter_first()
-            while word_iter and str(model[word_iter][0]) != str(word):
+            while word_iter and not eq_func(model[word_iter][0], word):
                 word_iter = model.iter_next(word_iter)
-            if word_iter and str(model[word_iter][0]) == str(word):
+            if word_iter and eq_func(model[word_iter][0], word):
                 word_list.get_selection().select_iter(word_iter)            
                 word_path = model.get_path(word_iter)
                 word_list.scroll_to_cell(word_path)
                 self.word_completion.set_current_lang(lang)
                 return True
         return False
+    
+    def __exact_eq(self, word_lookup1, word_lookup2):
+        return str(word_lookup1) == str(word_lookup2)
+    
+    def __weak_eq(self, word_lookup1, word_lookup2):
+        return ucollator.getCollationKey(str(word_lookup1)) == ucollator.getCollationKey(str(word_lookup2))
 
     def create_menu_items(self):
         self.mi_open = gtk.MenuItem("Add...")
