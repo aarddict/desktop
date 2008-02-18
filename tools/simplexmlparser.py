@@ -31,69 +31,72 @@ class SimpleXMLParser:
         self.parseFile(file)
         
     def parseFile(self, file):
-        self.file = file
-        self.EOF = False
-        self.buffer = ""
-        self.bufpos = 0
-        self.tagpos = 0
+        buffer = ""
+        buflen = 0
+        bufpos = 1
+        tag = ""
+        data = ""
         
         while True:
 
-            self.tagpos = self.scanTo("<") 
-            
-            if self.tagpos > self.bufpos:
-                self.handleRawCharacterData(self.buffer[self.bufpos:self.tagpos])
-                self.bufpos = self.tagpos
-
-            if self.EOF:
+            if bufpos >= buflen:
+                buffer = file.read(100000)
+                buflen = len(buffer)
+                bufpos = 0
+                
+            if not buffer:
                 break
-
-            if self.buffer[self.tagpos:self.tagpos+4] == "<!--":
-                endpos = self.scanTo("-->") + 3
-                self.bufpos = endpos
-                continue
-          
-            endpos = self.scanTo(">") + 1
-  
-            tag = self.buffer[self.tagpos+1:endpos-1]
-            if tag:
-                tag = tag.replace("\n", " ")
-                if tag[0] == '/':
-                    tag = tag.replace(" ", "")
-                    self.handleEndElement(tag[1:])
-                elif tag[-1] == '/':
-                    tag = tag.replace(" ", "")
-                    self.handleStartElement(tag[:-1], {})
-                    self.handleEndElement(tag[:-1])
-                else:
-                    tagElements = tag.split(" ")
-                    self.handleStartElement(tagElements[0], self.makeAttrDict(tagElements[1:]))
-
-            self.bufpos = endpos
             
-    def scanTo(self, string):
-        #sys.stderr.write("scanto: %s\n" % string)
-        scanpos = self.bufpos
-        while True:
-            pos = self.buffer.find(string, scanpos)
-            if pos >= 0:
-                #sys.stderr.write("found: %s %i\n" % (string,pos))
-                return pos
-            scanpos = len(self.buffer)
-            if self.EOF:
-                return scanpos
-            newdata = self.file.read(100000)
-            #sys.stderr.write("Read: %s\n" % (repr(newdata)))
-            if newdata == "":
-                self.EOF = True
-                #sys.stderr.write("eof: %s %i\n" % (string,scanpos))
-            if len(self.buffer) > 1000000:
-                sys.stderr.write("Simplexmlparser buffer overflow: %s\n" % self.buffer[-100:])
+            if tag:
+                pos = buffer.find(">", bufpos)
+                if pos >= 0:
+                    tag += buffer[bufpos:pos+1]
+                    bufpos = pos+1
+                    if tag.startswith("<!--"):
+                        if tag.endswith("-->"):
+                            tag = ""
+                            continue
+                        else:
+                            continue
+                    else:
+                        self.processTag(tag)
+                        inTag = False
+                        tag = ""
+                        continue
+                else:
+                    tag += buffer[bufpos:]
+                    bufpos = buflen
+                    continue
+
+            pos = buffer.find("<", bufpos)
+            if pos == -1:
+                data += buffer[bufpos:]
+                # don't split "&nbsp;" etc.
+                if buffer[-5:].find("&") == -1:
+                    self.processData(data)
+                    data = ""
+                bufpos = buflen
             else:
-                self.buffer = "".join([self.buffer[self.bufpos:], newdata])
-                scanpos = scanpos - self.bufpos
-                self.tagpos = self.tagpos - self.bufpos
-                self.bufpos = 0
+                if pos > bufpos:
+                    data += buffer[bufpos:pos]
+                self.processData(data)
+                data = ""
+                bufpos = pos + 1
+                tag = "<"
+
+    def processTag(self, tag):
+        tag = tag[1:-1]
+        tag = tag.replace("\n", " ")
+        if tag[0] == '/':
+            tag = tag.replace(" ", "")
+            self.handleEndElement(tag[1:])
+        elif tag[-1] == '/':
+            tag = tag.replace(" ", "")
+            self.handleStartElement(tag[:-1], {})
+            self.handleEndElement(tag[:-1])
+        else:
+            tagElements = tag.split(" ")
+            self.handleStartElement(tagElements[0], self.makeAttrDict(tagElements[1:]))
             
 
     def makeAttrDict(self, tokens):
@@ -127,21 +130,21 @@ class SimpleXMLParser:
                 value = value[1:-1]
             attrDict[name] = value
         return attrDict
-    
+
+    def processData(self, data):
+        data = data.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&').replace("&nbsp;", "\xE2\x80\x87")
+        self.handleCharacterData(data)
+
     def handleStartElement(self, tag, attrsList):
-            
+        # usually overridden
         sys.stderr.write("XML start tag: <%s> %s\n" % (tag, str(attrsList)))
 
     def handleEndElement(self, tag):
-
+        # usually overridden
         sys.stderr.write("XML end tag: </%s>\n" % tag)
-
-    def handleRawCharacterData(self, data):
-        data = data.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&').replace("&nbsp;", "\xE2\x80\x87")
-        self.handleCharacterData(data)
         
     def handleCharacterData(self, data):
-
+        # usually overridden
         sys.stderr.write("data: '%s'\n" % data)
     
 if __name__ == '__main__':
