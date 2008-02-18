@@ -85,6 +85,8 @@ class LangNotebook(gtk.Notebook):
         return self[self.get_current_page()]
     
     def word_list(self, lang):
+        if lang is None:
+            return None
         page = self.__page(lang)
         return page.child if page else None
     
@@ -131,7 +133,8 @@ class LangNotebook(gtk.Notebook):
                 return
             
     def current_lang(self):
-        return self.current().lang
+        current = self.current()
+        return current.lang if current else None
     
     def set_current_lang(self, lang):
         page = self.__page(lang)
@@ -501,11 +504,12 @@ class DictViewer(object):
     def get_selected_word(self):
         selected_lang = self.word_completion.current_lang()
         current_word_list = self.word_completion.word_list(selected_lang)
-        selection = current_word_list.get_selection()
-        current_model, selected = selection.get_selected()
         selected_word = None
-        if selected:
-            selected_word = current_model[selected][0]
+        if current_word_list:
+            selection = current_word_list.get_selection()
+            current_model, selected = selection.get_selected()
+            if selected:
+                selected_word = current_model[selected][0]
         return (selected_word, selected_lang)
     
     def stop_lookup(self):
