@@ -96,6 +96,8 @@ class ArticleFormat:
         buffer = gtk.TextBuffer()
         buffer.create_tag("b", weight = pango.WEIGHT_BOLD)
         buffer.create_tag("strong", weight = pango.WEIGHT_BOLD)
+        buffer.create_tag("small", scale = pango.SCALE_SMALL)
+        buffer.create_tag("big", scale = pango.SCALE_LARGE)
         buffer.create_tag("h1", weight = pango.WEIGHT_ULTRABOLD, scale = pango.SCALE_X_LARGE, pixels_above_lines = 12, pixels_below_lines = 6)
         buffer.create_tag("h2", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_LARGE, pixels_above_lines = 6, pixels_below_lines = 3)
         buffer.create_tag("h3", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_MEDIUM, pixels_above_lines = 3, pixels_below_lines = 2)
