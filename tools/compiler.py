@@ -104,7 +104,7 @@ def handleArticle(title, text):
             return
     else:
         redirectTitle = ""
-        if title in indexDb:
+        if indexDb.has_key(title):
             sys.stderr.write("Duplicate key: %s\n" % title)
         else:
             sys.stderr.write("Real article: %s\n" % title)
