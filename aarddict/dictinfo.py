@@ -68,7 +68,7 @@ class DictDetailPane(gtk.HBox):
             self.lbl_title.set_text(dict.title)
             self.lbl_version.set_text(dict.version)
             self.lbl_copyright.set_text(dict.copyright)
-            self.lbl_num_of_words.set_text(locale.format("%d", dict.article_count))
+            self.lbl_num_of_words.set_text(locale.format("%u", dict.article_count, True))
             self.lbl_file_name.set_text(dict.file_name)
         else:
             self.lbl_title.set_text('')
