@@ -98,6 +98,8 @@ class Dictionary:
     article_language = property(lambda self: self.metadata.get("article_language", "unknown"))    
     version = property(lambda self: self.metadata.get("aarddict_version", "unknown"))
     character_encoding = property(lambda self: self.metadata.get("character_encoding", "utf-8"))
+    copyright = property(lambda self: self.metadata.get("copyright", ""))
+    article_count = property(lambda self: self.metadata.get("article_count", 0))
 
     def __eq__(self, other):
         return self.key() == other.key()

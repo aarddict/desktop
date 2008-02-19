@@ -28,9 +28,8 @@ class DictDetailPane(gtk.HBox):
         self.lbl_version = self.create_value_label()
         self.lbl_copyright = self.create_value_label()
         self.lbl_file_name = self.create_value_label()
-        self.lbl_compression = self.create_value_label()
         self.lbl_num_of_words = self.create_value_label()
-        table = gtk.Table(6, 2, False)
+        table = gtk.Table(5, 2, False)
         scrolled_window = gtk.ScrolledWindow()
         scrolled_window.set_shadow_type(gtk.SHADOW_IN)
         scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
@@ -50,8 +49,6 @@ class DictDetailPane(gtk.HBox):
         table.attach(self.lbl_num_of_words,1,2,3,4, yoptions = gtk.FILL)                        
         table.attach(self.create_label("From file:"),0,1,4,5, xoptions = gtk.FILL, yoptions = gtk.FILL)
         table.attach(self.lbl_file_name,1,2,4,5, yoptions = gtk.FILL)                                
-        table.attach(self.create_label("Compression:"),0,1,5,6, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_compression,1,2,5,6)                                
         table.set_border_width(5)
             
     def create_label(self, text):
@@ -71,16 +68,14 @@ class DictDetailPane(gtk.HBox):
             self.lbl_title.set_text(dict.title)
             self.lbl_version.set_text(dict.version)
             self.lbl_copyright.set_text(dict.copyright)
-            self.lbl_num_of_words.set_text(locale.format("%d", dict.header.num_of_words))
+            self.lbl_num_of_words.set_text(locale.format("%d", dict.article_count))
             self.lbl_file_name.set_text(dict.file_name)
-            self.lbl_compression.set_text("%s" % dict.compression)
         else:
             self.lbl_title.set_text('')
             self.lbl_version.set_text('')
             self.lbl_copyright.set_text('')
             self.lbl_num_of_words.set_text('')                     
             self.lbl_file_name.set_text('')   
-            self.lbl_compression.set_text('')
         
         
 class DictInfoDialog(gtk.Dialog):
