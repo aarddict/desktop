@@ -56,10 +56,6 @@ def create_button(stock_id, action):
     button.connect("clicked", action);
     return button  
 
-def remove_all_pages(notebook):
-    while notebook.get_n_pages() > 0:            
-        notebook.remove_page(-1)  
-
 class LangNotebook(gtk.Notebook):
     
     label_pattern = '%s (%d)'
@@ -574,7 +570,6 @@ class DictViewer(object):
             count += len(word_list)       
         if count == 0: statusmsg += ', nothing found'
         self.statusbar.push(self.update_completion_ctx_id, statusmsg) 
-        #model = gtk.TreeStore(object)
         for lang in lang_word_list.iterkeys():
             word_list = self.word_completion.word_list(lang)
             model = word_list.get_model()
@@ -629,8 +624,6 @@ class DictViewer(object):
         active = self.word_input.get_active()
         if active == -1:
             self.clear_tabs();
-            #removing selection prevents virtual keaboard from disapppearing
-            #self.word_completion.get_selection().unselect_all()
             self.schedule(self.update_completion, 600, self.word_input.child.get_text())            
             return
         word, lang = self.word_input.get_model()[active]
