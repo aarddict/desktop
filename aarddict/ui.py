@@ -18,24 +18,16 @@ Copyright (C) 2006-2008 Igor Tkach
 """
 import pygtk
 pygtk.require('2.0')
-import gtk
-import pango
-import dictutil
-import dictinfo
-import articleformat
-from appstate import *
-import gobject
-import string
-import xml.sax.saxutils
-import re
-import time
-import webbrowser
+
+import gtk, pango, gobject
+import dictutil, dictinfo, articleformat
+import re, functools, webbrowser, time
+from xml.sax.saxutils import escape
 from threading import Thread
 from Queue import Queue
 from math import fabs
 from aarddict import ucollator
 from dictionary import Dictionary
-import functools
 
 gobject.threads_init()
 
@@ -284,21 +276,27 @@ class DictViewer(object):
         self.update_title()
         self.window.show_all()
         self.word_input.child.grab_focus()
+        self.load_app_state()
+        
+    def load_app_state(self):
         try:
-            self.select_word_on_open = None
-            self.lang_positions_on_open = None
-            app_state = load_app_state()     
-            if app_state: 
-                self.select_word_on_open = app_state.selected_word
-                self.lang_positions_on_open = app_state.lang_positions
-                self.set_word_input(app_state.word)
-                self.open_dicts(app_state.dict_files)
-                app_state.history.reverse()
-                [self.add_to_history(w, l) for w, l in app_state.history]
-                self.set_phonetic_font(app_state.phonetic_font)
-                self.last_dict_file_location = app_state.last_dict_file_location
-                if hasattr(app_state, 'drag_selects'):
-                    self.mi_drag_selects.set_active(app_state.drag_selects)
+            import shelve, os.path as p
+            statefile = p.join(p.expanduser('~'), '.aarddict', 'appstate')
+            self.appstate = shelve.open(statefile)
+            if 'word' in self.appstate:
+                self.set_word_input(self.appstate['word'])
+            if 'dict-files' in self.appstate:
+                self.open_dicts(self.appstate['dict-files'])
+            if 'history' in self.appstate:
+                history = self.appstate['history']
+                history.reverse()
+                [self.add_to_history(w, l) for w, l in history]
+            if 'phonetic-font' in self.appstate:
+                self.set_phonetic_font(self.appstate['phonetic-font'])
+            if 'last-dict-file-location' in self.appstate:
+                self.last_dict_file_location = self.appstate['last-dict-file-location']
+            if 'drag-selects' in self.appstate:
+                self.mi_drag_selects.set_active(self.appstate['drag-selects'])
         except Exception, ex:
             print 'Failed to load application state:', ex                     
     
@@ -322,29 +320,24 @@ class DictViewer(object):
         self.show_status_display("Saving application state...", "Exiting")
         
     def save_state_worker(self):
-        time.sleep(0)
         word = self.word_input.child.get_text()
-        history_list = []
-        hist_model = self.word_input.get_model()
-        time.sleep(0)
-        hist_model.foreach(self.history_to_list, history_list)
-        time.sleep(0)
+        history = []
+        self.word_input.get_model().foreach(self.history_to_list, history)
         selected_word, selected_word_lang = self.get_selected_word()
         selected = (str(selected_word), selected_word_lang)
         dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
-        state = State()
         if self.phonetic_font_desc:
-            state.phonetic_font = self.phonetic_font_desc.to_string()
-        state.word = word
-        state.selected_word = selected
-        state.history = history_list
-        state.recent = self.recent_menu_items.keys()
-        state.dict_files = dict_files
-        state.last_dict_file_location = self.last_dict_file_location
-        state.drag_selects = self.mi_drag_selects.get_active()
-        state.lang_positions = {}
+            self.appstate['phonetic-font'] = self.phonetic_font_desc.to_string()
+        self.appstate['word'] = word
+        self.appstate['selected-word'] = selected
+        self.appstate['history'] = history
+        self.appstate['dict-files'] = dict_files
+        self.appstate['last-dict-file-location'] = self.last_dict_file_location
+        self.appstate['drag-selects'] = self.mi_drag_selects.get_active()
+        lang_positions = {}
         for page in self.word_completion:
-            state.lang_positions[page.lang] = self.word_completion.page_num(page)
+            lang_positions[page.lang] = self.word_completion.page_num(page)
+        self.appstate['lang-positions'] = lang_positions
         errors = []
         for dict in self.dictionaries.get_dicts():
             try:
@@ -352,7 +345,7 @@ class DictViewer(object):
             except Exception, e:
                 errors.append(e)
         try:
-            save_app_state(state)
+            self.appstate.close()
         except Exception, e:
             errors.append(e)
         gobject.idle_add(self.shutdown_ui, errors)
@@ -629,7 +622,7 @@ class DictViewer(object):
     
     def format_history_item(self, celllayout, cell, model, iter, user_data = None):
         word, lang  = model[iter]
-        word = xml.sax.saxutils.escape(word)
+        word = escape(word)
         cell.set_property('markup', '<span>%s</span> <span foreground="darkgrey">(<i>%s</i>)</span>' % (word, lang)) 
         
     def word_selected_in_history(self, widget, data = None):       
@@ -896,13 +889,14 @@ class DictViewer(object):
         if len(self.open_errors) > 0:
             self.show_error("Open Failed", self.errors_to_text(self.open_errors))
             self.open_errors = None   
-        if self.lang_positions_on_open:
+        if 'lang-positions' in self.appstate:
+            lang_positions = self.appstate['lang-positions']
             for page in self.word_completion:
-                self.word_completion.reorder_child(page, self.lang_positions_on_open[page.lang])
-            self.lang_positions_on_open = None
-        if self.select_word_on_open:
-            word, lang = self.select_word_on_open
-            self.select_word_on_open = None
+                self.word_completion.reorder_child(page, lang_positions[page.lang])
+            del self.appstate['lang-positions']
+        if 'selected-word' in self.appstate:
+            word, lang = self.appstate['selected-word']
+            del self.appstate['selected-word']
         else:
             word, lang = self.get_selected_word()
             
