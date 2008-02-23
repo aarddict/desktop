@@ -145,6 +145,9 @@ class Collator:
                 collationKey.append(0)
             for element in collation_elements:
                 value = int(element[1][level], 16)
+                if value > 65536:
+                    sys.stderr.write("Invalid element: %s %s\n" % (repr(string), repr(collation_elements)))
+                    continue
                 if value != 0:
                     b0 = (value // 256)
                     b1 = (value % 256)
