@@ -1,9 +1,24 @@
 #!/usr/bin/python
 # coding: utf-8
 
-# Process Wikipedia dump files
-#
-# Jeremy Mortis (mortis@ucalgary.ca)
+"""
+This file is part of Aarddict Dictionary Viewer
+(http://code.google.com/p/aarddict)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Copyright (C) 2008  Jeremy Mortis and Igor Tkach
+"""
 
 import os
 import sys
@@ -14,6 +29,7 @@ from aarddict.article import Article
 from aarddict.article import Tag
 import aarddict.pyuca
 
+# http://code.google.com/p/wikimarkup
 import wikimarkup
 
 class MediaWikiParser(SimpleXMLParser):
@@ -71,8 +87,21 @@ class MediaWikiParser(SimpleXMLParser):
                         
         elif tag == "page":
             
-            #if self.weakRedirect(self.title, self.text):
-            #    return
+            if self.weakRedirect(self.title, self.text):
+                return
+
+            if self.title.lower().startswith("image:"):
+                return
+
+            if self.title.lower().startswith("template:"):
+                return
+
+            if self.title.lower().startswith("category:"):
+                return
+
+            if self.title.lower().startswith("wikipedia:"):
+                return
+
             try:
                 self.text = self.translateWikiMarkupToHTML(self.text).strip()
             except Exception, e:
@@ -177,7 +206,10 @@ def parseTemplates(s):
 
         # sys.stderr.write("Template: %s\n" % template)
         # default behaviour is to remove templates
-        template = ""
+        if template.startswith("{{infobox"):
+            pass
+        else:
+            template = ""
         
         s = "".join([s[:left], template, s[right:]]) 
         
@@ -210,6 +242,7 @@ if __name__ == '__main__':
 <minor />
 <text xml:space="preserve">'''PJ''' [[nov]] [[Moul]] here is a line.
 The main {{export}} of any {{country}} is the people.
+{{infobox hi there}}
 </text>
 </revision>
 </page>
