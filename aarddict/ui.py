@@ -270,8 +270,10 @@ class DictViewer(object):
         
     def load_app_state(self):
         try:
-            import shelve, os.path as p
-            statefile = p.join(p.expanduser('~'), '.aarddict', 'appstate')
+            import shelve, os, os.path as p
+            d = p.join(p.expanduser('~'), '.aarddict')
+            if not p.exists(d): os.mkdir(d)
+            statefile = p.join(d, 'appstate')
             self.appstate = shelve.open(statefile)
             if 'word' in self.appstate:
                 self.set_word_input(self.appstate['word'])
