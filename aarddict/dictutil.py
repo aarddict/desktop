@@ -26,8 +26,9 @@ class DictFormatError(Exception):
          return repr(self.value)      
 
 class WordLookup:
-    def __init__(self, word, dict = None, article_ptr = None):
+    def __init__(self, word, collation_key, dict = None, article_ptr = None):
         self.word = word
+        self.collation_key = collation_key
         self.lookup = {}
         if dict and article_ptr:
             self.add_article(dict, article_ptr)
@@ -40,6 +41,9 @@ class WordLookup:
         
     def __str__(self):
         return self.word
+    
+    def __cmp__(self, other):
+        return cmp(self.collation_key, other.collation_key)
     
     def read_articles(self):
         return [(dict,dict.read_article(article_ptr)) for dict, article_ptr in self.lookup.iteritems()]
@@ -77,7 +81,7 @@ class DictionaryCollection:
         for dict in self.dictionaries[lang]:
             count = 0
             for item in dict.get_word_list_iter(start_word):
-                yield WordLookup(item.word, item.dictionary, item.article_location)
+                yield WordLookup(item.word, item.collation_key, item.dictionary, item.article_location)
                 count += 1
                 if count >= max_from_one_dict: break
     

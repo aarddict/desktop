@@ -56,10 +56,6 @@ def create_button(stock_id, action):
     button.connect("clicked", action);
     return button  
 
-def remove_all_pages(notebook):
-    while notebook.get_n_pages() > 0:            
-        notebook.remove_page(-1)  
-
 class LangNotebook(gtk.Notebook):
     
     label_pattern = '%s (%d)'
@@ -206,12 +202,6 @@ class ArticleView(gtk.TextView):
             obj.disconnect(handler)
         obj.set_data("handlers", None)
     
-class WordLookupByWord(dict):
-    def __missing__(self, word):
-        value = dictutil.WordLookup(word)
-        self.__setitem__(word, value)
-        return value
-
 class DictViewer(object):
              
     def __init__(self):
@@ -280,8 +270,10 @@ class DictViewer(object):
         
     def load_app_state(self):
         try:
-            import shelve, os.path as p
-            statefile = p.join(p.expanduser('~'), '.aarddict', 'appstate')
+            import shelve, os, os.path as p
+            d = p.join(p.expanduser('~'), '.aarddict')
+            if not p.exists(d): os.mkdir(d)
+            statefile = p.join(d, 'appstate')
             self.appstate = shelve.open(statefile)
             if 'word' in self.appstate:
                 self.set_word_input(self.appstate['word'])
@@ -540,15 +532,17 @@ class DictViewer(object):
         interrupted = False
         lang_word_list = {}
         for lang in self.dictionaries.langs():
-            word_lookups = WordLookupByWord()
+            word_lookups = {}
             for item in self.dictionaries.get_word_list_iter(lang, start_word):
                 time.sleep(0)
                 if self.lookup_stop_requested:
                     interrupted = True
                     return (lang_word_list, interrupted)
-                word_lookups[item.word].add_articles(item)
+                word_lookups.setdefault(item.word, 
+                                        dictutil.WordLookup(item.word, 
+                                                            item.collation_key)).add_articles(item)
             word_list = word_lookups.values()
-            word_list.sort(key = lambda w: w.word)
+            word_list.sort()
             if len (word_list) > 0: lang_word_list[lang] = word_list
         return (lang_word_list, interrupted)
     
@@ -574,7 +568,6 @@ class DictViewer(object):
             count += len(word_list)       
         if count == 0: statusmsg += ', nothing found'
         self.statusbar.push(self.update_completion_ctx_id, statusmsg) 
-        #model = gtk.TreeStore(object)
         for lang in lang_word_list.iterkeys():
             word_list = self.word_completion.word_list(lang)
             model = word_list.get_model()
@@ -629,8 +622,6 @@ class DictViewer(object):
         active = self.word_input.get_active()
         if active == -1:
             self.clear_tabs();
-            #removing selection prevents virtual keaboard from disapppearing
-            #self.word_completion.get_selection().unselect_all()
             self.schedule(self.update_completion, 600, self.word_input.child.get_text())            
             return
         word, lang = self.word_input.get_model()[active]
