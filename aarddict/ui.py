@@ -202,12 +202,6 @@ class ArticleView(gtk.TextView):
             obj.disconnect(handler)
         obj.set_data("handlers", None)
     
-class WordLookupByWord(dict):
-    def __missing__(self, word):
-        value = dictutil.WordLookup(word)
-        self.__setitem__(word, value)
-        return value
-
 class DictViewer(object):
              
     def __init__(self):
@@ -536,15 +530,17 @@ class DictViewer(object):
         interrupted = False
         lang_word_list = {}
         for lang in self.dictionaries.langs():
-            word_lookups = WordLookupByWord()
+            word_lookups = {}
             for item in self.dictionaries.get_word_list_iter(lang, start_word):
                 time.sleep(0)
                 if self.lookup_stop_requested:
                     interrupted = True
                     return (lang_word_list, interrupted)
-                word_lookups[item.word].add_articles(item)
+                word_lookups.setdefault(item.word, 
+                                        dictutil.WordLookup(item.word, 
+                                                            item.collation_key)).add_articles(item)
             word_list = word_lookups.values()
-            word_list.sort(key = lambda w: w.word)
+            word_list.sort()
             if len (word_list) > 0: lang_word_list[lang] = word_list
         return (lang_word_list, interrupted)
     
