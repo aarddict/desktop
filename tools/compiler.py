@@ -107,7 +107,7 @@ def handleArticle(title, text):
         if indexDb.has_key(title):
             sys.stderr.write("Duplicate key: %s\n" % title)
         else:
-            sys.stderr.write("Real article: %s\n" % title)
+            #sys.stderr.write("Real article: %s\n" % title)
             indexDb[title] = str(articlePointer)
 
     sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
@@ -309,10 +309,10 @@ if makeSingleFile:
     while 1:
         if writeCount % 100 == 0:
             sys.stderr.write("\r" + str(writeCount))
-        writeCount += 1
         articleLengthString = aarFile[1].read(4)
         if len(articleLengthString) == 0:
             break
+        writeCount += 1
         articleLength = struct.unpack("i", articleLengthString)[0]
         buffer = aarFile[1].read(articleLength)
         aarFile[0].write(articleLengthString + buffer)
