@@ -101,10 +101,13 @@ class HTMLParser(SimpleXMLParser):
             
         self.tagBuffer = []
 
+    def handleCleanup(self):
+        self.bufferCharacterData()
+        
 if __name__ == '__main__':
     import sys
 
-    s = '<html><p>hiho<h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a></html>'
+    s = 'entry<html><p>hiho<h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a></html>exit'
 
     print s
     print ""

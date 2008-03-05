@@ -84,6 +84,8 @@ class SimpleXMLParser:
                 bufpos = pos + 1
                 tag = "<"
 
+        self.handleCleanup()
+        
     def processTag(self, tag):
         tag = tag[1:-1]
         tag = tag.replace("\n", " ")
@@ -145,7 +147,11 @@ class SimpleXMLParser:
         
     def handleCharacterData(self, data):
         # usually overridden
-        sys.stderr.write("data: '%s'\n" % data)
+        sys.stderr.write("XML data: '%s'\n" % data)
+
+    def handleCleanup(self):
+        # usually overridden
+        sys.stderr.write("XML cleanup\n")
     
 if __name__ == '__main__':
     import sys
