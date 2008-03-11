@@ -119,6 +119,8 @@ class MediaWikiParser(SimpleXMLParser):
             return
         self.tagstack[-1][1].append(data)
 
+    def handleCleanup(self):
+        pass
 
     def clean(self, s, oneline = False):
         if oneline:
@@ -223,7 +225,7 @@ if __name__ == '__main__':
     import sys
 
     s = """
-<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.3/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.3/ http://www.mediawiki.org/xml/export-0.3.xsd" version="0.3" xml:lang="fr">
+entry<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.3/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.3/ http://www.mediawiki.org/xml/export-0.3.xsd" version="0.3" xml:lang="fr">
 <siteinfo>
 <sitename>Wikipédia</sitename>
 <base>http://fr.wikipedia.org/wiki/Accueil</base>
@@ -246,7 +248,7 @@ The main {{export}} of any {{country}} is the people.
 </text>
 </revision>
 </page>
-</mediawiki>
+</mediawiki>exit
 """
    
     print s
