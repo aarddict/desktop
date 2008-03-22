@@ -84,7 +84,7 @@ def handleArticle(title, text):
     
     if header["article_count"] % 100 == 0:
         sys.stderr.write("\r" + str(header["article_count"]))
-    header["article_count"] = header["article_count"] + 1
+    header["article_count"] += 1
 		
 #    if len(title) > TITLE_MAX_SIZE:
 #        sys.stderr.write("Truncated title: " + title + "\n")
@@ -99,29 +99,27 @@ def handleArticle(title, text):
         #sys.stderr.write("See: %s\n" % parser.text)
         try:
             redirectTitle = parser.tags[0][3]["href"]
+            sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
         except:
             #sys.stderr.write("Missing redirect target: %s\n" % title)
-            return
+            pass
+        return
+
+
+    if indexDb.has_key(title):
+        sys.stderr.write("Duplicate key: %s\n" % title)
     else:
-        redirectTitle = ""
-        if indexDb.has_key(title):
-            sys.stderr.write("Duplicate key: %s\n" % title)
-        else:
-            #sys.stderr.write("Real article: %s\n" % title)
-            indexDb[title] = str(articlePointer)
+        #sys.stderr.write("Real article: %s\n" % title)
+        indexDb[title] = str(articlePointer)
 
-    sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
-
-    # index length calculated here because the header is written before we
-    # actually write out the index
-    header["index_length"] += 4 + struct.calcsize("LLhL") + len(collationKeyString4) + 3 + len(title)
+    sortex.put(collationKeyString4 + "___" + title + "___")
 
     articleUnit = struct.pack("L", len(jsonstring)) + jsonstring
     articleUnitLength = len(articleUnit)
     if aarFileLength[-1] + articleUnitLength > aarFileLengthMax:
         aarFile.append(open(aarExtraFilenamePrefix + ("%02i" % len(aarFile)), "w+b", 4096))
         aarFileLength.append(0)
-        sys.stderr.write("New temp article file: %s\n" % aarFile[-1].name)
+        sys.stderr.write("New article file: %s\n" % aarFile[-1].name)
 
     aarFile[-1].write(articleUnit)
     aarFileLength[-1] += articleUnitLength
@@ -130,14 +128,9 @@ def handleArticle(title, text):
 def makeFullIndex():
     global trailerLength
     global aarFile, aarFileLength
+    global index1Length, index2Length
+    global header
     
-    iPrev = 0
-    iNext = 0
-
-    headerpack = "LLhL"
-    headerlen = struct.calcsize(headerpack)
-
-    sep = "\xFD\xFD\xFD\xFD"
     count = 0
 
     for item in sortex:
@@ -146,29 +139,27 @@ def makeFullIndex():
         count = count + 1
         sortkey, title, redirectTitle = item.split("___", 3)
         if redirectTitle:
+            sys.stderr.write("Redirect: %s %s\n" % (repr(title), repr(redirectTitle)))
             target = redirectTitle
         else:
             target = title
         try:
             articlePointer = long(indexDb[target])
-            if makeSingleFile:
-                fileno = 0
-            else:
-                for fileno in range(1, len(aarFile)):
-                    if articlePointer < aarFileLength[fileno]:
-                        break
-                    articlePointer -= aarFileLength[fileno]
+            for fileno in range(1, len(aarFile)):
+                if articlePointer < aarFileLength[fileno]:
+                    break
+                articlePointer -= aarFileLength[fileno]
+            index1Unit = struct.pack('LLL', long(index2Length), long(fileno), long(articlePointer))
+            index1.write(index1Unit)
+            index1Length += len(index1Unit)
+            index2Unit = struct.pack("L", long(len(title))) + title
+            index2.write(index2Unit)
+            index2Length += len(index2Unit)
+            header["index_count"] += 1
+            sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
+            #sys.stderr.write("count: %i\n" % header["index_count"])
         except KeyError:
             sys.stderr.write("Redirect not found: %s %s\n" % (repr(title), repr(redirectTitle)))
-            fileno = -1
-            articlePointer = 0
-        #sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
-        iNext = 4 + headerlen + len(sortkey) + 3 + len(title)
-        wunit = sep + struct.pack(headerpack, long(iNext), long(iPrev), fileno, long(articlePointer)) + sortkey + "___" + title
-        aarFile[0].write(wunit)
-        aarFileLength[0] += len(wunit)
-	
-        iPrev = iNext
     
     sys.stderr.write("\r" + str(count) + "\n")
 
@@ -190,8 +181,6 @@ header = {
     "character_encoding": "utf-8",
     "compression_type": options.compress
     }
-
-trailerLength = 4 + struct.calcsize("LLhL") + 1 + 3 + 7
 
 sys.stderr.write("Parsing input file...\n")
 
@@ -217,15 +206,21 @@ aarFile.append(open(aarExtraFilenamePrefix + ("%02i" % len(aarFile)), "w+b", 409
 aarFileLength.append(0)
 
 aarFileLengthMax = 2000000000
+#aarFileLengthMax = 10000
 
 indexDbTempdir = tempfile.mkdtemp()
 indexDbFullname = os.path.join(indexDbTempdir, "index.db")
 indexDb = anydbm.open(indexDbFullname, 'n')
 
+index1 = tempfile.NamedTemporaryFile()
+index2 = tempfile.NamedTemporaryFile()
+index1Length = 0
+index2Length = 0
+
 articlePointer = 0L
 
 header["article_count"] =  0
-header["index_length"] =  0
+header["index_count"] =  0
 
 if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
     sys.stderr.write("Compiling %s as xdxf\n" % inputFile.name)
@@ -238,14 +233,31 @@ else:
     p = MediaWikiParser(collator1, header, handleArticle)
     p.parseFile(inputFile)
 
-
 sys.stderr.write("\r" + str(header["article_count"]) + "\n")
+sys.stderr.write("count x: %s\n" % repr(header["index_count"]))
 
 sys.stderr.write("Sorting index...\n")
 
 sortex.sort()
+	
+sys.stderr.write("Writing temporary indexes...\n")
 
-sys.stderr.write("Writing header...\n")
+makeFullIndex()
+
+sortex.cleanup()
+
+indexDb.close()
+os.remove(indexDbFullname)
+os.rmdir(indexDbTempdir)
+
+combineFiles = False
+header["file_count"] = len(aarFile)
+if 100 + index1Length + index2Length + aarFileLength[-1] < aarFileLengthMax:
+    header["file_count"] -= 1
+    combineFiles = True
+header["file_count"] = "%06i" % header["file_count"]
+
+sys.stderr.write("Composing header...\n")
 
 f = open("ISO-639-2.txt", "r")
 languageCodeDict = {}
@@ -259,72 +271,96 @@ if header["article_language"].lower() in  languageCodeDict:
 if header["index_language"].lower() in  languageCodeDict:
     header["index_language"] = languageCodeDict[header["index_language"].lower()]
 
-makeSingleFile = (len(aarFile) == 2) and (aarFileLength[0] + aarFileLength[1] < aarFileLengthMax)
-if makeSingleFile:
-    header["file_count"] = 1
-else:
-    header["file_count"] = len(aarFile)
+header["index1_length"] = index1Length
+header["index2_length"] = index2Length
+
+header["index1_offset"] = "%012i" % 0
+header["index2_offset"] = "%012i" % 0
+header["article_offset"] = "%012i" % 0
 
 jsonText = compactjson.dumps(header)
 
-header_length_1 = len(jsonText)
+header["index1_offset"] = "%012i" % (5 + 8 + len(jsonText))
+header["index2_offset"] = "%012i" % (5 + 8 + len(jsonText) + index1Length)
+header["article_offset"] = "%012i" % (5 + 8 + len(jsonText) + index1Length + index2Length)
 
-header["index_offset"] = 5 + 8 + header_length_1 + 60
-header["article_offset"] = header["index_offset"] + header["index_length"]
-	
+sys.stderr.write("Writing header...\n")
+
+jsonText = compactjson.dumps(header)
+
 aarFile[0].write("aar10")
 aarFileLength[0] += 5
 
-jsonText = compactjson.dumps(header)
 aarFile[0].write("%08i" % len(jsonText))
 aarFileLength[0] += 8
 	
 aarFile[0].write(jsonText)
 aarFileLength[0] += len(jsonText)
-	
-filler = "-" * (header_length_1 + 60 - len(jsonText))
-aarFile[0].write(filler)
-aarFileLength[0] += len(filler)
 
-sys.stderr.write("Writing index...\n")
-makeFullIndex()
+sys.stderr.write("Writing index 1...\n")
 
-sortex.cleanup()
+index1.flush()
+index1.seek(0)
+writeCount = 0
+while 1:
+    if writeCount % 100 == 0:
+        sys.stderr.write("\r" + str(writeCount))
+    unit = index1.read(12)
+    if len(unit) == 0:
+        break
+    index2ptr, fileno, offset = struct.unpack("LLL", unit)
+    if combineFiles and fileno == len(aarFile) - 1:
+        fileno = 0L
+    unit = struct.pack("LLL", index2ptr, fileno, offset) 
+    writeCount += 1
+    aarFile[0].write(unit)
+    aarFileLength[0] += 12
+sys.stderr.write("\r" + str(writeCount) + "\n")
+index1.close()
 
-indexDb.close()
-os.remove(indexDbFullname)
-os.rmdir(indexDbTempdir)
+sys.stderr.write("Writing index 2...\n")
 
-sys.stderr.write("Writing articles...\n")
+index2.flush()
+index2.seek(0)
+writeCount = 0
+while 1:
+    if writeCount % 100 == 0:
+        sys.stderr.write("\r" + str(writeCount))
+    unitLengthString = index2.read(4)
+    if len(unitLengthString) == 0:
+        break
+    writeCount += 1
+    unitLength = struct.unpack("L", unitLengthString)[0]
+    unit = index2.read(unitLength)
+    aarFile[0].write(unitLengthString + unit)
+    aarFileLength[0] += 4 + unitLength
+sys.stderr.write("\r" + str(writeCount) + "\n")
+index2.close()
 
 writeCount = 0L
 
-sys.stderr.write("File length %i %i\n" % (header["article_offset"], aarFile[0].tell()))
-
-
-if makeSingleFile:
+if combineFiles:
     sys.stderr.write("Combining output files\n")
-    aarFile[1].flush()
-    aarFile[1].seek(0)
+    aarFile[-1].flush()
+    aarFile[-1].seek(0)
     while 1:
         if writeCount % 100 == 0:
             sys.stderr.write("\r" + str(writeCount))
-        articleLengthString = aarFile[1].read(4)
-        if len(articleLengthString) == 0:
-            break
         writeCount += 1
-        articleLength = struct.unpack("i", articleLengthString)[0]
-        buffer = aarFile[1].read(articleLength)
-        aarFile[0].write(articleLengthString + buffer)
-        aarFileLength[0] += articleLength
+        unitLengthString = aarFile[-1].read(4)
+        if len(unitLengthString) == 0:
+            break
+        unitLength = struct.unpack("i", unitLengthString)[0]
+        unit = aarFile[-1].read(unitLength)
+        aarFile[0].write(unitLengthString + unit)
+        aarFileLength[0] += 4 + unitLength
     sys.stderr.write("\r" + str(writeCount) + "\n")
-    aarFile[0].close()
-    aarFile[1].close()
-    os.remove(aarFile[1].name)    
-else:
-    sys.stderr.write("Created %i output files\n" % len(aarFile))
-    for f in aarFile:
-        f.close
+    os.remove(aarFile[-1].name)    
+    aarFile.pop()
+
+sys.stderr.write("Created %i output files\n" % len(aarFile))
+for f in aarFile:
+    f.close
     
 sys.stderr.write("Done.\n")
 

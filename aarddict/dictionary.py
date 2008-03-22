@@ -87,8 +87,10 @@ class Dictionary:
         self.metadata = compactjson.loads(self.metadataString)
         self.collator = collator
         self.word_list = None
-        self.index_start = self.metadata["index_offset"]
-        self.index_end = self.index_start + self.metadata["index_length"]
+        self.index1_offset = self.metadata["index1_offset"]
+        self.index2_offset = self.metadata["index2_offset"]
+        self.index_count = self.metadata["index_count"]
+        self.article_count = self.metadata["article_count"]
         self.article_offset = self.metadata["article_offset"]
         for i in range(1, self.metadata["file_count"]):
             self.file.append(open(file_name[:-2] + ("%02i" % i), "rb"))
@@ -114,16 +116,15 @@ class Dictionary:
         return (self.title, self.version, self.file_name)
        
     def find_index_entry(self, word):
-        low = self.index_start
-        high = self.index_end
+        low = 0
+        high = self.index_count
         probe = -1
         while True:
             prevprobe = probe
             probe = low + int((high-low)/2)
-            probe = self.findword(probe)
             if (probe == prevprobe) or (probe == -1):
                 return low
-            next_offset, probeword = self.read_full_index_item(probe)
+            probeword = self.read_full_index_item(probe)
             if probeword == word:
                 return probe
             if probeword > word:
@@ -131,26 +132,13 @@ class Dictionary:
             else:
                 low = probe
 
-    def findword(self, pos):
-        self.file[0].seek(pos)
-        b = ""
-        while True:
-            remaining = self.index_end - pos - len(b) - 35
-            if not remaining:
-                return -1
-            b = ''.join([b, self.file[0].read(min(128, remaining))])
-            start = b.find("\xFD\xFD\xFD\xFD")
-            if start >= 0:
-                return pos + start
-
-    
     def get_word_list_iter(self, start_string):
         start_word = Word(self, start_string)
         next_ptr = self.find_index_entry(start_word)
         while True:
-            if next_ptr >= self.index_end:
+            if next_ptr >= self.index_count:
                 raise StopIteration
-            next_offset, word = self.read_full_index_item(next_ptr)
+            word = self.read_full_index_item(next_ptr)
             #sys.stderr.write("Word: " + str(word) + "\n")
             if word.startswith(start_word):
                 yield word
@@ -158,32 +146,26 @@ class Dictionary:
                 #sys.stderr.write("Tossed: " + str(word) + "\n")
                 if (word > start_word):
                     raise StopIteration
-            next_ptr += next_offset
+            next_ptr += 1
 
                 
-    def read_full_index_item(self, pointer):
-        f = self.file[0]
-        f.seek(pointer)
-        sep = f.read(4)
-        headerpack = 'LLhL'
-        header_length = struct.calcsize(headerpack)
-        s = f.read(header_length)
-        next_word_offset, prev_word_offset, fileno, article_ptr = struct.unpack(headerpack, s)
-        s = f.read(next_word_offset - header_length - 4)
-        key, word = s.split("___", 2)
-        collation_key = pyuca.CollationKey()
-        collation_key.set(key)
-        word = Word(self, word, collation_key = collation_key)
+    def read_full_index_item(self, pos):
+        self.file[0].seek(self.index1_offset + (pos * 12))
+        keyPos, fileno, article_unit_ptr = struct.unpack("LLL", self.file[0].read(12))
+        self.file[0].seek(self.index2_offset + keyPos)
+        keyLen = struct.unpack("L", self.file[0].read(4))[0]
+        key = self.file[0].read(keyLen)
+        collation_key = self.collator.getCollationKey(key)
+        word = Word(self, key, collation_key = collation_key)
         if fileno == 0:
-            word.article_location = (0, self.article_offset + article_ptr)
+            word.article_location = (0, self.article_offset + article_unit_ptr)
         else:
-            word.article_location = (fileno, article_ptr)
-        return next_word_offset, word
+            word.article_location = (fileno, article_unit_ptr)
+        return word
         
     def read_article(self, location):
         a = article.Article()
-        if location[0] >= 0:
-            a.fromFile(self.file[location[0]], location[1])
+        a.fromFile(self.file[location[0]], location[1])
         return a
 
     def close(self):
