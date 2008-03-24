@@ -81,10 +81,6 @@ def handleArticle(title, text):
     if options.compress == "bz2":
         jsonstring = bz2.compress(jsonstring)
     #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
-    
-    if header["article_count"] % 100 == 0:
-        sys.stderr.write("\r" + str(header["article_count"]))
-    header["article_count"] += 1
 		
 #    if len(title) > TITLE_MAX_SIZE:
 #        sys.stderr.write("Truncated title: " + title + "\n")
@@ -124,6 +120,10 @@ def handleArticle(title, text):
     aarFile[-1].write(articleUnit)
     aarFileLength[-1] += articleUnitLength
     articlePointer += articleUnitLength
+    
+    if header["article_count"] % 100 == 0:
+        sys.stderr.write("\r" + str(header["article_count"]))
+    header["article_count"] += 1
 
 def makeFullIndex():
     global trailerLength
