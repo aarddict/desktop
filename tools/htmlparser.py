@@ -24,15 +24,15 @@ import sys
 
 class HTMLParser(SimpleXMLParser):
 
-    text = property(lambda self: "".join(self.docBuffer))
+    text = property(lambda self: self.docBuffer)
     
     def __init__(self):
         SimpleXMLParser.__init__(self)
-        self.goodtags =  ['h1', 'h2', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
+        self.goodtags =  ['h1', 'h2', 'h3', 'h4', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
         self.tags = []
         self.tagStack = []
-        self.docBuffer = []
-        self.tagBuffer = []
+        self.docBuffer = ""
+        self.tagBuffer = ""
         self.textUnicodeLength = 0
         
     def handleStartElement(self, tag, attrsDict):
@@ -44,15 +44,16 @@ class HTMLParser(SimpleXMLParser):
 
         #sys.stderr.write("HTML start tag: <%s> at '%s'\n" % (tag, self.text[-20:]))
 
-        if tag == "p" and self.docBuffer:
-            self.docBuffer.append("\n\n")
-            self.textUnicodeLength = self.textUnicodeLength + 2
+        if tag in ["p", "br"]:
+            if self.docBuffer and self.docBuffer[-1] != "\n": 
+                self.docBuffer += "\n"
+                self.textUnicodeLength += 1
             return
 
-        if tag == "br":
-            self.docBuffer.append("\n")
-            self.textUnicodeLength = self.textUnicodeLength + 1
-            return
+        if tag in ["h1", "h2", "h3", "h4", "blockquote", "tt"]:
+            if self.docBuffer and self.docBuffer[-1] != "\n": 
+                self.docBuffer += "\n"
+                self.textUnicodeLength += 1
             
         t = [tag, self.textUnicodeLength, 0, attrsDict]
         self.tagStack.append(t)
@@ -66,9 +67,26 @@ class HTMLParser(SimpleXMLParser):
 
         #sys.stderr.write("HTML end tag: </%s> at '%s'\n" % (tag, self.text[-20:]))
 
-        if tag == "br" or tag == "p":
-            # i.e. <br/> </p>
+        if tag == "br":
+            # i.e. <br/>
+            if self.docBuffer and self.docBuffer[-1] != "\n": 
+                self.docBuffer += "\n"
+                self.textUnicodeLength += 1
             return
+
+        if tag == "p":
+            if self.docBuffer and self.docBuffer[-1] != "\n": 
+                self.docBuffer += "\n"
+                self.textUnicodeLength += 1
+            if self.docBuffer and self.docBuffer[-2] != "\n": 
+                self.docBuffer += "\n"
+                self.textUnicodeLength += 1
+            return
+
+        if tag in ["h1", "h2", "h3", "h4", "blockquote", "tt"]:
+            if self.docBuffer and self.docBuffer[-1] != "\n": 
+                self.docBuffer += "\n"
+                self.textUnicodeLength += 1
 
         if (len(self.tagStack) == 0) or (self.tagStack[-1][0] != tag):
             if (len(self.tagStack) > 1) and (self.tagStack[-2][0] == tag):
@@ -85,21 +103,22 @@ class HTMLParser(SimpleXMLParser):
     def handleCharacterData(self, data):
         
         #sys.stderr.write("Data: %s\n" % repr(data))
-        self.tagBuffer.append(data)
+        self.tagBuffer += data.replace("\n", " ")
 
     def bufferCharacterData(self):
 
         # character data is utf-8 but length (used for tag offsets) must be based on unicode
         if not self.tagBuffer:
             return
-        tagBufferString = "".join(self.tagBuffer)
         try:
-            self.textUnicodeLength = self.textUnicodeLength + len(tagBufferString.decode("utf-8"))
-            self.docBuffer.append(tagBufferString)
+            if self.docBuffer and self.docBuffer[-1] == "\n" and self.tagBuffer[0] == " ":
+                self.tagBuffer = self.tagBuffer.lstrip()
+            self.textUnicodeLength = self.textUnicodeLength + len(self.tagBuffer.decode("utf-8"))
+            self.docBuffer += self.tagBuffer
         except:
-            sys.stderr.write("Undecodable string: %s\n" % (repr(tagBufferString)))
+            sys.stderr.write("Undecodable string: %s\n" % (repr(self.tagBuffer)))
             
-        self.tagBuffer = []
+        self.tagBuffer = ""
 
     def handleCleanup(self):
         self.bufferCharacterData()
@@ -107,7 +126,7 @@ class HTMLParser(SimpleXMLParser):
 if __name__ == '__main__':
     import sys
 
-    s = 'entry<html><p>hiho<h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a></html>exit'
+    s = 'entry<html><p>hiho</p><h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a></html>exit'
 
     print s
     print ""
