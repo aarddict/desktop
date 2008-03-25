@@ -206,10 +206,13 @@ def parseTemplates(s):
 
         template = s[left:right]
 
-        # sys.stderr.write("Template: %s\n" % template)
         # default behaviour is to remove templates
         if template.startswith("{{infobox"):
-            pass
+            #sys.stderr.write("Template: %s\n" % repr(template))
+            template = template.replace("{{infobox ", "<p>============<br>")
+            template = template.replace("|", "<br>")
+            template = re.compile(r" +").sub(" ", template)
+            template = template.replace("}}", "<br>=============</p>")
         else:
             template = ""
         
