@@ -84,6 +84,7 @@ def handleArticle(title, text):
 		
 #    if len(title) > TITLE_MAX_SIZE:
 #        sys.stderr.write("Truncated title: " + title + "\n")
+
 #        title = title[:TITLE_MAX_SIZE]
 
     # todo:  don't use field separators, or at least use final 3 underscores in a group
@@ -91,7 +92,7 @@ def handleArticle(title, text):
     collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
 
     #sys.stderr.write("Text: %s\n" % parser.text[:40])
-    if parser.text.lstrip().startswith("See:"):
+    if parser.text.startswith("See:"):
         #sys.stderr.write("See: %s\n" % parser.text)
         try:
             redirectTitle = parser.tags[0][3]["href"]
@@ -346,10 +347,10 @@ if combineFiles:
     while 1:
         if writeCount % 100 == 0:
             sys.stderr.write("\r" + str(writeCount))
-        writeCount += 1
         unitLengthString = aarFile[-1].read(4)
         if len(unitLengthString) == 0:
             break
+        writeCount += 1
         unitLength = struct.unpack("i", unitLengthString)[0]
         unit = aarFile[-1].read(unitLength)
         aarFile[0].write(unitLengthString + unit)
