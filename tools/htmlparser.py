@@ -50,9 +50,13 @@ class HTMLParser(SimpleXMLParser):
                 self.textUnicodeLength += 1
             return
 
-        if tag in ["h1", "h2", "h3", "h4", "blockquote", "tt"]:
+        elif tag in ["h1", "h2", "h3", "h4", "blockquote", "tt"]:
             if self.docBuffer and self.docBuffer[-1] != "\n": 
                 self.docBuffer += "\n"
+                self.textUnicodeLength += 1
+
+        elif tag == "ref":
+                self.docBuffer += "["
                 self.textUnicodeLength += 1
             
         t = [tag, self.textUnicodeLength, 0, attrsDict]
@@ -74,7 +78,7 @@ class HTMLParser(SimpleXMLParser):
                 self.textUnicodeLength += 1
             return
 
-        if tag == "p":
+        elif tag == "p":
             if self.docBuffer and self.docBuffer[-1] != "\n": 
                 self.docBuffer += "\n"
                 self.textUnicodeLength += 1
@@ -83,9 +87,13 @@ class HTMLParser(SimpleXMLParser):
                 self.textUnicodeLength += 1
             return
 
-        if tag in ["h1", "h2", "h3", "h4", "blockquote", "tt"]:
+        elif tag in ["h1", "h2", "h3", "h4", "blockquote", "tt"]:
             if self.docBuffer and self.docBuffer[-1] != "\n": 
                 self.docBuffer += "\n"
+                self.textUnicodeLength += 1
+
+        elif tag == "ref":
+                self.docBuffer += "]"
                 self.textUnicodeLength += 1
 
         if (len(self.tagStack) == 0) or (self.tagStack[-1][0] != tag):

@@ -140,7 +140,7 @@ def makeFullIndex():
         count = count + 1
         sortkey, title, redirectTitle = item.split("___", 3)
         if redirectTitle:
-            sys.stderr.write("Redirect: %s %s\n" % (repr(title), repr(redirectTitle)))
+            #sys.stderr.write("Redirect: %s %s\n" % (repr(title), repr(redirectTitle)))
             target = redirectTitle
         else:
             target = title
@@ -157,8 +157,7 @@ def makeFullIndex():
             index2.write(index2Unit)
             index2Length += len(index2Unit)
             header["index_count"] += 1
-            sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
-            #sys.stderr.write("count: %i\n" % header["index_count"])
+            #sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
         except KeyError:
             sys.stderr.write("Redirect not found: %s %s\n" % (repr(title), repr(redirectTitle)))
     
@@ -341,7 +340,7 @@ index2.close()
 writeCount = 0L
 
 if combineFiles:
-    sys.stderr.write("Combining output files\n")
+    sys.stderr.write("Moving articles to .aar file\n")
     aarFile[-1].flush()
     aarFile[-1].seek(0)
     while 1:
@@ -359,7 +358,7 @@ if combineFiles:
     os.remove(aarFile[-1].name)    
     aarFile.pop()
 
-sys.stderr.write("Created %i output files\n" % len(aarFile))
+sys.stderr.write("Created %i output file(s)\n" % len(aarFile))
 for f in aarFile:
     f.close
     

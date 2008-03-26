@@ -107,9 +107,10 @@ class MediaWikiParser(SimpleXMLParser):
                 self.text = ""
             self.text = self.parseLinks(self.text)
             self.text = self.parseTemplates(self.text)
+            self.text = self.text.replace("&lt;", "<").replace("&gt;", ">");
             if not self.text.startswith("<p>See:"):
                 self.text = "<h1>" + self.title + "</h1>" + self.text
-            sys.stderr.write("Mediawiki article: %s %s\n" % (self.title, self.text[:40]))
+            #sys.stderr.write("Mediawiki article: %s %s\n" % (self.title, self.text[:40]))
             self.consumer(self.title, self.text)
             return
             
@@ -225,6 +226,7 @@ class MediaWikiParser(SimpleXMLParser):
                 template = re.compile(r" +").sub(" ", template)
                 template += "<br>=============</p>"
             else:
+                #sys.stderr.write("Template ignored: %s\n" % repr(template))
                 template = ""
         
             s = "".join([s[:left], template, s[right:]]) 
