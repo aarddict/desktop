@@ -1,6 +1,6 @@
 #!/bin/sh
 DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml"
-mkdir -p usr/{bin/,lib/aarddict,share/{applications/hildon/,dbus-1/services/,pixmap}}
+mkdir -p usr/{bin/,lib/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
 cp ../src/aarddict-maemo.py usr/bin/aarddict || exit
 cp -R ../src/aarddict/*.py usr/lib/aarddict || exit
 cp ../icons/aarddict.png usr/share/pixmaps/
