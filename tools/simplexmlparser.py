@@ -89,6 +89,8 @@ class SimpleXMLParser:
     def processTag(self, tag):
         tag = tag[1:-1]
         tag = tag.replace("\n", " ")
+        if not tag:
+            return
         if tag[0] == '/':
             tag = tag.replace(" ", "")
             self.handleEndElement(tag[1:])
