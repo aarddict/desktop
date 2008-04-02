@@ -1,16 +1,8 @@
 #!/bin/sh
 DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml"
-mkdir -p usr/bin
-mkdir -p usr/lib/aarddict/formats/pdi
-mkdir -p usr/lib/aarddict/formats/dct
-mkdir -p usr/share/applications/hildon/
-mkdir -p usr/share/dbus-1/services/
-mkdir -p usr/share/pixmaps
+mkdir -p usr/{bin/,lib/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
 cp ../src/aarddict-maemo.py usr/bin/aarddict || exit
 cp -R ../src/aarddict/*.py usr/lib/aarddict || exit
-cp -R ../src/aarddict/formats/*.py usr/lib/aarddict/formats || exit
-cp -R ../src/aarddict/formats/dct/*.py usr/lib/aarddict/formats/dct || exit
-cp -R ../src/aarddict/formats/pdi/*.py usr/lib/aarddict/formats/pdi || exit
 cp ../icons/aarddict.png usr/share/pixmaps/
 
 python ../tools/trimallkeys.py -i ../src/aarddict/allkeys.txt -o usr/lib/aarddict/allkeys.txt
