@@ -78,6 +78,7 @@ class MediaWikiParser(SimpleXMLParser):
         
         elif tag == "title":
             self.title = self.clean(entrytext, oneline=True)
+            self.title = self.title.replace("_", " ")
         
         elif tag == "text":
             self.text = entrytext
@@ -137,6 +138,7 @@ class MediaWikiParser(SimpleXMLParser):
             m = self.reSquare2.search(text)
             if m:
                 redirect = m.group(1)
+                redirect = redirect.replace("_", " ")
                 redirectKey = self.collator.getCollationKey(redirect)
                 titleKey = self.collator.getCollationKey(title)
                 if redirectKey == titleKey:
@@ -178,11 +180,12 @@ class MediaWikiParser(SimpleXMLParser):
 
             if c >= 0:
                 t = p[0][:c]
-                if t == "Image":
-                    r = '<img href="' + p[0][c+1:] + '">' + p[-1] + '</img>'
+                if t.lower() == "image":
+                    r = '[Image: ' + p[-1] + ']'
                 else:
                     r = ""
             else:
+                p[0] = p[0].replace("_", " ")
                 r = '<a href="' + p[0] + '">' + p[-1] + '</a>'
             
 
@@ -258,9 +261,11 @@ entry<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.3/" xmlns:xsi="http
 <id>24358</id>
 </contributor>
 <minor />
-<text xml:space="preserve">'''PJ''' [[nov]] [[Moul]] here is a line.
+<text xml:space="preserve">'''PJ''' &quot;white&quot; [[big_bang]] [[Moul]] here is a line.
 The main {{export}} of any {{country}} is the people.
 {{infobox hi there {{good}} neighbour}}
+[[Image:Albedo-e hg.svg|thumb|Percentage of reflected sun light in
+relation to various surface conditions of the earth]]
 </text>
 </revision>
 </page>
