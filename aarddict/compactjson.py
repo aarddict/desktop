@@ -63,72 +63,73 @@ def escape(item):
     return item
 
 def loads(item):
-    global s, offset
+    global s, slen, offset
     if not item:
         return ""
     s = array.array("c", item)
+    slen = len(s)
     offset = 0
     return parse()
 
 def parse():
-    global s, offset
+    global s, slen, offset
     #print "parse:", offset, s[offset]
     while True:
-        if offset >= len(s):
+        if offset >= slen:
             return ""
         if not s[offset].isspace():
             break
         offset +=1
-    if s[offset] == "[":
-        value = parseList()
+    if s[offset] == '"':
+        value = parseDoubleQuotedString()
     elif s[offset] == "'":
         value = parseSingleQuotedString()
-    elif s[offset] == '"':
-        value = parseDoubleQuotedString()
-    elif s[offset] == "(":
-        value = parseTuple()
+    elif s[offset] == "[":
+        value = parseList()
     elif s[offset] == "{":
         value = parseDict()
+    elif s[offset] == "(":
+        value = parseTuple()
     else:
         value = parseUnquotedString()
-    while offset < len(s) and s[offset].isspace():
+    while offset < slen and s[offset].isspace():
         offset +=1
     #print "value:", value
     return value
 
 def parseList():
-    global s, offset
+    global s, slen, offset
     #print "parse list:", offset
     offset += 1
-    if (offset >= len(s)) or (s[offset] == "]"):
+    if (offset >= slen) or (s[offset] == "]"):
         return []
     listValue = []
     while True:
         listValue.append(parse())
-        if (offset >= len(s)) or (s[offset] == "]"):
+        if (offset >= slen) or (s[offset] == "]"):
             offset += 1
             return listValue
         offset += 1
 
 def parseTuple():
-    global s, offset
+    global s, slen, offset
     #print "parse tuple:", offset
     offset += 1
-    if (offset >= len(s)) or (s[offset] == ")"):
+    if (offset >= slen) or (s[offset] == ")"):
         return ()
     tupleValue = []
     while True:
         tupleValue.append(parse())
-        if (offset >= len(s)) or (s[offset] == ")"):
+        if (offset >= slen) or (s[offset] == ")"):
             offset += 1
             return tuple(tupleValue)
         offset += 1
 
 def parseDict():
-    global s, offset
+    global s, slen, offset
     #print "parse dict:", offset
     offset += 1
-    if (offset >= len(s)) or (s[offset] == "}"):
+    if (offset >= slen) or (s[offset] == "}"):
         return {}
     dictValue = {}
     while True:
@@ -140,55 +141,55 @@ def parseDict():
             raise Exception("colon expected")
         offset += 1
         dictValue[key] = parse()
-        if (offset >= len(s)) or (s[offset] == "}"):
+        if (offset >= slen) or (s[offset] == "}"):
             offset += 1
             return dictValue
         offset += 1
 
 def parseSingleQuotedString():
-    global s, offset
+    global s, slen, offset
     #print "parse sqs:", offset
-    value = []
+    start = offset
     while True:
         offset += 1
-        if offset >= len(s):
-            return "".join(value)
+        if offset >= slen:
+            break
         if s[offset] == "\\":
             offset += 1
         elif s[offset] == "'":
             offset += 1
-            return "".join(value)
-        value.append(s[offset])
+            break
+    return s[start+1:offset-1].tostring()
+
 
 def parseDoubleQuotedString():
-    global s, offset
+    global s, slen, offset
     #print "parse dqs:", offset
-    value = []
+    start = offset
     while True:
         offset += 1
-        if offset >= len(s):
-            return "".join(value)
+        if offset >= slen:
+            break
         if s[offset] == "\\":
             offset += 1
         elif s[offset] == '"':
             offset += 1
-            return "".join(value)
-        value.append(s[offset])
+            break
+    return s[start+1:offset-1].tostring()
 
 def parseUnquotedString():
-    global s, offset
+    global s, slen, offset
     #print "parse uqs:", offset
-    value = []
+    start = offset
     while True:
-        if offset >= len(s):
+        if offset >= slen:
             break
         if s[offset] == "\\":
             offset += 1
         elif s[offset] in [",", ":", "]", ")", "}"]:
             break
-        value.append(s[offset])
         offset += 1
-    t = "".join(value)
+    t = s[start:offset].tostring()
     if t.isdigit():
         return int(t)
     else:
