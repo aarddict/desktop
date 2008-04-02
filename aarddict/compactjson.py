@@ -155,6 +155,8 @@ def parseSingleQuotedString():
         if offset >= slen:
             break
         if s[offset] == "\\":
+            s.pop(offset)
+            slen -= 1
             offset += 1
         elif s[offset] == "'":
             offset += 1
@@ -171,6 +173,8 @@ def parseDoubleQuotedString():
         if offset >= slen:
             break
         if s[offset] == "\\":
+            s.pop(offset)
+            slen -= 1
             offset += 1
         elif s[offset] == '"':
             offset += 1
@@ -185,6 +189,8 @@ def parseUnquotedString():
         if offset >= slen:
             break
         if s[offset] == "\\":
+            s.pop(offset)
+            slen -= 1
             offset += 1
         elif s[offset] in [",", ":", "]", ")", "}"]:
             break
@@ -203,9 +209,8 @@ if __name__ == '__main__':
 
     #item = {1:2, 3:[4,5,(  6  ,7)]}
 
-    item = ['This is the d\xc3\xa9partment"s\n\nthis\nand that', 
-    [['h1', 0, 24, {}], ['i', 31, 34, {}], ['b', 35, 39, {}], ['a', 26, 39, {'href': 'the red'}]]]
-    
+    #item = ['This is the d\xc3\xa9partment"s\n\nthis\nand that', 
+    #[['h1', 0, 24, {}], ['i', 31, 34, {}], ['b', 35, 39, {}], ['a', 26, 39, {'href': 'the red'}]]]
     
     print item
     #print simplejson.dumps(item)
@@ -213,11 +218,9 @@ if __name__ == '__main__':
     print s
     print "0....+....0....+....0....+....0....+....0"
     
-    f = open("junk")
-    #s = f.read(100000)
     newitem = loads(s)
     print newitem
-    #print len(newitem)
+
     if item == newitem:
         print "Equals"
     else:
