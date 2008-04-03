@@ -29,7 +29,7 @@ Architecture: all
 Depends: $DEPENDS
 Installed-Size: $SIZE
 Maintainer: Igor Tkach <itkach@users.sourceforge.net>
-Description: A dictionary application that works with dictionaries from http://sdict.com" > control
+Description: A dictionary application for Nokia Internet Tablets." > control
 cat control
 
 echo "[Desktop Entry]
