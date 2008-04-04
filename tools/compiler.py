@@ -32,9 +32,8 @@ import os
 import array
 from aarddict.article import *
 import tempfile
-import anydbm
-
-TITLE_MAX_SIZE = 255
+import shelve
+import datetime
 
 def getOptions():
     usage = "usage: %prog [options] "
@@ -43,7 +42,7 @@ def getOptions():
     parser.add_option(
         '-o', '--output-file',
         default='',
-        help='Output file (default stdout)'
+        help='Output file (mandatory)'
         )
     parser.add_option(
         '-i', '--input-file',
@@ -51,17 +50,41 @@ def getOptions():
         help='Input file (default stdin)'
         )
     parser.add_option(
-        '-c', '--compress',
-        default='bz2',
-        help='Article compression method: bz2 (default) or none'
-        )
-    parser.add_option(
         '-f', '--input-format',
         default='none',
         help='Input format:  mediawiki or xdxf'
         )
 
-    return parser.parse_args()
+    return parser
+
+def createArticleFile():
+    global header
+    global aarFile, aarFileLength
+    global options
+
+    if options.output_file[-3:] == "aar":
+        extFilenamePrefix = options.output_file[:-2]
+    else:
+        extFilenamePrefix = options.output_file + ".a"
+
+    aarFile.append(open(extFilenamePrefix + ("%02i" % len(aarFile)), "w+b", 4096))
+    aarFileLength.append(0)
+    sys.stderr.write("New article file: %s\n" % aarFile[-1].name)
+    extHeader = {}
+    extHeader["article_offset"] = "%012i" % 0
+    extHeader["major_version"] = header["major_version"]
+    extHeader["minor_version"] = header["minor_version"]
+    extHeader["timestamp"] = header["timestamp"]
+    extHeader["file_sequence"] = len(aarFile) - 1
+    jsonText = compactjson.dumps(extHeader)
+    extHeader["article_offset"] = "%012i" % (5 + 8 + len(jsonText))
+    jsonText = compactjson.dumps(extHeader)
+    aarFile[-1].write("aar%02i" % header["major_version"])
+    aarFileLength[-1] += 5
+    aarFile[-1].write("%08i" % len(jsonText))
+    aarFileLength[-1] += 8
+    aarFile[-1].write(jsonText)
+    aarFileLength[-1] += len(jsonText)
 
 def handleArticle(title, text):
     global header
@@ -72,28 +95,17 @@ def handleArticle(title, text):
         #sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
         return
     
-    #debug.write(text)
-    
     parser = HTMLParser()
     parser.parseString(text)
 
     jsonstring = compactjson.dumps([parser.text.rstrip(), parser.tags])
-    if options.compress == "bz2":
-        jsonstring = bz2.compress(jsonstring)
+    jsonstring = bz2.compress(jsonstring)
     #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
-		
-#    if len(title) > TITLE_MAX_SIZE:
-#        sys.stderr.write("Truncated title: " + title + "\n")
-
-#        title = title[:TITLE_MAX_SIZE]
-
-    # todo:  don't use field separators, or at least use final 3 underscores in a group
 
     collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
 
     #sys.stderr.write("Text: %s\n" % parser.text[:40])
     if parser.text.startswith("See:"):
-        #sys.stderr.write("See: %s\n" % parser.text)
         try:
             redirectTitle = parser.tags[0][3]["href"]
             sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
@@ -102,24 +114,23 @@ def handleArticle(title, text):
             pass
         return
 
-
-    if indexDb.has_key(title):
-        sys.stderr.write("Duplicate key: %s\n" % title)
-    else:
-        #sys.stderr.write("Real article: %s\n" % title)
-        indexDb[title] = str(articlePointer)
-
     sortex.put(collationKeyString4 + "___" + title + "___")
 
     articleUnit = struct.pack("L", len(jsonstring)) + jsonstring
     articleUnitLength = len(articleUnit)
     if aarFileLength[-1] + articleUnitLength > aarFileLengthMax:
-        aarFile.append(open(aarExtraFilenamePrefix + ("%02i" % len(aarFile)), "w+b", 4096))
-        aarFileLength.append(0)
-        sys.stderr.write("New article file: %s\n" % aarFile[-1].name)
-
+        createArticleFile()
+        articlePointer = 0L
+        
     aarFile[-1].write(articleUnit)
     aarFileLength[-1] += articleUnitLength
+
+    if indexDb.has_key(title):
+        sys.stderr.write("Duplicate key: %s\n" % title)
+    else:
+        #sys.stderr.write("Real article: %s\n" % title)
+        indexDb[title] = (len(aarFile) - 1, articlePointer)
+
     articlePointer += articleUnitLength
     
     if header["article_count"] % 100 == 0:
@@ -145,11 +156,7 @@ def makeFullIndex():
         else:
             target = title
         try:
-            articlePointer = long(indexDb[target])
-            for fileno in range(1, len(aarFile)):
-                if articlePointer < aarFileLength[fileno]:
-                    break
-                articlePointer -= aarFileLength[fileno]
+            fileno, articlePointer = indexDb[target]
             index1Unit = struct.pack('LLL', long(index2Length), long(fileno), long(articlePointer))
             index1.write(index1Unit)
             index1Length += len(index1Unit)
@@ -157,7 +164,7 @@ def makeFullIndex():
             index2.write(index2Unit)
             index2Length += len(index2Unit)
             header["index_count"] += 1
-            #sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
+            sys.stderr.write("sorted: %s %i %i\n" % (title, fileno, articlePointer))
         except KeyError:
             sys.stderr.write("Redirect not found: %s %s\n" % (repr(title), repr(redirectTitle)))
     
@@ -165,9 +172,6 @@ def makeFullIndex():
 
 #__main__
 
-#debug = open("debug.html", "w")
-
-options, args = getOptions()
 collator4 = aarddict.pyuca.Collator("aarddict/allkeys.txt")
 collator4.setStrength(4)
 
@@ -177,12 +181,18 @@ collator1.setStrength(1)
 sortex = SortExternal()
 
 header = {
-    "aarddict_version": "1.0",
     "character_encoding": "utf-8",
-    "compression_type": options.compress
+    "compression_type": "bz2",
+    "major_version": 1,
+    "minor_version": 0,
+    "timestamp": str(datetime.datetime.utcnow()),
+    "file_sequence": 0
     }
 
 sys.stderr.write("Parsing input file...\n")
+
+optionsParser = getOptions()
+options, args = optionsParser.parse_args()
 
 if options.input_file:
     inputFile = open(options.input_file, "rb", 4096)
@@ -192,25 +202,20 @@ else:
 aarFile = []
 aarFileLength = []
 
-if options.output_file:
-    aarFile.append(open(options.output_file, "w+b", 4096))
-    if options.output_file[-3:] == "aar":
-        aarExtraFilenamePrefix = options.output_file[:-2]
-    else:
-        aarExtraFilenamePrefix = options.output_file + ".a"
-else:
-    aarFile.append(sys.stdout)
+if not options.output_file:
+    optionsParser.print_help()
+    sys.exit()
+    
+aarFile.append(open(options.output_file, "w+b", 4096))
 aarFileLength.append(0)
 
-aarFile.append(open(aarExtraFilenamePrefix + ("%02i" % len(aarFile)), "w+b", 4096))
-aarFileLength.append(0)
+createArticleFile()
 
-aarFileLengthMax = 2000000000
-#aarFileLengthMax = 10000
+aarFileLengthMax = 4000000000
 
 indexDbTempdir = tempfile.mkdtemp()
 indexDbFullname = os.path.join(indexDbTempdir, "index.db")
-indexDb = anydbm.open(indexDbFullname, 'n')
+indexDb = shelve.open(indexDbFullname, 'n')
 
 index1 = tempfile.NamedTemporaryFile()
 index2 = tempfile.NamedTemporaryFile()
@@ -288,7 +293,7 @@ sys.stderr.write("Writing header...\n")
 
 jsonText = compactjson.dumps(header)
 
-aarFile[0].write("aar10")
+aarFile[0].write("aar%02i" % header["major_version"])
 aarFileLength[0] += 5
 
 aarFile[0].write("%08i" % len(jsonText))
@@ -340,9 +345,13 @@ index2.close()
 writeCount = 0L
 
 if combineFiles:
-    sys.stderr.write("Moving articles to .aar file\n")
+    sys.stderr.write("Appending %s to %s\n" % (aarFile[-1].name, aarFile[0].name))
     aarFile[-1].flush()
     aarFile[-1].seek(0)
+    aarFile[-1].read(5)
+    headerLength = int(aarFile[-1].read(8))
+    aarFile[-1].read(headerLength)
+
     while 1:
         if writeCount % 100 == 0:
             sys.stderr.write("\r" + str(writeCount))
@@ -355,6 +364,7 @@ if combineFiles:
         aarFile[0].write(unitLengthString + unit)
         aarFileLength[0] += 4 + unitLength
     sys.stderr.write("\r" + str(writeCount) + "\n")
+    sys.stderr.write("Deleting %s\n" % aarFile[-1].name)
     os.remove(aarFile[-1].name)    
     aarFile.pop()
 

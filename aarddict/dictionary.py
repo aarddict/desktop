@@ -77,24 +77,23 @@ class Dictionary:
     def __init__(self, file_name, collator):    
         self.file_name = file_name
         self.file = []
+        self.article_offset = []
         self.file.append(open(file_name, "rb"));
-        self.fileid = self.file[0].read(5);
-        if self.fileid != "aar10":
-            self.file[0].close()
-            raise Exception(file_name + " is not a recognized aarddict dictionary file")
-        self.metadataLength = int(self.file[0].read(8));
-        self.metadataString = self.file[0].read(self.metadataLength)
-        self.metadata = compactjson.loads(self.metadataString)
+        self.metadata = self.get_file_metadata(self.file[0])
         self.collator = collator
         self.word_list = None
         self.index1_offset = self.metadata["index1_offset"]
         self.index2_offset = self.metadata["index2_offset"]
         self.index_count = self.metadata["index_count"]
         self.article_count = self.metadata["article_count"]
-        self.article_offset = self.metadata["article_offset"]
+        self.article_offset.append(self.metadata["article_offset"])
         for i in range(1, self.metadata["file_count"]):
             self.file.append(open(file_name[:-2] + ("%02i" % i), "rb"))
-        
+            extMetadata = self.get_file_metadata(self.file[-1])
+            self.article_offset.append(extMetadata["article_offset"])
+            if extMetadata["timestamp"] != self.metadata["timestamp"]:
+                raise Exception(self.file[-1].name() + " has a timestamp different from self.file[0].name()")
+            
     title = property(lambda self: self.metadata.get("title", "unknown"))
     index_language = property(lambda self: self.metadata.get("index_language", "unknown"))
     article_language = property(lambda self: self.metadata.get("article_language", "unknown"))    
@@ -114,6 +113,21 @@ class Dictionary:
 
     def key(self):
         return (self.title, self.version, self.file_name)
+
+    def get_file_metadata(self, f):
+        metadata = {}
+        if f.read(3) != "aar":
+            f.close()
+            raise Exception(f.name + " is not a recognized aarddict dictionary file")
+        if f.read(2) != "01":
+            f.close()
+            raise Exception(f.name + " is not compatible with this viewer")
+        metadataLength = int(f.read(8))
+        metadataString = f.read(metadataLength)
+        metadata = compactjson.loads(metadataString)
+        sys.stderr.write("File metadata: %s\n" % repr(metadata))
+        
+        return metadata
        
     def find_index_entry(self, word):
         low = 0
@@ -157,10 +171,7 @@ class Dictionary:
         key = self.file[0].read(keyLen)
         collation_key = self.collator.getCollationKey(key)
         word = Word(self, key, collation_key = collation_key)
-        if fileno == 0:
-            word.article_location = (0, self.article_offset + article_unit_ptr)
-        else:
-            word.article_location = (fileno, article_unit_ptr)
+        word.article_location = (fileno, self.article_offset[fileno] + article_unit_ptr)
         return word
         
     def read_article(self, location):
