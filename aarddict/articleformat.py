@@ -71,7 +71,7 @@ class ArticleFormat:
         
     def create_ref(self, dict, text_buffer, start, end, target):
         ref_tag = text_buffer.create_tag()
-        if str(target).startswith("http://"):
+        if target.startswith("http://"):
             ref_tag.connect("event", self.external_link_callback , target)
             text_buffer.apply_tag_by_name("url", start, end)
         else:
@@ -87,7 +87,7 @@ class ArticleFormat:
             start = text_buffer.get_iter_at_offset(tag.start)
             end = text_buffer.get_iter_at_offset(tag.end)
             if tag.name == "a":
-                self.create_ref(dict, text_buffer, start, end, tag.attributes['href'])
+                self.create_ref(dict, text_buffer, start, end, str(tag.attributes['href']))
             else:
                 text_buffer.apply_tag_by_name(tag.name, start, end)
         return text_buffer
