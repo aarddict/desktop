@@ -49,6 +49,7 @@ class MediaWikiParser(SimpleXMLParser):
         self.reLeadingSpaces = re.compile(r"^\s*", re.MULTILINE)
         self.reTrailingSpaces = re.compile(r"\s*$", re.MULTILINE)
         self.reSquare2 = re.compile(r"\[\[(.*?)\]\]")
+        self.reComment = re.compile(r"<\!--.*?-->", re.DOTALL)
         
     def handleStartElement(self, tag, attrs):
         self.tagstack.append([tag, []])
@@ -85,6 +86,8 @@ class MediaWikiParser(SimpleXMLParser):
                         
         elif tag == "page":
             
+            self.text = self.reComment.sub("", self.text)
+
             if self.weakRedirect(self.title, self.text):
                 return
 
@@ -261,7 +264,7 @@ entry<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.3/" xmlns:xsi="http
 <id>24358</id>
 </contributor>
 <minor />
-<text xml:space="preserve">'''PJ''' &quot;white&quot; [[big_bang]] [[Moul]] here is a line.
+<text xml:space="preserve">&lt;!-- comment --&gt;'''PJ''' &quot;white&quot; [[big_bang]] [[Moul]] here is a line.
 The main {{export}} of any {{country}} is the people.
 {{infobox hi there {{good}} neighbour}}
 [[Image:Albedo-e hg.svg|thumb|Percentage of reflected sun light in
