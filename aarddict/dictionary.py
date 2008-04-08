@@ -136,12 +136,13 @@ class Dictionary:
         while True:
             prevprobe = probe
             probe = low + int((high-low)/2)
-            if (probe == prevprobe) or (probe == -1):
-                return low
+            if (probe == prevprobe):
+                return low 
             probeword = self.read_full_index_item(probe)
+            #sys.stderr.write("Probeword: %i %s\n" % (probe, str(probeword)))
             if probeword == word:
-                return probe
-            if probeword > word:
+                low -= 1
+            elif probeword > word:
                 high = probe
             else:
                 low = probe
