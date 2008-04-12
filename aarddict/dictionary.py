@@ -125,7 +125,7 @@ class Dictionary:
         metadataLength = int(f.read(8))
         metadataString = f.read(metadataLength)
         metadata = compactjson.loads(metadataString)
-        sys.stderr.write("File metadata: %s\n" % repr(metadata))
+        #sys.stderr.write("File metadata: %s\n" % repr(metadata))
         
         return metadata
        
@@ -139,9 +139,9 @@ class Dictionary:
             if (probe == prevprobe):
                 return low 
             probeword = self.read_full_index_item(probe)
-            #sys.stderr.write("Probeword: %i %s\n" % (probe, str(probeword)))
+            #sys.stderr.write("Probeword: %i %i<->%i %s\n" % (probe, low, high, str(probeword)))
             if probeword == word:
-                low -= 1
+                return probe
             elif probeword > word:
                 high = probe
             else:
@@ -150,10 +150,13 @@ class Dictionary:
     def get_word_list_iter(self, start_string):
         start_word = Word(self, start_string)
         next_ptr = self.find_index_entry(start_word)
-        while True:
-            if next_ptr >= self.index_count:
-                raise StopIteration
+        word = self.read_full_index_item(next_ptr)
+        # the found word might not be the first with that collation key
+        while word.startswith(start_word) and (next_ptr > 0):
+            #sys.stderr.write("Back: " + str(word) + "\n")
+            next_ptr -= 1
             word = self.read_full_index_item(next_ptr)
+        while True:
             #sys.stderr.write("Word: " + str(word) + "\n")
             if word.startswith(start_word):
                 yield word
@@ -162,6 +165,9 @@ class Dictionary:
                 if (word > start_word):
                     raise StopIteration
             next_ptr += 1
+            if next_ptr >= self.index_count:
+                raise StopIteration
+            word = self.read_full_index_item(next_ptr)
 
                 
     def read_full_index_item(self, pos):
