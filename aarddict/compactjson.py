@@ -157,7 +157,6 @@ def parseSingleQuotedString():
         if s[offset] == "\\":
             s.pop(offset)
             slen -= 1
-            offset += 1
         elif s[offset] == "'":
             offset += 1
             break
@@ -175,7 +174,6 @@ def parseDoubleQuotedString():
         if s[offset] == "\\":
             s.pop(offset)
             slen -= 1
-            offset += 1
         elif s[offset] == '"':
             offset += 1
             break
@@ -205,7 +203,7 @@ if __name__ == '__main__':
 
     #import simplejson
     x = { "a" : "b", "départment\nof silly walks" : "the \"witch\" ain't [here]", "empty" : "", "n\\3" : 1 }
-    item = [ '1', "boogy", "spa ace", ["4x", "5", 6], x, {}]
+    item = [ '1', "\"\"boogy\"\"", "spa ace", ["4x", "5", 6], x, {}]
 
     #item = {1:2, 3:[4,5,(  6  ,7)]}
 
