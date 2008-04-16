@@ -177,6 +177,8 @@ class MediaWikiParser(SimpleXMLParser):
             if not link:
                 return ""
 
+            link = link.replace('"', "&quot;")
+            
             p = link.split("|")
 
             c = p[0].find(":")
@@ -265,10 +267,11 @@ entry<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.3/" xmlns:xsi="http
 </contributor>
 <minor />
 <text xml:space="preserve">&lt;!-- comment --&gt;'''PJ''' &quot;white&quot; [[big_bang]] [[Moul]] here is a line.
-The main {{export}} of any {{country}} is the people.
+The main {{export}} of any {{country}} is the 90" tall people.
 {{infobox hi there {{good}} neighbour}}
 [[Image:Albedo-e hg.svg|thumb|Percentage of reflected sun light in
 relation to various surface conditions of the earth]]
+[[It's all about "quotes"]]
 </text>
 </revision>
 </page>
