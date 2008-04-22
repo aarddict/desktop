@@ -28,7 +28,7 @@ class HTMLParser(SimpleXMLParser):
     
     def __init__(self):
         SimpleXMLParser.__init__(self)
-        self.goodtags =  ['h1', 'h2', 'h3', 'h4', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt']
+        self.goodtags =  ['h1', 'h2', 'h3', 'h4', 'a', 'b', 'i', 'ref', 'p', 'br', 'img', 'big', 'small', 'sup', 'blockquote', 'tt', 'li']
         self.tags = []
         self.tagStack = []
         self.docBuffer = ""
@@ -50,6 +50,14 @@ class HTMLParser(SimpleXMLParser):
                 self.textUnicodeLength += 1
             return
 
+        elif tag == "li":
+            if self.docBuffer and self.docBuffer[-1] != "\n": 
+                self.docBuffer += "\n"
+                self.textUnicodeLength += 1
+            self.docBuffer += "\xE2\x80\xA2 "
+            self.textUnicodeLength += 2
+            return
+        
         elif tag in ["h1", "h2", "h3", "h4", "blockquote", "tt"]:
             if self.docBuffer and self.docBuffer[-1] != "\n": 
                 self.docBuffer += "\n"
@@ -83,6 +91,12 @@ class HTMLParser(SimpleXMLParser):
                 self.docBuffer += "\n"
                 self.textUnicodeLength += 1
             if self.docBuffer and self.docBuffer[-2] != "\n": 
+                self.docBuffer += "\n"
+                self.textUnicodeLength += 1
+            return
+
+        elif tag == "li":
+            if self.docBuffer and self.docBuffer[-1] != "\n": 
                 self.docBuffer += "\n"
                 self.textUnicodeLength += 1
             return
@@ -134,7 +148,7 @@ class HTMLParser(SimpleXMLParser):
 if __name__ == '__main__':
     import sys
 
-    s = 'entry<html><p>hiho</p><h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a></html>exit'
+    s = 'entry<html><p>hiho</p><h1>This is the départment&quot;s</h1><br>\n<a href="the red">this<br/><i>and</i> <b>that</i></b></a> <ul><li>item1</li><li>item2</li></ul></html>exit'
 
     print s
     print ""

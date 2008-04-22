@@ -272,6 +272,10 @@ The main {{export}} of any {{country}} is the 90" tall people.
 [[Image:Albedo-e hg.svg|thumb|Percentage of reflected sun light in
 relation to various surface conditions of the earth]]
 [[It's all about "quotes"]]
+* here
+* is
+* a
+* list
 </text>
 </revision>
 </page>
