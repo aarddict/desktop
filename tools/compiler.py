@@ -116,7 +116,7 @@ def handleArticle(title, text):
 
     sortex.put(collationKeyString4 + "___" + title + "___")
 
-    articleUnit = struct.pack("L", len(jsonstring)) + jsonstring
+    articleUnit = struct.pack(">L", len(jsonstring)) + jsonstring
     articleUnitLength = len(articleUnit)
     if aarFileLength[-1] + articleUnitLength > aarFileLengthMax:
         createArticleFile()
@@ -157,10 +157,10 @@ def makeFullIndex():
             target = title
         try:
             fileno, articlePointer = indexDb[target]
-            index1Unit = struct.pack('LLL', long(index2Length), long(fileno), long(articlePointer))
+            index1Unit = struct.pack('>LLL', long(index2Length), long(fileno), long(articlePointer))
             index1.write(index1Unit)
             index1Length += len(index1Unit)
-            index2Unit = struct.pack("L", long(len(title))) + title
+            index2Unit = struct.pack(">L", long(len(title))) + title
             index2.write(index2Unit)
             index2Length += len(index2Unit)
             header["index_count"] += 1
@@ -313,10 +313,10 @@ while 1:
     unit = index1.read(12)
     if len(unit) == 0:
         break
-    index2ptr, fileno, offset = struct.unpack("LLL", unit)
+    index2ptr, fileno, offset = struct.unpack(">LLL", unit)
     if combineFiles and fileno == len(aarFile) - 1:
         fileno = 0L
-    unit = struct.pack("LLL", index2ptr, fileno, offset) 
+    unit = struct.pack(">LLL", index2ptr, fileno, offset) 
     writeCount += 1
     aarFile[0].write(unit)
     aarFileLength[0] += 12
@@ -335,7 +335,7 @@ while 1:
     if len(unitLengthString) == 0:
         break
     writeCount += 1
-    unitLength = struct.unpack("L", unitLengthString)[0]
+    unitLength = struct.unpack(">L", unitLengthString)[0]
     unit = index2.read(unitLength)
     aarFile[0].write(unitLengthString + unit)
     aarFileLength[0] += 4 + unitLength

@@ -41,7 +41,7 @@ class Article:
         
     def fromFile(self, file, offset):
         file.seek(offset)
-        record_length = struct.unpack('L', file.read(struct.calcsize("L")))[0]
+        record_length = struct.unpack('>L', file.read(struct.calcsize(">L")))[0]
         if self.compress == "bz2":
             s = file.read(record_length)
         else:

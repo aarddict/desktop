@@ -172,9 +172,9 @@ class Dictionary:
                 
     def read_full_index_item(self, pos):
         self.file[0].seek(self.index1_offset + (pos * 12))
-        keyPos, fileno, article_unit_ptr = struct.unpack("LLL", self.file[0].read(12))
+        keyPos, fileno, article_unit_ptr = struct.unpack(">LLL", self.file[0].read(12))
         self.file[0].seek(self.index2_offset + keyPos)
-        keyLen = struct.unpack("L", self.file[0].read(4))[0]
+        keyLen = struct.unpack(">L", self.file[0].read(4))[0]
         key = self.file[0].read(keyLen)
         collation_key = self.collator.getCollationKey(key)
         word = Word(self, key, collation_key = collation_key)
