@@ -88,7 +88,7 @@ class SimpleXMLParser:
         
     def processTag(self, tag):
         tag = tag[1:-1]
-        tag = tag.replace("\n", " ").replace("&quot;", '"')
+        tag = tag.replace("\n", " ")
 
         if not tag:
             return
@@ -133,12 +133,11 @@ class SimpleXMLParser:
                 value = value[1:-1]
             if value and (value[0] == "'") and (value[-1] == "'"):
                 value = value[1:-1]
-            attrDict[name] = value
+            attrDict[self.unescape(name)] = self.unescape(value)
         return attrDict
 
     def processData(self, data):
-        data = data.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&').replace("&nbsp;", "\xE2\x80\x87")
-        self.handleCharacterData(data)
+        self.handleCharacterData(self.unescape(data))
 
     def handleStartElement(self, tag, attrsList):
         # usually overridden
@@ -155,7 +154,11 @@ class SimpleXMLParser:
     def handleCleanup(self):
         # usually overridden
         sys.stderr.write("XML cleanup\n")
-    
+
+    def unescape(self, s):
+        return s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&').replace("&mdash", "\xE2\x80\x94").replace("&nbsp;", "\xE2\x80\x87")
+
+        
 if __name__ == '__main__':
     import sys
 
@@ -171,7 +174,7 @@ if __name__ == '__main__':
     hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
     iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
     lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-    <b>that</i><span selected></b></a><minor /><a href="big daddy">yow&nbsp;za</a>
+    <b>that</i><span selected></b></a><minor /><a href="big &quot;daddy&quot; o">yow&nbsp;za</a>
     '''
     print s
     
