@@ -1,12 +1,13 @@
-#!/bin/sh
-DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml"
+#!/bin/bash
+
 mkdir -p usr/{bin/,lib/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
+
+DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml"
 cp ../src/aarddict-maemo.py usr/bin/aarddict || exit
 cp -R ../src/aarddict/*.py usr/lib/aarddict || exit
-cp ../icons/aarddict.png usr/share/pixmaps/
-
 python ../tools/trimallkeys.py -i ../src/aarddict/allkeys.txt -o usr/lib/aarddict/allkeys.txt
-
+cp -R ../icons/ usr/share/
+#cp ../icons/hicolor/40x40/apps/aarddict.png usr/share/pixmaps/
 chmod +x usr/bin/aarddict
 
 export LD_LIBRARY_PATH=/usr/lib
@@ -29,11 +30,50 @@ Architecture: all
 Depends: $DEPENDS
 Installed-Size: $SIZE
 Maintainer: Igor Tkach <itkach@users.sourceforge.net>
-Description: A dictionary application for Nokia Internet Tablets." > control
+Description: A dictionary application for Nokia Internet Tablets.
+Maemo-Icon-26:
+	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" > control
 cat control
 
 echo "[Desktop Entry]
-Version=$VERSION
 Encoding=UTF-8
 Name=$APP_NAME
 Type=Application
@@ -49,7 +89,7 @@ Exec=/usr/bin/aarddict" > usr/share/dbus-1/services/aarddict.service
 echo 2.0 > debian-binary
 
 tar -zcvf data.tar.gz ./usr 
-tar -zcvf control.tar.gz control
+tar -zcvf control.tar.gz control postinst
 NAME="$PACKAGE"-"$VERSION".deb
 rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
