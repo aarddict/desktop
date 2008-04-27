@@ -359,7 +359,7 @@ if combineFiles:
         if len(unitLengthString) == 0:
             break
         writeCount += 1
-        unitLength = struct.unpack("i", unitLengthString)[0]
+        unitLength = struct.unpack(">L", unitLengthString)[0]
         unit = aarFile[-1].read(unitLength)
         aarFile[0].write(unitLengthString + unit)
         aarFileLength[0] += 4 + unitLength

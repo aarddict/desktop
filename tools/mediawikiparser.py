@@ -114,8 +114,9 @@ class MediaWikiParser(SimpleXMLParser):
             self.text = self.text.replace("&lt;", "<").replace("&gt;", ">");
             if not self.text.startswith("<p>See:"):
                 self.text = "<h1>" + self.title + "</h1>" + self.text
-            #sys.stderr.write("Mediawiki article: %s %s\n" % (self.title, self.text[:40]))
+            #sys.stderr.write("Mediawiki article: %s %s\n" % (self.title, len(self.text)))
             self.consumer(self.title, self.text)
+            self.text = ""
             return
             
     def handleCharacterData(self, data):

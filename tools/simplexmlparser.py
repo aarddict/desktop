@@ -96,9 +96,10 @@ class SimpleXMLParser:
             tag = tag.replace(" ", "")
             self.handleEndElement(tag[1:])
         elif tag[-1] == '/':
-            tag = tag.replace(" ", "")
-            self.handleStartElement(tag[:-1], {})
-            self.handleEndElement(tag[:-1])
+            tag = tag[:-1]
+            tagElements = tag.split(" ")
+            self.handleStartElement(tagElements[0], self.makeAttrDict(tagElements[1:]))
+            self.handleEndElement(tagElements[0])
         else:
             tagElements = tag.split(" ")
             self.handleStartElement(tagElements[0], self.makeAttrDict(tagElements[1:]))
