@@ -22,15 +22,16 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 import compactjson
 import bz2
 import struct
-import sys
+
+RECORD_LEN_STRUCT_FORMAT = '>L'
+RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
 
 class Article:
 
-    def __init__(self, title = "", text = "", tags = None, compress = "none"):
+    def __init__(self, title = "", text = "", tags = None):
         self.title = title
         self.text = text
         self.tags = [] if tags is None else tags
-        self.compress = compress
 
     def __str__(self):
         s = "title: " + repr(self.title) + "\n"
@@ -41,19 +42,12 @@ class Article:
         
     def fromFile(self, file, offset):
         file.seek(offset)
-        record_length = struct.unpack('>L', file.read(struct.calcsize(">L")))[0]
-        if self.compress == "bz2":
-            s = file.read(record_length)
-        else:
-            s = bz2.decompress(file.read(record_length))
-
+        record_length = struct.unpack(RECORD_LEN_STRUCT_FORMAT, file.read(RECORD_LEN_STRUCT_SIZE))[0]
+        s = file.read(record_length)
+        s = bz2.decompress(s)
         self.text, tagList = compactjson.loads(s)
-        #print self.text
-        for tagListItem in tagList:
-            tag = Tag()
-            tag.fromList(tagListItem)
-            #print str(tag)
-            self.tags.append(tag)
+        self.tags = [Tag(name, start, end, attrs) for name, start, end, attrs in tagList]
+
 
 class Tag:
 

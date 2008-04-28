@@ -18,7 +18,7 @@ Copyright (C) 2006-2008 Igor Tkach
 """
 import pygtk
 pygtk.require('2.0')
-import gtk, pango, locale, ui
+import gtk, locale, ui
 
 class DictDetailPane(gtk.HBox):
     

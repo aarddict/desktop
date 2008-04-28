@@ -448,7 +448,6 @@ class DictViewer(object):
         return False 
         
     def show_article_for(self, wordlookup, lang = None):
-        langs = (lang,) if lang else None
         articles = wordlookup.read_articles()
         word = str(wordlookup)
         self.clear_tabs()

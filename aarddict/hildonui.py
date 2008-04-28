@@ -17,11 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2006-2008 Igor Tkach
 """
 
-import ui
-import hildon
-import osso
-import gtk
-import webbrowser
+import osso, hildon, ui
+import webbrowser, gtk
 
 osso_c = osso.Context("aarddict", ui.version, False)
 
@@ -47,10 +44,10 @@ class HildonDictViewer(ui.DictViewer):
         self.window.set_title(self.create_dict_title())
     
     def on_window_state_change(self, widget, event, *args):             
-         if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
-             self.window_in_fullscreen = True
-         else:
-             self.window_in_fullscreen = False    
+        if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
+            self.window_in_fullscreen = True
+        else:
+            self.window_in_fullscreen = False    
     
     def on_key_press(self, widget, event, *args):
         if event.keyval == gtk.keysyms.F6:

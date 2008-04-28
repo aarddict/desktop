@@ -20,10 +20,10 @@ Copyright (C) 2006-2008 Igor Tkach
 from collections import defaultdict
 
 class DictFormatError(Exception):
-     def __init__(self, value):
-         self.value = value
-     def __str__(self):
-         return repr(self.value)      
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)      
 
 class WordLookup:
     def __init__(self, word, collation_key, dict = None, article_ptr = None):

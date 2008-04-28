@@ -17,16 +17,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import gobject, gtk, pango
+import threading, gobject, gtk, pango
 
 class FormattingStoppedException(Exception):
-
-     def __init__(self):
-         self.value = "Formatting stopped"
-     def __str__(self):
-         return repr(self.value)   
-
-import threading
+    def __init__(self):
+        self.value = "Formatting stopped"
+    def __str__(self):
+        return repr(self.value)   
 
 class ArticleFormat:
     class Worker(threading.Thread):        
