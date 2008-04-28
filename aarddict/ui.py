@@ -157,7 +157,6 @@ class ArticleView(gtk.TextView):
         self.set_editable(False)        
         self.set_cursor_visible(False)
         self.set_data("handlers", [])
-        self.article_drag_started = False
         self.last_drag_coords = None
         self.selection_changed_callback = selection_changed_callback
         self.phonetic_font_desc = phonetic_font_desc
@@ -397,23 +396,17 @@ class DictViewer(object):
         webbrowser.open(url)
     
     def is_link_click(self, widget, event, reference):
-        result = False
-        if not widget.article_drag_started:            
-            if event.type == gtk.gdk.BUTTON_PRESS:
-                widget.armed_link = (reference, event.get_coords())
-            if hasattr(widget, "armed_link") and widget.armed_link:        
-                if event.type == gtk.gdk.MOTION_NOTIFY:
-                    armed_ref, armed_coords = widget.armed_link
-                    armed_x, armed_y = armed_coords
-                    evt_x, evt_y = event.get_coords()
-                    if fabs(armed_x - evt_x) > 1 or fabs(armed_y - evt_y) > 1:  
-                        widget.armed_link = None
-                if event.type == gtk.gdk.BUTTON_RELEASE:
-                    armed_ref, armed_coords = widget.armed_link
-                    if armed_ref == reference:
-                        result = True
-                    widget.armed_link = None
-        return result
+        if event.type == gtk.gdk.BUTTON_PRESS:
+            widget.armed_link = (reference, event.get_coords())
+        elif hasattr(widget, "armed_link") and widget.armed_link:        
+            if event.type == gtk.gdk.BUTTON_RELEASE:
+                armed_ref, armed_coords = widget.armed_link
+                armed_x, armed_y = armed_coords
+                evt_x, evt_y = event.get_coords()
+                if fabs(armed_x - evt_x) > 3 or fabs(armed_y - evt_y) > 3:
+                    return False
+                widget.armed_link = None
+                return armed_ref == reference
             
     def set_word_input(self, word, supress_update = True):
         if supress_update: self.word_input.handler_block(self.word_change_handler)
@@ -768,48 +761,39 @@ class DictViewer(object):
         return True         
     
     def article_drag_handler(self, widget, event):
-        #need to get pointer from the widget to receive next mouse motion event
-        x, y = coords = widget.get_pointer()
         if self.mi_drag_selects.get_active():
             return False
-        if event.type == gtk.gdk._2BUTTON_PRESS or event.type == gtk.gdk._3BUTTON_PRESS:
-            return True
+        #need to get pointer from the widget to receive next mouse motion event
+        x, y = coords = widget.get_pointer()
+        
         if event.type == gtk.gdk.BUTTON_PRESS:
             widget.last_drag_coords = event.get_coords()
             return True
         if event.type == gtk.gdk.BUTTON_RELEASE:
             widget.last_drag_coords = None
-            if widget.article_drag_started:
-                widget.article_drag_started = False
-            return True
-        if event.type == gtk.gdk.MOTION_NOTIFY:
-            if not widget.last_drag_coords:
-                return False
-            x0, y0 = widget.last_drag_coords
-            if not widget.article_drag_started:
-                if fabs(x-x0) > 1 or fabs(y-y0) > 1:
-                    widget.article_drag_started = True
-
-            if widget.article_drag_started:
-                scroll_window = widget.get_parent()
-                widget.last_drag_coords = coords
-                hstep = x0 - x
-                if hstep != 0:
-                    h = scroll_window.get_hadjustment()
-                    hvalue = h.get_value() + hstep
-                    maxhvalue = h.upper - h.page_size
-                    if hvalue > maxhvalue: hvalue = maxhvalue
-                    if hvalue < h.lower: hvalue = h.lower
-                    h.set_value(hvalue)
-                vstep = y0 - y
-                if vstep != 0:
-                    v = scroll_window.get_vadjustment()
-                    vvalue = v.get_value() + vstep
-                    maxvvalue = v.upper - v.page_size
-                    if vvalue > maxvvalue: vvalue = maxvvalue
-                    if vvalue < v.lower: vvalue = v.lower
-                    v.set_value(vvalue)
+        if not widget.last_drag_coords:
             return False
+        x0, y0 = widget.last_drag_coords
+
+        scroll_window = widget.get_parent()
+        widget.last_drag_coords = coords
+        
+        hstep = x0 - x
+        h = scroll_window.get_hadjustment()
+        hvalue = h.get_value() + hstep
+        maxhvalue = h.upper - h.page_size
+        if hvalue > maxhvalue: hvalue = maxhvalue
+        if hvalue < h.lower: hvalue = h.lower
+        h.set_value(hvalue)
+        
+        vstep = y0 - y
+        v = scroll_window.get_vadjustment()
+        vvalue = v.get_value() + vstep
+        maxvvalue = v.upper - v.page_size
+        if vvalue > maxvvalue: vvalue = maxvvalue
+        if vvalue < v.lower: vvalue = v.lower
+        v.set_value(vvalue)
+        return False
     
     def article_text_selection_changed(self, *args):
         page_num = self.tabs.get_current_page() 
