@@ -765,7 +765,8 @@ class DictViewer(object):
             return False
         #need to get pointer from the widget to receive next mouse motion event
         x, y = coords = widget.get_pointer()
-        
+        if event.type == gtk.gdk._2BUTTON_PRESS or event.type == gtk.gdk._3BUTTON_PRESS:
+            return True       
         if event.type == gtk.gdk.BUTTON_PRESS:
             widget.last_drag_coords = event.get_coords()
             return True
