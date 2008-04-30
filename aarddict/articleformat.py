@@ -17,7 +17,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import threading, gobject, gtk, pango
+import threading, gobject, gtk, pango, compactjson, article
+
+def to_article(raw_article):
+    text, tag_list = compactjson.loads(raw_article)
+    tags = [article.Tag(name, start, end, attrs) for name, start, end, attrs in tag_list]
+    return article.Article(text=text, tags=tags)
+
 
 class FormattingStoppedException(Exception):
     def __init__(self):
@@ -76,10 +82,11 @@ class ArticleFormat:
             text_buffer.apply_tag_by_name("r", start, end)
         text_buffer.apply_tag(ref_tag, start, end) 
         
-    def create_tagged_text_buffer(self, dict, article, article_view):
+    def create_tagged_text_buffer(self, dict, raw_article, article_view):
         text_buffer = self.create_article_text_buffer()
-        text_buffer.set_text(article.text)
-        tags = article.tags
+        a = to_article(raw_article)
+        text_buffer.set_text(a.text)
+        tags = a.tags
         for tag in tags:
             start = text_buffer.get_iter_at_offset(tag.start)
             end = text_buffer.get_iter_at_offset(tag.end)

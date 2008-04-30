@@ -18,13 +18,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-from struct import unpack
-import types
-import compactjson
-import article
-import pyuca
-import struct
-import sys
+import compactjson, bz2, struct, sys, types
+import article, pyuca
+
+RECORD_LEN_STRUCT_FORMAT = '>L'
+RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
 
 class Word:
     def __init__(self, dictionary, word, collation_key = None):
@@ -182,17 +180,18 @@ class Dictionary:
         return word
         
     def read_article(self, location):
-        a = article.Article()
-        a.fromFile(self.file[location[0]], location[1])
-        return a
+        fileno, offset = location
+        file = self.file[fileno]
+        file.seek(offset)
+        record_length = struct.unpack(RECORD_LEN_STRUCT_FORMAT, file.read(RECORD_LEN_STRUCT_SIZE))[0]
+        raw_article = bz2.decompress(file.read(record_length))        
+        return raw_article
 
     def close(self):
         for f in self.file:
             f.close()        
 
 if __name__ == '__main__':
-
-        import sys
 
         if len(sys.argv) != 3:
             sys.stderr.write("Usage: " + sys.argv[0] + " aarfile word\n")
