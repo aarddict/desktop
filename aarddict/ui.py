@@ -21,13 +21,16 @@ pygtk.require('2.0')
 
 import gtk, pango, gobject
 import dictutil, dictinfo, articleformat
-import re, functools, webbrowser, time
+import functools, webbrowser, time
 from xml.sax.saxutils import escape
 from threading import Thread
 from Queue import Queue
 from math import fabs
 from aarddict import ucollator
 from dictionary import Dictionary
+from gtk.gdk import (_2BUTTON_PRESS, _3BUTTON_PRESS, BUTTON_PRESS, 
+                    MOTION_NOTIFY, BUTTON_RELEASE, NO_EXPOSE, EXPOSE, 
+                    VISIBILITY_NOTIFY)
 
 gobject.threads_init()
 
@@ -396,16 +399,16 @@ class DictViewer(object):
         webbrowser.open(url)
     
     def is_link_click(self, widget, event, reference):
-        if event.type == gtk.gdk.BUTTON_PRESS:
+        if event.type == BUTTON_PRESS:
             widget.armed_link = (reference, event.get_coords())
         elif hasattr(widget, "armed_link") and widget.armed_link:        
-            if event.type == gtk.gdk.BUTTON_RELEASE:
+            if event.type == BUTTON_RELEASE:
                 armed_ref, armed_coords = widget.armed_link
+                widget.armed_link = None
                 armed_x, armed_y = armed_coords
                 evt_x, evt_y = event.get_coords()
-                if fabs(armed_x - evt_x) > 3 or fabs(armed_y - evt_y) > 3:
-                    return False
-                widget.armed_link = None
+                if fabs(armed_x - evt_x) > 2 or fabs(armed_y - evt_y) > 2:
+                    return False                
                 return armed_ref == reference
             
     def set_word_input(self, word, supress_update = True):
@@ -763,21 +766,20 @@ class DictViewer(object):
     def article_drag_handler(self, widget, event):
         if self.mi_drag_selects.get_active():
             return False
-        #need to get pointer from the widget to receive next mouse motion event
-        x, y = coords = widget.get_pointer()
-        if event.type == gtk.gdk._2BUTTON_PRESS or event.type == gtk.gdk._3BUTTON_PRESS:
-            return True       
-        if event.type == gtk.gdk.BUTTON_PRESS:
-            widget.last_drag_coords = event.get_coords()
+        type = event.type        
+        x, y = coords = widget.get_pointer()        
+        if type in (BUTTON_PRESS, _2BUTTON_PRESS, _3BUTTON_PRESS):
+            widget.last_drag_coords = coords
             return True
-        if event.type == gtk.gdk.BUTTON_RELEASE:
+        if type == BUTTON_RELEASE:
             widget.last_drag_coords = None
+            return False
         if not widget.last_drag_coords:
             return False
+        
         x0, y0 = widget.last_drag_coords
-
+        widget.last_drag_coords = coords        
         scroll_window = widget.get_parent()
-        widget.last_drag_coords = coords
         
         hstep = x0 - x
         h = scroll_window.get_hadjustment()
@@ -794,7 +796,7 @@ class DictViewer(object):
         if vvalue > maxvvalue: vvalue = maxvvalue
         if vvalue < v.lower: vvalue = v.lower
         v.set_value(vvalue)
-        return False
+        return type == MOTION_NOTIFY
     
     def article_text_selection_changed(self, *args):
         page_num = self.tabs.get_current_page() 
