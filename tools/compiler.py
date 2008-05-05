@@ -19,21 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import aarddict.compactjson
+from aarddict import compactjson
 from sortexternal import SortExternal
 from htmlparser import HTMLParser
-import optparse
-import sys
-import struct
+import sys, bz2, struct, os, tempfile, shelve, datetime, optparse
 import aarddict.pyuca
-import re
-import binascii
-import os
-import array
-from aarddict.article import *
-import tempfile
-import shelve
-import datetime
 
 def getOptions():
     usage = "usage: %prog [options] "
