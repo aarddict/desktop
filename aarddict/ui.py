@@ -250,9 +250,9 @@ class DictViewer(object):
         self.word_completion = LangNotebook(self.word_selection_changed)
         box.pack_start(self.word_completion, True, True, 0)
 
-        split_pane = gtk.HPaned()        
-        contentBox.pack_start(split_pane, True, True, 2)                        
-        split_pane.add(box)
+        self.split_pane = gtk.HPaned() 
+        contentBox.pack_start(self.split_pane, True, True, 2)                        
+        self.split_pane.add(box)
         
         self.tabs = gtk.Notebook()
         self.tabs.set_scrollable(True)
@@ -260,7 +260,7 @@ class DictViewer(object):
 #        page-added and page-removed is only available in PyGTK 2.10, doesn't work in Maemo
 #        self.tabs.connect("page-added", self.update_copy_article_mi)
 #        self.tabs.connect("page-removed", self.update_copy_article_mi)
-        split_pane.add(self.tabs)
+        self.split_pane.add(self.tabs)
         
         contentBox.pack_start(self.statusbar, False, True, 0)
                         
@@ -457,7 +457,11 @@ class DictViewer(object):
                 label = gtk.Label(dict.title)
                 label.set_width_chars(6)
                 label.set_ellipsize(pango.ELLIPSIZE_START)
-                self.tabs.append_page(scrollable_view, label)
+                event_box = gtk.EventBox()
+                event_box.add(label)
+                event_box.connect("event", self.dict_label_callback)
+                event_box.show_all()                            
+                self.tabs.append_page(scrollable_view, event_box)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
                 self.article_formatter.apply(dict, word, article, article_view)
@@ -466,6 +470,14 @@ class DictViewer(object):
         self.update_copy_article_mi(self.tabs)
         self.tabs.show_all()
         return result  
+    
+    def dict_label_callback(self, widget, event):
+        if event.type == _2BUTTON_PRESS:
+            c = self.split_pane.get_child1()
+            if c.get_property('visible'):
+                c.hide()
+            else:
+                c.show()
             
     def word_selection_changed(self, selection, lang):
         if selection.count_selected_rows() == 0:
