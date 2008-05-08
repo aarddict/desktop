@@ -400,17 +400,21 @@ class DictViewer(object):
     
     def is_link_click(self, widget, event, reference):
         if event.type == BUTTON_PRESS:
-            widget.armed_link = (reference, event.get_coords())
-        elif hasattr(widget, "armed_link") and widget.armed_link:        
-            if event.type == BUTTON_RELEASE:
-                armed_ref, armed_coords = widget.armed_link
+            widget.armed_link = (reference, event.get_coords(), event.get_time())
+        elif hasattr(widget, "armed_link") and widget.armed_link:
+            if event.type == BUTTON_RELEASE and widget.armed_link:
+                armed_ref, armed_coords, t0 = widget.armed_link
+                x, y = event.get_coords()
+                x0, y0 = armed_coords
                 widget.armed_link = None
-                armed_x, armed_y = armed_coords
-                evt_x, evt_y = event.get_coords()
-                if fabs(armed_x - evt_x) > 2 or fabs(armed_y - evt_y) > 2:
-                    return False                
-                return armed_ref == reference
-            
+                dt = event.get_time() - t0
+                result = (dt <= 200 and 
+                          dt >= 50 and
+                          fabs(x - x0) <= 3 and
+                          fabs(y - y0) <= 3 and
+                          armed_ref is reference)
+                return result 
+                       
     def set_word_input(self, word, supress_update = True):
         if supress_update: self.word_input.handler_block(self.word_change_handler)
         self.word_input.child.set_text(word)
