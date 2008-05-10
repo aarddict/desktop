@@ -269,6 +269,11 @@ class DictViewer(object):
         self.window.show_all()
         self.word_input.child.grab_focus()
         self.load_app_state()
+    
+    def _get_word_list(self):
+        return self.split_pane.get_child1()
+        
+    word_list = property(_get_word_list) 
         
     def load_app_state(self):
         try:
@@ -291,6 +296,12 @@ class DictViewer(object):
                 self.last_dict_file_location = self.appstate['last-dict-file-location']
             if 'drag-selects' in self.appstate:
                 self.mi_drag_selects.set_active(self.appstate['drag-selects'])
+            if 'show-word-list' in self.appstate:
+                show_word_list = self.appstate['show-word-list']
+                self.mi_show_word_list.set_active(show_word_list)
+                self.toggle_word_list()
+            else:
+                self.mi_show_word_list.set_active(True)
         except Exception, ex:
             print 'Failed to load application state:', ex                     
     
@@ -328,6 +339,7 @@ class DictViewer(object):
         self.appstate['dict-files'] = dict_files
         self.appstate['last-dict-file-location'] = self.last_dict_file_location
         self.appstate['drag-selects'] = self.mi_drag_selects.get_active()
+        self.appstate['show-word-list'] = self.mi_show_word_list.get_active()
         lang_positions = {}
         for page in self.word_completion:
             lang_positions[page.lang] = self.word_completion.page_num(page)
@@ -477,12 +489,14 @@ class DictViewer(object):
     
     def dict_label_callback(self, widget, event):
         if event.type == _2BUTTON_PRESS:
-            c = self.split_pane.get_child1()
-            if c.get_property('visible'):
-                c.hide()
-            else:
-                c.show()
-            
+            self.mi_show_word_list.set_active(not self.mi_show_word_list.get_active())
+                
+    def toggle_word_list(self, *arg, **kw):        
+        if not self.mi_show_word_list.get_active():
+            self.word_list.hide()
+        else:
+            self.word_list.show()    
+                        
     def word_selection_changed(self, selection, lang):
         if selection.count_selected_rows() == 0:
             self.clear_tabs()
@@ -687,6 +701,9 @@ class DictViewer(object):
 
         self.mi_drag_selects = gtk.CheckMenuItem("Drag Selects")
         self.mi_drag_selects.connect("activate", self.toggle_drag_selects)
+        
+        self.mi_show_word_list = gtk.CheckMenuItem("Show Word List")
+        self.mi_show_word_list.connect("activate", self.toggle_word_list)        
 
         self.mn_copy = gtk.Menu()
         self.mn_copy_item =gtk.MenuItem("Copy")
@@ -726,6 +743,7 @@ class DictViewer(object):
         
         mn_options.append(self.mi_select_phonetic_font)
         mn_options.append(self.mi_drag_selects)
+        mn_options.append(self.mi_show_word_list)        
         return (mn_dict_item, mn_options_item, mn_help_item)        
 
     def copy_selected_to_clipboard(self, widget):
