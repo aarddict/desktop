@@ -282,26 +282,15 @@ class DictViewer(object):
             if not p.exists(d): os.mkdir(d)
             statefile = p.join(d, 'appstate')
             self.appstate = shelve.open(statefile)
-            if 'word' in self.appstate:
-                self.set_word_input(self.appstate['word'])
-            if 'dict-files' in self.appstate:
-                self.open_dicts(self.appstate['dict-files'])
-            if 'history' in self.appstate:
-                history = self.appstate['history']
-                history.reverse()
-                [self.add_to_history(w, l) for w, l in history]
-            if 'phonetic-font' in self.appstate:
-                self.set_phonetic_font(self.appstate['phonetic-font'])
-            if 'last-dict-file-location' in self.appstate:
-                self.last_dict_file_location = self.appstate['last-dict-file-location']
-            if 'drag-selects' in self.appstate:
-                self.mi_drag_selects.set_active(self.appstate['drag-selects'])
-            if 'show-word-list' in self.appstate:
-                show_word_list = self.appstate['show-word-list']
-                self.mi_show_word_list.set_active(show_word_list)
-                self.toggle_word_list()
-            else:
-                self.mi_show_word_list.set_active(True)
+            self.set_word_input(self.appstate.get('word', ''))
+            self.open_dicts(self.appstate.get('dict-files', []))
+            ([self.add_to_history(w, l) for w, l 
+              in self.appstate.get('history', [])[::-1]])
+            self.set_phonetic_font(self.appstate.get('phonetic-font', None))
+            self.last_dict_file_location = self.appstate.get('last-dict-file-location', None)
+            self.mi_drag_selects.set_active(self.appstate.get('drag-selects', False))
+            self.mi_show_word_list.set_active(self.appstate.get('show-word-list', True))
+            self.update_word_list_visibility()
         except Exception, ex:
             print 'Failed to load application state:', ex                     
     
@@ -491,7 +480,7 @@ class DictViewer(object):
         if event.type == _2BUTTON_PRESS:
             self.mi_show_word_list.set_active(not self.mi_show_word_list.get_active())
                 
-    def toggle_word_list(self, *arg, **kw):        
+    def update_word_list_visibility(self, *arg, **kw):        
         if not self.mi_show_word_list.get_active():
             self.word_list.hide()
         else:
@@ -703,7 +692,7 @@ class DictViewer(object):
         self.mi_drag_selects.connect("activate", self.toggle_drag_selects)
         
         self.mi_show_word_list = gtk.CheckMenuItem("Show Word List")
-        self.mi_show_word_list.connect("activate", self.toggle_word_list)        
+        self.mi_show_word_list.connect("activate", self.update_word_list_visibility)        
 
         self.mn_copy = gtk.Menu()
         self.mn_copy_item =gtk.MenuItem("Copy")
@@ -1016,8 +1005,9 @@ class DictViewer(object):
         dialog.destroy()
                 
     def set_phonetic_font(self, font_name):
-        self.phonetic_font_desc = pango.FontDescription(font_name)
-        self.tabs.foreach(lambda page: page.child.set_phonetic_font(self.phonetic_font_desc))
+        if font_name:
+            self.phonetic_font_desc = pango.FontDescription(font_name)
+            self.tabs.foreach(lambda page: page.child.set_phonetic_font(self.phonetic_font_desc))
     
     def toggle_drag_selects(self, widget):
         self.mi_drag_selects.toggled()
