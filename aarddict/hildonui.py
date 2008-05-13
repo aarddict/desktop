@@ -56,12 +56,8 @@ class HildonDictViewer(ui.DictViewer):
                 self.window.unfullscreen ()
             else:
                 self.window.fullscreen ()
-        if event.keyval == gtk.keysyms.Escape:
-            self.clear_word_input(None, None)
-        if event.keyval == gtk.keysyms.F7:
-            self.tabs.next_page()            
-        if event.keyval == gtk.keysyms.F8:
-            self.tabs.prev_page()
+        else:
+            ui.DictViewer.on_key_press(self, widget, event, *args)
                 
     
     def add_menu(self, content_box):        

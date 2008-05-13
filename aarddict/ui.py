@@ -53,11 +53,24 @@ def create_button(stock_id, action):
     settings = button.get_settings()
     settings.set_property( "gtk-button-images", True )        
     button.set_label('')
-    button.set_image(gtk.image_new_from_stock(stock_id, gtk.ICON_SIZE_SMALL_TOOLBAR))
+    button.set_image(gtk.image_new_from_stock(stock_id, 
+                                              gtk.ICON_SIZE_SMALL_TOOLBAR))
     button.set_relief(gtk.RELIEF_NONE)
     button.set_focus_on_click(False)
     button.connect("clicked", action);
     return button  
+
+def block(widget, handler):
+    def wrap(f):
+        def newFunction(*args, **kw):
+            widget.handler_block(handler)
+            result = f(*args, **kw)
+            widget.handler_unblock(handler)
+            return result 
+        return newFunction
+    return wrap
+
+            
 
 class LangNotebook(gtk.Notebook):
     
@@ -303,8 +316,9 @@ class DictViewer(object):
         update_completion_thread = Thread(target = self.update_completion_worker)
         update_completion_thread.setDaemon(True)
         update_completion_thread.start()
-        gobject.timeout_add(UPDATE_COMPLETION_TIMEOUT_CHECK_MS, self.check_update_completion_timeout)
-         
+        gobject.timeout_add(UPDATE_COMPLETION_TIMEOUT_CHECK_MS, 
+                            self.check_update_completion_timeout)
+                 
     def update_copy_article_mi(self, notebook = None, child = None, page_num = None):
         self.mi_copy_article_to_clipboard.set_sensitive(notebook.get_n_pages() > 0)
              
@@ -359,8 +373,16 @@ class DictViewer(object):
         return text     
         
     def on_key_press(self, widget, event, *args):
-        if event.keyval == gtk.keysyms.Escape:
-            self.clear_word_input(None, None)
+        if (event.keyval == gtk.keysyms.Escape 
+            or (event.state & gtk.gdk.CONTROL_MASK 
+                and event.keyval == gtk.keysyms.b)):
+            self.history_back()
+        if (event.state & gtk.gdk.CONTROL_MASK 
+                and event.keyval == gtk.keysyms.f):
+            self.history_forward()
+        if (event.state & gtk.gdk.CONTROL_MASK 
+                and event.keyval == gtk.keysyms.z):
+            self.clear_word_input(None, None)                        
         if event.keyval == gtk.keysyms.F7:
             self.tabs.prev_page()
         if event.keyval == gtk.keysyms.F8:
@@ -421,21 +443,53 @@ class DictViewer(object):
         self.word_input.child.set_text(word)
         self.word_input.child.set_position(-1)    
         if supress_update: self.word_input.handler_unblock(self.word_change_handler) 
-                
+    
     def add_to_history(self, word, lang):
         self.word_input.handler_block(self.word_change_handler)        
         model = self.word_input.get_model()
         insert = True;
-        for row in model:
+        for i, row in enumerate(model):
             if word == row[0] and lang == row[1]:
                 insert = False;
                 break;
         if insert:
+            print 'prev active', self.word_input.previous_active
             model.insert(None, 0, [word, lang])  
+            self.word_input.set_active(0)
+            i = model.get_iter_first()
+            i = model.iter_next(i)
+            for j in xrange(1, self.word_input.previous_active + 1):
+                if i and model.iter_is_valid(i): model.remove(i)            
+        else:
+            self.word_input.set_active(i)
+        self.word_input.previous_active = self.word_input.get_active()
+        print 'add to hist, active: ', self.word_input.get_active()
         history_size = model.iter_n_children(None)
         if history_size > 10:
             del model[history_size - 1]
         self.word_input.handler_unblock(self.word_change_handler)
+    
+    def history_back(self):
+        model = self.word_input.get_model()
+        active = self.word_input.get_active()
+        print 'back from', active
+        if active == -1:
+            print 'no active'
+            s_word, s_lang = self.get_selected_word()
+            print 'selected', s_word, s_lang
+            for i, (word, lang) in enumerate(model):
+                print i, word, lang
+                if s_word == word and s_lang == lang:
+                    print 'match, active will be ', i, word, lang
+                    active = i
+        if active + 1 < len(model):  
+            self.word_input.set_active(active + 1)     
+            
+    def history_forward(self):           
+        active = self.word_input.get_active()
+        print 'forward from', active
+        if active - 1 >= 0:
+            self.word_input.set_active(active - 1)                
                 
     def clear_tabs(self):
         while self.tabs.get_n_pages() > 0:            
@@ -468,7 +522,8 @@ class DictViewer(object):
                 event_box.show_all()                            
                 self.tabs.append_page(scrollable_view, event_box)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
-                self.tabs.set_tab_label_packing(scrollable_view, True,True,gtk.PACK_START)
+                self.tabs.set_tab_label_packing(scrollable_view, 
+                                                True,True,gtk.PACK_START)
                 self.article_formatter.apply(dict, word, article, article_view)
                 self.add_to_history(word, lang)            
                 result = True           
@@ -500,7 +555,8 @@ class DictViewer(object):
         
     def paste_to_word_input(self, btn, data = None): 
         clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)
-        clipboard.request_text(lambda clipboard, text, data : self.word_input.child.set_text(text))
+        clipboard.request_text(lambda clipboard, text, data: 
+                               self.word_input.child.set_text(text))
         self.word_input.child.grab_focus()
           
     def get_selected_word(self):
@@ -516,7 +572,8 @@ class DictViewer(object):
     
     def stop_lookup(self):
         if not self.update_completion_stopped:
-            message_id = self.statusbar.push(self.update_completion_ctx_id, 'Stopping current lookup...')
+            message_id = self.statusbar.push(self.update_completion_ctx_id, 
+                                             'Stopping current lookup...')
             self.lookup_stop_requested = True
             self.update_completion_q.join()
             self.lookup_stop_requested = False
@@ -527,7 +584,8 @@ class DictViewer(object):
             elapsed = time.time() - self.update_completion_t0
             if elapsed > UPDATE_COMPLETION_TIMEOUT_S:
                 self.stop_lookup()
-                self.statusbar.push(self.update_completion_timeout_ctx_id, 'Lookup stopped: it was taking too long')
+                self.statusbar.push(self.update_completion_timeout_ctx_id, 
+                                    'Lookup stopped: it was taking too long')
         return True     
     
     def update_completion_worker(self):
@@ -537,7 +595,9 @@ class DictViewer(object):
             self.update_completion_stopped = False
             lang_word_list, interrupted = self.do_lookup(start_word, to_select)
             if not interrupted:
-                gobject.idle_add(self.update_completion_callback, lang_word_list, to_select, start_word, time.time() - self.update_completion_t0)
+                gobject.idle_add(self.update_completion_callback, 
+                                 lang_word_list, to_select, start_word, 
+                                 time.time() - self.update_completion_t0)
             self.update_completion_t0 = None
             self.update_completion_stopped = True
             self.update_completion_q.task_done()
@@ -590,7 +650,9 @@ class DictViewer(object):
         if to_select:
             word, lang = to_select
             selected = self.select_word(word, lang)
-        if not selected and len(lang_word_list) == 1 and len(lang_word_list.values()[0]) == 1:
+        if (not selected 
+            and len(lang_word_list) == 1 
+            and len(lang_word_list.values()[0]) == 1):
             self.select_first_word_in_completion()  
 
     def create_top_level_widget(self):
@@ -619,12 +681,15 @@ class DictViewer(object):
 
     def create_word_input(self):
         word_input = gtk.ComboBoxEntry(gtk.TreeStore(str, str))
+        word_input.previous_active = -1
         word_input.clear()
         cell1 = gtk.CellRendererText()
         word_input.pack_start(cell1, False)        
         word_input.set_cell_data_func(cell1, self.format_history_item)
-        word_input.child.connect("activate", lambda x: self.select_first_word_in_completion())                
-        self.word_change_handler = word_input.connect("changed", self.word_selected_in_history)
+        word_input.child.connect("activate", 
+                                 lambda x: self.select_first_word_in_completion())                
+        self.word_change_handler = word_input.connect("changed", 
+                                                      self.word_selected_in_history)
         return word_input
     
     def format_history_item(self, celllayout, cell, model, iter, user_data = None):
@@ -636,7 +701,9 @@ class DictViewer(object):
         active = self.word_input.get_active()
         if active == -1:
             self.clear_tabs();
-            self.schedule(self.update_completion, 600, self.word_input.child.get_text())            
+            self.schedule(self.update_completion, 
+                          600, 
+                          self.word_input.child.get_text())            
             return
         word, lang = self.word_input.get_model()[active]
         #use schedule instead of direct call to interrupt already scheduled update if any
@@ -778,7 +845,9 @@ class DictViewer(object):
         return ("%d dictionary") % size if size == 1 else ("%d dictionaries") % size
         
     def create_article_view(self):
-        article_view = ArticleView(self.article_drag_handler, self.article_text_selection_changed, self.phonetic_font_desc)
+        article_view = ArticleView(self.article_drag_handler, 
+                                   self.article_text_selection_changed, 
+                                   self.phonetic_font_desc)
         if self.supports_cursor_changes():        
             article_view.connect("motion_notify_event", self.on_mouse_motion)
         return article_view   
@@ -856,7 +925,8 @@ class DictViewer(object):
             self.open_dict(fileName)
         
     def create_file_chooser_dlg(self):
-        dlg = gtk.FileChooserDialog(parent = self.window, action = gtk.FILE_CHOOSER_ACTION_OPEN)        
+        dlg = gtk.FileChooserDialog(parent = self.window, 
+                                    action = gtk.FILE_CHOOSER_ACTION_OPEN)        
         dlg.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
         dlg.add_button( gtk.STOCK_OPEN, gtk.RESPONSE_OK)        
         if self.last_dict_file_location:
@@ -887,12 +957,14 @@ class DictViewer(object):
     def open_dicts_done(self):
         self.hide_status_display()
         if len(self.open_errors) > 0:
-            self.show_error("Open Failed", self.errors_to_text(self.open_errors))
+            self.show_error("Open Failed", 
+                            self.errors_to_text(self.open_errors))
             self.open_errors = None   
         if 'lang-positions' in self.appstate:
             lang_positions = self.appstate['lang-positions']
             for page in self.word_completion:
-                self.word_completion.reorder_child(page, lang_positions[page.lang])
+                self.word_completion.reorder_child(page, 
+                                                   lang_positions[page.lang])
             del self.appstate['lang-positions']
         if 'selected-word' in self.appstate:
             word, lang = self.appstate['selected-word']
@@ -937,7 +1009,11 @@ class DictViewer(object):
         self.status_display = None
 
     def show_error(self, title, text):
-        dlg = gtk.MessageDialog(parent=self.window, flags=gtk.DIALOG_MODAL, type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE, message_format=text)
+        dlg = gtk.MessageDialog(parent=self.window, 
+                                flags=gtk.DIALOG_MODAL, 
+                                type=gtk.MESSAGE_ERROR, 
+                                buttons=gtk.BUTTONS_CLOSE, 
+                                message_format=text)
         dlg.set_title(title)
         dlg.run()
         dlg.destroy()
@@ -981,7 +1057,8 @@ class DictViewer(object):
         return None
 
     def show_dict_info(self, widget):        
-        info_dialog = dictinfo.DictInfoDialog(self.dictionaries.get_dicts(), parent = self.window)
+        info_dialog = dictinfo.DictInfoDialog(self.dictionaries.get_dicts(), 
+                                              parent = self.window)
         info_dialog.run()
         info_dialog.destroy()
         
@@ -1007,12 +1084,14 @@ class DictViewer(object):
     def set_phonetic_font(self, font_name):
         if font_name:
             self.phonetic_font_desc = pango.FontDescription(font_name)
-            self.tabs.foreach(lambda page: page.child.set_phonetic_font(self.phonetic_font_desc))
+            self.tabs.foreach(lambda page: page.child
+                              .set_phonetic_font(self.phonetic_font_desc))
     
     def toggle_drag_selects(self, widget):
         self.mi_drag_selects.toggled()
         if not self.mi_drag_selects.get_active():
-            self.tabs.foreach(lambda scroll_window: scroll_window.get_child().clear_selection())
+            self.tabs.foreach(lambda scroll_window: 
+                              scroll_window.get_child().clear_selection())
     
     def main(self):
         gtk.main()            
