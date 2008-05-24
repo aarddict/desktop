@@ -54,6 +54,11 @@ def getOptions():
         default='none',
         help='Input format:  mediawiki or xdxf'
         )
+    parser.add_option(
+        '-t', '--templates',
+        default='none',
+        help='Template definitions database'
+        )
 
     return parser
 
@@ -95,6 +100,7 @@ def handleArticle(title, text):
         #sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
         return
     
+    #sys.stderr.write("Text: %s\n" % text)
     parser = HTMLParser()
     parser.parseString(text)
 
@@ -104,7 +110,6 @@ def handleArticle(title, text):
 
     collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
 
-    #sys.stderr.write("Text: %s\n" % parser.text[:40])
     if parser.text.startswith("See:"):
         try:
             redirectTitle = parser.tags[0][3]["href"]
@@ -172,6 +177,8 @@ def makeFullIndex():
 
 #__main__
 
+tempDir = tempfile.mkdtemp()
+
 collator4 = aarddict.pyuca.Collator("aarddict/allkeys.txt")
 collator4.setStrength(4)
 
@@ -186,7 +193,9 @@ header = {
     "major_version": 1,
     "minor_version": 0,
     "timestamp": str(datetime.datetime.utcnow()),
-    "file_sequence": 0
+    "file_sequence": 0,
+    "article_language": "en",
+    "index_language": "en"
     }
 
 sys.stderr.write("Parsing input file...\n")
@@ -213,10 +222,14 @@ createArticleFile()
 
 aarFileLengthMax = 4000000000
 
-indexDbTempdir = tempfile.mkdtemp()
-indexDbFullname = os.path.join(indexDbTempdir, "index.db")
+indexDbFullname = os.path.join(tempDir, "index.db")
 indexDb = shelve.open(indexDbFullname, 'n')
 
+if options.templates:
+    templateDb = shelve.open(options.templates, "r")
+else:
+    templateDb = None
+    
 index1 = tempfile.NamedTemporaryFile()
 index2 = tempfile.NamedTemporaryFile()
 index1Length = 0
@@ -235,11 +248,10 @@ if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
 else:  
     sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
     from mediawikiparser import MediaWikiParser
-    p = MediaWikiParser(collator1, header, handleArticle)
+    p = MediaWikiParser(collator1, header, templateDb, handleArticle)
     p.parseFile(inputFile)
 
 sys.stderr.write("\r" + str(header["article_count"]) + "\n")
-sys.stderr.write("count x: %s\n" % repr(header["index_count"]))
 
 sys.stderr.write("Sorting index...\n")
 
@@ -253,7 +265,7 @@ sortex.cleanup()
 
 indexDb.close()
 os.remove(indexDbFullname)
-os.rmdir(indexDbTempdir)
+os.rmdir(tempDir)
 
 combineFiles = False
 header["file_count"] = len(aarFile)
@@ -271,10 +283,8 @@ for line in f:
     languageCodeDict[codes[0]] = codes[2]
 f.close()
 
-if header["article_language"].lower() in  languageCodeDict:
-    header["article_language"] = languageCodeDict[header["article_language"].lower()]
-if header["index_language"].lower() in  languageCodeDict:
-    header["index_language"] = languageCodeDict[header["index_language"].lower()]
+header["article_language"] = languageCodeDict.get(header["article_language"].lower(), header["article_language"])
+header["index_language"] = languageCodeDict.get(header["index_language"].lower(), header["index_language"])
 
 header["index1_length"] = index1Length
 header["index2_length"] = index2Length
