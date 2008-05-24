@@ -134,11 +134,11 @@ class SimpleXMLParser:
                 value = value[1:-1]
             if value and (value[0] == "'") and (value[-1] == "'"):
                 value = value[1:-1]
-            attrDict[self.unescape(name)] = self.unescape(value)
+            attrDict[unescape(name)] = unescape(value)
         return attrDict
 
     def processData(self, data):
-        self.handleCharacterData(self.unescape(data))
+        self.handleCharacterData(unescape(data))
 
     def handleStartElement(self, tag, attrsList):
         # usually overridden
@@ -156,8 +156,8 @@ class SimpleXMLParser:
         # usually overridden
         sys.stderr.write("XML cleanup\n")
 
-    def unescape(self, s):
-        return s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&').replace("&mdash", "\xE2\x80\x94").replace("&nbsp;", "\xE2\x80\x87")
+def unescape(s):
+    return s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", '&').replace("&mdash", "\xE2\x80\x94").replace("&nbsp;", "\xE2\x80\x87")
 
         
 if __name__ == '__main__':
