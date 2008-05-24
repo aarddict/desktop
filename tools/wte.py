@@ -88,6 +88,8 @@ class TemplateParser(SimpleXMLParser):
 
             self.text = unescape(self.text)
             self.text = re.compile(r"<noinclude>.*?</noinclude>", re.DOTALL).sub("", self.text)
+            self.text = re.compile(r"</?includeonly>").sub("", self.text)
+
             self.templateDb[titleTokens[1]] = self.text
 
             self.text = ""
