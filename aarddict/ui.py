@@ -632,12 +632,9 @@ class DictViewer(object):
         statusmsg = '%s: looked up in %.2f s' % msg_params
         count = 0  
         for word_list in lang_word_list.itervalues():
-            count += len(word_list)       
+            count += len(word_list)
         if count == 0: 
             statusmsg += ', nothing found'
-            if to_select:
-                #this was a link click
-                self.adjust_history()
         self.statusbar.push(self.update_completion_ctx_id, statusmsg) 
         for lang in lang_word_list.iterkeys():
             word_list = self.word_completion.word_list(lang)
@@ -651,6 +648,9 @@ class DictViewer(object):
             and len(lang_word_list) == 1 
             and len(lang_word_list.values()[0]) == 1):
             self.select_first_word_in_completion()
+            selected = True
+        if to_select and not selected:
+            self.adjust_history()
             
     def adjust_history(self):
         self.word_input.handler_block(self.word_change_handler)
