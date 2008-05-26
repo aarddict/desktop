@@ -633,7 +633,11 @@ class DictViewer(object):
         count = 0  
         for word_list in lang_word_list.itervalues():
             count += len(word_list)       
-        if count == 0: statusmsg += ', nothing found'
+        if count == 0: 
+            statusmsg += ', nothing found'
+            if to_select:
+                #this was a link click
+                self.adjust_history()
         self.statusbar.push(self.update_completion_ctx_id, statusmsg) 
         for lang in lang_word_list.iterkeys():
             word_list = self.word_completion.word_list(lang)
@@ -646,7 +650,19 @@ class DictViewer(object):
         if (not selected 
             and len(lang_word_list) == 1 
             and len(lang_word_list.values()[0]) == 1):
-            self.select_first_word_in_completion()  
+            self.select_first_word_in_completion()
+            
+    def adjust_history(self):
+        self.word_input.handler_block(self.word_change_handler)
+        model = self.word_input.get_model()
+        i = model.get_iter_first()
+        if i:                
+            for j in xrange(0, self.word_input.previous_active):
+                model.remove(i)
+            self.word_input.set_active(-1)
+            self.word_input.previous_active = self.word_input.get_active()
+        self.word_input.handler_unblock(self.word_change_handler)            
+          
 
     def create_top_level_widget(self):
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)  
