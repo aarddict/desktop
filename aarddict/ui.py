@@ -392,10 +392,6 @@ class DictViewer(object):
         word, lang = model[iter]
         history_list.append((word, lang))
         
-    def do_show_word_article(self, word, lang):
-        self.show_article_for(word, lang)
-        return False
-                    
     def schedule(self, f, timeout, *args):
         if self.current_word_handler:
             gobject.source_remove(self.current_word_handler)
@@ -506,7 +502,6 @@ class DictViewer(object):
         articles = wordlookup.read_articles()
         word = str(wordlookup)
         self.clear_tabs()
-        result = False
         for dict, article in articles:        
             if article: 
                 article_view = self.create_article_view()
@@ -523,13 +518,11 @@ class DictViewer(object):
                 self.tabs.append_page(scrollable_view, event_box)
                 self.dict_key_to_tab[dict.key()] = scrollable_view
                 self.tabs.set_tab_label_packing(scrollable_view, 
-                                                True,True,gtk.PACK_START)
+                                                True, True, gtk.PACK_START)
                 self.article_formatter.apply(dict, word, article, article_view)
                 self.add_to_history(word, lang)            
-                result = True           
         self.update_copy_article_mi(self.tabs)
         self.tabs.show_all()
-        return result  
     
     def dict_label_callback(self, widget, event):
         if event.type == _2BUTTON_PRESS:
@@ -547,7 +540,7 @@ class DictViewer(object):
             return
         model, iter = selection.get_selected()        
         word = model[iter][0]
-        self.schedule(self.do_show_word_article, 200, word, lang)
+        self.schedule(self.show_article_for, 200, word, lang)
     
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
