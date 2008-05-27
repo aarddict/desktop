@@ -75,6 +75,8 @@ class HildonDictViewer(ui.DictViewer):
                 self.mi_select_phonetic_font, 
                 self.mi_drag_selects, 
                 self.mi_show_word_list,
+                self.mi_back,
+                self.mi_forward,
                 self.mi_about, 
                 self.mi_exit)
     

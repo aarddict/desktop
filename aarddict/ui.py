@@ -768,7 +768,12 @@ class DictViewer(object):
         self.mi_drag_selects.connect("activate", self.toggle_drag_selects)
         
         self.mi_show_word_list = gtk.CheckMenuItem("Show Word List")
-        self.mi_show_word_list.connect("activate", self.update_word_list_visibility)        
+        self.mi_show_word_list.connect("activate", self.update_word_list_visibility)
+        
+        self.mi_back = gtk.MenuItem("Back")
+        self.mi_back.connect("activate", lambda widget: self.history_back())    
+        self.mi_forward = gtk.MenuItem("Forward") 
+        self.mi_forward.connect("activate", lambda widget: self.history_forward())
 
         self.mn_copy = gtk.Menu()
         self.mn_copy_item =gtk.MenuItem("Copy")
@@ -795,12 +800,17 @@ class DictViewer(object):
         mn_dict.append(self.mi_info)
         mn_dict.append(self.mn_copy_item)
         mn_dict.append(self.mi_exit)
+
+        mn_nav = gtk.Menu()
+        mn_nav_item = gtk.MenuItem("Navigate")
+        mn_nav_item.set_submenu(mn_nav)
+        mn_nav.add(self.mi_back)
+        mn_nav.add(self.mi_forward)
+
                 
         mn_help = gtk.Menu()
         mn_help_item = gtk.MenuItem("Help")
         mn_help_item.set_submenu(mn_help)
-        
-        mn_help.append(self.mi_about)
                 
         mn_options = gtk.Menu()
         mn_options_item = gtk.MenuItem("Options")
@@ -809,7 +819,7 @@ class DictViewer(object):
         mn_options.append(self.mi_select_phonetic_font)
         mn_options.append(self.mi_drag_selects)
         mn_options.append(self.mi_show_word_list)        
-        return (mn_dict_item, mn_options_item, mn_help_item)        
+        return (mn_dict_item, mn_nav_item, mn_options_item, mn_help_item)        
 
     def copy_selected_to_clipboard(self, widget):
         page_num = self.tabs.get_current_page()
