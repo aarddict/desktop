@@ -24,6 +24,8 @@ from sortexternal import SortExternal
 from htmlparser import HTMLParser
 import sys, bz2, struct, os, tempfile, shelve, datetime, optparse
 import aarddict.pyuca
+import uparser, htmlwriter
+import cdbwiki
 
 def getOptions():
     usage = "usage: %prog [options] "
@@ -89,6 +91,14 @@ def handleArticle(title, text):
     if (not title) or (not text):
         #sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
         return
+
+    collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
+
+    if text.startswith("#REDIRECT"):
+        redirectTitle = text[10:]
+        sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
+        sys.stderr.write("Redirect: %s %s\n" % (title, text))
+        return
     
     #sys.stderr.write("Text: %s\n" % text)
     parser = HTMLParser()
@@ -98,19 +108,8 @@ def handleArticle(title, text):
     jsonstring = bz2.compress(jsonstring)
     #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
 
-    collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
-
-    if parser.text.startswith("See:"):
-        try:
-            redirectTitle = parser.tags[0][3]["href"]
-            sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
-        except:
-            #sys.stderr.write("Missing redirect target: %s\n" % title)
-            pass
-        return
-
     sortex.put(collationKeyString4 + "___" + title + "___")
-
+    
     articleUnit = struct.pack(">L", len(jsonstring)) + jsonstring
     articleUnitLength = len(articleUnit)
     if aarFileLength[-1] + articleUnitLength > aarFileLengthMax:
@@ -216,7 +215,7 @@ indexDbFullname = os.path.join(tempDir, "index.db")
 indexDb = shelve.open(indexDbFullname, 'n')
 
 if options.templates:
-    templateDb = shelve.open(options.templates, "r")
+    templateDb = cdbwiki.WikiDB(options.templates)
 else:
     templateDb = None
     
