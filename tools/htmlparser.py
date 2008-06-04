@@ -21,6 +21,8 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 
 from simplexmlparser import SimpleXMLParser
 import sys
+import re
+import urllib
 
 class HTMLParser(SimpleXMLParser):
 
@@ -34,6 +36,8 @@ class HTMLParser(SimpleXMLParser):
         self.docBuffer = ""
         self.tagBuffer = ""
         self.textUnicodeLength = 0
+
+        self.reHref = re.compile(r"^(\.\./)?(.+?)/?(#.*)?$")
         
     def handleStartElement(self, tag, attrsDict):
 
@@ -66,6 +70,11 @@ class HTMLParser(SimpleXMLParser):
         elif tag == "ref":
                 self.docBuffer += "["
                 self.textUnicodeLength += 1
+
+        if "href" in attrsDict:
+            href = attrsDict["href"]
+            href = self.reHref.sub(r"\2", href)
+            attrsDict["href"] = urllib.unquote(href).replace("_", " ")
             
         t = [tag, self.textUnicodeLength, 0, attrsDict]
         self.tagStack.append(t)
