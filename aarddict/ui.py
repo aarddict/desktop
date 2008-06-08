@@ -1062,7 +1062,7 @@ class DictViewer(object):
                 self.word_completion.remove_lang(l)
         
         tab = self.get_tab_for_dict(key)
-        if tab:
+        if tab is not None:
             self.tabs.remove_page(tab) 
             del self.dict_key_to_tab[key]
         dict.close()
