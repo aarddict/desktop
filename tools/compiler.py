@@ -24,8 +24,7 @@ from sortexternal import SortExternal
 from htmlparser import HTMLParser
 import sys, bz2, struct, os, tempfile, shelve, datetime, optparse
 import aarddict.pyuca
-import uparser, htmlwriter
-import cdbwiki
+from mwlib import cdbwiki
 
 def getOptions():
     usage = "usage: %prog [options] "
