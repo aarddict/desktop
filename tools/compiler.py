@@ -42,12 +42,12 @@ def getOptions():
         )
     parser.add_option(
         '-f', '--input-format',
-        default='none',
+        default='mediawiki',
         help='Input format:  mediawiki or xdxf'
         )
     parser.add_option(
         '-t', '--templates',
-        default='none',
+        default=None,
         help='Template definitions database'
         )
 
