@@ -71,10 +71,13 @@ class HTMLParser(SimpleXMLParser):
                 self.docBuffer += "["
                 self.textUnicodeLength += 1
 
-        if "href" in attrsDict:
-            href = attrsDict["href"]
-            href = self.reHref.sub(r"\2", href)
-            attrsDict["href"] = urllib.unquote(href).replace("_", " ")
+        elif tag == "a":
+            if "href" in attrsDict:
+                href = attrsDict["href"]
+                href = self.reHref.sub(r"\2", href)
+                attrsDict = {"a":href}
+            else:
+                attrsDict = {}
             
         t = [tag, self.textUnicodeLength, 0, attrsDict]
         self.tagStack.append(t)
@@ -110,6 +113,9 @@ class HTMLParser(SimpleXMLParser):
                 self.textUnicodeLength += 1
             return
 
+        elif tag == "img":
+            return
+            
         elif tag in ["h1", "h2", "h3", "h4", "blockquote", "tt"]:
             if self.docBuffer and self.docBuffer[-1] != "\n": 
                 self.docBuffer += "\n"
