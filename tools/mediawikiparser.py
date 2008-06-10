@@ -88,7 +88,7 @@ class MediaWikiParser(SimpleXMLParser):
         elif tag == "page":
 
             t = self.title.split(":", 1)
-            if len(t) > 1 and t[0] in ["image", "template", "category", "wikipedia"]:
+            if len(t) > 1 and t[0].lower() in ["image", "template", "category", "wikipedia"]:
                 return
 
             if self.text.startswith("#REDIRECT"): 
