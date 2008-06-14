@@ -427,10 +427,9 @@ class DictViewer(object):
                 x0, y0 = armed_coords
                 widget.armed_link = None
                 dt = event.get_time() - t0
-                result = (dt <= 200 and 
-                          dt >= 50 and
-                          fabs(x - x0) <= 3 and
-                          fabs(y - y0) <= 3 and
+                result = (50 < dt < 200 and 
+                          fabs(x - x0) < 3 and
+                          fabs(y - y0) < 3 and
                           armed_ref is reference)
                 return result 
                        
