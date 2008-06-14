@@ -367,10 +367,7 @@ class DictViewer(object):
         gtk.main_quit() 
         
     def errors_to_text(self, errors):
-        text = ""
-        for e in errors:
-            text += str(e) + "\n"  
-        return text     
+        return '\n'.join([str(e) for e in errors])
         
     def on_key_press(self, widget, event, *args):
         if (event.keyval == gtk.keysyms.Escape 
