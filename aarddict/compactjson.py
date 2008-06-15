@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Copyright (C) 2008  Jeremy Mortis
+Copyright (C) 2008  Jeremy Mortis, Igor Tkach
 """
 
 import re
@@ -25,47 +25,48 @@ import array
 
 quotedCharsRe = re.compile(r"([ ,\[\]\{\}\(\)\"\\:])")
 
-def dumps(item):
-    if type(item) is types.ListType:
-        r = ""
-        for element in item:
-            if r:
-                r = r + ","
-            r = r + dumps(element)
-        return "[" + r + "]"
-    if type(item) is types.TupleType:
-        r = ""
-        for element in item:
-            if r:
-                r = r + ","
-            r = r + dumps(element)
-        return "(" + r + ")"
-    if type(item) is types.DictType:
-        r = ""
-        for element in item.iteritems():
-            if r:
-                r = r + ","
-            r = "".join([r, dumps(element[0]), ":", dumps(element[1])])
-        if r:
-            return "{" + r + "}"
-        else:
-            return ""
-    if type(item) is types.IntType:
-        return str(item)
-    if type(item) is types.LongType:
-        return str(item)
-    if type(item) is types.StringType:
-        return escape(item)
+def dump_list(item):
+    r = ""
+    for element in item:
+        if r: r += ","
+        r += dumps(element)
+    return "[%s]" % r    
+
+def dump_tuple(item):
+    r = ""
+    for element in item:
+        if r: r += ","
+        r += dumps(element)
+    return "(%s)" % r
+
+def dump_dict(item):
+    r = ""
+    for k, v in item.iteritems():
+        if r: r += ","
+        r = "".join([r, dumps(k), ":", dumps(v)])
+    return "{%s}" % r if r else ''   
 
 def escape(item):
     if quotedCharsRe.search(item):
         item = '"' + item.replace("\\", "\\\\").replace('"', '\\\"') + '"'
     return item
 
+type_map = {types.ListType : dump_list,
+            types.DictType : dump_dict,
+            types.TupleType : dump_tuple,
+            types.IntType : str,
+            types.LongType : str,
+            types.StringType : escape,
+            types.UnicodeType : escape
+            }
+
+def dumps(item):
+    return type_map[type(item)](item)
+
 def loads(item):
     global s, slen, offset
     if not item:
-        return ""
+        return None
     s = array.array("c", item)
     slen = len(s)
     offset = 0
@@ -80,19 +81,9 @@ def parse():
         if not s[offset].isspace():
             break
         offset +=1
-    if s[offset] == '"':
-        value = parseDoubleQuotedString()
-    elif s[offset] == "'":
-        value = parseSingleQuotedString()
-    elif s[offset] == "[":
-        value = parseList()
-    elif s[offset] == "{":
-        value = parseDict()
-    elif s[offset] == "(":
-        value = parseTuple()
-    else:
-        value = parseUnquotedString()
-    while offset < slen and s[offset].isspace():
+    of = s[offset]
+    value = parse_map.get(of, parseUnquotedString)()
+    while offset < slen and of.isspace():
         offset +=1
     #print "value:", value
     return value
@@ -194,10 +185,14 @@ def parseUnquotedString():
             break
         offset += 1
     t = s[start:offset].tostring()
-    if t.isdigit():
-        return int(t)
-    else:
-        return t
+    return int(t) if t.isdigit() else t 
+
+parse_map = {'"':parseDoubleQuotedString,
+             "'":parseSingleQuotedString,
+             '[':parseList,
+             '{':parseDict,
+             '(':parseTuple             
+            }
                
 if __name__ == '__main__':
 
