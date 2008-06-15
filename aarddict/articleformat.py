@@ -21,6 +21,7 @@ import threading, gobject, gtk, pango, compactjson, article
 
 def to_article(raw_article):
     text, tag_list = compactjson.loads(raw_article)
+    print text, tag_list
     tags = [article.Tag(name, start, end, attrs) for name, start, end, attrs in tag_list]
     return article.Article(text=text, tags=tags)
 
@@ -90,8 +91,17 @@ class ArticleFormat:
         for tag in tags:
             start = text_buffer.get_iter_at_offset(tag.start)
             end = text_buffer.get_iter_at_offset(tag.end)
-            if tag.name == "a":
-                self.create_ref(dict, text_buffer, start, end, str(tag.attributes['href']))
+            if tag.name in ('a', 'iref'):
+                self.create_ref(dict, text_buffer, start, end, 
+                                str(tag.attributes['href']))
+            if tag.name == 'kref':
+                self.create_ref(dict, text_buffer, start, end, 
+                                text_buffer.get_text(start, end))                
+            elif tag.name == "c":
+                if 'c' in tag.attributes:
+                    color_code = tag.attributes['c']
+                    t = text_buffer.create_tag(None, foreground = color_code)                    
+                    text_buffer.apply_tag(t, start, end)
             else:
                 text_buffer.apply_tag_by_name(tag.name, start, end)
         return text_buffer
@@ -102,18 +112,88 @@ class ArticleFormat:
         buffer.create_tag("strong", weight = pango.WEIGHT_BOLD)
         buffer.create_tag("small", scale = pango.SCALE_SMALL)
         buffer.create_tag("big", scale = pango.SCALE_LARGE)
-        buffer.create_tag("h1", weight = pango.WEIGHT_ULTRABOLD, scale = pango.SCALE_X_LARGE, pixels_above_lines = 12, pixels_below_lines = 6)
-        buffer.create_tag("h2", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_LARGE, pixels_above_lines = 6, pixels_below_lines = 3)
-        buffer.create_tag("h3", weight = pango.WEIGHT_BOLD, scale = pango.SCALE_MEDIUM, pixels_above_lines = 3, pixels_below_lines = 2)
-        buffer.create_tag("h4", weight = pango.WEIGHT_SEMIBOLD, scale = pango.SCALE_MEDIUM, pixels_above_lines = 3, pixels_below_lines = 2)
-        buffer.create_tag("h5", weight = pango.WEIGHT_SEMIBOLD, scale = pango.SCALE_MEDIUM, style = pango.STYLE_ITALIC, pixels_above_lines = 3, pixels_below_lines = 2)
-        buffer.create_tag("h6", scale = pango.SCALE_MEDIUM, underline = pango.UNDERLINE_SINGLE, pixels_above_lines = 3, pixels_below_lines = 2)
+        
+        buffer.create_tag("h1", 
+                          weight = pango.WEIGHT_ULTRABOLD, 
+                          scale = pango.SCALE_X_LARGE, 
+                          pixels_above_lines = 12, 
+                          pixels_below_lines = 6)
+        buffer.create_tag("h2", 
+                          weight = pango.WEIGHT_BOLD, 
+                          scale = pango.SCALE_LARGE, 
+                          pixels_above_lines = 6, 
+                          pixels_below_lines = 3)        
+        buffer.create_tag("h3", 
+                          weight = pango.WEIGHT_BOLD, 
+                          scale = pango.SCALE_MEDIUM, 
+                          pixels_above_lines = 3, 
+                          pixels_below_lines = 2)
+        buffer.create_tag("h4", 
+                          weight = pango.WEIGHT_SEMIBOLD, 
+                          scale = pango.SCALE_MEDIUM, 
+                          pixels_above_lines = 3, 
+                          pixels_below_lines = 2)
+        buffer.create_tag("h5", 
+                          weight = pango.WEIGHT_SEMIBOLD, 
+                          scale = pango.SCALE_MEDIUM, 
+                          style = pango.STYLE_ITALIC, 
+                          pixels_above_lines = 3, 
+                          pixels_below_lines = 2)
+        buffer.create_tag("h6", 
+                          scale = pango.SCALE_MEDIUM, 
+                          underline = pango.UNDERLINE_SINGLE, 
+                          pixels_above_lines = 3, 
+                          pixels_below_lines = 2)
+        
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
-        buffer.create_tag("f", style = pango.STYLE_ITALIC, foreground = "darkgreen")
-        buffer.create_tag("r", underline = pango.UNDERLINE_SINGLE, foreground = "brown4")
-        buffer.create_tag("url", underline = pango.UNDERLINE_SINGLE, foreground = "steelblue4")
-        buffer.create_tag("t", weight = pango.WEIGHT_BOLD, foreground = "darkred")
+        buffer.create_tag("tt", family = 'monospace')        
+        
+        buffer.create_tag("pos", 
+                          style = pango.STYLE_ITALIC, 
+                          weight = pango.WEIGHT_SEMIBOLD,
+                          foreground = "darkgreen")
+        
+        buffer.create_tag("r", 
+                          underline = pango.UNDERLINE_SINGLE, 
+                          foreground = "brown4")
+        
+        buffer.create_tag("url", 
+                          underline = pango.UNDERLINE_SINGLE, 
+                          foreground = "steelblue4")
+        
+        buffer.create_tag("tr", 
+                          weight = pango.WEIGHT_BOLD, 
+                          foreground = "darkred")
+        
         buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
         buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
+        
+        buffer.create_tag("blockquote", indent = 6)
+        
+        'Key phrase'
+        buffer.create_tag('k', 
+                          weight = pango.WEIGHT_BOLD, 
+                          scale = pango.SCALE_LARGE, 
+                          pixels_above_lines = 6, 
+                          pixels_below_lines = 3)        
+
+        'Direct translation of the key-phrase'
+        buffer.create_tag('dtrn')
+                
+        'Marks the text of an editorial comment'
+        buffer.create_tag('co',
+                          foreground = "darkgray")
+        
+        'Marks the text of an example'
+        buffer.create_tag('ex',
+                          style = pango.STYLE_ITALIC,
+                          foreground = "darkblue")
+
+        'Marks an abbreviation that is listed in the <abbreviations> section'
+        buffer.create_tag('abr',
+                          weight = pango.WEIGHT_BOLD,
+                          style = pango.STYLE_ITALIC,
+                          foreground = "darkred")
+        
         return buffer                

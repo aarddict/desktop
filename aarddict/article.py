@@ -35,11 +35,11 @@ class Article:
     
 class Tag:
 
-    def __init__(self, name = "", start = -1, end = -1, attributes = {}):
+    def __init__(self, name = "", start = -1, end = -1, attributes = None):
         self.name = name
         self.start = start
         self.end = end
-        self.attributes = attributes
+        self.attributes = attributes if attributes else {}
 
     def __str__(self):
         return self.name + " " + str(self.start) + " " +  str(self.end) + " " + repr(self.attributes)

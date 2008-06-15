@@ -20,13 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import os
 import sys
 import re
 from simplexmlparser import SimpleXMLParser
+from htmlparser import HTMLParser
 
-from aarddict.article import Article
-from aarddict.article import Tag
 import aarddict.pyuca
 
 # http://code.google.com/p/wikimarkup
@@ -115,7 +113,10 @@ class MediaWikiParser(SimpleXMLParser):
             if not self.text.startswith("<p>See:"):
                 self.text = "<h1>" + self.title + "</h1>" + self.text
             #sys.stderr.write("Mediawiki article: %s %s\n" % (self.title, len(self.text)))
-            self.consumer(self.title, self.text)
+            
+            parser = HTMLParser()
+            parser.parseString(self.text)            
+            self.consumer(self.title, parser.text.rstrip(), parser.tags)
             self.text = ""
             return
             

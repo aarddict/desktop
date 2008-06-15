@@ -209,7 +209,7 @@ class ArticleView(gtk.TextView):
     def set_phonetic_font(self, font_desc):   
         text_buffer = self.get_buffer()            
         tag_table = text_buffer.get_tag_table()
-        tag_table.lookup("t").set_property("font-desc", font_desc)
+        tag_table.lookup("tr").set_property("font-desc", font_desc)
     
     def __remove_handlers(self, obj):
         handlers = obj.get_data("handlers")

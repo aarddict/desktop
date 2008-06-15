@@ -19,10 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-from aarddict import compactjson
+import sys 
+import bz2
+import struct
+import os
+import tempfile
+import shelve
+import datetime
+import optparse
+
 from sortexternal import SortExternal
-from htmlparser import HTMLParser
-import sys, bz2, struct, os, tempfile, shelve, datetime, optparse
+
+from aarddict import compactjson
 import aarddict.pyuca
 
 def getOptions():
@@ -76,7 +84,8 @@ def createArticleFile():
     aarFile[-1].write(jsonText)
     aarFileLength[-1] += len(jsonText)
 
-def handleArticle(title, text):
+def handleArticle(title, text, tags):
+        
     global header
     global articlePointer
     global aarFile, aarFileLength
@@ -85,19 +94,20 @@ def handleArticle(title, text):
         #sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
         return
     
-    parser = HTMLParser()
-    parser.parseString(text)
-
-    jsonstring = compactjson.dumps([parser.text.rstrip(), parser.tags])
+#    parser = HTMLParser()
+#    parser.parseString(text)
+#
+#    jsonstring = compactjson.dumps([parser.text.rstrip(), parser.tags])
+    jsonstring = compactjson.dumps([text, tags])
     jsonstring = bz2.compress(jsonstring)
     #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
 
     collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
 
     #sys.stderr.write("Text: %s\n" % parser.text[:40])
-    if parser.text.startswith("See:"):
+    if text.startswith("See:"):
         try:
-            redirectTitle = parser.tags[0][3]["href"]
+            redirectTitle = tags[0][3]["href"]
             sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
         except:
             #sys.stderr.write("Missing redirect target: %s\n" % title)
@@ -219,9 +229,9 @@ header["index_count"] =  0
 
 if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
     sys.stderr.write("Compiling %s as xdxf\n" % inputFile.name)
-    from xdxfparser import XDXFParser
-    p = XDXFParser(collator1, header, handleArticle)
-    p.parseFile(inputFile)
+    import xdxf
+    p = xdxf.XDXFParser(header, handleArticle)
+    p.parse(inputFile.name)
 else:  
     sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
     from mediawikiparser import MediaWikiParser
@@ -234,7 +244,7 @@ sys.stderr.write("count x: %s\n" % repr(header["index_count"]))
 sys.stderr.write("Sorting index...\n")
 
 sortex.sort()
-	
+
 sys.stderr.write("Writing temporary indexes...\n")
 
 makeFullIndex()
@@ -288,7 +298,7 @@ aarFileLength[0] += 5
 
 aarFile[0].write("%08i" % len(jsonText))
 aarFileLength[0] += 8
-	
+
 aarFile[0].write(jsonText)
 aarFileLength[0] += len(jsonText)
 
@@ -361,7 +371,7 @@ if combineFiles:
 sys.stderr.write("Created %i output file(s)\n" % len(aarFile))
 for f in aarFile:
     f.close
-    
+   
 sys.stderr.write("Done.\n")
 
 
