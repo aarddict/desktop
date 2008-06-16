@@ -93,7 +93,7 @@ class ArticleFormat:
             if tag.name in ('a', 'iref'):
                 self.create_ref(dict, text_buffer, start, end, 
                                 str(tag.attributes['href']))
-            if tag.name == 'kref':
+            elif tag.name == 'kref':
                 self.create_ref(dict, text_buffer, start, end, 
                                 text_buffer.get_text(start, end))                
             elif tag.name == "c":
