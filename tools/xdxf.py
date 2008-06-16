@@ -1,4 +1,4 @@
-from __future__ import with_statement
+import sys
 from lxml import etree
 
 class XDXFParser():
@@ -39,6 +39,10 @@ class XDXFParser():
             if element.tag == 'ar':
                 tags = []
                 txt = self._text(element, tags)
-                title = element.find('k').text.encode('utf-8')            
-                self.handle_article(title, txt.encode('utf-8'), tags)
-                element.clear()                        
+                try:
+                    title = element.find('k').text.encode('utf-8')            
+                    self.handle_article(title, txt.encode('utf-8'), tags)
+                except:
+                    sys.stderr.write('\nSkipping bad article\n')
+                finally:
+                    element.clear()                        
