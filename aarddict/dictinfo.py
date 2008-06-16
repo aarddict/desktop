@@ -18,65 +18,86 @@ Copyright (C) 2006-2008 Igor Tkach
 """
 import pygtk
 pygtk.require('2.0')
-import gtk, locale, ui
+
+import gtk
+import pango
+import locale
+import ui
 
 class DictDetailPane(gtk.HBox):
     
     def __init__(self):
         super(DictDetailPane, self).__init__()
-        self.lbl_title = self.create_value_label()
-        self.lbl_version = self.create_value_label()
-        self.lbl_copyright = self.create_value_label()
-        self.lbl_file_name = self.create_value_label()
-        self.lbl_num_of_words = self.create_value_label()
-        table = gtk.Table(5, 2, False)
+        
+        self.text_view = gtk.TextView()
+        self.text_view.set_wrap_mode(gtk.WRAP_WORD)
+        self.text_view.set_editable(False)        
+        self.text_view.set_cursor_visible(False)
+        
+        buffer = gtk.TextBuffer()
+        buffer.create_tag("title", 
+                          weight = pango.WEIGHT_BOLD, 
+                          justification = gtk.JUSTIFY_CENTER,
+                          scale = pango.SCALE_LARGE,
+                          pixels_above_lines = 3, 
+                          pixels_below_lines = 3)        
+        
+        
+        buffer.create_tag("file", 
+                          style = pango.STYLE_ITALIC,
+                          scale = pango.SCALE_SMALL,
+                          justification = gtk.JUSTIFY_CENTER)                
+
+        buffer.create_tag("count", 
+                          justification = gtk.JUSTIFY_CENTER,
+                          style = pango.STYLE_ITALIC,
+                          pixels_below_lines = 3)
+
+        self.text_view.set_buffer(buffer)        
+        
         scrolled_window = gtk.ScrolledWindow()
         scrolled_window.set_shadow_type(gtk.SHADOW_IN)
         scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        scrolled_window.add_with_viewport(table)                                
+        scrolled_window.add_with_viewport(self.text_view) 
         
-        self.pack_start(scrolled_window, True, True, 0)
-        #self.pack_start(table, True, True, 0)
-        table.set_row_spacings(5)
-        table.set_col_spacings(5)
-        table.attach(self.create_label("Title:"),0,1,0,1, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_title,1,2,0,1, xoptions = gtk.FILL | gtk.EXPAND, yoptions = gtk.FILL)
-        table.attach(self.create_label("Version:"),0,1,1,2, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_version,1,2,1,2, yoptions = 0)        
-        table.attach(self.create_label("Copyright:"),0,1,2,3, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_copyright,1,2,2,3, yoptions = gtk.FILL)                
-        table.attach(self.create_label("Articles:"),0,1,3,4, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_num_of_words,1,2,3,4, yoptions = gtk.FILL)                        
-        table.attach(self.create_label("From file:"),0,1,4,5, xoptions = gtk.FILL, yoptions = gtk.FILL)
-        table.attach(self.lbl_file_name,1,2,4,5, yoptions = gtk.FILL)                                
-        table.set_border_width(5)
+        self.pack_start(scrolled_window, True, True, 0)                                                       
+    
+    def set_dict(self, d):        
+        buffer = self.text_view.get_buffer()
+                
+        if d:
+            title_start = 0
+            t = '%s %s\n' % (d.title, d.version)
+            title_end = title_start + len(t)
+
+            file_start = title_end
+            t += '(%s)\n' % d.file_name 
+            file_end = len(t)
             
-    def create_label(self, text):
-        lbl = gtk.Label(text)
-        lbl.set_alignment(1.0, 0.0)
-        return lbl
-    
-    def create_value_label(self):
-        lbl = gtk.Label()
-        lbl.set_alignment(0.0, 0.0)
-        lbl.set_line_wrap(True)
-        return lbl
-    
-    
-    def set_dict(self, dict):
-        if dict:
-            self.lbl_title.set_text(dict.title)
-            self.lbl_version.set_text(dict.version)
-            self.lbl_copyright.set_text(dict.copyright)
-            self.lbl_num_of_words.set_text(locale.format("%u", dict.article_count, True))
-            self.lbl_file_name.set_text(dict.file_name)
+            count_start = file_end
+            article_count = locale.format("%u", d.article_count, True)
+            t += '%s articles\n' % article_count 
+            count_end = len(t)
+
+            if d.copyright:
+                t += 'Copyright %s\n' % d.copyright 
+            
+            t += d.description
+                        
+            buffer.set_text(t)
+            start = buffer.get_iter_at_offset(title_start)
+            end = buffer.get_iter_at_offset(title_end)
+            buffer.apply_tag_by_name('title', start, end)
+            
+            start = buffer.get_iter_at_offset(file_start)
+            end = buffer.get_iter_at_offset(file_end)
+            buffer.apply_tag_by_name('file', start, end)            
+
+            start = buffer.get_iter_at_offset(count_start)
+            end = buffer.get_iter_at_offset(count_end)
+            buffer.apply_tag_by_name('count', start, end)                        
         else:
-            self.lbl_title.set_text('')
-            self.lbl_version.set_text('')
-            self.lbl_copyright.set_text('')
-            self.lbl_num_of_words.set_text('')                     
-            self.lbl_file_name.set_text('')   
-        
+            buffer.set_text('')                
         
 class DictInfoDialog(gtk.Dialog):
     def __init__(self, dicts, parent):        
@@ -93,10 +114,7 @@ class DictInfoDialog(gtk.Dialog):
         dict_column = gtk.TreeViewColumn('Dictionary', cell)
         dict_list.append_column(dict_column)
         dict_column.set_cell_data_func(cell, self.extract_dict_title_for_cell)
-        
-        for dict in dicts:
-            dict_list.get_model().append([dict])
-                
+                                    
         box.pack_start(ui.create_scrolled_window(dict_list), True, True, 0)
 
         split_pane = gtk.HPaned()        
@@ -107,9 +125,19 @@ class DictInfoDialog(gtk.Dialog):
         
         split_pane.add(self.detail_pane)
         split_pane.set_position(200)
-                    
-        dict_list.get_selection().connect("changed", self.dict_selected)
+                            
         self.resize(600, 320)
+        
+        model = dict_list.get_model()
+        
+        for dict in dicts:
+            model.append([dict])
+            
+        dict_list.get_selection().connect("changed", self.dict_selected)
+        
+        if dicts:
+            dict_list.get_selection().select_iter(model.get_iter_first())        
+        
         self.show_all()
                                         
         

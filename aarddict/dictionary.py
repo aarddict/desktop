@@ -92,10 +92,11 @@ class Dictionary:
             if extMetadata["timestamp"] != self.metadata["timestamp"]:
                 raise Exception(self.file[-1].name() + " has a timestamp different from self.file[0].name()")
             
-    title = property(lambda self: self.metadata.get("title", "unknown"))
-    index_language = property(lambda self: self.metadata.get("index_language", "unknown"))
-    article_language = property(lambda self: self.metadata.get("article_language", "unknown"))    
-    version = property(lambda self: self.metadata.get("aarddict_version", "unknown"))
+    title = property(lambda self: self.metadata.get("title", ""))
+    index_language = property(lambda self: self.metadata.get("index_language", "?"))
+    article_language = property(lambda self: self.metadata.get("article_language", "?"))    
+    version = property(lambda self: self.metadata.get("aarddict_version", ""))
+    description = property(lambda self: self.metadata.get("description", ""))
     character_encoding = property(lambda self: self.metadata.get("character_encoding", "utf-8"))
     copyright = property(lambda self: self.metadata.get("copyright", ""))
     article_count = property(lambda self: self.metadata.get("article_count", 0))
