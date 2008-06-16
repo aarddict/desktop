@@ -196,4 +196,7 @@ class ArticleFormat:
                           style = pango.STYLE_ITALIC,
                           foreground = "darkred")
         
+        'Tag that marks the whole article'
+        buffer.create_tag('ar')
+        
         return buffer                
