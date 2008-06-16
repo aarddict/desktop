@@ -183,11 +183,13 @@ class ArticleFormat:
                 
         'Marks the text of an editorial comment'
         buffer.create_tag('co',
-                          foreground = "darkgray")
+                          foreground = "slategray4",
+                          scale = pango.SCALE_SMALL)
         
         'Marks the text of an example'
         buffer.create_tag('ex',
                           style = pango.STYLE_ITALIC,
+                          family = 'serif',
                           foreground = "darkblue")
 
         'Marks an abbreviation that is listed in the <abbreviations> section'
