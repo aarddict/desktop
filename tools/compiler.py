@@ -227,11 +227,11 @@ articlePointer = 0L
 header["article_count"] =  0
 header["index_count"] =  0
 
-if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
+if options.input_format == "xdxf" or inputFile.name.endswith(".xdxf"):
     sys.stderr.write("Compiling %s as xdxf\n" % inputFile.name)
     import xdxf
     p = xdxf.XDXFParser(header, handleArticle)
-    p.parse(inputFile.name)
+    p.parse(inputFile)
 else:  
     sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
     from mediawikiparser import MediaWikiParser
