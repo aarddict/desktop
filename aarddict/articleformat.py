@@ -21,7 +21,6 @@ import threading, gobject, gtk, pango, compactjson, article
 
 def to_article(raw_article):
     text, tag_list = compactjson.loads(raw_article)
-    print text, tag_list
     tags = [article.Tag(name, start, end, attrs) for name, start, end, attrs in tag_list]
     return article.Article(text=text, tags=tags)
 
