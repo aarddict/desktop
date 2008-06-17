@@ -445,7 +445,6 @@ class DictViewer(object):
                 insert = False;
                 break;
         if insert:
-            print 'prev active', self.word_input.previous_active
             model.insert(None, 0, [word, lang])  
             self.word_input.set_active(0)
             i = model.get_iter_first()
@@ -455,7 +454,6 @@ class DictViewer(object):
         else:
             self.word_input.set_active(i)
         self.word_input.previous_active = self.word_input.get_active()
-        print 'add to hist, active: ', self.word_input.get_active()
         history_size = model.iter_n_children(None)
         if history_size > 10:
             del model[history_size - 1]
@@ -464,23 +462,18 @@ class DictViewer(object):
     def history_back(self):
         model = self.word_input.get_model()
         active = self.word_input.get_active()
-        print 'back from', active
         if active == -1:
-            print 'no active'
             s_word, s_lang = self.get_selected_word()
-            print 'selected', s_word, s_lang
             for i, (word, lang) in enumerate(model):
                 print i, word, lang
                 if s_word == word and s_lang == lang:
-                    print 'match, active will be ', i, word, lang
                     active = i
         if active + 1 < len(model):  
             self.word_input.set_active(active + 1)     
             
     def history_forward(self):           
         active = self.word_input.get_active()
-        print 'forward from', active
-        if active - 1 >= 0:
+        if active > 0:
             self.word_input.set_active(active - 1)                
                 
     def clear_tabs(self):
