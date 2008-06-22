@@ -68,16 +68,16 @@ class DictDetailPane(gtk.HBox):
         if d:
             title_start = 0
             t = '%s %s\n' % (d.title, d.version)
-            title_end = title_start + len(t)
+            title_end = title_start + len(t.decode(d.character_encoding))
 
             file_start = title_end
             t += '(%s)\n' % d.file_name 
-            file_end = len(t)
+            file_end = len(t.decode(d.character_encoding))
             
             count_start = file_end
             article_count = locale.format("%u", d.article_count, True)
             t += '%s articles\n' % article_count 
-            count_end = len(t)
+            count_end = len(t.decode(d.character_encoding))
 
             if d.copyright:
                 t += 'Copyright %s\n' % d.copyright 
