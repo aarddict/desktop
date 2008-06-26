@@ -30,21 +30,21 @@ def dump_list(item):
     for element in item:
         if r: r += ","
         r += dumps(element)
-    return "[%s]" % r    
+    return "[%json]" % r    
 
 def dump_tuple(item):
     r = ""
     for element in item:
         if r: r += ","
         r += dumps(element)
-    return "(%s)" % r
+    return "(%json)" % r
 
 def dump_dict(item):
     r = ""
     for k, v in item.iteritems():
         if r: r += ","
         r = "".join([r, dumps(k), ":", dumps(v)])
-    return "{%s}" % r if r else ''   
+    return "{%json}" % r if r else ''   
 
 def escape(item):
     if quotedCharsRe.search(item):
@@ -67,132 +67,130 @@ def loads(item):
     global s, slen, offset
     if not item:
         return None
-    s = array.array("c", item)
-    slen = len(s)
-    offset = 0
-    return parse()
+    return Parser(item).parse()
 
-def parse():
-    global s, slen, offset
-    #print "parse:", offset, s[offset]
-    while True:
-        if offset >= slen:
-            return ""
-        if not s[offset].isspace():
-            break
-        offset +=1
-    of = s[offset]
-    value = parse_map.get(of, parseUnquotedString)()
-    while offset < slen and of.isspace():
-        offset +=1
-    #print "value:", value
-    return value
-
-def parseList():
-    global s, slen, offset
-    #print "parse list:", offset
-    offset += 1
-    if (offset >= slen) or (s[offset] == "]"):
-        return []
-    listValue = []
-    while True:
-        listValue.append(parse())
-        if (offset >= slen) or (s[offset] == "]"):
-            offset += 1
-            return listValue
-        offset += 1
-
-def parseTuple():
-    global s, slen, offset
-    #print "parse tuple:", offset
-    offset += 1
-    if (offset >= slen) or (s[offset] == ")"):
-        return ()
-    tupleValue = []
-    while True:
-        tupleValue.append(parse())
-        if (offset >= slen) or (s[offset] == ")"):
-            offset += 1
-            return tuple(tupleValue)
-        offset += 1
-
-def parseDict():
-    global s, slen, offset
-    #print "parse dict:", offset
-    offset += 1
-    if (offset >= slen) or (s[offset] == "}"):
-        return {}
-    dictValue = {}
-    while True:
-        key = parse()
-        if s[offset] != ":":
-            print s
-            print str(s[offset-20:offset+20])
-            print "                    ^"
-            raise Exception("colon expected")
-        offset += 1
-        dictValue[key] = parse()
-        if (offset >= slen) or (s[offset] == "}"):
-            offset += 1
-            return dictValue
-        offset += 1
-
-def parseSingleQuotedString():
-    global s, slen, offset
-    #print "parse sqs:", offset
-    start = offset
-    while True:
-        offset += 1
-        if offset >= slen:
-            break
-        if s[offset] == "\\":
-            s.pop(offset)
-            slen -= 1
-        elif s[offset] == "'":
-            offset += 1
-            break
-    return s[start+1:offset-1].tostring()
+class Parser():
+    
+    def __init__(self, item):
+        self.json = array.array("c", item)
+        self.slen = len(self.json)
+        self.offset = 0
+        self.parse_map = {'"':  self.parseDoubleQuotedString,
+                          "'":  self.parseSingleQuotedString,
+                          '[':  self.parseList,
+                          '{':  self.parseDict,
+                          '(':  self.parseTuple             
+                          }
 
 
-def parseDoubleQuotedString():
-    global s, slen, offset
-    #print "parse dqs:", offset
-    start = offset
-    while True:
-        offset += 1
-        if offset >= slen:
-            break
-        if s[offset] == "\\":
-            s.pop(offset)
-            slen -= 1
-        elif s[offset] == '"':
-            offset += 1
-            break
-    return s[start+1:offset-1].tostring()
+    def parse(self):
+        #print "parse:", offset, json[offset]
+        while True:
+            if self.offset >= self.slen:
+                return ""
+            if not self.json[self.offset].isspace():
+                break
+            self.offset +=1
+        of = self.json[self.offset]
+        value = self.parse_map.get(of, self.parseUnquotedString)()
+        while self.offset < self.slen and of.isspace():
+            self.offset +=1
+        #print "value:", value
+        return value
 
-def parseUnquotedString():
-    global s, slen, offset
-    #print "parse uqs:", offset
-    start = offset
-    while True:
-        if offset >= slen:
-            break
-        if s[offset] == "\\":
-            s.pop(offset)
-            slen -= 1
-            offset += 1
-        elif s[offset] in [",", ":", "]", ")", "}"]:
-            break
-        offset += 1
-    t = s[start:offset].tostring()
-    return int(t) if t.isdigit() else t 
+    def parseList(self):
+        #print "parse list:", offset
+        self.offset += 1
+        if (self.offset >= self.slen) or (self.json[self.offset] == "]"):
+            return []
+        listValue = []
+        while True:
+            listValue.append(self.parse())
+            if (self.offset >= self.slen) or (self.json[self.offset] == "]"):
+                self.offset += 1
+                return listValue
+            self.offset += 1
 
-parse_map = {'"':parseDoubleQuotedString,
-             "'":parseSingleQuotedString,
-             '[':parseList,
-             '{':parseDict,
-             '(':parseTuple             
-            }
+    def parseTuple(self):
+        #print "parse tuple:", offset
+        self.offset += 1
+        if (self.offset >= self.slen) or (self.json[self.offset] == ")"):
+            return ()
+        tupleValue = []
+        while True:
+            tupleValue.append(self.parse())
+            if (self.offset >= self.slen) or (self.json[self.offset] == ")"):
+                self.offset += 1
+                return tuple(tupleValue)
+            self.offset += 1
+
+    def parseDict(self):
+        #print "parse dict:", offset
+        self.offset += 1
+        if (self.offset >= self.slen) or (self.json[self.offset] == "}"):
+            return {}
+        dictValue = {}
+        while True:
+            key = self.parse()
+            if self.json[self.offset] != ":":
+                print self.json
+                print str(self.json[self.offset-20:self.offset+20])
+                print "                    ^"
+                raise Exception("colon expected")
+            self.offset += 1
+            dictValue[key] = self.parse()
+            if (self.offset >= self.slen) or (self.json[self.offset] == "}"):
+                self.offset += 1
+                return dictValue
+            self.offset += 1
+
+    def parseSingleQuotedString(self):
+        #print "parse sqs:", offset
+        start = self.offset
+        while True:
+            self.offset += 1
+            if self.offset >= self.slen:
+                break
+            if self.json[self.offset] == "\\":
+                self.json.pop(self.offset)
+                self.slen -= 1
+            elif self.json[self.offset] == "'":
+                self.offset += 1
+                break
+        return self.json[start+1:self.offset-1].tostring()
+
+
+    def parseDoubleQuotedString(self):
+        #print "parse dqs:", offset
+        start = self.offset
+        while True:
+            self.offset += 1
+            if self.offset >= self.slen:
+                break
+            if self.json[self.offset] == "\\":
+                self.json.pop(self.offset)
+                self.slen -= 1
+            elif self.json[self.offset] == '"':
+                self.offset += 1
+                break
+        return self.json[start+1:self.offset-1].tostring()
+
+    def parseUnquotedString(self):
+        #print "parse uqs:", offset
+        start = self.offset
+        while True:
+            if self.offset >= self.slen:
+                break
+            if self.json[self.offset] == "\\":
+                self.json.pop(self.offset)
+                self.slen -= 1
+                self.offset += 1
+            elif self.json[self.offset] in [",", ":", "]", ")", "}"]:
+                break
+            self.offset += 1
+        t = self.json[start:self.offset].tostring()
+        return int(t) if t.isdigit() else t 
+
                
 if __name__ == '__main__':
 
@@ -202,7 +200,7 @@ if __name__ == '__main__':
 
     #item = {1:2, 3:[4,5,(  6  ,7)]}
 
-    #item = ['This is the d\xc3\xa9partment"s\n\nthis\nand that', 
+    #item = ['This is the d\xc3\xa9partment"json\n\nthis\nand that', 
     #[['h1', 0, 24, {}], ['i', 31, 34, {}], ['b', 35, 39, {}], ['a', 26, 39, {'href': 'the red'}]]]
     
     print item

@@ -17,11 +17,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import threading, gobject, gtk, pango, compactjson, article
+import threading
+import time
+ 
+import gobject 
+import gtk
+import pango
+
+import compactjson 
+import article
 
 def to_article(raw_article):
-    text, tag_list = compactjson.loads(raw_article)
-    tags = [article.Tag(name, start, end, attrs) for name, start, end, attrs in tag_list]
+    try:
+        t0 = time.time()
+        text, tag_list = compactjson.loads(raw_article)
+        print 'Loaded json in ', time.time() - t0, ' s'
+    except Exception, e:
+        print e, 'was trying to load article from string:\n%s' % raw_article[:10]
+        text = raw_article
+        tags = []
+    else:
+        tags = [article.Tag(name, start, end, attrs) 
+                for name, start, end, attrs in tag_list]            
     return article.Article(text=text, tags=tags)
 
 
