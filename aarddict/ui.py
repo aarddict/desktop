@@ -800,6 +800,7 @@ class DictViewer(object):
         mn_help = gtk.Menu()
         mn_help_item = gtk.MenuItem("Help")
         mn_help_item.set_submenu(mn_help)
+        mn_help.add(self.mi_about)
                 
         mn_options = gtk.Menu()
         mn_options_item = gtk.MenuItem("Options")
