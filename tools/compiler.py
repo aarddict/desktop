@@ -19,19 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import sys 
-import bz2
-import struct
-import os
-import tempfile
-import shelve
-import datetime
-import optparse
-
-from sortexternal import SortExternal
-
 from aarddict import compactjson
+from sortexternal import SortExternal
+from htmlparser import HTMLParser
+import sys, bz2, struct, os, tempfile, shelve, datetime, optparse
 import aarddict.pyuca
+from mwlib import cdbwiki
 
 def getOptions():
     usage = "usage: %prog [options] "
@@ -49,8 +42,13 @@ def getOptions():
         )
     parser.add_option(
         '-f', '--input-format',
-        default='none',
+        default='mediawiki',
         help='Input format:  mediawiki or xdxf'
+        )
+    parser.add_option(
+        '-t', '--templates',
+        default=None,
+        help='Template definitions database'
         )
 
     return parser
@@ -84,8 +82,7 @@ def createArticleFile():
     aarFile[-1].write(jsonText)
     aarFileLength[-1] += len(jsonText)
 
-def handleArticle(title, text, tags):
-        
+def handleArticle(title, text):
     global header
     global articlePointer
     global aarFile, aarFileLength
@@ -93,29 +90,25 @@ def handleArticle(title, text, tags):
     if (not title) or (not text):
         #sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
         return
-    
-#    parser = HTMLParser()
-#    parser.parseString(text)
-#
-#    jsonstring = compactjson.dumps([parser.text.rstrip(), parser.tags])
-    jsonstring = compactjson.dumps([text, tags])
-    jsonstring = bz2.compress(jsonstring)
-    #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
 
     collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
 
-    #sys.stderr.write("Text: %s\n" % parser.text[:40])
-    if text.startswith("See:"):
-        try:
-            redirectTitle = tags[0][3]["href"]
-            sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
-        except:
-            #sys.stderr.write("Missing redirect target: %s\n" % title)
-            pass
+    if text.startswith("#REDIRECT"):
+        redirectTitle = text[10:]
+        sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
+        sys.stderr.write("Redirect: %s %s\n" % (title, text))
         return
+    
+    #sys.stderr.write("Text: %s\n" % text)
+    parser = HTMLParser()
+    parser.parseString(text)
+
+    jsonstring = compactjson.dumps([parser.text.rstrip(), parser.tags])
+    jsonstring = bz2.compress(jsonstring)
+    #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
 
     sortex.put(collationKeyString4 + "___" + title + "___")
-
+    
     articleUnit = struct.pack(">L", len(jsonstring)) + jsonstring
     articleUnitLength = len(articleUnit)
     if aarFileLength[-1] + articleUnitLength > aarFileLengthMax:
@@ -172,6 +165,8 @@ def makeFullIndex():
 
 #__main__
 
+tempDir = tempfile.mkdtemp()
+
 collator4 = aarddict.pyuca.Collator("aarddict/allkeys.txt")
 collator4.setStrength(4)
 
@@ -186,7 +181,9 @@ header = {
     "major_version": 1,
     "minor_version": 0,
     "timestamp": str(datetime.datetime.utcnow()),
-    "file_sequence": 0
+    "file_sequence": 0,
+    "article_language": "en",
+    "index_language": "en"
     }
 
 sys.stderr.write("Parsing input file...\n")
@@ -213,10 +210,14 @@ createArticleFile()
 
 aarFileLengthMax = 4000000000
 
-indexDbTempdir = tempfile.mkdtemp()
-indexDbFullname = os.path.join(indexDbTempdir, "index.db")
+indexDbFullname = os.path.join(tempDir, "index.db")
 indexDb = shelve.open(indexDbFullname, 'n')
 
+if options.templates:
+    templateDb = cdbwiki.WikiDB(options.templates)
+else:
+    templateDb = None
+    
 index1 = tempfile.NamedTemporaryFile()
 index2 = tempfile.NamedTemporaryFile()
 index1Length = 0
@@ -227,24 +228,23 @@ articlePointer = 0L
 header["article_count"] =  0
 header["index_count"] =  0
 
-if options.input_format == "xdxf" or inputFile.name.endswith(".xdxf"):
+if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
     sys.stderr.write("Compiling %s as xdxf\n" % inputFile.name)
-    import xdxf
-    p = xdxf.XDXFParser(header, handleArticle)
-    p.parse(inputFile)
+    from xdxfparser import XDXFParser
+    p = XDXFParser(collator1, header, handleArticle)
+    p.parseFile(inputFile)
 else:  
     sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
     from mediawikiparser import MediaWikiParser
-    p = MediaWikiParser(collator1, header, handleArticle)
+    p = MediaWikiParser(collator1, header, templateDb, handleArticle)
     p.parseFile(inputFile)
 
 sys.stderr.write("\r" + str(header["article_count"]) + "\n")
-sys.stderr.write("count x: %s\n" % repr(header["index_count"]))
 
 sys.stderr.write("Sorting index...\n")
 
 sortex.sort()
-
+	
 sys.stderr.write("Writing temporary indexes...\n")
 
 makeFullIndex()
@@ -253,7 +253,7 @@ sortex.cleanup()
 
 indexDb.close()
 os.remove(indexDbFullname)
-os.rmdir(indexDbTempdir)
+os.rmdir(tempDir)
 
 combineFiles = False
 header["file_count"] = len(aarFile)
@@ -271,10 +271,8 @@ for line in f:
     languageCodeDict[codes[0]] = codes[2]
 f.close()
 
-if header["article_language"].lower() in  languageCodeDict:
-    header["article_language"] = languageCodeDict[header["article_language"].lower()]
-if header["index_language"].lower() in  languageCodeDict:
-    header["index_language"] = languageCodeDict[header["index_language"].lower()]
+header["article_language"] = languageCodeDict.get(header["article_language"].lower(), header["article_language"])
+header["index_language"] = languageCodeDict.get(header["index_language"].lower(), header["index_language"])
 
 header["index1_length"] = index1Length
 header["index2_length"] = index2Length
@@ -298,7 +296,7 @@ aarFileLength[0] += 5
 
 aarFile[0].write("%08i" % len(jsonText))
 aarFileLength[0] += 8
-
+	
 aarFile[0].write(jsonText)
 aarFileLength[0] += len(jsonText)
 
@@ -371,7 +369,7 @@ if combineFiles:
 sys.stderr.write("Created %i output file(s)\n" % len(aarFile))
 for f in aarFile:
     f.close
-   
+    
 sys.stderr.write("Done.\n")
 
 

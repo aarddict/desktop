@@ -66,9 +66,10 @@ class Word:
         return self.collation_key.startswith(other.collation_key)
     
     def getArticle(self):
-        a = self.dictionary.read_article(self.article_location)
-        a.title = self.word 
-        return a
+        raw_article = self.dictionary.read_article(self.article_location)
+        article_text, tag_list = compactjson.loads(raw_article)
+        article_tags = [article.Tag(name, start, end, attrs) for name, start, end, attrs in tag_list]
+        return article.Article(self.word, article_text, article_tags)
 
 class Dictionary:         
 

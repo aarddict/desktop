@@ -19,35 +19,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
-
+import os
 import sys
 import re
+import codecs
+import StringIO
+
+from mwlib import cdbwiki, uparser, htmlwriter
 from simplexmlparser import SimpleXMLParser
-from htmlparser import HTMLParser
 
 import aarddict.pyuca
 
-# http://code.google.com/p/wikimarkup
-import wikimarkup
-
 class MediaWikiParser(SimpleXMLParser):
 
-    def __init__(self, collator, metadata, consumer):
+    def __init__(self, collator, metadata, templateDb, consumer):
         SimpleXMLParser.__init__(self)
         self.collator = collator
         self.metadata = metadata
+        self.templateDb = templateDb
         self.consumer = consumer
         self.tagstack = []
         self.title = ""
         self.text = ""
+
         self.StartElementHandler = self.handleStartElement
         self.EndElementHandler = self.handleEndElement
         self.CharacterDataHandler = self.handleCharacterData
+
         self.reRedirect = re.compile(r"^#REDIRECT", re.IGNORECASE)
         self.reLeadingSpaces = re.compile(r"^\s*", re.MULTILINE)
         self.reTrailingSpaces = re.compile(r"\s*$", re.MULTILINE)
         self.reSquare2 = re.compile(r"\[\[(.*?)\]\]")
-        self.reComment = re.compile(r"<\!--.*?-->", re.DOTALL)
         
     def handleStartElement(self, tag, attrs):
         self.tagstack.append([tag, []])
@@ -67,56 +69,48 @@ class MediaWikiParser(SimpleXMLParser):
         entrytext = "".join(entry[1])
 
         if tag == "sitename":
-            self.metadata["title"] = self.clean(entrytext, oneline=True)
+            self.metadata["title"] = entrytext.replace("\n", "").strip()
 
         elif tag == "base":
-            m = re.compile(r"http://(.*?)\.wikipedia").match(entrytext)
+            m = re.compile(r"http://(.*?)\.wik").match(entrytext)
             if m:
                 self.metadata["index_language"] = m.group(1)
                 self.metadata["article_language"] = m.group(1)
         
         elif tag == "title":
-            self.title = self.clean(entrytext, oneline=True)
-            self.title = self.title.replace("_", " ")
+            self.title = entrytext.replace("\n", "").replace("_", " ").strip()
+
+            sys.stderr.write("Mediawiki article: %s\n" % (self.title))
         
         elif tag == "text":
             self.text = entrytext
                         
         elif tag == "page":
-            
-            self.text = self.reComment.sub("", self.text)
 
-            if self.weakRedirect(self.title, self.text):
+            t = self.title.split(":", 1)
+            if len(t) > 1 and t[0].lower() in ["image", "template", "category", "wikipedia"]:
                 return
 
-            if self.title.lower().startswith("image:"):
+            if self.text.startswith("#REDIRECT"): 
+                m = self.reSquare2.search(self.text)
+                if m:
+                    redirect = m.group(1)
+                    redirect = redirect.replace("_", " ")
+                    redirectKey = self.collator.getCollationKey(redirect)
+                    titleKey = self.collator.getCollationKey(self.title)
+                    if redirectKey != titleKey:
+                        self.consumer(self.title, "#REDIRECT " + redirect)
+                    #sys.stderr.write("Weak redirect: " + repr(title) + " " + repr(redirect) + "\n")
                 return
 
-            if self.title.lower().startswith("template:"):
-                return
-
-            if self.title.lower().startswith("category:"):
-                return
-
-            if self.title.lower().startswith("wikipedia:"):
-                return
-                
-            self.text = self.reRedirect.sub("See:", self.text)
-            try:
-                self.text = wikimarkup.parse(self.text, False).strip()
-            except Exception, e:
-                sys.stderr.write("Unable to translate wiki markup: %s\n" % str(e))
-                self.text = ""
-            self.text = self.parseLinks(self.text)
-            self.text = self.parseTemplates(self.text)
-            self.text = self.text.replace("&lt;", "<").replace("&gt;", ">");
-            if not self.text.startswith("<p>See:"):
-                self.text = "<h1>" + self.title + "</h1>" + self.text
-            #sys.stderr.write("Mediawiki article: %s %s\n" % (self.title, len(self.text)))
-            
-            parser = HTMLParser()
-            parser.parseString(self.text)            
-            self.consumer(self.title, parser.text.rstrip(), parser.tags)
+            #sys.stderr.write("mediawiki text: %s\n" % repr(self.text.decode("utf8")))
+            mwObject = uparser.parseString(title=self.title.decode("utf8"), raw=self.text.decode("utf8"), wikidb=self.templateDb)
+            htmlFile = StringIO.StringIO(u"")
+            htmlwriter.HTMLWriter(htmlFile).write(mwObject)
+            self.text = htmlFile.getvalue().encode("utf8")
+            htmlFile.close()
+            #sys.stderr.write("mediawiki html: %s\n" % repr(self.text.decode("utf8")))
+            self.consumer(self.title, self.text)
             self.text = ""
             return
             
@@ -131,117 +125,6 @@ class MediaWikiParser(SimpleXMLParser):
     def handleCleanup(self):
         pass
 
-    def clean(self, s, oneline = False):
-        if oneline:
-            s = s.replace("\n", " ")
-        s = self.reLeadingSpaces.sub("", s)
-        s = self.reTrailingSpaces.sub("", s)
-        return s.strip()
-    
-    def weakRedirect(self, title, text):
-        if self.text.startswith("#REDIRECT"): 
-            m = self.reSquare2.search(text)
-            if m:
-                redirect = m.group(1)
-                redirect = redirect.replace("_", " ")
-                redirectKey = self.collator.getCollationKey(redirect)
-                titleKey = self.collator.getCollationKey(title)
-                if redirectKey == titleKey:
-                    #sys.stderr.write("Weak redirect: " + repr(title) + " " + repr(redirect) + "\n")
-                    return True
-        return False
-
-    def parseLinks(self, s):
-
-        left = -1
-        while 1:
-            left = s.find("[[", left + 1)
-            if left < 0:
-                break
-            nest = 2
-            right = left + 2
-            while (nest > 0) and (right < len(s)):
-                if s[right] == "[":
-                    nest = nest + 1
-                elif s[right] == "]":
-                    nest = nest - 1
-                right = right + 1
-                        
-            if (nest != 0):
-                #sys.stderr.write("Mismatched brackets: %s %s %s\n" % (str(left), str(right), str(nest)))
-                return ""
-                        
-            link = s[left:right]
-            #sys.stderr.write("Link: %s\n" % link)
-            
-            # recursively parse nested links
-            link = self.parseLinks(link[2:-2])
-            if not link:
-                return ""
-
-            link = link.replace('"', "&quot;")
-            
-            p = link.split("|")
-
-            c = p[0].find(":")
-
-            if c >= 0:
-                t = p[0][:c]
-                if t.lower() == "image":
-                    r = '[Image: ' + p[-1] + ']'
-                else:
-                    r = ""
-            else:
-                p[0] = p[0].replace("_", " ")
-                r = '<a href="' + p[0] + '">' + p[-1] + '</a>'
-            
-
-            s = "".join([s[:left], r, s[right:]]) 
-        
-        return s
-
-    def parseTemplates(self, s):
-
-        left = -1
-        while 1:
-            left = s.find("{{", left + 1)
-            if left < 0:
-                break
-            nest = 2
-            right = left + 2
-            while (nest > 0) and (right < len(s)):
-                if s[right] == "{":
-                    nest = nest + 1
-                elif s[right] == "}":
-                    nest = nest - 1
-                right = right + 1
-                        
-            if (nest != 0):
-                #sys.stderr.write("Mismatched braces: %s %s %s\n" % (str(left), str(right), str(nest)))
-                return ""
-                        
-            template = s[left:right]
-            #sys.stderr.write("Template: %s\n" % template)
-            
-            # recursively parse nested templates
-            template = self.parseTemplates(template[2:-2])
-            if not template:
-                return ""
-
-            # default behaviour is to remove templates
-            if template[:8].lower() == "infobox ":
-                #sys.stderr.write("Infobox: %s\n" % repr(template))
-                template = "<p>============<br>" + template[8:]
-                template = template.replace("|", "<br>")
-                template = re.compile(r" +").sub(" ", template)
-                template += "<br>=============</p>"
-            else:
-                #sys.stderr.write("Template ignored: %s\n" % repr(template))
-                template = ""
-        
-            s = "".join([s[:left], template, s[right:]]) 
-        
-        return s
 
 def printDoc(title, text):
     print repr(title)
@@ -253,7 +136,7 @@ if __name__ == '__main__':
     s = """
 entry<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.3/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.3/ http://www.mediawiki.org/xml/export-0.3.xsd" version="0.3" xml:lang="fr">
 <siteinfo>
-<sitename>Wikipédia</sitename>
+<sitename>Wikipedia</sitename>
 <base>http://fr.wikipedia.org/wiki/Accueil</base>
 <generator>MediaWiki 1.12alpha</generator>
 </siteinfo>
@@ -269,15 +152,19 @@ entry<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.3/" xmlns:xsi="http
 </contributor>
 <minor />
 <text xml:space="preserve">&lt;!-- comment --&gt;'''PJ''' &quot;white&quot; [[big_bang]] [[Moul]] here is a line.
-The main {{export}} of any {{country}} is the 90" tall people.
-{{infobox hi there {{good}} neighbour}}
+{{-nom-|fr}}
+The main {{export}} of any {{country}} is the 90" tall {{m}} people.
+{{infobox|hi there {{good}}|neighbour}}
 [[Image:Albedo-e hg.svg|thumb|Percentage of reflected sun light in
 relation to various surface conditions of the earth]]
 [[It's all about "quotes"]]
 * here
 * is
-* a
-* list
+** a
+*** list
+# number 1
+# number 2
+blah
 </text>
 </revision>
 </page>
@@ -286,9 +173,10 @@ relation to various surface conditions of the earth]]
    
     print s
     print ""
-    
+
+    templateDb = cdbwiki.WikiDB("/var/d3/wiktionary-fr-tpl.cdb")
     collator = aarddict.pyuca.Collator("aarddict/allkeys.txt")    
-    parser = MediaWikiParser(collator, {}, printDoc)
+    parser = MediaWikiParser(collator, {"index_language": "fr"}, templateDb, printDoc)
     parser.parseString(s)
     
     print "Done."
