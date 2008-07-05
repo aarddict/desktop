@@ -208,7 +208,7 @@ aarFileLength.append(0)
 
 createArticleFile()
 
-aarFileLengthMax = 4000000000
+aarFileLengthMax = 2000000000
 
 indexDbFullname = os.path.join(tempDir, "index.db")
 indexDb = shelve.open(indexDbFullname, 'n')
