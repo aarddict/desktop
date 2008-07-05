@@ -74,8 +74,10 @@ class HTMLParser(SimpleXMLParser):
         elif tag == "a":
             if "href" in attrsDict:
                 href = attrsDict["href"]
+                href = urllib.unquote(href)
                 href = self.reHref.sub(r"\2", href)
-                attrsDict = {"a":href}
+                href = href.replace("_", " ")
+                attrsDict = {"href":href}
             else:
                 attrsDict = {}
             
