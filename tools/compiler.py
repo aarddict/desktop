@@ -31,7 +31,8 @@ import optparse
 from sortexternal import SortExternal
 
 from aarddict import compactjson
-import aarddict.pyuca
+
+from PyICU import Locale, Collator
 
 def getOptions():
     usage = "usage: %prog [options] "
@@ -102,7 +103,7 @@ def handleArticle(title, text, tags):
     jsonstring = bz2.compress(jsonstring)
     #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
 
-    collationKeyString4 = collator4.getCollationKey(title).getBinaryString()
+    collationKeyString4 = collator4.getCollationKey(title).getByteArray()
 
     #sys.stderr.write("Text: %s\n" % parser.text[:40])
     if text.startswith("See:"):
@@ -172,10 +173,11 @@ def makeFullIndex():
 
 #__main__
 
-collator4 = aarddict.pyuca.Collator("aarddict/allkeys.txt")
+root_locale = Locale('root')
+collator4 =  Collator.createInstance(root_locale)
 collator4.setStrength(4)
 
-collator1 = aarddict.pyuca.Collator("aarddict/allkeys.txt")
+collator1 =  Collator.createInstance(root_locale)
 collator1.setStrength(1)
 
 sortex = SortExternal()

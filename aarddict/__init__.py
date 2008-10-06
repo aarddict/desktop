@@ -1,2 +1,3 @@
-from pyuca import Collator
-ucollator = Collator("aarddict/allkeys.txt", strength = 1)
+from PyICU import Locale, Collator
+ucollator =  Collator.createInstance(Locale('root'))
+ucollator.setStrength(1)

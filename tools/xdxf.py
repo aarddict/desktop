@@ -1,4 +1,6 @@
 import sys
+import logging
+logging.basicConfig()
 from lxml import etree
 
 class XDXFParser():
@@ -43,6 +45,7 @@ class XDXFParser():
                     title = element.find('k').text.encode('utf-8')            
                     self.handle_article(title, txt.encode('utf-8'), tags)
                 except:
-                    sys.stderr.write('\nSkipping bad article\n')
+                    logging.exception('Skipping bad article')
+                    #sys.stderr.write('\nSkipping bad article\n')
                 finally:
                     element.clear()                        

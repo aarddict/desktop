@@ -18,11 +18,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
-import compactjson, bz2, struct, sys, types
-import article, pyuca
+import sys
+import types
+import struct
+import bz2
+import compactjson 
+
+from aarddict import ucollator
 
 RECORD_LEN_STRUCT_FORMAT = '>L'
 RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
+
+def key(s, strength=0):
+    ucollator.setStrength(strength)
+    return ucollator.getCollationKey(s).getByteArray()
 
 class Word:
     def __init__(self, dictionary, word, collation_key = None):
@@ -57,13 +66,16 @@ class Word:
         return self.collation_key == other.collation_key
 
     def __cmp__(self, other):
-        return cmp(self.collation_key, other.collation_key)
+        return cmp(self.collation_key.getByteArray(), 
+                   other.collation_key.getByteArray())
 
     def __unicode__(self):
         return self.unicode
         
     def startswith(self, other):
-        return self.collation_key.startswith(other.collation_key)
+        k1 = key(self.unicode[:len(other.unicode)])
+        k2 = key(other.unicode)
+        return k1 == k2
     
     def getArticle(self):
         a = self.dictionary.read_article(self.article_location)
@@ -191,20 +203,3 @@ class Dictionary:
     def close(self):
         for f in self.file:
             f.close()        
-
-if __name__ == '__main__':
-
-        if len(sys.argv) != 3:
-            sys.stderr.write("Usage: " + sys.argv[0] + " aarfile word\n")
-            sys.exit()
-        
-        collator1 = pyuca.Collator("allkeys.txt", strength = 1)
-        d = Dictionary(sys.argv[1], collator1)
-
-        print d.metadata
-        
-        i = d.get_word_list_iter(sys.argv[2])
-        for word in i:
-            print word, "==>",  word.getArticle()
-
-        print "Done."

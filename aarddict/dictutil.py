@@ -43,7 +43,8 @@ class WordLookup:
         return self.word
     
     def __cmp__(self, other):
-        return cmp(self.collation_key, other.collation_key)
+        return cmp(self.collation_key.getByteArray(), 
+                   other.collation_key.getByteArray())
     
     def read_articles(self):
         return [(dict,dict.read_article(article_ptr)) for dict, article_ptr in self.lookup.iteritems()]
