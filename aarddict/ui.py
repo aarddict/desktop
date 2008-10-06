@@ -537,8 +537,10 @@ class DictViewer(object):
         
     def paste_to_word_input(self, btn, data = None): 
         clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)
-        clipboard.request_text(lambda clipboard, text, data: 
-                               self.word_input.child.set_text(text))
+        def set_text(clipboard, text, data):
+            if text:
+                self.word_input.child.set_text(text)
+        clipboard.request_text(set_text)
         self.word_input.child.grab_focus()
           
     def get_selected_word(self):
