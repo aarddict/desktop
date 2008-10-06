@@ -30,21 +30,21 @@ def dump_list(item):
     for element in item:
         if r: r += ","
         r += dumps(element)
-    return "[%json]" % r    
+    return "[%s]" % r    
 
 def dump_tuple(item):
     r = ""
     for element in item:
         if r: r += ","
         r += dumps(element)
-    return "(%json)" % r
+    return "(%s)" % r
 
 def dump_dict(item):
     r = ""
     for k, v in item.iteritems():
         if r: r += ","
         r = "".join([r, dumps(k), ":", dumps(v)])
-    return "{%json}" % r if r else ''   
+    return "{%s}" % r if r else ''   
 
 def escape(item):
     if quotedCharsRe.search(item):
