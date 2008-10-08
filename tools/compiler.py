@@ -176,10 +176,7 @@ if __name__ == '__main__':
     root_locale = Locale('root')
     collator4 =  Collator.createInstance(root_locale)
     collator4.setStrength(4)
-    
-    collator1 =  Collator.createInstance(root_locale)
-    collator1.setStrength(1)
-    
+        
     sortex = SortExternal()
     
     header = {
@@ -243,6 +240,8 @@ if __name__ == '__main__':
     else:  
         sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
         from mediawikiparser import MediaWikiParser
+        collator1 =  Collator.createInstance(root_locale)
+        collator1.setStrength(0)        
         p = MediaWikiParser(collator1, header, templateDb, handleArticle)
         p.parseFile(inputFile)
     
