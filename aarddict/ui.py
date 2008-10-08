@@ -591,7 +591,7 @@ class DictViewer(object):
         lang_word_list = {}
         for lang in self.dictionaries.langs():
             word_lookups = {}
-            for item in self.dictionaries.get_word_list_iter(lang, start_word):
+            for item in self.dictionaries.lookup(lang, start_word):
                 time.sleep(0)
                 if self.lookup_stop_requested:
                     interrupted = True

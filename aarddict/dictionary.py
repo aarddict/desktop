@@ -132,7 +132,7 @@ class Dictionary:
             else:
                 low = probe
 
-    def get_word_list_iter(self, start_string):
+    def lookup(self, start_string):
         start_word = Word(self, start_string)
         next_ptr = self.find_index_entry(start_word)
         word = self.read_full_index_item(next_ptr)
