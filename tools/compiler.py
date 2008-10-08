@@ -29,7 +29,7 @@ import datetime
 import optparse
 
 from sortexternal import SortExternal
-
+from mwlib import cdbwiki
 from aarddict import compactjson
 
 from PyICU import Locale, Collator
@@ -50,8 +50,13 @@ def getOptions():
         )
     parser.add_option(
         '-f', '--input-format',
-        default='none',
+        default='mediawiki',
         help='Input format:  mediawiki or xdxf'
+        )
+    parser.add_option(
+        '-t', '--templates',
+        default=None,
+        help='Template definitions database'
         )
 
     return parser
@@ -105,16 +110,11 @@ def handleArticle(title, text, tags):
 
     collationKeyString4 = collator4.getCollationKey(title).getByteArray()
 
-    #sys.stderr.write("Text: %s\n" % parser.text[:40])
-    if text.startswith("See:"):
-        try:
-            redirectTitle = tags[0][3]["href"]
-            sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
-        except:
-            #sys.stderr.write("Missing redirect target: %s\n" % title)
-            pass
+    if text.startswith("#REDIRECT"):
+        redirectTitle = text[10:]
+        sortex.put(collationKeyString4 + "___" + title + "___" + redirectTitle)
+        sys.stderr.write("Redirect: %s %s\n" % (title, text))
         return
-
     sortex.put(collationKeyString4 + "___" + title + "___")
 
     articleUnit = struct.pack(">L", len(jsonstring)) + jsonstring
@@ -173,6 +173,7 @@ def makeFullIndex():
 
 #__main__
 
+tempDir = tempfile.mkdtemp()
 root_locale = Locale('root')
 collator4 =  Collator.createInstance(root_locale)
 collator4.setStrength(4)
@@ -188,7 +189,9 @@ header = {
     "major_version": 1,
     "minor_version": 0,
     "timestamp": str(datetime.datetime.utcnow()),
-    "file_sequence": 0
+    "file_sequence": 0,
+    "article_language": "en",
+    "index_language": "en"
     }
 
 sys.stderr.write("Parsing input file...\n")
@@ -213,12 +216,16 @@ aarFileLength.append(0)
 
 createArticleFile()
 
-aarFileLengthMax = 4000000000
+aarFileLengthMax = 2000000000
 
-indexDbTempdir = tempfile.mkdtemp()
-indexDbFullname = os.path.join(indexDbTempdir, "index.db")
+indexDbFullname = os.path.join(tempDir, "index.db")
 indexDb = shelve.open(indexDbFullname, 'n')
 
+if options.templates:
+    templateDb = cdbwiki.WikiDB(options.templates)
+else:
+    templateDb = None
+    
 index1 = tempfile.NamedTemporaryFile()
 index2 = tempfile.NamedTemporaryFile()
 index1Length = 0
@@ -229,7 +236,7 @@ articlePointer = 0L
 header["article_count"] =  0
 header["index_count"] =  0
 
-if options.input_format == "xdxf" or inputFile.name.endswith(".xdxf"):
+if options.input_format == "xdxf" or inputFile.name[-5:] == ".xdxf":
     sys.stderr.write("Compiling %s as xdxf\n" % inputFile.name)
     import xdxf
     p = xdxf.XDXFParser(header, handleArticle)
@@ -237,11 +244,10 @@ if options.input_format == "xdxf" or inputFile.name.endswith(".xdxf"):
 else:  
     sys.stderr.write("Compiling %s as mediawiki\n" % inputFile.name)
     from mediawikiparser import MediaWikiParser
-    p = MediaWikiParser(collator1, header, handleArticle)
+    p = MediaWikiParser(collator1, header, templateDb, handleArticle)
     p.parseFile(inputFile)
 
 sys.stderr.write("\r" + str(header["article_count"]) + "\n")
-sys.stderr.write("count x: %s\n" % repr(header["index_count"]))
 
 sys.stderr.write("Sorting index...\n")
 
@@ -255,7 +261,7 @@ sortex.cleanup()
 
 indexDb.close()
 os.remove(indexDbFullname)
-os.rmdir(indexDbTempdir)
+os.rmdir(tempDir)
 
 combineFiles = False
 header["file_count"] = len(aarFile)
@@ -273,10 +279,8 @@ for line in f:
     languageCodeDict[codes[0]] = codes[2]
 f.close()
 
-if header["article_language"].lower() in  languageCodeDict:
-    header["article_language"] = languageCodeDict[header["article_language"].lower()]
-if header["index_language"].lower() in  languageCodeDict:
-    header["index_language"] = languageCodeDict[header["index_language"].lower()]
+header["article_language"] = languageCodeDict.get(header["article_language"].lower(), header["article_language"])
+header["index_language"] = languageCodeDict.get(header["index_language"].lower(), header["index_language"])
 
 header["index1_length"] = index1Length
 header["index2_length"] = index2Length
