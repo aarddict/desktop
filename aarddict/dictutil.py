@@ -18,6 +18,7 @@ Copyright (C) 2006-2008 Igor Tkach
 """
 
 from collections import defaultdict
+from itertools import chain
 
 class DictFormatError(Exception):
     def __init__(self, value):
@@ -63,13 +64,12 @@ class DictionaryCollection:
         if len(self.dictionaries[word_lang]) == 0:
             del self.dictionaries[word_lang]
     
-    def get_dicts(self, langs=None):
-        dicts = []
-        if langs:
-            [dicts.extend(self.dictionaries[lang]) for lang in langs]
-        else:
-            [dicts.extend(list) for list in self.dictionaries.itervalues()]
-        return dicts
+    def __len__(self):
+        lengths = [len(l) for l in self.dictionaries.itervalues()]
+        return reduce(lambda x, y: x + y, lengths, 0)
+        
+    def all(self):
+        return chain(*self.dictionaries.itervalues())
     
     def langs(self):
         return self.dictionaries.keys()
@@ -81,11 +81,3 @@ class DictionaryCollection:
                 yield WordLookup(item.word, item.dictionary, item.article_location)
                 count += 1
                 if count >= max_from_one_dict: break
-    
-    def is_empty(self):
-        return self.size() == 0
-    
-    def size(self):
-        return len(self.get_dicts())        
-        
-        

@@ -333,7 +333,7 @@ class DictViewer(object):
         self.word_input.get_model().foreach(self.history_to_list, history)
         selected_word, selected_word_lang = self.get_selected_word()
         selected = (str(selected_word), selected_word_lang)
-        dict_files = [dict.file_name for dict in self.dictionaries.get_dicts()]
+        dict_files = [dict.file_name for dict in self.dictionaries.all()]
         if self.phonetic_font_desc:
             self.appstate['phonetic-font'] = self.phonetic_font_desc.to_string()
         self.appstate['word'] = word
@@ -348,7 +348,7 @@ class DictViewer(object):
             lang_positions[page.lang] = self.word_completion.page_num(page)
         self.appstate['lang-positions'] = lang_positions
         errors = []
-        for dict in self.dictionaries.get_dicts():
+        for dict in self.dictionaries.all():
             try:
                 dict.close()
             except Exception, e:
@@ -849,7 +849,7 @@ class DictViewer(object):
         self.window.set_title(title)
         
     def create_dict_title(self):
-        size = self.dictionaries.size()
+        size = len(self.dictionaries)
         if size == 0:
             return "No dictionaries"
         return ("%d dictionary") % size if size == 1 else ("%d dictionaries") % size
@@ -1067,7 +1067,7 @@ class DictViewer(object):
         return None
 
     def show_dict_info(self, widget):        
-        info_dialog = dictinfo.DictInfoDialog(self.dictionaries.get_dicts(), 
+        info_dialog = dictinfo.DictInfoDialog(self.dictionaries.all(), 
                                               parent = self.window)
         info_dialog.run()
         info_dialog.destroy()
