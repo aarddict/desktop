@@ -19,7 +19,6 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
 import sys
-import types
 import struct
 import bz2
 import compactjson 
@@ -34,54 +33,32 @@ def key(s, strength=0):
     return ucollator.getCollationKey(s).getByteArray()
 
 class Word:
-    def __init__(self, dictionary, word, collation_key = None):
+    def __init__(self, dictionary, word, article_location=(None, None)):
         self.dictionary = dictionary
-        self.encoding = dictionary.character_encoding
-        self.collator = dictionary.collator
-        self.article_location = (None, None)
-        self.unicode = None
-        self.word = None
-        self.collation_key = collation_key
-        self.word_lang = dictionary.index_language
-        self.article_lang = dictionary.article_language
-        
-        if type(word) is types.UnicodeType:
-            self.unicode = word
-            self.word = self.unicode.encode(self.encoding)
-        else:
-            self.word = word
-            try:
-                self.unicode = self.word.decode(self.encoding)
-            except UnicodeDecodeError:
-                self.unicode = u"error"
-                sys.stderr.write("Unable to decode: %s\n" % repr(self.word))
-
-        if not self.collation_key: 
-            self.collation_key = self.dictionary.collator.getCollationKey(self.unicode)
+        self.article_location = article_location            
+        self.word = word
+        try:
+            self.unicode = self.word.decode(dictionary.character_encoding)
+        except UnicodeDecodeError:
+            self.unicode = u"error"
+            sys.stderr.write("Unable to decode: %s\n" % repr(self.word))
 
     def __str__(self):
         return self.word
 
-    def __eq__(self, other):
-        return self.collation_key == other.collation_key
-
     def __cmp__(self, other):
-        return cmp(self.collation_key.getByteArray(), 
-                   other.collation_key.getByteArray())
-
+        return cmp(self._key(), other._key())
+    
     def __unicode__(self):
         return self.unicode
+    
+    def _key(self):
+        return key(self.unicode)    
         
     def startswith(self, other):
         k1 = key(self.unicode[:len(other.unicode)])
         k2 = key(other.unicode)
-        return k1 == k2
-    
-    def getArticle(self):
-        raw_article = self.dictionary.read_article(self.article_location)
-        article_text, tag_list = compactjson.loads(raw_article)
-        article_tags = [article.Tag(name, start, end, attrs) for name, start, end, attrs in tag_list]
-        return article.Article(self.word, article_text, article_tags)
+        return k1 == k2    
 
 class Dictionary:         
 
@@ -127,7 +104,6 @@ class Dictionary:
         return (self.title, self.version, self.file_name)
 
     def get_file_metadata(self, f):
-        metadata = {}
         if f.read(3) != "aar":
             f.close()
             raise Exception(f.name + " is not a recognized aarddict dictionary file")
@@ -188,9 +164,9 @@ class Dictionary:
         self.file[0].seek(self.index2_offset + keyPos)
         keyLen = struct.unpack(">L", self.file[0].read(4))[0]
         key = self.file[0].read(keyLen)
-        collation_key = self.collator.getCollationKey(key)
-        word = Word(self, key, collation_key = collation_key)
-        word.article_location = (fileno, self.article_offset[fileno] + article_unit_ptr)
+        article_location = (fileno, 
+                            self.article_offset[fileno] + article_unit_ptr)
+        word = Word(self, key, article_location)
         return word
         
     def read_article(self, location):

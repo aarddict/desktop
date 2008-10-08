@@ -597,8 +597,7 @@ class DictViewer(object):
                     interrupted = True
                     return (lang_word_list, interrupted)
                 word_lookups.setdefault(item.word, 
-                                        dictutil.WordLookup(item.word, 
-                                                            item.collation_key)).add_articles(item)
+                                        dictutil.WordLookup(item.word)).add_articles(item)
             word_list = word_lookups.values()
             word_list.sort()
             if len (word_list) > 0: lang_word_list[lang] = word_list
