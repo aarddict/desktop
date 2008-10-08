@@ -68,7 +68,6 @@ class Dictionary:
         self.article_offset = []
         self.file.append(open(file_name, "rb"));
         self.metadata = self.get_file_metadata(self.file[0])
-        self.collator = collator
         self.word_list = None
         self.index1_offset = self.metadata["index1_offset"]
         self.index2_offset = self.metadata["index2_offset"]
@@ -113,8 +112,6 @@ class Dictionary:
         metadataLength = int(f.read(8))
         metadataString = f.read(metadataLength)
         metadata = compactjson.loads(metadataString)
-        #sys.stderr.write("File metadata: %s\n" % repr(metadata))
-        
         return metadata
        
     def find_index_entry(self, word):
