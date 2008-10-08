@@ -171,11 +171,12 @@ def makeFullIndex():
     
     sys.stderr.write("\r" + str(count) + "\n")
 
+root_locale = Locale('root')
+collator4 =  Collator.createInstance(root_locale)
+collator4.setStrength(4)
+
 if __name__ == '__main__':
     tempDir = tempfile.mkdtemp()
-    root_locale = Locale('root')
-    collator4 =  Collator.createInstance(root_locale)
-    collator4.setStrength(4)
         
     sortex = SortExternal()
     
