@@ -100,10 +100,6 @@ def handleArticle(title, text, tags):
         #sys.stderr.write("Skipped blank article: \"%s\" -> \"%s\"\n" % (title, text))
         return
     
-#    parser = HTMLParser()
-#    parser.parseString(text)
-#
-#    jsonstring = compactjson.dumps([parser.text.rstrip(), parser.tags])
     jsonstring = compactjson.dumps([text, tags])
     jsonstring = bz2.compress(jsonstring)
     #sys.stderr.write("write article: %i %i %s\n" % (articleTempFile.tell(), len(jsonstring), title))    
@@ -139,7 +135,6 @@ def handleArticle(title, text, tags):
     header["article_count"] += 1
 
 def makeFullIndex():
-    global trailerLength
     global aarFile, aarFileLength
     global index1Length, index2Length
     global header
@@ -175,21 +170,29 @@ root_locale = Locale('root')
 collator4 =  Collator.createInstance(root_locale)
 collator4.setStrength(4)
 
+articlePointer = 0L
+aarFile = []
+aarFileLength = []
+index1Length = 0
+index2Length = 0
+aarFileLengthMax = 2000000000
+
+header = {
+    "character_encoding": "utf-8",
+    "compression_type": "bz2",
+    "major_version": 1,
+    "minor_version": 0,
+    "timestamp": str(datetime.datetime.utcnow()),
+    "file_sequence": 0,
+    "article_language": "en",
+    "index_language": "en"
+    }
+
 if __name__ == '__main__':
     tempDir = tempfile.mkdtemp()
         
     sortex = SortExternal()
     
-    header = {
-        "character_encoding": "utf-8",
-        "compression_type": "bz2",
-        "major_version": 1,
-        "minor_version": 0,
-        "timestamp": str(datetime.datetime.utcnow()),
-        "file_sequence": 0,
-        "article_language": "en",
-        "index_language": "en"
-        }
     
     sys.stderr.write("Parsing input file...\n")
     
@@ -200,10 +203,7 @@ if __name__ == '__main__':
         inputFile = open(options.input_file, "rb", 4096)
     else:
         inputFile = sys.stdin
-    
-    aarFile = []
-    aarFileLength = []
-    
+        
     if not options.output_file:
         optionsParser.print_help()
         sys.exit()
@@ -211,9 +211,7 @@ if __name__ == '__main__':
     aarFile.append(open(options.output_file, "w+b", 4096))
     aarFileLength.append(0)
     
-    createArticleFile()
-    
-    aarFileLengthMax = 2000000000
+    createArticleFile()    
     
     indexDbFullname = os.path.join(tempDir, "index.db")
     indexDb = shelve.open(indexDbFullname, 'n')
@@ -225,10 +223,8 @@ if __name__ == '__main__':
         
     index1 = tempfile.NamedTemporaryFile()
     index2 = tempfile.NamedTemporaryFile()
-    index1Length = 0
-    index2Length = 0
     
-    articlePointer = 0L
+    
     
     header["article_count"] =  0
     header["index_count"] =  0
