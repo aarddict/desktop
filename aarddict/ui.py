@@ -26,8 +26,10 @@ from xml.sax.saxutils import escape
 from threading import Thread
 from Queue import Queue
 from math import fabs
-from aarddict import ucollator
-from dictionary import Dictionary
+
+from PyICU import Locale, Collator
+
+from dictionary import Dictionary, key
 from gtk.gdk import (_2BUTTON_PRESS, _3BUTTON_PRESS, BUTTON_PRESS, 
                     MOTION_NOTIFY, BUTTON_RELEASE, NO_EXPOSE, EXPOSE, 
                     VISIBILITY_NOTIFY)
@@ -599,7 +601,10 @@ class DictViewer(object):
                 word_lookups.setdefault(item.word, 
                                         dictutil.WordLookup(item.word)).add_articles(item)
             word_list = word_lookups.values()
-            word_list.sort()
+            collator = Collator.createInstance(Locale(lang))
+            collator.setStrength(3)                        
+            word_list.sort(cmp=(lambda w1, w2: 
+                                collator.compare(unicode(w1), unicode(w2))))
             if len (word_list) > 0: lang_word_list[lang] = word_list
         return (lang_word_list, interrupted)
     
@@ -731,7 +736,9 @@ class DictViewer(object):
         return str(word_lookup1) == str(word_lookup2)
     
     def __weak_eq(self, word_lookup1, word_lookup2):
-        return ucollator.getCollationKey(str(word_lookup1)) == ucollator.getCollationKey(str(word_lookup2))
+        u1 = unicode(word_lookup1)
+        u2 = unicode(word_lookup2)
+        return key(u1) == key(u2)
 
     def create_menu_items(self):
         self.mi_open = gtk.MenuItem("Add...")
@@ -947,7 +954,7 @@ class DictViewer(object):
         while True:
             file = self.open_q.get()
             try:
-                dict = Dictionary(file, ucollator)
+                dict = Dictionary(file)
                 gobject.idle_add(self.update_status_display, dict.title)
                 self.add_dict(dict)
             except Exception, e:

@@ -41,6 +41,12 @@ class WordLookup:
         
     def __str__(self):
         return self.word
+
+    def __repr__(self):
+        return self.word
+    
+    def __unicode__(self):
+        return self.word.decode('utf-8')
         
     def read_articles(self):
         return [(dict,dict.read_article(article_ptr)) 

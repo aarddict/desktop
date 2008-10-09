@@ -23,13 +23,14 @@ import struct
 import bz2
 import compactjson 
 
-from aarddict import ucollator
-
 RECORD_LEN_STRUCT_FORMAT = '>L'
 RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
 
-def key(s, strength=0):
-    ucollator.setStrength(strength)
+from PyICU import Locale, Collator
+ucollator =  Collator.createInstance(Locale(''))
+ucollator.setStrength(0)
+
+def key(s):
     return ucollator.getCollationKey(s).getByteArray()
 
 class Word:
@@ -62,7 +63,7 @@ class Word:
 
 class Dictionary:         
 
-    def __init__(self, file_name, collator):    
+    def __init__(self, file_name):    
         self.file_name = file_name
         self.file = []
         self.article_offset = []
