@@ -16,12 +16,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2006-2008 Igor Tkach
 """
-import pygtk
-pygtk.require('2.0')
 
-import gtk, pango, gobject
-import dictutil, dictinfo, articleformat
-import functools, webbrowser, time
+import functools
+import webbrowser 
+import time
 from xml.sax.saxutils import escape
 from threading import Thread
 from Queue import Queue
@@ -29,10 +27,19 @@ from math import fabs
 
 from PyICU import Locale, Collator
 
-from dictionary import Dictionary, key
+import pygtk
+pygtk.require('2.0')
+import gtk 
+import pango
+import gobject
 from gtk.gdk import (_2BUTTON_PRESS, _3BUTTON_PRESS, BUTTON_PRESS, 
                     MOTION_NOTIFY, BUTTON_RELEASE, NO_EXPOSE, EXPOSE, 
                     VISIBILITY_NOTIFY)
+
+import dictinfo 
+import articleformat
+import dictionary
+from dictionary import Dictionary, key
 
 gobject.threads_init()
 
@@ -228,7 +235,7 @@ class DictViewer(object):
         self.lookup_stop_requested = False
         self.update_completion_t0 = None
         self.status_display = None
-        self.dictionaries = dictutil.DictionaryCollection()
+        self.dictionaries = dictionary.DictionaryCollection()
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()                               
         self.phonetic_font_desc = None
@@ -599,7 +606,7 @@ class DictViewer(object):
                     interrupted = True
                     return (lang_word_list, interrupted)
                 word_lookups.setdefault(item.word, 
-                                        dictutil.WordLookup(item.word)).add_articles(item)
+                                        dictionary.WordLookup(item.word)).add_articles(item)
             word_list = word_lookups.values()
             collator = Collator.createInstance(Locale(lang))
             collator.setStrength(3)                        

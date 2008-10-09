@@ -178,8 +178,6 @@ index2Length = 0
 aarFileLengthMax = 2000000000
 
 header = {
-    "character_encoding": "utf-8",
-    "compression_type": "bz2",
     "major_version": 1,
     "minor_version": 0,
     "timestamp": str(datetime.datetime.utcnow()),

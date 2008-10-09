@@ -22,6 +22,8 @@ import sys
 import struct
 import bz2
 import compactjson 
+from collections import defaultdict
+from itertools import chain
 
 RECORD_LEN_STRUCT_FORMAT = '>L'
 RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
@@ -34,12 +36,11 @@ def key(s):
     return ucollator.getCollationKey(s).getByteArray()
 
 class Word:
-    def __init__(self, dictionary, word, article_location=(None, None)):
-        self.dictionary = dictionary
+    def __init__(self, word, article_location=(None, None)):
         self.article_location = article_location            
         self.word = word
         try:
-            self.unicode = self.word.decode(dictionary.character_encoding)
+            self.unicode = self.word.decode('utf-8')
         except UnicodeDecodeError:
             self.unicode = u"error"
             sys.stderr.write("Unable to decode: %s\n" % repr(self.word))
@@ -87,7 +88,6 @@ class Dictionary:
     article_language = property(lambda self: self.metadata.get("article_language", "?"))    
     version = property(lambda self: self.metadata.get("aarddict_version", ""))
     description = property(lambda self: self.metadata.get("description", ""))
-    character_encoding = property(lambda self: self.metadata.get("character_encoding", "utf-8"))
     copyright = property(lambda self: self.metadata.get("copyright", ""))
     article_count = property(lambda self: self.metadata.get("article_count", 0))
 
@@ -134,7 +134,7 @@ class Dictionary:
                 low = probe
 
     def lookup(self, start_string):
-        start_word = Word(self, start_string)
+        start_word = Word(start_string)
         next_ptr = self.find_index_entry(start_word)
         word = self.read_full_index_item(next_ptr)
         # the found word might not be the first with that collation key
@@ -164,7 +164,7 @@ class Dictionary:
         key = self.file[0].read(keyLen)
         article_location = (fileno, 
                             self.article_offset[fileno] + article_unit_ptr)
-        word = Word(self, key, article_location)
+        word = Word(key, article_location)
         return word
         
     def read_article(self, location):
@@ -178,3 +178,71 @@ class Dictionary:
     def close(self):
         for f in self.file:
             f.close()        
+            
+class DictFormatError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)      
+
+class WordLookup:
+    def __init__(self, word, dict=None, article_ptr=None):
+        self.word = word
+        self.lookup = {}
+        if dict and article_ptr:
+            self.add_article(dict, article_ptr)
+        
+    def add_article(self, dict, article_ptr):
+        self.lookup[dict] = article_ptr
+        
+    def add_articles(self, other):
+        self.lookup.update(other.lookup)        
+        
+    def __str__(self):
+        return self.word
+
+    def __repr__(self):
+        return self.word
+    
+    def __unicode__(self):
+        return self.word.decode('utf-8')
+        
+    def read_articles(self):
+        return [(dict,dict.read_article(article_ptr)) 
+                for dict, article_ptr in self.lookup.iteritems()]
+        
+class DictionaryCollection:
+    
+    def __init__(self):
+        self.dictionaries = defaultdict(list)
+    
+    def add(self, dict):
+        self.dictionaries[dict.index_language].append(dict)
+        
+    def has(self, dict):
+        lang_dicts = self.dictionaries[dict.index_language]
+        return lang_dicts.count(dict) == 1
+    
+    def remove(self, dict):     
+        word_lang = dict.index_language   
+        self.dictionaries[word_lang].remove(dict)
+        if len(self.dictionaries[word_lang]) == 0:
+            del self.dictionaries[word_lang]
+    
+    def __len__(self):
+        lengths = [len(l) for l in self.dictionaries.itervalues()]
+        return reduce(lambda x, y: x + y, lengths, 0)
+        
+    def all(self):
+        return chain(*self.dictionaries.itervalues())
+    
+    def langs(self):
+        return self.dictionaries.keys()
+    
+    def lookup(self, lang, start_word, max_from_one_dict=50):
+        for dict in self.dictionaries[lang]:
+            count = 0
+            for item in dict.lookup(start_word):
+                yield WordLookup(item.word, dict, item.article_location)
+                count += 1
+                if count >= max_from_one_dict: break            
