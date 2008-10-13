@@ -1091,7 +1091,7 @@ class DictViewer(object):
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
         dialog.set_version(version)
-        dialog.set_copyright("(C) 2006-2008 Igor Tkach, Jeremy Mortis\nUnicode Collation Algorithm implementation by James Tauber")
+        dialog.set_copyright("(C) 2006-2008 Igor Tkach, Jeremy Mortis")
         dialog.set_website("http://code.google.com/p/aarddict")
         dialog.set_comments("Distributed under terms and conditions of GNU Public License Version 3")
         dialog.run()     
