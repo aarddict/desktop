@@ -2,12 +2,10 @@
 
 mkdir -p usr/{bin/,lib/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
 
-DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml"
+DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml, pyicu (>= 0.8.1)"
 cp ../src/aarddict-maemo.py usr/bin/aarddict || exit
 cp -R ../src/aarddict/*.py usr/lib/aarddict || exit
-python ../tools/trimallkeys.py -i ../src/aarddict/allkeys.txt -o usr/lib/aarddict/allkeys.txt
 cp -R ../icons/ usr/share/
-#cp ../icons/hicolor/40x40/apps/aarddict.png usr/share/pixmaps/
 chmod +x usr/bin/aarddict
 
 export LD_LIBRARY_PATH=/usr/lib
@@ -29,6 +27,7 @@ Priority: optional
 Architecture: all
 Depends: $DEPENDS
 Installed-Size: $SIZE
+Suggests: ttf-sil-doulos
 Maintainer: Igor Tkach <itkach@users.sourceforge.net>
 Description: A dictionary application for Nokia Internet Tablets.
 Maemo-Icon-26:
@@ -90,7 +89,7 @@ echo 2.0 > debian-binary
 
 tar -zcvf data.tar.gz ./usr 
 tar -zcvf control.tar.gz control postinst
-NAME="$PACKAGE"-"$VERSION".deb
+NAME="$PACKAGE"_"$VERSION"-1maemo_armel.deb
 rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME
