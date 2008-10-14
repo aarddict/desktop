@@ -609,7 +609,7 @@ class DictViewer(object):
                                         dictionary.WordLookup(item.word)).add_articles(item)
             word_list = word_lookups.values()
             collator = Collator.createInstance(Locale(lang))
-            collator.setStrength(3)                        
+            collator.setStrength(Collator.QUATERNARY)                        
             word_list.sort(cmp=(lambda w1, w2: 
                                 collator.compare(unicode(w1), unicode(w2))))
             if len (word_list) > 0: lang_word_list[lang] = word_list

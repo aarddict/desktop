@@ -30,7 +30,7 @@ RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
 
 from PyICU import Locale, Collator
 ucollator =  Collator.createInstance(Locale(''))
-ucollator.setStrength(0)
+ucollator.setStrength(Collator.PRIMARY)
 
 def key(s):
     return ucollator.getCollationKey(s).getByteArray()
