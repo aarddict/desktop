@@ -1,14 +1,13 @@
 #!/bin/bash
-
-mkdir -p usr/{bin/,lib/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
+mkdir -p usr/{bin/,lib/python2.5/site-packages/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
 
 DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml, pyicu (>= 0.8.1)"
-cp ../src/aarddict-maemo.py usr/bin/aarddict || exit
-cp -R ../src/aarddict/*.py usr/lib/aarddict || exit
+cp ../src/aarddict.py usr/bin/aarddict || exit
+cp -R ../src/aarddict/*.py usr/lib/python2.5/site-packages/aarddict || exit
 cp -R ../icons/ usr/share/
 chmod +x usr/bin/aarddict
 
-export LD_LIBRARY_PATH=/usr/lib
+#export LD_LIBRARY_PATH=/usr/lib
 
 DIRS="usr"
 find $DIRS| grep \~ && rm -i $(find $DIRS| grep \~)
