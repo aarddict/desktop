@@ -299,7 +299,9 @@ class DictViewer(object):
         
     def load_app_state(self):
         try:
-            import shelve, os, os.path as p
+            import shelve
+            import os 
+            import os.path as p
             d = p.join(p.expanduser('~'), '.aarddict')
             if not p.exists(d): os.mkdir(d)
             statefile = p.join(d, 'appstate')
@@ -1119,4 +1121,6 @@ class DictViewer(object):
     
     def main(self):
         gtk.main()            
-        
+
+def run():
+    DictViewer().main()        
