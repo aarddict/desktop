@@ -13,6 +13,7 @@ setup(
     version = aarddict.ui.version,
     packages = find_packages(),
     entry_points = {
+         'console_scripts': ['aardcompile = aardtools.compiler:main'],                   
         'gui_scripts': ['aarddict = aarddict.ui:run']
     },
 
