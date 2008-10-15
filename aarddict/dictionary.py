@@ -76,6 +76,17 @@ class Dictionary:
         self.index_count = self.metadata["index_count"]
         self.article_count = self.metadata["article_count"]
         self.article_offset.append(self.metadata["article_offset"])
+                
+        self.index_language = self.metadata.get("index_language", "")    
+        locale_index_language = Locale(self.index_language).getLanguage()
+        if locale_index_language:
+            self.index_language = locale_index_language
+            
+        self.article_language = self.metadata.get("article_language", "")
+        locale_article_language = Locale(self.index_language).getLanguage()
+        if locale_article_language:
+            self.article_language = locale_article_language
+        
         for i in range(1, self.metadata["file_count"]):
             self.file.append(open(file_name[:-2] + ("%02i" % i), "rb"))
             extMetadata = self.get_file_metadata(self.file[-1])
@@ -84,8 +95,6 @@ class Dictionary:
                 raise Exception(self.file[-1].name() + " has a timestamp different from self.file[0].name()")
             
     title = property(lambda self: self.metadata.get("title", ""))
-    index_language = property(lambda self: self.metadata.get("index_language", "?"))
-    article_language = property(lambda self: self.metadata.get("article_language", "?"))    
     version = property(lambda self: self.metadata.get("aarddict_version", ""))
     description = property(lambda self: self.metadata.get("description", ""))
     copyright = property(lambda self: self.metadata.get("copyright", ""))
