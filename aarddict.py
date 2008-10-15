@@ -17,13 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2006-2008 Igor Tkach
 """
-from aarddict import ui
 if __name__ == "__main__":
-    try:
-        import hildon
-    except:        
-        viewer = ui.DictViewer()
-    else:
-        import aarddict.hildonui
-        viewer = aarddict.hildonui.HildonDictViewer()
-    viewer.main()    
+    import aarddict
+    aarddict.main()

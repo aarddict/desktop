@@ -1120,7 +1120,4 @@ class DictViewer(object):
                               scroll_window.get_child().clear_selection())
     
     def main(self):
-        gtk.main()            
-
-def run():
-    DictViewer().main()        
+        gtk.main()
