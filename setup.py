@@ -13,11 +13,11 @@ setup(
     version = aarddict.ui.version,
     packages = find_packages(),
     entry_points = {
-         'console_scripts': ['aardcompile = aardtools.compiler:main'],                   
+        'console_scripts': ['aardcompile = aardtools.compiler:main'],                   
         'gui_scripts': ['aarddict = aarddict.ui:run']
     },
 
-    #install_requires = ['pygtk>=2.6'],
+    install_requires = ['PyICU >= 0.8.1', 'mwlib >= 0.8.4', 'lxml >= 2.0'],
 
     package_data = {
         '': ['*.txt'],
