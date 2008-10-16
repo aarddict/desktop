@@ -17,7 +17,7 @@ setup(
         'gui_scripts': ['aarddict = aarddict:main']
     },
 
-    install_requires = ['PyICU >= 0.8.1', 'mwlib >= 0.8.4', 'lxml >= 2.0'],
+    install_requires = ['PyICU >= 0.8.1', 'mwlib == 0.8.4.dev', 'lxml >= 2.0'],
 
     package_data = {
         '': ['*.txt'],
