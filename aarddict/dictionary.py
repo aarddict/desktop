@@ -188,6 +188,8 @@ class Dictionary:
                 decompressed_article = decompress(compressed_article)
             except:
                 pass
+            else:
+                break
         return decompressed_article
 
     def close(self):
