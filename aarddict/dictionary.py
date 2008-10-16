@@ -20,7 +20,7 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 
 import sys
 import struct
-import bz2
+import aarddict
 import compactjson 
 from collections import defaultdict
 from itertools import chain
@@ -181,8 +181,14 @@ class Dictionary:
         file = self.file[fileno]
         file.seek(offset)
         record_length = struct.unpack(RECORD_LEN_STRUCT_FORMAT, file.read(RECORD_LEN_STRUCT_SIZE))[0]
-        raw_article = bz2.decompress(file.read(record_length))        
-        return raw_article
+        compressed_article = file.read(record_length)
+        decompressed_article = compressed_article
+        for decompress in aarddict.decompression:
+            try:
+                decompressed_article = decompress(compressed_article)
+            except:
+                pass
+        return decompressed_article
 
     def close(self):
         for f in self.file:

@@ -1,3 +1,13 @@
+import zlib
+import bz2
+    
+compression = (zlib.compress,
+               bz2.compress)
+
+decompression = (zlib.decompress,
+                 bz2.decompress)
+
+
 def main():
     try:
         import hildon
