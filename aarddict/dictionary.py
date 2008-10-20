@@ -24,6 +24,7 @@ import simplejson
 import aarddict 
 from collections import defaultdict
 from itertools import chain
+from bisect import bisect_left
 
 RECORD_LEN_STRUCT_FORMAT = '>L'
 RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
@@ -49,27 +50,14 @@ class Word:
         return self.word
 
     def __cmp__(self, other):
-        return cmp(self._key(), other._key())
+        k1 = key(self.unicode[:len(other.unicode)])
+        k2 = key(other.unicode)        
+        return cmp(k1, k2)
     
     def __unicode__(self):
         return self.unicode
-    
-    def _key(self):
-        return key(self.unicode)    
-        
-    def startswith(self, other):
-        k1 = key(self.unicode[:len(other.unicode)])
-        k2 = key(other.unicode)
-        return k1 == k2    
-
+            
 class Dictionary:         
-
-    """
-     'article_offset': '000000001704', 
-     'index1_offset': '000000000396', 
-     'index2_offset': '000000000888', 
-     'file_count': '000001', 
-    """
 
     def __init__(self, file_name):    
         self.file_name = file_name
@@ -105,6 +93,35 @@ class Dictionary:
     description = property(lambda self: self.metadata.get("description", ""))
     copyright = property(lambda self: self.metadata.get("copyright", ""))
     article_count = property(lambda self: self.metadata.get("article_count", 0))
+    
+    def __len__(self):
+        return self.article_count
+    
+    def __getitem__(self, i):
+        if 0 <= i < len(self):
+            self.file[0].seek(self.index1_offset + (i * 12))
+            keyPos, fileno, article_unit_ptr = struct.unpack(">LLL", self.file[0].read(12))
+            self.file[0].seek(self.index2_offset + keyPos)
+            keyLen = struct.unpack(">L", self.file[0].read(4))[0]
+            key = self.file[0].read(keyLen)
+            article_location = (fileno, 
+                                self.article_offset[fileno] + article_unit_ptr)
+            word = Word(key, article_location)
+            return word            
+        else:
+            raise IndexError
+    
+    def find(self, s):        
+        startword = Word(s)
+        pos = bisect_left(self, startword)
+        try:
+            while True:
+                matched_word = self[pos]
+                if matched_word != startword: break
+                yield matched_word
+                pos += 1
+        except IndexError:
+            raise StopIteration
 
     def __eq__(self, other):
         return self.key() == other.key()
@@ -129,64 +146,13 @@ class Dictionary:
         metadataString = f.read(metadataLength)
         metadata = simplejson.loads(metadataString)
         return metadata
-       
-    def find_index_entry(self, word):
-        low = 0
-        high = self.index_count
-        probe = -1
-        while True:
-            prevprobe = probe
-            probe = low + int((high-low)/2)
-            if (probe == prevprobe):
-                return low 
-            probeword = self.read_full_index_item(probe)
-            #sys.stderr.write("Probeword: %i %i<->%i %s\n" % (probe, low, high, str(probeword)))
-            if probeword == word:
-                return probe
-            elif probeword > word:
-                high = probe
-            else:
-                low = probe
-
-    def lookup(self, start_string):
-        start_word = Word(start_string)
-        next_ptr = self.find_index_entry(start_word)
-        word = self.read_full_index_item(next_ptr)
-        # the found word might not be the first with that collation key
-        while word.startswith(start_word) and (next_ptr > 0):
-            #sys.stderr.write("Back: " + str(word) + "\n")
-            next_ptr -= 1
-            word = self.read_full_index_item(next_ptr)
-        while True:
-            #sys.stderr.write("Word: " + str(word) + "\n")
-            if word.startswith(start_word):
-                yield word
-            else:
-                #sys.stderr.write("Tossed: " + str(word) + "\n")
-                if (word > start_word):
-                    raise StopIteration
-            next_ptr += 1
-            if next_ptr >= self.index_count:
-                raise StopIteration
-            word = self.read_full_index_item(next_ptr)
-
                 
-    def read_full_index_item(self, pos):
-        self.file[0].seek(self.index1_offset + (pos * 12))
-        keyPos, fileno, article_unit_ptr = struct.unpack(">LLL", self.file[0].read(12))
-        self.file[0].seek(self.index2_offset + keyPos)
-        keyLen = struct.unpack(">L", self.file[0].read(4))[0]
-        key = self.file[0].read(keyLen)
-        article_location = (fileno, 
-                            self.article_offset[fileno] + article_unit_ptr)
-        word = Word(key, article_location)
-        return word
-        
     def read_article(self, location):
         fileno, offset = location
         file = self.file[fileno]
         file.seek(offset)
-        record_length = struct.unpack(RECORD_LEN_STRUCT_FORMAT, file.read(RECORD_LEN_STRUCT_SIZE))[0]
+        record_length = struct.unpack(RECORD_LEN_STRUCT_FORMAT, 
+                                      file.read(RECORD_LEN_STRUCT_SIZE))[0]
         compressed_article = file.read(record_length)
         decompressed_article = compressed_article
         for decompress in aarddict.decompression:
@@ -265,7 +231,7 @@ class DictionaryCollection:
     def lookup(self, lang, start_word, max_from_one_dict=50):
         for dict in self.dictionaries[lang]:
             count = 0
-            for item in dict.lookup(start_word):
+            for item in dict.find(start_word):
                 yield WordLookup(item.word, dict, item.article_location)
                 count += 1
                 if count >= max_from_one_dict: break            
