@@ -24,13 +24,13 @@ import gobject
 import gtk
 import pango
 
-import compactjson 
+import simplejson 
 import article
 
 def to_article(raw_article):
     try:
         t0 = time.time()
-        text, tag_list = compactjson.loads(raw_article)
+        text, tag_list = simplejson.loads(raw_article)
         print 'Loaded json in ', time.time() - t0, ' s'
     except Exception, e:
         print e, 'was trying to load article from string:\n%s' % raw_article[:10]

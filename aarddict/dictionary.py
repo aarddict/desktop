@@ -20,8 +20,8 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 
 import sys
 import struct
-import aarddict
-import compactjson 
+import simplejson
+import aarddict 
 from collections import defaultdict
 from itertools import chain
 
@@ -64,6 +64,13 @@ class Word:
 
 class Dictionary:         
 
+    """
+     'article_offset': '000000001704', 
+     'index1_offset': '000000000396', 
+     'index2_offset': '000000000888', 
+     'file_count': '000001', 
+    """
+
     def __init__(self, file_name):    
         self.file_name = file_name
         self.file = []
@@ -71,12 +78,11 @@ class Dictionary:
         self.file.append(open(file_name, "rb"));
         self.metadata = self.get_file_metadata(self.file[0])
         self.word_list = None
-        self.index1_offset = self.metadata["index1_offset"]
-        self.index2_offset = self.metadata["index2_offset"]
+        self.index1_offset = int(self.metadata["index1_offset"])
+        self.index2_offset = int(self.metadata["index2_offset"])
         self.index_count = self.metadata["index_count"]
         self.article_count = self.metadata["article_count"]
-        self.article_offset.append(self.metadata["article_offset"])
-                
+        self.article_offset.append(int(self.metadata["article_offset"]))                
         self.index_language = self.metadata.get("index_language", "")    
         locale_index_language = Locale(self.index_language).getLanguage()
         if locale_index_language:
@@ -87,7 +93,7 @@ class Dictionary:
         if locale_article_language:
             self.article_language = locale_article_language
         
-        for i in range(1, self.metadata["file_count"]):
+        for i in range(1, int(self.metadata["file_count"])):
             self.file.append(open(file_name[:-2] + ("%02i" % i), "rb"))
             extMetadata = self.get_file_metadata(self.file[-1])
             self.article_offset.append(extMetadata["article_offset"])
@@ -121,7 +127,7 @@ class Dictionary:
             raise Exception(f.name + " is not compatible with this viewer")
         metadataLength = int(f.read(8))
         metadataString = f.read(metadataLength)
-        metadata = compactjson.loads(metadataString)
+        metadata = simplejson.loads(metadataString)
         return metadata
        
     def find_index_entry(self, word):

@@ -88,7 +88,7 @@ echo 2.0 > debian-binary
 
 tar -zcvf data.tar.gz ./usr 
 tar -zcvf control.tar.gz control postinst
-NAME="$PACKAGE"_"$VERSION"-1maemo_armel.deb
+NAME="$PACKAGE"_"$VERSION"-2maemo_armel.deb
 rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME
