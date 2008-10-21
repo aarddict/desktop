@@ -502,25 +502,25 @@ class DictViewer(object):
         articles = wordlookup.read_articles()
         word = str(wordlookup)
         self.clear_tabs()
-        for dict, article in articles:        
-            if article: 
-                article_view = self.create_article_view()
-                article_view.set_property("can-focus", False)
-                scrollable_view = create_scrolled_window(article_view)                
-                scrollable_view.set_property("can-focus", False)
-                label = gtk.Label(dict.title)
-                label.set_width_chars(6)
-                label.set_ellipsize(pango.ELLIPSIZE_START)
-                event_box = gtk.EventBox()
-                event_box.add(label)
-                event_box.connect("event", self.dict_label_callback)
-                event_box.show_all()                            
-                self.tabs.append_page(scrollable_view, event_box)
-                self.dict_key_to_tab[dict.key()] = scrollable_view
-                self.tabs.set_tab_label_packing(scrollable_view, 
-                                                True, True, gtk.PACK_START)
-                self.article_formatter.apply(dict, word, article, article_view)
-                self.add_to_history(word, lang)            
+        for article in articles:        
+            dict = article.dictionary 
+            article_view = self.create_article_view()
+            article_view.set_property("can-focus", False)
+            scrollable_view = create_scrolled_window(article_view)                
+            scrollable_view.set_property("can-focus", False)
+            label = gtk.Label(dict.title)
+            label.set_width_chars(6)
+            label.set_ellipsize(pango.ELLIPSIZE_START)
+            event_box = gtk.EventBox()
+            event_box.add(label)
+            event_box.connect("event", self.dict_label_callback)
+            event_box.show_all()                            
+            self.tabs.append_page(scrollable_view, event_box)
+            self.dict_key_to_tab[dict.key()] = scrollable_view
+            self.tabs.set_tab_label_packing(scrollable_view, 
+                                            True, True, gtk.PACK_START)
+            self.article_formatter.apply(dict, word, article, article_view)
+            self.add_to_history(word, lang)            
         self.update_copy_article_mi(self.tabs)
         self.tabs.show_all()
     
@@ -607,8 +607,8 @@ class DictViewer(object):
                 if self.lookup_stop_requested:
                     interrupted = True
                     return (lang_word_list, interrupted)
-                word_lookups.setdefault(item.word, 
-                                        dictionary.WordLookup(item.word)).add_articles(item)
+                word_lookups.setdefault(str(item), 
+                                        dictionary.WordLookup(item.word)).articles.extend(item.articles)
             word_list = word_lookups.values()
             collator = Collator.createInstance(Locale(lang))
             collator.setStrength(Collator.QUATERNARY)                        

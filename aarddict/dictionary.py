@@ -17,28 +17,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
+import functools
 
 import sys
 import struct
-import simplejson
-import aarddict 
+import logging
 from collections import defaultdict
 from itertools import chain
 from bisect import bisect_left
 
+import simplejson
+from PyICU import Locale, Collator
+
+import aarddict 
+
 RECORD_LEN_STRUCT_FORMAT = '>L'
 RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
 
-from PyICU import Locale, Collator
+
 ucollator =  Collator.createInstance(Locale(''))
 ucollator.setStrength(Collator.PRIMARY)
 
 def key(s):
     return ucollator.getCollationKey(s).getByteArray()
 
-class Word:
-    def __init__(self, word, article_location=(None, None)):
-        self.article_location = article_location            
+class Word(object):
+    def __init__(self, word):
         self.word = word
         try:
             self.unicode = self.word.decode('utf-8')
@@ -49,15 +53,136 @@ class Word:
     def __str__(self):
         return self.word
 
+    def __unicode__(self):
+        return self.unicode
+    
+    def __repr__(self):
+        return self.word
+
     def __cmp__(self, other):
         k1 = key(self.unicode[:len(other.unicode)])
         k2 = key(other.unicode)        
         return cmp(k1, k2)
     
-    def __unicode__(self):
-        return self.unicode
+
+class WordList(object):
+    
+    def __init__(self, file, offset1, offset2, length):
+        self.file = file
+        self.offset1 = offset1
+        self.offset2 = offset2
+        self.length = length
+    
+    def __len__(self):
+        return self.length
+    
+    def __getitem__(self, i):
+        if 0 <= i < len(self):
+            self.file.seek(self.offset1 + (i * 12))
+            keyPos, = struct.unpack(">L", self.file.read(4))
+            self.file.seek(self.offset2 + keyPos)
+            keyLen, = struct.unpack(">L", self.file.read(4))
+            key = self.file.read(keyLen)
+            word = Word(key)
+            return word            
+        else:
+            raise IndexError        
+
+class Article(object):
+
+    def __init__(self, title="", text="", tags=None, dictionary=None):
+        self.title = title
+        self.text = text
+        self.tags = [] if tags is None else tags
+        self.dictionary = dictionary 
+
+    def __repr__(self):        
+        tags = '\n'.join([repr(t) for t in self.tags])
+        return '%s\n%s\n%s\n%s\n%s' % (self.title.encode('utf-8'), 
+                                       '-'*50, 
+                                       self.text.encode('utf-8'), 
+                                       '='*50, 
+                                       tags) 
+    
+class Tag(object):
+
+    def __init__(self, name = "", start = -1, end = -1, attributes = None):
+        self.name = name
+        self.start = start
+        self.end = end
+        self.attributes = attributes if attributes else {}
+
+    def __repr__(self):
+        attrs = ' '.join([ '%s = %s' % attr 
+                          for attr in self.attributes.iteritems()])
+        if attrs:
+            attrs = ' ' + attrs 
+        return '<%s%s> (start %d, end %d)' % (self.name, attrs, 
+                                               self.start, self.end)        
+        
+    def toList(self):        
+        return [self.name, self.start, self.end, self.attributes]       
+
+def to_article(raw_article):
+    try:
+        text, tag_list = simplejson.loads(raw_article)
+    except:
+        logging.exception('was trying to load article from string:\n%s', raw_article[:10])
+        text = raw_article
+        tags = []
+    else:
+        tags = [Tag(name, start, end, attrs) 
+                for name, start, end, attrs in tag_list]            
+    return Article(text=text, tags=tags)
+
+class ArticleList(object):
+    
+    def __init__(self, dictionary, files, offset1, 
+                 offset2, article_offset, length):
+        self.files = files
+        self.offset1 = offset1  
+        self.offset2 = offset2 
+        self.article_offset = article_offset 
+        self.length = length
+        self.dictionary = dictionary
+        
+    def __len__(self):
+        return self.length
+    
+    def __getitem__(self, word_pos):
+        if 0 <= word_pos < len(self):
+            self.files[0].seek(self.offset1 + (word_pos * 12))
+            keyPos, fileno, article_unit_ptr = struct.unpack(">LLL", self.files[0].read(12))
+            self.files[0].seek(self.offset2 + keyPos)
+            keyLen = struct.unpack(">L", self.files[0].read(4))[0]
+            key = self.files[0].read(keyLen)
+            article_location = (fileno, 
+                                self.article_offset[fileno] + article_unit_ptr)            
+            return functools.partial(self.read_article, article_location)
+        else:
+            raise IndexError        
+        
+    def read_article(self, location):
+        fileno, offset = location
+        file = self.files[fileno]
+        file.seek(offset)
+        record_length = struct.unpack(RECORD_LEN_STRUCT_FORMAT, 
+                                      file.read(RECORD_LEN_STRUCT_SIZE))[0]
+        compressed_article = file.read(record_length)
+        decompressed_article = compressed_article
+        for decompress in aarddict.decompression:
+            try:
+                decompressed_article = decompress(compressed_article)
+            except:
+                pass
+            else:
+                break
+        article = to_article(decompressed_article)
+        article.dictionary = self.dictionary
+        return article 
             
-class Dictionary:         
+            
+class Dictionary(object):         
 
     def __init__(self, file_name):    
         self.file_name = file_name
@@ -65,7 +190,6 @@ class Dictionary:
         self.article_offset = []
         self.file.append(open(file_name, "rb"));
         self.metadata = self.get_file_metadata(self.file[0])
-        self.word_list = None
         self.index1_offset = int(self.metadata["index1_offset"])
         self.index2_offset = int(self.metadata["index2_offset"])
         self.index_count = self.metadata["index_count"]
@@ -88,41 +212,38 @@ class Dictionary:
             if extMetadata["timestamp"] != self.metadata["timestamp"]:
                 raise Exception(self.file[-1].name() + " has a timestamp different from self.file[0].name()")
             
+        self.words = WordList(self.file[0], 
+                              self.index1_offset, 
+                              self.index2_offset, 
+                              self.index_count)
+        
+        self.articles = ArticleList(self,
+                                    self.file,
+                                    self.index1_offset, 
+                                    self.index2_offset, 
+                                    self.article_offset,
+                                    self.index_count)                                
+            
     title = property(lambda self: self.metadata.get("title", ""))
     version = property(lambda self: self.metadata.get("aarddict_version", ""))
     description = property(lambda self: self.metadata.get("description", ""))
-    copyright = property(lambda self: self.metadata.get("copyright", ""))
-    article_count = property(lambda self: self.metadata.get("article_count", 0))
+    copyright = property(lambda self: self.metadata.get("copyright", ""))    
     
     def __len__(self):
-        return self.article_count
+        return self.index_count
     
-    def __getitem__(self, i):
-        if 0 <= i < len(self):
-            self.file[0].seek(self.index1_offset + (i * 12))
-            keyPos, fileno, article_unit_ptr = struct.unpack(">LLL", self.file[0].read(12))
-            self.file[0].seek(self.index2_offset + keyPos)
-            keyLen = struct.unpack(">L", self.file[0].read(4))[0]
-            key = self.file[0].read(keyLen)
-            article_location = (fileno, 
-                                self.article_offset[fileno] + article_unit_ptr)
-            word = Word(key, article_location)
-            return word            
-        else:
-            raise IndexError
-    
-    def find(self, s):        
+    def __getitem__(self, s):        
         startword = Word(s)
-        pos = bisect_left(self, startword)
+        pos = bisect_left(self.words, startword)
         try:
             while True:
-                matched_word = self[pos]
+                matched_word = self.words[pos]
                 if matched_word != startword: break
-                yield matched_word
+                yield matched_word, self.articles[pos]
                 pos += 1
         except IndexError:
-            raise StopIteration
-
+            raise StopIteration        
+        
     def __eq__(self, other):
         return self.key() == other.key()
     
@@ -145,24 +266,7 @@ class Dictionary:
         metadataLength = int(f.read(8))
         metadataString = f.read(metadataLength)
         metadata = simplejson.loads(metadataString)
-        return metadata
-                
-    def read_article(self, location):
-        fileno, offset = location
-        file = self.file[fileno]
-        file.seek(offset)
-        record_length = struct.unpack(RECORD_LEN_STRUCT_FORMAT, 
-                                      file.read(RECORD_LEN_STRUCT_SIZE))[0]
-        compressed_article = file.read(record_length)
-        decompressed_article = compressed_article
-        for decompress in aarddict.decompression:
-            try:
-                decompressed_article = decompress(compressed_article)
-            except:
-                pass
-            else:
-                break
-        return decompressed_article
+        return metadata                
 
     def close(self):
         for f in self.file:
@@ -174,31 +278,24 @@ class DictFormatError(Exception):
     def __str__(self):
         return repr(self.value)      
 
-class WordLookup:
-    def __init__(self, word, dict=None, article_ptr=None):
+class WordLookup(object):
+    def __init__(self, word, article=None):
         self.word = word
-        self.lookup = {}
-        if dict and article_ptr:
-            self.add_article(dict, article_ptr)
-        
-    def add_article(self, dict, article_ptr):
-        self.lookup[dict] = article_ptr
-        
-    def add_articles(self, other):
-        self.lookup.update(other.lookup)        
-        
+        self.articles = []
+        if article:
+            self.articles.append(article)
+                
     def __str__(self):
-        return self.word
+        return str(self.word)
 
     def __repr__(self):
         return self.word
     
     def __unicode__(self):
-        return self.word.decode('utf-8')
+        return unicode(self.word)
         
     def read_articles(self):
-        return [(dict,dict.read_article(article_ptr)) 
-                for dict, article_ptr in self.lookup.iteritems()]
+        return [article() for article in self.articles]
         
 class DictionaryCollection:
     
@@ -229,9 +326,9 @@ class DictionaryCollection:
         return self.dictionaries.keys()
     
     def lookup(self, lang, start_word, max_from_one_dict=50):
-        for dict in self.dictionaries[lang]:
+        for dictionary in self.dictionaries[lang]:
             count = 0
-            for item in dict.find(start_word):
-                yield WordLookup(item.word, dict, item.article_location)
+            for word, article in dictionary[start_word]:
+                yield WordLookup(word, article)
                 count += 1
                 if count >= max_from_one_dict: break            

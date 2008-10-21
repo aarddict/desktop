@@ -18,29 +18,11 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 
 import threading
-import time
- 
+
 import gobject 
 import gtk
 import pango
-
 import simplejson 
-import article
-
-def to_article(raw_article):
-    try:
-        t0 = time.time()
-        text, tag_list = simplejson.loads(raw_article)
-        print 'Loaded json in ', time.time() - t0, ' s'
-    except Exception, e:
-        print e, 'was trying to load article from string:\n%s' % raw_article[:10]
-        text = raw_article
-        tags = []
-    else:
-        tags = [article.Tag(name, start, end, attrs) 
-                for name, start, end, attrs in tag_list]            
-    return article.Article(text=text, tags=tags)
-
 
 class FormattingStoppedException(Exception):
     def __init__(self):
@@ -101,9 +83,8 @@ class ArticleFormat:
         
     def create_tagged_text_buffer(self, dict, raw_article, article_view):
         text_buffer = self.create_article_text_buffer()
-        a = to_article(raw_article)
-        text_buffer.set_text(a.text)
-        tags = a.tags
+        text_buffer.set_text(raw_article.text)
+        tags = raw_article.tags
         for tag in tags:
             start = text_buffer.get_iter_at_offset(tag.start)
             end = text_buffer.get_iter_at_offset(tag.end)
