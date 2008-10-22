@@ -120,9 +120,6 @@ class Tag(object):
         return '<%s%s> (start %d, end %d)' % (self.name, attrs, 
                                                self.start, self.end)        
         
-    def toList(self):        
-        return [self.name, self.start, self.end, self.attributes]       
-
 def to_article(raw_article):
     try:
         text, tag_list = simplejson.loads(raw_article)
