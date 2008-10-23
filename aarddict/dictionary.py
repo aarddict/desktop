@@ -34,7 +34,6 @@ import aarddict
 RECORD_LEN_STRUCT_FORMAT = '>L'
 RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
 
-
 ucollator =  Collator.createInstance(Locale(''))
 ucollator.setStrength(Collator.PRIMARY)
 
@@ -134,11 +133,9 @@ def to_article(raw_article):
 
 class ArticleList(object):
     
-    def __init__(self, dictionary, files, offset1, 
-                 offset2, article_offset, length):
+    def __init__(self, dictionary, files, offset1, article_offset, length):
         self.files = files
         self.offset1 = offset1  
-        self.offset2 = offset2 
         self.article_offset = article_offset 
         self.length = length
         self.dictionary = dictionary
@@ -150,9 +147,6 @@ class ArticleList(object):
         if 0 <= word_pos < len(self):
             self.files[0].seek(self.offset1 + (word_pos * 12))
             keyPos, fileno, article_unit_ptr = struct.unpack(">LLL", self.files[0].read(12))
-            self.files[0].seek(self.offset2 + keyPos)
-            keyLen = struct.unpack(">L", self.files[0].read(4))[0]
-            key = self.files[0].read(keyLen)
             article_location = (fileno, 
                                 self.article_offset[fileno] + article_unit_ptr)            
             return functools.partial(self.read_article, article_location)
@@ -217,7 +211,6 @@ class Dictionary(object):
         self.articles = ArticleList(self,
                                     self.file,
                                     self.index1_offset, 
-                                    self.index2_offset, 
                                     self.article_offset,
                                     self.index_count)                                
             
