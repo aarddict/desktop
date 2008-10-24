@@ -46,8 +46,6 @@ gobject.threads_init()
 version = "0.7.0"
 app_name = "Aard Dictionary"
 
-UPDATE_COMPLETION_TIMEOUT_S = 120.0
-UPDATE_COMPLETION_TIMEOUT_CHECK_MS = 5000
 STATUS_MESSAGE_TRUNCATE_LEN = 60
 
 def create_scrolled_window(widget):
@@ -327,8 +325,6 @@ class DictViewer(object):
         update_completion_thread = Thread(target = self.update_completion_worker)
         update_completion_thread.setDaemon(True)
         update_completion_thread.start()
-        gobject.timeout_add(UPDATE_COMPLETION_TIMEOUT_CHECK_MS, 
-                            self.check_update_completion_timeout)
                  
     def update_copy_article_mi(self, notebook = None, child = None, page_num = None):
         self.mi_copy_article_to_clipboard.set_sensitive(notebook.get_n_pages() > 0)
@@ -573,15 +569,6 @@ class DictViewer(object):
             self.update_completion_q.join()
             self.lookup_stop_requested = False
             self.statusbar.remove(self.update_completion_ctx_id, message_id)
-
-    def check_update_completion_timeout(self):
-        if self.update_completion_t0:
-            elapsed = time.time() - self.update_completion_t0
-            if elapsed > UPDATE_COMPLETION_TIMEOUT_S:
-                self.stop_lookup()
-                self.statusbar.push(self.update_completion_timeout_ctx_id, 
-                                    'Lookup stopped: it was taking too long')
-        return True     
     
     def update_completion_worker(self):
         while True:
