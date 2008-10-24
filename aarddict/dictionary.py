@@ -233,6 +233,11 @@ class Dictionary(object):
                 pos += 1
         except IndexError:
             raise StopIteration        
+
+    def __contains__(self, s):
+        for item in self[s]:
+            return True
+        return False
         
     def __eq__(self, other):
         return self.key() == other.key()
