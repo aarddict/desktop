@@ -46,8 +46,6 @@ gobject.threads_init()
 version = "0.7.0"
 app_name = "Aard Dictionary"
 
-STATUS_MESSAGE_TRUNCATE_LEN = 60
-
 def create_scrolled_window(widget):
     scrolled_window = gtk.ScrolledWindow()
     scrolled_window.set_shadow_type(gtk.SHADOW_IN)
@@ -242,11 +240,6 @@ class DictViewer(object):
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
         
-        self.statusbar = gtk.Statusbar()
-        self.statusbar.set_has_resize_grip(False)
-        self.update_completion_ctx_id = self.statusbar.get_context_id("update completion")
-        self.update_completion_timeout_ctx_id = self.statusbar.get_context_id("update completion timeout")
-
         self.article_formatter = articleformat.ArticleFormat(self.word_ref_clicked, self.external_link_callback)
         
         self.start_worker_threads()
@@ -282,8 +275,6 @@ class DictViewer(object):
 #        self.tabs.connect("page-removed", self.update_copy_article_mi)
         self.split_pane.add(self.tabs)
         
-        contentBox.pack_start(self.statusbar, False, True, 0)
-                        
         self.add_content(contentBox)
         self.update_title()
         self.window.show_all()
@@ -563,12 +554,9 @@ class DictViewer(object):
     
     def stop_lookup(self):
         if not self.update_completion_stopped:
-            message_id = self.statusbar.push(self.update_completion_ctx_id, 
-                                             'Stopping current lookup...')
             self.lookup_stop_requested = True
             self.update_completion_q.join()
             self.lookup_stop_requested = False
-            self.statusbar.remove(self.update_completion_ctx_id, message_id)
     
     def update_completion_worker(self):
         while True:
@@ -605,28 +593,15 @@ class DictViewer(object):
         return (lang_word_list, interrupted)
     
     def update_completion(self, word, to_select = None):
-        self.statusbar.pop(self.update_completion_ctx_id) 
-        self.statusbar.pop(self.update_completion_timeout_ctx_id)
         self.word_completion.foreach(lambda s : s.child.get_model().clear())
         self.stop_lookup()
         word = word.lstrip()
         if word and len(word) > 0:
-            self.statusbar.push(self.update_completion_ctx_id, 
-                                'Looking up "%s"...' % word)
             self.update_completion_q.put((word, to_select))  
         return False
     
     def update_completion_callback(self, lang_word_list, to_select, 
                                    start_word, lookup_time):
-        self.statusbar.pop(self.update_completion_ctx_id)  
-        msg_params = (start_word, lookup_time) 
-        statusmsg = '%s: looked up in %.2f s' % msg_params
-        count = 0  
-        for word_list in lang_word_list.itervalues():
-            count += len(word_list)
-        if count == 0: 
-            statusmsg += ', nothing found'
-        self.statusbar.push(self.update_completion_ctx_id, statusmsg) 
         for lang in lang_word_list.iterkeys():
             word_list = self.word_completion.word_list(lang)
             model = word_list.get_model()
