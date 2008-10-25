@@ -596,8 +596,7 @@ class DictViewer(object):
         self.word_completion.foreach(lambda s : s.child.get_model().clear())
         self.stop_lookup()
         word = word.lstrip()
-        if word and len(word) > 0:
-            self.update_completion_q.put((word, to_select))  
+        self.update_completion_q.put((word, to_select))  
         return False
     
     def update_completion_callback(self, lang_word_list, to_select, 
