@@ -12,18 +12,11 @@ setup(
     version = '0.7.0',
     packages = find_packages(),
     entry_points = {
-        'console_scripts': ['aardcompile = aardtools.compiler:main'],                   
         'gui_scripts': ['aarddict = aarddict:main']
     },
 
     install_requires = ['PyICU >= 0.8.1', 
-                        'mwlib == 0.8.4.dev', 
-                        'lxml >= 2.0', 
                         'simplejson'],
-
-    package_data = {
-        '': ['*.txt'],
-    },
 
     data_files   =     
     [
