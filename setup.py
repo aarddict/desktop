@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-import aarddict.ui
 import sys, os
 
 # files to install
@@ -10,7 +9,7 @@ inst_desktop    = [ '../desktop/aarddict.desktop']
 
 setup(
     name = "aarddict",
-    version = aarddict.ui.version,
+    version = '0.7.0',
     packages = find_packages(),
     entry_points = {
         'console_scripts': ['aardcompile = aardtools.compiler:main'],                   
