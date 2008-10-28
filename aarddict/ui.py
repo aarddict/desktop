@@ -244,12 +244,14 @@ class WordLookup(object):
     def articles(self):
         return [func() for func in self.read_funcs]
     
+class LookupCanceled(Exception):        
+    pass
+
 class DictViewer(object):
              
     def __init__(self):
         self.select_word_exact = functools.partial(self.__select_word, eq_func = self.__exact_eq)
         self.select_word_weak = functools.partial(self.__select_word, eq_func = self.__weak_eq)
-        self.update_completion_stopped = True
         self.lookup_stop_requested = False
         self.update_completion_t0 = None
         self.status_display = None
@@ -575,7 +577,6 @@ class DictViewer(object):
         return (selected_word, selected_lang)
     
     def stop_lookup(self):
-        if not self.update_completion_stopped:
             self.lookup_stop_requested = True
             self.update_completion_q.join()
             self.lookup_stop_requested = False
@@ -584,25 +585,24 @@ class DictViewer(object):
         while True:
             start_word, to_select = self.update_completion_q.get()
             self.update_completion_t0 = time.time()
-            self.update_completion_stopped = False
-            lang_word_list, interrupted = self.do_lookup(start_word, to_select)
-            if not interrupted:
+            try:
+                lang_word_list = self.do_lookup(start_word, to_select)
+            except LookupCanceled():
+                pass
+            else:                                
                 gobject.idle_add(self.update_completion_callback, 
                                  lang_word_list, to_select, start_word, 
                                  time.time() - self.update_completion_t0)
             self.update_completion_t0 = None
-            self.update_completion_stopped = True
             self.update_completion_q.task_done()
 
     def do_lookup(self, start_word, to_select):
-        interrupted = False
         lang_word_list = defaultdict(list)
 
         for item in self.dictionaries.lookup(start_word):
             time.sleep(0)
             if self.lookup_stop_requested:
-                interrupted = True
-                return (lang_word_list, interrupted)
+                raise LookupCanceled()
             lang_word_list[item.source.index_language].append(item)
         
         for lang, articles in lang_word_list.iteritems():
@@ -612,7 +612,7 @@ class DictViewer(object):
             articles.sort(key=key)
             lang_word_list[lang] =  [WordLookup(list(g)) for k, g in 
                                      groupby(articles, key)] 
-        return (lang_word_list, interrupted)
+        return lang_word_list
     
     def update_completion(self, word, to_select = None):
         self.word_completion.foreach(lambda s : s.child.get_model().clear())
