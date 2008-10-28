@@ -1030,11 +1030,13 @@ class DictViewer(object):
     def add_dict(self, dict):
         if dict in self.dictionaries: 
             return
-        self.last_dict_file_location = dict.file_name
         self.dictionaries.append(dict)
-        gobject.idle_add(self.word_completion.add_lang, dict.index_language)
-        gobject.idle_add(self.add_to_menu_remove, dict)
-        gobject.idle_add(self.update_title)
+        def add():
+            self.last_dict_file_location = dict.file_name
+            self.word_completion.add_lang(dict.index_language)
+            self.add_to_menu_remove(dict)
+            self.update_title()
+        gobject.idle_add(add)
         
     def remove_dict(self, dict):          
         word, lang = self.get_selected_word()
