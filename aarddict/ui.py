@@ -24,6 +24,8 @@ from xml.sax.saxutils import escape
 from threading import Thread
 from Queue import Queue
 from math import fabs
+from collections import defaultdict
+from itertools import groupby
 
 from PyICU import Locale, Collator
 
@@ -221,6 +223,26 @@ class ArticleView(gtk.TextView):
         for handler in handlers:
             obj.disconnect(handler)
         obj.set_data("handlers", None)
+
+class WordLookup(object):
+    def __init__(self, read_funcs):
+        if read_funcs:            
+            self.word = read_funcs[0].title
+        else:
+            self.word = u''  
+        self.read_funcs = read_funcs
+                
+    def __str__(self):
+        return self.word.encode('utf-8')
+
+    def __repr__(self):
+        return str(self)
+    
+    def __unicode__(self):
+        return self.word
+        
+    def articles(self):
+        return [func() for func in self.read_funcs]
     
 class DictViewer(object):
              
@@ -486,11 +508,11 @@ class DictViewer(object):
         return False 
         
     def show_article_for(self, wordlookup, lang = None):
-        articles = wordlookup.read_articles()
+        articles = wordlookup.articles()
         word = str(wordlookup)
         self.clear_tabs()
         for article in articles:        
-            dict = article.dictionary 
+            dict = article.source 
             article_view = self.create_article_view()
             article_view.set_property("can-focus", False)
             scrollable_view = create_scrolled_window(article_view)                
@@ -574,22 +596,22 @@ class DictViewer(object):
 
     def do_lookup(self, start_word, to_select):
         interrupted = False
-        lang_word_list = {}
-        for lang in self.dictionaries.langs():
-            word_lookups = {}
-            for item in self.dictionaries.lookup(lang, start_word):
-                time.sleep(0)
-                if self.lookup_stop_requested:
-                    interrupted = True
-                    return (lang_word_list, interrupted)
-                word_lookups.setdefault(str(item), 
-                                        dictionary.WordLookup(item.word)).articles.extend(item.articles)
-            word_list = word_lookups.values()
+        lang_word_list = defaultdict(list)
+
+        for item in self.dictionaries.lookup(start_word):
+            time.sleep(0)
+            if self.lookup_stop_requested:
+                interrupted = True
+                return (lang_word_list, interrupted)
+            lang_word_list[item.source.index_language].append(item)
+        
+        for lang, articles in lang_word_list.iteritems():
             collator = Collator.createInstance(Locale(lang))
-            collator.setStrength(Collator.QUATERNARY)                        
-            word_list.sort(cmp=(lambda w1, w2: 
-                                collator.compare(unicode(w1), unicode(w2))))
-            if len (word_list) > 0: lang_word_list[lang] = word_list
+            collator.setStrength(Collator.QUATERNARY)
+            key = lambda a: collator.getCollationKey(a.title).getByteArray()
+            articles.sort(key=key)
+            lang_word_list[lang] =  [WordLookup(list(g)) for k, g in 
+                                     groupby(articles, key)] 
         return (lang_word_list, interrupted)
     
     def update_completion(self, word, to_select = None):

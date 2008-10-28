@@ -19,7 +19,6 @@ Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
 import functools
 
-import sys
 import struct
 import logging
 from collections import defaultdict
@@ -33,6 +32,8 @@ import aarddict
 
 RECORD_LEN_STRUCT_FORMAT = '>L'
 RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
+INDEX_ITEM_STRUCT_FORMAT = '>LLL'
+INDEX_ITEM_STRUCT_SIZE = struct.calcsize(INDEX_ITEM_STRUCT_FORMAT)
 
 ucollator =  Collator.createInstance(Locale(''))
 ucollator.setStrength(Collator.PRIMARY)
@@ -43,11 +44,7 @@ def key(s):
 class Word(object):
     def __init__(self, word):
         self.word = word
-        try:
-            self.unicode = self.word.decode('utf-8')
-        except UnicodeDecodeError:
-            self.unicode = u"error"
-            sys.stderr.write("Unable to decode: %s\n" % repr(self.word))
+        self.unicode = self.word.decode('utf-8')
 
     def __str__(self):
         return self.word
@@ -133,9 +130,10 @@ def to_article(raw_article):
 
 class ArticleList(object):
     
-    def __init__(self, dictionary, files, offset1, article_offset, length):
+    def __init__(self, dictionary, files, offset1, offset2, article_offset, length):
         self.files = files
         self.offset1 = offset1  
+        self.offset2 = offset2
         self.article_offset = article_offset 
         self.length = length
         self.dictionary = dictionary
@@ -145,11 +143,18 @@ class ArticleList(object):
     
     def __getitem__(self, word_pos):
         if 0 <= word_pos < len(self):
-            self.files[0].seek(self.offset1 + (word_pos * 12))
-            keyPos, fileno, article_unit_ptr = struct.unpack(">LLL", self.files[0].read(12))
+            self.files[0].seek(self.offset1 + (word_pos * INDEX_ITEM_STRUCT_SIZE))
+            keyPos, fileno, article_unit_ptr = struct.unpack(INDEX_ITEM_STRUCT_FORMAT, 
+                                                             self.files[0].read(INDEX_ITEM_STRUCT_SIZE))
+            self.files[0].seek(self.offset2 + keyPos)
+            keyLen, = struct.unpack(">L", self.files[0].read(4))
+            key = self.files[0].read(keyLen)            
             article_location = (fileno, 
                                 self.article_offset[fileno] + article_unit_ptr)            
-            return functools.partial(self.read_article, article_location)
+            article_func = functools.partial(self.read_article, article_location)
+            article_func.title = key.decode('utf-8')
+            article_func.source = self.dictionary
+            return article_func
         else:
             raise IndexError        
         
@@ -157,8 +162,8 @@ class ArticleList(object):
         fileno, offset = location
         file = self.files[fileno]
         file.seek(offset)
-        record_length = struct.unpack(RECORD_LEN_STRUCT_FORMAT, 
-                                      file.read(RECORD_LEN_STRUCT_SIZE))[0]
+        record_length, = struct.unpack(RECORD_LEN_STRUCT_FORMAT, 
+                                      file.read(RECORD_LEN_STRUCT_SIZE))
         compressed_article = file.read(record_length)
         decompressed_article = compressed_article
         for decompress in aarddict.decompression:
@@ -169,7 +174,7 @@ class ArticleList(object):
             else:
                 break
         article = to_article(decompressed_article)
-        article.dictionary = self.dictionary
+        article.source = self.dictionary
         return article 
             
             
@@ -210,7 +215,8 @@ class Dictionary(object):
         
         self.articles = ArticleList(self,
                                     self.file,
-                                    self.index1_offset, 
+                                    self.index1_offset,
+                                    self.index2_offset,
                                     self.article_offset,
                                     self.index_count)                                
             
@@ -229,7 +235,7 @@ class Dictionary(object):
             while True:
                 matched_word = self.words[pos]
                 if matched_word != startword: break
-                yield matched_word, self.articles[pos]
+                yield self.articles[pos]
                 pos += 1
         except IndexError:
             raise StopIteration        
@@ -273,24 +279,6 @@ class DictFormatError(Exception):
     def __str__(self):
         return repr(self.value)      
 
-class WordLookup(object):
-    def __init__(self, word, article=None):
-        self.word = word
-        self.articles = []
-        if article:
-            self.articles.append(article)
-                
-    def __str__(self):
-        return str(self.word)
-
-    def __repr__(self):
-        return self.word
-    
-    def __unicode__(self):
-        return unicode(self.word)
-        
-    def read_articles(self):
-        return [article() for article in self.articles]
         
 class DictionaryCollection:
     
@@ -320,10 +308,10 @@ class DictionaryCollection:
     def langs(self):
         return self.dictionaries.keys()
     
-    def lookup(self, lang, start_word, max_from_one_dict=50):
-        for dictionary in self.dictionaries[lang]:
+    def lookup(self, start_word, max_from_one_dict=50):
+        for dictionary in self.all():
             count = 0
-            for word, article in dictionary[start_word]:
-                yield WordLookup(word, article)
+            for article in dictionary[start_word]:
+                yield article
                 count += 1
                 if count >= max_from_one_dict: break            
