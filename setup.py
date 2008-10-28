@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 import sys, os
 
 # files to install
-inst_icons_26   = [ '../icons/hicolor/26x26/hildon/aarddict.png' ]
-inst_icons_40   = [ '../icons/hicolor/40x40/hildon/aarddict.png' ]
-inst_icons_64   = [ '../icons/hicolor/scalable/hildon/aarddict.png' ]
-inst_desktop    = [ '../desktop/aarddict.desktop']
+inst_icons_26   = [ 'icons/hicolor/26x26/hildon/aarddict.png' ]
+inst_icons_40   = [ 'icons/hicolor/40x40/hildon/aarddict.png' ]
+inst_icons_64   = [ 'icons/hicolor/scalable/hildon/aarddict.png' ]
+inst_desktop    = [ 'desktop/aarddict.desktop']
 
 setup(
     name = "aarddict",
