@@ -280,36 +280,13 @@ class DictFormatError(Exception):
         return repr(self.value)      
 
         
-class DictionaryCollection:
-    
-    def __init__(self):
-        self.dictionaries = defaultdict(list)
-    
-    def add(self, dict):
-        self.dictionaries[dict.index_language].append(dict)
-        
-    def has(self, dict):
-        lang_dicts = self.dictionaries[dict.index_language]
-        return lang_dicts.count(dict) == 1
-    
-    def remove(self, dict):     
-        word_lang = dict.index_language   
-        self.dictionaries[word_lang].remove(dict)
-        if len(self.dictionaries[word_lang]) == 0:
-            del self.dictionaries[word_lang]
-    
-    def __len__(self):
-        lengths = [len(l) for l in self.dictionaries.itervalues()]
-        return reduce(lambda x, y: x + y, lengths, 0)
-        
-    def all(self):
-        return chain(*self.dictionaries.itervalues())
+class DictionaryCollection(list):
     
     def langs(self):
-        return self.dictionaries.keys()
+        return set([d.index_language for d in self])
     
     def lookup(self, start_word, max_from_one_dict=50):
-        for dictionary in self.all():
+        for dictionary in self:
             count = 0
             for article in dictionary[start_word]:
                 yield article

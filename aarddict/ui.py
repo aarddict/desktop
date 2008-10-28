@@ -355,7 +355,7 @@ class DictViewer(object):
         self.word_input.get_model().foreach(self.history_to_list, history)
         selected_word, selected_word_lang = self.get_selected_word()
         selected = (str(selected_word), selected_word_lang)
-        dict_files = [dict.file_name for dict in self.dictionaries.all()]
+        dict_files = [dict.file_name for dict in self.dictionaries]
         if self.phonetic_font_desc:
             self.appstate['phonetic-font'] = self.phonetic_font_desc.to_string()
         self.appstate['word'] = word
@@ -370,7 +370,7 @@ class DictViewer(object):
             lang_positions[page.lang] = self.word_completion.page_num(page)
         self.appstate['lang-positions'] = lang_positions
         errors = []
-        for dict in self.dictionaries.all():
+        for dict in self.dictionaries:
             try:
                 dict.close()
             except Exception, e:
@@ -1028,10 +1028,10 @@ class DictViewer(object):
         dlg.destroy()
     
     def add_dict(self, dict):
-        if (self.dictionaries.has(dict)):
+        if dict in self.dictionaries: 
             return
         self.last_dict_file_location = dict.file_name
-        self.dictionaries.add(dict)
+        self.dictionaries.append(dict)
         gobject.idle_add(self.word_completion.add_lang, dict.index_language)
         gobject.idle_add(self.add_to_menu_remove, dict)
         gobject.idle_add(self.update_title)
@@ -1066,7 +1066,7 @@ class DictViewer(object):
         return None
 
     def show_dict_info(self, widget):        
-        info_dialog = dictinfo.DictInfoDialog(self.dictionaries.all(), 
+        info_dialog = dictinfo.DictInfoDialog(self.dictionaries, 
                                               parent = self.window)
         info_dialog.run()
         info_dialog.destroy()
