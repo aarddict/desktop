@@ -183,14 +183,14 @@ class Dictionary(object):
     def __init__(self, file_name):    
         self.file_name = file_name
         self.file = []
-        self.article_offset = []
+        article_offset = []
         self.file.append(open(file_name, "rb"));
         self.metadata = self.get_file_metadata(self.file[0])
-        self.index1_offset = int(self.metadata["index1_offset"])
-        self.index2_offset = int(self.metadata["index2_offset"])
+        index1_offset = int(self.metadata["index1_offset"])
+        index2_offset = int(self.metadata["index2_offset"])
         self.index_count = self.metadata["index_count"]
         self.article_count = self.metadata["article_count"]
-        self.article_offset.append(int(self.metadata["article_offset"]))                
+        article_offset.append(int(self.metadata["article_offset"]))                
         self.index_language = self.metadata.get("index_language", "")    
         locale_index_language = Locale(self.index_language).getLanguage()
         if locale_index_language:
@@ -204,20 +204,20 @@ class Dictionary(object):
         for i in range(1, int(self.metadata["file_count"])):
             self.file.append(open(file_name[:-2] + ("%02i" % i), "rb"))
             extMetadata = self.get_file_metadata(self.file[-1])
-            self.article_offset.append(extMetadata["article_offset"])
+            article_offset.append(extMetadata["article_offset"])
             if extMetadata["timestamp"] != self.metadata["timestamp"]:
                 raise Exception(self.file[-1].name() + " has a timestamp different from self.file[0].name()")
             
         self.words = WordList(self.file[0], 
-                              self.index1_offset, 
-                              self.index2_offset, 
+                              index1_offset, 
+                              index2_offset, 
                               self.index_count)
         
         self.articles = ArticleList(self,
                                     self.file,
-                                    self.index1_offset,
-                                    self.index2_offset,
-                                    self.article_offset,
+                                    index1_offset,
+                                    index2_offset,
+                                    article_offset,
                                     self.index_count)                                
             
     title = property(lambda self: self.metadata.get("title", ""))
