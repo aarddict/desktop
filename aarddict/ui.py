@@ -332,38 +332,12 @@ class DictViewer(object):
             self.config = Config()            
             self.config.readfp(open(os.path.join(os.path.dirname(__file__), 
                                                  'defaults.cfg')))
-            self.config.read(os.path.expanduser(filename))
-            
-            """            
-            [dictionaries]
-            1 = /dists/asdasd
-            2 = /dists/fghfgh
-            3 = /dists/sdfsdf
-            
-            [ui]
-            show-word-list = True
-            drag-selects = 
-            last-dict-file-location =
-            phonetic-font =
-            full-screen = False
-            max-words-per-dict = 50
-            lookup-delay = 600
-            article-delay = 200
-            input-word =
-            langs = en ru pt
-                        
-            [selection]
-            en = abc 
-            ru = aksdjkljklasjd 
-                        
-            [history]
-            0 = ru sdfsdfsdf                             
-            1 = en sadfsdf
-            
-            """
-                    
+            self.config.read(os.path.expanduser(filename))                                
             if self.config.has_option('ui', 'input-word'):            
                 self.set_word_input(self.config.get('ui', 'input-word'))
+            self.lookup_delay = self.config.getint('ui', 'lookup-delay')
+            self.article_delay = self.config.getint('ui', 'article-delay')
+            self.max_words_per_dict = self.config.getint('ui', 'max-words-per-dict')
             dict_files = self.config.getlist('dictionaries')
             self.open_dicts(dict_files)
             history = self.config.getlist('history')
@@ -612,7 +586,7 @@ class DictViewer(object):
             return
         model, iter = selection.get_selected()        
         word = model[iter][0]
-        self.schedule(self.show_article_for, 200, word, lang)
+        self.schedule(self.show_article_for, self.article_delay, word, lang)
     
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
@@ -638,9 +612,9 @@ class DictViewer(object):
         return (selected_word, selected_lang)
     
     def stop_lookup(self):
-            self.lookup_stop_requested = True
-            self.update_completion_q.join()
-            self.lookup_stop_requested = False
+        self.lookup_stop_requested = True
+        self.update_completion_q.join()
+        self.lookup_stop_requested = False
     
     def update_completion_worker(self):
         while True:
@@ -660,7 +634,8 @@ class DictViewer(object):
     def do_lookup(self, start_word, to_select):
         lang_word_list = defaultdict(list)
 
-        for item in self.dictionaries.lookup(start_word):
+        for item in self.dictionaries.lookup(start_word, 
+                                             max_from_one_dict=self.max_words_per_dict):
             time.sleep(0)
             if self.lookup_stop_requested:
                 raise LookupCanceled()
@@ -759,7 +734,7 @@ class DictViewer(object):
         if active == -1:
             self.clear_tabs();
             self.schedule(self.update_completion, 
-                          600, 
+                          self.lookup_delay, 
                           self.word_input.child.get_text())            
             return
         word, lang = self.word_input.get_model()[active]
