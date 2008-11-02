@@ -21,8 +21,6 @@ import functools
 
 import struct
 import logging
-from collections import defaultdict
-from itertools import chain
 from bisect import bisect_left
 
 import simplejson

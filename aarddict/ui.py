@@ -342,7 +342,7 @@ class DictViewer(object):
             self.open_dicts(dict_files)
             history = self.config.getlist('history')
             history = [s.split(' ', 1) for s in history]            
-            [self.add_to_history(w, l) for w, l in history[::-1]]
+            [self.add_to_history(w, l) for l, w in history[::-1]]
             self.set_phonetic_font(self.config.get('ui', 'phonetic-font'))
             self.last_dict_file_location = self.config.get('ui', 'last-dict-file-location')
             self.mi_drag_selects.set_active(self.config.getboolean('ui', 'drag-selects'))
