@@ -1,5 +1,9 @@
 from setuptools import setup, find_packages
 import sys, os
+try:
+    import py2exe
+except:
+    print 'py2exe is not installed'
 
 # files to install
 inst_icons_26   = [ 'icons/hicolor/26x26/hildon/aarddict.png' ]
@@ -11,6 +15,12 @@ setup(
     name = "aarddict",
     version = '0.7.0',
     packages = find_packages(),
+    scripts=['aarddict.py'],
+    windows=[{
+        'script': 'aarddict.py',
+        }
+    ], 
+       
     entry_points = {
         'gui_scripts': ['aarddict = aarddict:main']
     },
@@ -42,6 +52,15 @@ setup(
                  'License :: OSI Approved :: GNU General Public License (GPL)',
                  'Topic :: Utilities',
                  'Environment :: X11 Applications :: GTK'
-    ]    
+    ],
+    options = {
+        'py2exe' : {
+            'packages': 'encodings',
+            'includes': 'cairo, pango, pangocairo, atk, gobject',
+            },
+        'sdist': {
+            'formats': 'zip',
+            }
+        }    
 )
 
