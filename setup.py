@@ -17,7 +17,9 @@ setup(
 
     install_requires = ['PyICU >= 0.8.1', 
                         'simplejson'],
-
+    package_data = {
+             'aarddict': ['*.cfg']
+    },
     data_files   =     
     [
        (os.path.join(sys.prefix,'share/icons/hicolor/26x26/apps'), inst_icons_26),

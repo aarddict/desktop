@@ -16,16 +16,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2006-2008 Igor Tkach
 """
+import logging
 
 import functools
 import webbrowser 
 import time
+import os
 from xml.sax.saxutils import escape
 from threading import Thread
 from Queue import Queue
 from math import fabs
 from collections import defaultdict
 from itertools import groupby
+from ConfigParser import ConfigParser
 
 from PyICU import Locale, Collator
 
@@ -48,6 +51,20 @@ gobject.threads_init()
 version = "0.7.0"
 app_name = "Aard Dictionary"
 
+class Config(ConfigParser):
+        
+    def getlist(self, section):
+        return ([item[1] for item in sorted(self.items(section), 
+                                            key = lambda i: int(i[0]))] 
+                if self.has_section(section) else [])
+    
+    def setlist(self, section, value):
+        if self.has_section(section):
+            self.remove_section(section)
+        self.add_section(section)
+        for i, element in enumerate(value):
+            self.set(section, str(i), str(element))    
+                
 def create_scrolled_window(widget):
     scrolled_window = gtk.ScrolledWindow()
     scrolled_window.set_shadow_type(gtk.SHADOW_IN)
@@ -310,23 +327,52 @@ class DictViewer(object):
         
     word_list = property(_get_word_list) 
         
-    def load_app_state(self):
-        try:
-            import shelve
-            import os 
-            import os.path as p
-            d = p.join(p.expanduser('~'), '.aarddict')
-            if not p.exists(d): os.mkdir(d)
-            statefile = p.join(d, 'appstate')
-            self.appstate = shelve.open(statefile)
-            self.set_word_input(self.appstate.get('word', ''))
-            self.open_dicts(self.appstate.get('dict-files', []))
-            ([self.add_to_history(w, l) for w, l 
-              in self.appstate.get('history', [])[::-1]])
-            self.set_phonetic_font(self.appstate.get('phonetic-font', None))
-            self.last_dict_file_location = self.appstate.get('last-dict-file-location', None)
-            self.mi_drag_selects.set_active(self.appstate.get('drag-selects', False))
-            self.mi_show_word_list.set_active(self.appstate.get('show-word-list', True))
+    def load_app_state(self, filename = '~/.aarddict/aarddict.cfg'):
+        try:                        
+            self.config = Config()            
+            self.config.readfp(open(os.path.join(os.path.dirname(__file__), 
+                                                 'defaults.cfg')))
+            self.config.read(os.path.expanduser(filename))
+            
+            """            
+            [dictionaries]
+            1 = /dists/asdasd
+            2 = /dists/fghfgh
+            3 = /dists/sdfsdf
+            
+            [ui]
+            show-word-list = True
+            drag-selects = 
+            last-dict-file-location =
+            phonetic-font =
+            full-screen = False
+            max-words-per-dict = 50
+            lookup-delay = 600
+            article-delay = 200
+            input-word =
+            langs = en ru pt
+                        
+            [selection]
+            en = abc 
+            ru = aksdjkljklasjd 
+                        
+            [history]
+            0 = ru sdfsdfsdf                             
+            1 = en sadfsdf
+            
+            """
+                    
+            if self.config.has_option('ui', 'input-word'):            
+                self.set_word_input(self.config.get('ui', 'input-word'))
+            dict_files = self.config.getlist('dictionaries')
+            self.open_dicts(dict_files)
+            history = self.config.getlist('history')
+            history = [s.split(' ', 1) for s in history]            
+            [self.add_to_history(w, l) for w, l in history[::-1]]
+            self.set_phonetic_font(self.config.get('ui', 'phonetic-font'))
+            self.last_dict_file_location = self.config.get('ui', 'last-dict-file-location')
+            self.mi_drag_selects.set_active(self.config.getboolean('ui', 'drag-selects'))
+            self.mi_show_word_list.set_active(self.config.getboolean('ui', 'show-word-list'))
             self.update_word_list_visibility()
         except Exception, ex:
             print 'Failed to load application state:', ex                     
@@ -350,35 +396,50 @@ class DictViewer(object):
         self.show_status_display("Saving application state...", "Exiting")
         
     def save_state_worker(self):
-        word = self.word_input.child.get_text()
+        
         history = []
         self.word_input.get_model().foreach(self.history_to_list, history)
+        self.config.setlist('history', [' '.join((lang, word)) 
+                                        for word, lang in history])
+        
         selected_word, selected_word_lang = self.get_selected_word()
-        selected = (str(selected_word), selected_word_lang)
         dict_files = [dict.file_name for dict in self.dictionaries]
+        if not self.config.has_section('ui'):
+            self.config.add_section('ui')
         if self.phonetic_font_desc:
-            self.appstate['phonetic-font'] = self.phonetic_font_desc.to_string()
-        self.appstate['word'] = word
-        self.appstate['selected-word'] = selected
-        self.appstate['history'] = history
-        self.appstate['dict-files'] = dict_files
-        self.appstate['last-dict-file-location'] = self.last_dict_file_location
-        self.appstate['drag-selects'] = self.mi_drag_selects.get_active()
-        self.appstate['show-word-list'] = self.mi_show_word_list.get_active()
-        lang_positions = {}
-        for page in self.word_completion:
-            lang_positions[page.lang] = self.word_completion.page_num(page)
-        self.appstate['lang-positions'] = lang_positions
+            self.config.set('ui', 'phonetic-font', self.phonetic_font_desc.to_string())
+        
+        word = self.word_input.child.get_text()
+        self.config.set('ui', 'input-word', word)
+
+        if not self.config.has_section('selection'):
+            self.config.add_section('selection')                
+        self.config.set('selection', selected_word_lang, str(selected_word))
+                
+        self.config.setlist('dictionaries', dict_files)
+        self.config.set('ui', 'last-dict-file-location', self.last_dict_file_location)
+        self.config.set('ui', 'drag-selects', self.mi_drag_selects.get_active())
+        self.config.set('ui', 'show-word-list', self.mi_show_word_list.get_active())
+        
+        langs = [(self.word_completion.page_num(page), page.lang) 
+                          for page in self.word_completion]
+        langs = [item[1] for item in sorted(langs, key = lambda x: x[0])]
+        self.config.set('ui', 'langs', ' '.join(langs))
+        
+        d = os.path.expanduser('~/.aarddict')
+        if not os.path.exists(d):
+            os.makedirs(d)
+        f = open(os.path.join(d, 'aarddict.cfg'), 'w')        
+        self.config.write(f)
+        f.close()
+        
         errors = []
         for dict in self.dictionaries:
             try:
                 dict.close()
             except Exception, e:
                 errors.append(e)
-        try:
-            self.appstate.close()
-        except Exception, e:
-            errors.append(e)
+                
         gobject.idle_add(self.shutdown_ui, errors)
         
     def shutdown_ui(self, errors):     
@@ -968,16 +1029,20 @@ class DictViewer(object):
         if len(self.open_errors) > 0:
             self.show_error("Open Failed", 
                             self.errors_to_text(self.open_errors))
-            self.open_errors = None   
-        if 'lang-positions' in self.appstate:
-            lang_positions = self.appstate['lang-positions']
+            self.open_errors = None
+        
+        if self.config.has_option('ui', 'langs'):
+            langs = self.config.get('ui', 'langs').split()                
             for page in self.word_completion:
-                self.word_completion.reorder_child(page, 
-                                                   lang_positions[page.lang])
-            del self.appstate['lang-positions']
-        if 'selected-word' in self.appstate:
-            word, lang = self.appstate['selected-word']
-            del self.appstate['selected-word']
+                try:
+                    self.word_completion.reorder_child(page, 
+                                                   langs.index(page.lang))
+                except:
+                    logging.exception()                            
+        
+        if self.config.has_section('selection'):
+            for lang in self.config.options('selection'):
+                word = self.config.get('selection', lang)                        
         else:
             word, lang = self.get_selected_word()
             
