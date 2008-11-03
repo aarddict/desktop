@@ -218,9 +218,7 @@ class Dictionary(object):
         index_count = header['index_count']
         article_count = header['article_count']
         article_offset = header['article_offset']
-        print header
         self.metadata = simplejson.loads(decompress(self.file.read(meta_length)))        
-        print self.metadata
         
         index1_offset = spec_len(HEADER_SPEC) + meta_length        
         index2_offset = index1_offset + index_count*struct.calcsize(header['index1_item_format'])
