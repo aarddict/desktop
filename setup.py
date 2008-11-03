@@ -15,7 +15,6 @@ setup(
     name = "aarddict",
     version = '0.7.0',
     packages = find_packages(),
-    scripts=['aarddict.py'],
     windows=[{
         'script': 'aarddict.py',
         }
