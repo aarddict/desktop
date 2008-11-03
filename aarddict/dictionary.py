@@ -36,6 +36,18 @@ INDEX_ITEM_STRUCT_SIZE = struct.calcsize(INDEX_ITEM_STRUCT_FORMAT)
 ucollator =  Collator.createInstance(Locale(''))
 ucollator.setStrength(Collator.PRIMARY)
 
+def decompress(s):
+    decompressed = s
+    for decompress in aarddict.decompression:
+        try:
+            decompressed = decompress(s)
+        except:
+            pass
+        else:
+            break
+    return decompressed
+    
+
 def key(s):
     return ucollator.getCollationKey(s).getByteArray()
 
@@ -128,8 +140,8 @@ def to_article(raw_article):
 
 class ArticleList(object):
     
-    def __init__(self, dictionary, files, offset1, offset2, article_offset, length):
-        self.files = files
+    def __init__(self, dictionary, file, offset1, offset2, article_offset, length):
+        self.file = file
         self.offset1 = offset1  
         self.offset2 = offset2
         self.article_offset = article_offset 
@@ -141,14 +153,14 @@ class ArticleList(object):
     
     def __getitem__(self, word_pos):
         if 0 <= word_pos < len(self):
-            self.files[0].seek(self.offset1 + (word_pos * INDEX_ITEM_STRUCT_SIZE))
+            self.file.seek(self.offset1 + (word_pos * INDEX_ITEM_STRUCT_SIZE))
             keyPos, fileno, article_unit_ptr = struct.unpack(INDEX_ITEM_STRUCT_FORMAT, 
-                                                             self.files[0].read(INDEX_ITEM_STRUCT_SIZE))
-            self.files[0].seek(self.offset2 + keyPos)
-            keyLen, = struct.unpack(">L", self.files[0].read(4))
-            key = self.files[0].read(keyLen)            
+                                                             self.file.read(INDEX_ITEM_STRUCT_SIZE))
+            self.file.seek(self.offset2 + keyPos)
+            keyLen, = struct.unpack(">L", self.file.read(4))
+            key = self.file.read(keyLen)            
             article_location = (fileno, 
-                                self.article_offset[fileno] + article_unit_ptr)            
+                                self.article_offset + article_unit_ptr)            
             article_func = functools.partial(self.read_article, article_location)
             article_func.title = key.decode('utf-8')
             article_func.source = self.dictionary
@@ -158,37 +170,63 @@ class ArticleList(object):
         
     def read_article(self, location):
         fileno, offset = location
-        file = self.files[fileno]
-        file.seek(offset)
+        self.file.seek(offset)
         record_length, = struct.unpack(RECORD_LEN_STRUCT_FORMAT, 
-                                      file.read(RECORD_LEN_STRUCT_SIZE))
-        compressed_article = file.read(record_length)
-        decompressed_article = compressed_article
-        for decompress in aarddict.decompression:
-            try:
-                decompressed_article = decompress(compressed_article)
-            except:
-                pass
-            else:
-                break
+                                      self.file.read(RECORD_LEN_STRUCT_SIZE))
+        compressed_article = self.file.read(record_length)
+        decompressed_article = decompress(compressed_article)
         article = to_article(decompressed_article)
         article.source = self.dictionary
         return article 
             
+HEADER_SPEC = (('signature',    '>4s'), # string 'aard'
+               ('version',      '>H'), #format version, a number, current value 1
+               ('meta_length',  '>L'), #length of metadata compressed string
+               ('index_count',  '>L'), #number of words in the dictionary
+               ('article_count',  '>L'), #number of articles in the dictionary
+               ('article_offset',  '>L'), #article offset 
+               ('index1_item_format', '>4s'), #'>LLL' - represents key pointer, file number and article pointer
+               ('key_length_format', '>2s'), ##'>H' - key length format in index2_item               
+               )  
+
+def spec_len(spec):
+    result = 0
+    for name, fmt in spec:
+        result += struct.calcsize(fmt)
+    return result
             
 class Dictionary(object):         
 
     def __init__(self, file_name):    
         self.file_name = file_name
-        self.file = []
-        article_offset = []
-        self.file.append(open(file_name, "rb"));
-        self.metadata = self.get_file_metadata(self.file[0])
-        index1_offset = int(self.metadata["index1_offset"])
-        index2_offset = int(self.metadata["index2_offset"])
-        self.index_count = self.metadata["index_count"]
-        self.article_count = self.metadata["article_count"]
-        article_offset.append(int(self.metadata["article_offset"]))                
+        self.file = open(file_name, "rb")
+        
+        header = {}
+        
+        for name, fmt in HEADER_SPEC:
+            s = self.file.read(struct.calcsize(fmt))
+            header[name], = struct.unpack(fmt, s)
+        
+        if header['signature'] != 'aard':
+            file.close()
+            raise Exception("%s is not a recognized aarddict dictionary file" % file_name)
+        if header['version'] != 1:
+            file.close()
+            raise Exception("%s is not compatible with this viewer" % file_name)
+        
+        meta_length = header['meta_length']
+        index_count = header['index_count']
+        article_count = header['article_count']
+        article_offset = header['article_offset']
+        print header
+        self.metadata = simplejson.loads(decompress(self.file.read(meta_length)))        
+        print self.metadata
+        
+        index1_offset = spec_len(HEADER_SPEC) + meta_length        
+        index2_offset = index1_offset + index_count*struct.calcsize(header['index1_item_format'])
+        
+        self.index_count = index_count
+        self.article_count = article_count
         self.index_language = self.metadata.get("index_language", "")    
         locale_index_language = Locale(self.index_language).getLanguage()
         if locale_index_language:
@@ -198,15 +236,8 @@ class Dictionary(object):
         locale_article_language = Locale(self.index_language).getLanguage()
         if locale_article_language:
             self.article_language = locale_article_language
-        
-        for i in range(1, int(self.metadata["file_count"])):
-            self.file.append(open(file_name[:-2] + ("%02i" % i), "rb"))
-            extMetadata = self.get_file_metadata(self.file[-1])
-            article_offset.append(extMetadata["article_offset"])
-            if extMetadata["timestamp"] != self.metadata["timestamp"]:
-                raise Exception(self.file[-1].name() + " has a timestamp different from self.file[0].name()")
-            
-        self.words = WordList(self.file[0], 
+                    
+        self.words = WordList(self.file, 
                               index1_offset, 
                               index2_offset, 
                               self.index_count)
@@ -255,21 +286,8 @@ class Dictionary(object):
     def key(self):
         return (self.title, self.version, self.file_name)
 
-    def get_file_metadata(self, f):
-        if f.read(3) != "aar":
-            f.close()
-            raise Exception(f.name + " is not a recognized aarddict dictionary file")
-        if f.read(2) != "01":
-            f.close()
-            raise Exception(f.name + " is not compatible with this viewer")
-        metadataLength = int(f.read(8))
-        metadataString = f.read(metadataLength)
-        metadata = simplejson.loads(metadataString)
-        return metadata                
-
     def close(self):
-        for f in self.file:
-            f.close()        
+        self.file.close()        
             
 class DictFormatError(Exception):
     def __init__(self, value):
