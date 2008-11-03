@@ -30,8 +30,6 @@ import aarddict
 
 RECORD_LEN_STRUCT_FORMAT = '>L'
 RECORD_LEN_STRUCT_SIZE = struct.calcsize(RECORD_LEN_STRUCT_FORMAT)
-INDEX_ITEM_STRUCT_FORMAT = '>LLL'
-INDEX_ITEM_STRUCT_SIZE = struct.calcsize(INDEX_ITEM_STRUCT_FORMAT)
 
 ucollator =  Collator.createInstance(Locale(''))
 ucollator.setStrength(Collator.PRIMARY)
@@ -73,11 +71,14 @@ class Word(object):
 
 class WordList(object):
     
-    def __init__(self, file, offset1, offset2, length):
+    def __init__(self, file, offset1, offset2, length, key_len_fmt):
         self.file = file
         self.offset1 = offset1
         self.offset2 = offset2
         self.length = length
+        self.key_len_fmt = key_len_fmt
+        self.key_len_fmt_size = struct.calcsize(key_len_fmt)
+                
     
     def __len__(self):
         return self.length
@@ -87,7 +88,8 @@ class WordList(object):
             self.file.seek(self.offset1 + (i * 12))
             keyPos, = struct.unpack(">L", self.file.read(4))
             self.file.seek(self.offset2 + keyPos)
-            keyLen, = struct.unpack(">L", self.file.read(4))
+            keyLen, = struct.unpack(self.key_len_fmt, 
+                                    self.file.read(self.key_len_fmt_size))
             key = self.file.read(keyLen)
             word = Word(key)
             return word            
@@ -147,17 +149,24 @@ class ArticleList(object):
         self.article_offset = article_offset 
         self.length = length
         self.dictionary = dictionary
+        self.key_len_fmt = dictionary.key_length_format
+        self.key_len_fmt_size = struct.calcsize(self.key_len_fmt)
+        self.index1_item_format = dictionary.index1_item_format
+        self.index1_item_fmt = dictionary.index1_item_format
+        self.index1_item_fmt_size = struct.calcsize(dictionary.index1_item_format)
         
     def __len__(self):
         return self.length
     
     def __getitem__(self, word_pos):
         if 0 <= word_pos < len(self):
-            self.file.seek(self.offset1 + (word_pos * INDEX_ITEM_STRUCT_SIZE))
-            keyPos, fileno, article_unit_ptr = struct.unpack(INDEX_ITEM_STRUCT_FORMAT, 
-                                                             self.file.read(INDEX_ITEM_STRUCT_SIZE))
+            self.file.seek(self.offset1 + (word_pos * self.index1_item_fmt_size))
+            keyPos, fileno, article_unit_ptr = struct.unpack(self.index1_item_fmt, 
+                                                             self.file.read(self.index1_item_fmt_size))
             self.file.seek(self.offset2 + keyPos)
-            keyLen, = struct.unpack(">L", self.file.read(4))
+            
+            keyLen, = struct.unpack(self.key_len_fmt, 
+                                    self.file.read(self.key_len_fmt_size))
             key = self.file.read(keyLen)            
             article_location = (fileno, 
                                 self.article_offset + article_unit_ptr)            
@@ -218,6 +227,9 @@ class Dictionary(object):
         index_count = header['index_count']
         article_count = header['article_count']
         article_offset = header['article_offset']
+        self.key_length_format = header['key_length_format']
+        self.index1_item_format = header['index1_item_format']
+        
         self.metadata = simplejson.loads(decompress(self.file.read(meta_length)))        
         
         index1_offset = spec_len(HEADER_SPEC) + meta_length        
@@ -238,7 +250,8 @@ class Dictionary(object):
         self.words = WordList(self.file, 
                               index1_offset, 
                               index2_offset, 
-                              self.index_count)
+                              self.index_count,
+                              self.key_length_format)
         
         self.articles = ArticleList(self,
                                     self.file,
