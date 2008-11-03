@@ -1013,7 +1013,7 @@ class DictViewer(object):
                     self.word_completion.reorder_child(page, 
                                                    langs.index(page.lang))
                 except:
-                    logging.exception()                            
+                    logging.exception('Failed to set position for %s', page.lang)                            
         
         if self.config.has_section('selection'):
             for lang in self.config.options('selection'):
