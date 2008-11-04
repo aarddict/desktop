@@ -65,85 +65,67 @@ class Word(object):
         k2 = key(other.unicode)        
         return cmp(k1, k2)
     
+def _read(file, pos, fmt):
+    file.seek(pos)
+    s = file.read(struct.calcsize(fmt))
+    return struct.unpack(fmt, s)
+
+def _readstr(file, pos, len_fmt):
+    strlen, = _read(file, pos, len_fmt)
+    return file.read(strlen)
+
+def _read_index_item(file, offset, itemfmt, itemno):
+    return _read(file, offset + itemno * struct.calcsize(itemfmt), itemfmt)            
+
+def _read_key(file, offset, len_fmt, pos):
+    return _readstr(file, offset + pos, len_fmt)
+
+def _read_article(dictionary, offset, len_fmt, pos):
+    compressed_article = _readstr(dictionary.file, offset + pos, len_fmt)        
+    decompressed_article = decompress(compressed_article)
+    article = to_article(decompressed_article)
+    article.source = dictionary
+    return article 
 
 class WordList(object):
     
-    def __init__(self, file, offset1, offset2, length, key_len_fmt, index1_item_fmt):
-        self.file = file
-        self.offset1 = offset1
-        self.offset2 = offset2
+    def __init__(self, length, read_index_item, read_key):
         self.length = length
-        self.key_len_fmt = key_len_fmt
-        self.key_len_fmt_size = struct.calcsize(key_len_fmt)
-        self.index1_item_fmt = index1_item_fmt
-        self.index1_item_fmt_size = struct.calcsize(index1_item_fmt)
-    
+        self.read_index_item = read_index_item
+        self.read_key = read_key
     
     def __len__(self):
         return self.length
     
     def __getitem__(self, i):
         if 0 <= i < len(self):
-            self.file.seek(self.offset1 + (i * self.index1_item_fmt_size))
-            keyPos, article_unit_ptr = struct.unpack(self.index1_item_fmt, 
-                                                             self.file.read(self.index1_item_fmt_size))
-            
-            self.file.seek(self.offset2 + keyPos)
-            keyLen, = struct.unpack(self.key_len_fmt, 
-                                    self.file.read(self.key_len_fmt_size))
-            key = self.file.read(keyLen)
-            word = Word(key)
-            return word            
+            key_pos, article_unit_ptr = self.read_index_item(i)            
+            key = self.read_key(key_pos)
+            return Word(key)            
         else:
-            raise IndexError        
-
+            raise IndexError
+        
 class ArticleList(object):
     
-    def __init__(self, dictionary, file, offset1, offset2, article_offset, length):
-        self.file = file
-        self.offset1 = offset1  
-        self.offset2 = offset2
-        self.article_offset = article_offset 
-        self.length = length
+    def __init__(self, dictionary, read_index_item, read_key, read_article):
         self.dictionary = dictionary
-        self.key_len_fmt = dictionary.key_length_format
-        self.key_len_fmt_size = struct.calcsize(self.key_len_fmt)
-        self.index1_item_fmt = dictionary.index1_item_format
-        self.index1_item_fmt_size = struct.calcsize(dictionary.index1_item_format)
-        
-        self.article_len_fmt =  dictionary.article_length_format
-        self.article_len_fmt_size = struct.calcsize(dictionary.article_length_format)
-        
+        self.read_index_item = read_index_item
+        self.read_key = read_key
+        self.read_article = read_article
+                
     def __len__(self):
-        return self.length
+        return len(self.dictionary)
     
-    def __getitem__(self, word_pos):
-        if 0 <= word_pos < len(self):
-            self.file.seek(self.offset1 + (word_pos * self.index1_item_fmt_size))
-            keyPos, article_unit_ptr = struct.unpack(self.index1_item_fmt, 
-                                                             self.file.read(self.index1_item_fmt_size))
-            self.file.seek(self.offset2 + keyPos)
-            
-            keyLen, = struct.unpack(self.key_len_fmt, 
-                                    self.file.read(self.key_len_fmt_size))
-            key = self.file.read(keyLen)            
-            article_pos = self.article_offset + article_unit_ptr            
-            article_func = functools.partial(self.read_article, article_pos)
+    def __getitem__(self, i):
+        if 0 <= i < len(self):
+            key_pos, article_unit_ptr = self.read_index_item(i)            
+            key = self.read_key(key_pos)
+            article_func = functools.partial(self.read_article, article_unit_ptr)
             article_func.title = key.decode('utf-8')
             article_func.source = self.dictionary
             return article_func
         else:
-            raise IndexError        
-        
-    def read_article(self, article_pos):
-        self.file.seek(article_pos)
-        record_length, = struct.unpack(self.article_len_fmt, 
-                                       self.file.read(self.article_len_fmt_size))
-        compressed_article = self.file.read(record_length)
-        decompressed_article = decompress(compressed_article)
-        article = to_article(decompressed_article)
-        article.source = self.dictionary
-        return article 
+            raise IndexError                
 
 class Article(object):
 
@@ -190,15 +172,15 @@ def to_article(raw_article):
     return Article(text=text, tags=tags)
 
             
-HEADER_SPEC = (('signature',    '>4s'), # string 'aard'
-               ('version',      '>H'), #format version, a number, current value 1
-               ('meta_length',  '>L'), #length of metadata compressed string
-               ('index_count',  '>L'), #number of words in the dictionary
-               ('article_count',  '>L'), #number of articles in the dictionary
-               ('article_offset',  '>L'), #article offset 
-               ('index1_item_format', '>4s'), #'>LLL' - represents key pointer, file number and article pointer
-               ('key_length_format', '>2s'), ##'>H' - key length format in index2_item
-               ('article_length_format', '>2s'), ##'>L' - article length format                              
+HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
+               ('version',                  '>H'), #format version, a number, current value 1
+               ('meta_length',              '>L'), #length of metadata compressed string
+               ('index_count',              '>L'), #number of words in the dictionary
+               ('article_count',            '>L'), #number of articles in the dictionary
+               ('article_offset',           '>L'), #article offset 
+               ('index1_item_format',       '>4s'), #'>LLL' - represents key pointer, file number and article pointer
+               ('key_length_format',        '>2s'), ##'>H' - key length format in index2_item
+               ('article_length_format',    '>2s'), ##'>L' - article length format                              
                )  
 
 def spec_len(spec):
@@ -207,39 +189,38 @@ def spec_len(spec):
         result += struct.calcsize(fmt)
     return result
             
-class Dictionary(object):         
+class Header(object):
+    
+    def __init__(self, file):    
+        for name, fmt in HEADER_SPEC:
+            s = file.read(struct.calcsize(fmt))
+            value, = struct.unpack(fmt, s)
+            setattr(self, name, value)
+         
+    index1_offset = property(lambda self: spec_len(HEADER_SPEC) + self.meta_length)
+    index2_offset = property(lambda self: self.index1_offset + self.index_count*struct.calcsize(self.index1_item_format))
+                            
+class Dictionary(object):
 
     def __init__(self, file_name):    
         self.file_name = file_name
         self.file = open(file_name, "rb")
         
-        header = {}
+        header = Header(self.file)
         
-        for name, fmt in HEADER_SPEC:
-            s = self.file.read(struct.calcsize(fmt))
-            header[name], = struct.unpack(fmt, s)
-        
-        if header['signature'] != 'aard':
+        if header.signature != 'aard':
             file.close()
             raise Exception("%s is not a recognized aarddict dictionary file" % file_name)
-        if header['version'] != 1:
+        
+        if header.version != 1:
             file.close()
             raise Exception("%s is not compatible with this viewer" % file_name)
         
-        meta_length = header['meta_length']
-        index_count = header['index_count']
-        article_count = header['article_count']
-        article_offset = header['article_offset']
-        self.key_length_format = header['key_length_format']
-        self.index1_item_format = header['index1_item_format']
-        self.article_length_format = header['article_length_format']
-        self.metadata = simplejson.loads(decompress(self.file.read(meta_length)))        
+        self.index_count = header.index_count        
+        self.article_count = header.article_count
         
-        index1_offset = spec_len(HEADER_SPEC) + meta_length        
-        index2_offset = index1_offset + index_count*struct.calcsize(header['index1_item_format'])
-        
-        self.index_count = index_count
-        self.article_count = article_count
+        self.metadata = simplejson.loads(decompress(self.file.read(header.meta_length)))
+                
         self.index_language = self.metadata.get("index_language", "")    
         locale_index_language = Locale(self.index_language).getLanguage()
         if locale_index_language:
@@ -249,20 +230,24 @@ class Dictionary(object):
         locale_article_language = Locale(self.index_language).getLanguage()
         if locale_article_language:
             self.article_language = locale_article_language
-                    
-        self.words = WordList(self.file, 
-                              index1_offset, 
-                              index2_offset, 
-                              self.index_count,
-                              self.key_length_format,
-                              self.index1_item_format)
-        
-        self.articles = ArticleList(self,
-                                    self.file,
-                                    index1_offset,
-                                    index2_offset,
-                                    article_offset,
-                                    self.index_count)                                
+
+        read_index_item = functools.partial(_read_index_item, 
+                                                 self.file, 
+                                                 header.index1_offset, 
+                                                 header.index1_item_format)
+        read_key = functools.partial(_read_key,
+                                     self.file,
+                                     header.index2_offset,
+                                     header.key_length_format)
+        read_article = functools.partial(_read_article, 
+                                         self, 
+                                         header.article_offset,
+                                         header.article_length_format)
+        self.words = WordList(self.index_count, read_index_item, read_key)
+        self.articles = ArticleList(self, 
+                                    read_index_item, 
+                                    read_key, 
+                                    read_article)                                
             
     title = property(lambda self: self.metadata.get("title", ""))
     version = property(lambda self: self.metadata.get("aarddict_version", ""))
