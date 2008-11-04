@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
+from __future__ import with_statement
 import functools
 
 import struct
@@ -31,6 +32,18 @@ import aarddict
 ucollator =  Collator.createInstance(Locale(''))
 ucollator.setStrength(Collator.PRIMARY)
 
+from hashlib import sha1
+
+def calcsha1(file_name, offset, chunksize=100000):    
+    with open(file_name, 'rb') as f:    
+        f.seek(offset)
+        result = sha1()    
+        while True:
+            s = f.read(chunksize)
+            result.update(s)
+            if not s: break
+        return result.hexdigest()
+
 def decompress(s):
     decompressed = s
     for decompress in aarddict.decompression:
@@ -40,8 +53,7 @@ def decompress(s):
             pass
         else:
             break
-    return decompressed
-    
+    return decompressed    
 
 def key(s):
     return ucollator.getCollationKey(s).getByteArray()
@@ -173,6 +185,7 @@ def to_article(raw_article):
 
             
 HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
+               ('sha1sum',                  '>40s'), #sha1 sum of dictionary file content following signature and sha1 bytes  
                ('version',                  '>H'), #format version, a number, current value 1
                ('meta_length',              '>L'), #length of metadata compressed string
                ('index_count',              '>L'), #number of words in the dictionary
@@ -218,15 +231,22 @@ class Dictionary(object):
         
         self.index_count = header.index_count        
         self.article_count = header.article_count
+        self.sha1sum = header.sha1sum
         
         self.metadata = simplejson.loads(decompress(self.file.read(header.meta_length)))
                 
-        self.index_language = self.metadata.get("index_language", "")    
+        self.index_language = self.metadata.get("index_language", "")
+        if isinstance(self.index_language, unicode):
+            self.index_language = self.index_language.encode('utf8')
+                        
         locale_index_language = Locale(self.index_language).getLanguage()
         if locale_index_language:
             self.index_language = locale_index_language
             
         self.article_language = self.metadata.get("article_language", "")
+        if isinstance(self.article_language, unicode):
+            self.article_language = self.index_language.encode('utf8')
+        
         locale_article_language = Locale(self.index_language).getLanguage()
         if locale_article_language:
             self.article_language = locale_article_language
@@ -285,6 +305,10 @@ class Dictionary(object):
 
     def key(self):
         return (self.title, self.version, self.file_name)
+
+    def verify(self):
+        sha1sum = calcsha1(self.file_name, spec_len(HEADER_SPEC[:2]))
+        return sha1sum == self.sha1sum
 
     def close(self):
         self.file.close()        
