@@ -187,6 +187,9 @@ def to_article(raw_article):
 HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
                ('sha1sum',                  '>40s'), #sha1 sum of dictionary file content following signature and sha1 bytes  
                ('version',                  '>H'), #format version, a number, current value 1
+               ('uuid',                     '>16s'), # dictionary UUID, shared by all volumes of the same dictionary
+               ('volume',                   '>H'), # volume number of this this file
+               ('of',                       '>H'), # total number of volumes for the dictionary
                ('meta_length',              '>L'), #length of metadata compressed string
                ('index_count',              '>L'), #number of words in the dictionary
                ('article_count',            '>L'), #number of articles in the dictionary
