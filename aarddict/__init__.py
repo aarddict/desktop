@@ -2,6 +2,9 @@ from __future__ import with_statement
 import zlib
 import bz2
 import optparse
+import logging
+
+logging.basicConfig(format='%(levelname)s: %(message)s')
     
 compression = (zlib.compress,
                bz2.compress)
@@ -26,8 +29,17 @@ def main():
         default=False,
         help='Verify dictionary files specified'
         )    
+    parser.add_option(
+        '-d', '--debug',
+        action='store_true',        
+        default=False,
+        help='Turn on debugging information'
+        )
     
     options, args = parser.parse_args()
+    
+    if options.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     
     if options.identify:
         from aarddict import dictionary
