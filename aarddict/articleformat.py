@@ -22,7 +22,6 @@ import threading
 import gobject 
 import gtk
 import pango
-import simplejson 
 
 class FormattingStoppedException(Exception):
     def __init__(self):
@@ -51,9 +50,10 @@ class ArticleFormat:
         def stop(self):
             self.stopped = True
             
-    def __init__(self, internal_link_callback, external_link_callback):
+    def __init__(self, internal_link_callback, external_link_callback, footnote_callback):
         self.internal_link_callback = internal_link_callback
         self.external_link_callback = external_link_callback
+        self.footnote_callback = footnote_callback
         self.workers = {}
    
     def stop(self):
@@ -80,20 +80,38 @@ class ArticleFormat:
             ref_tag.connect("event", self.internal_link_callback, target, dict)
             text_buffer.apply_tag_by_name("r", start, end)
         text_buffer.apply_tag(ref_tag, start, end) 
+
+    def create_footnote_ref(self, dict, article_view, text_buffer, start, end, target_pos):
+        ref_tag = text_buffer.create_tag()
+        ref_tag.connect("event", self.footnote_callback , target_pos)
+        text_buffer.apply_tag_by_name("ref", start, end)
+        text_buffer.apply_tag(ref_tag, start, end) 
         
-    def create_tagged_text_buffer(self, dict, raw_article, article_view):
+    def create_tagged_text_buffer(self, dictionary, raw_article, article_view):
         text_buffer = self.create_article_text_buffer()
         text_buffer.set_text(raw_article.text)
         tags = raw_article.tags
+        
+        reftable = dict([((tag.attributes['group'], tag.attributes['id']), tag.start)
+                          for tag in tags if tag.name=='note'])
+        
         for tag in tags:
             start = text_buffer.get_iter_at_offset(tag.start)
             end = text_buffer.get_iter_at_offset(tag.end)
             if tag.name in ('a', 'iref'):
-                self.create_ref(dict, text_buffer, start, end, 
+                self.create_ref(dictionary, text_buffer, start, end, 
                                 str(tag.attributes['href']))
             elif tag.name == 'kref':
-                self.create_ref(dict, text_buffer, start, end, 
-                                text_buffer.get_text(start, end))                
+                self.create_ref(dictionary, text_buffer, start, end, 
+                                text_buffer.get_text(start, end))
+            elif tag.name == 'ref':
+                footnote_group = tag.attributes['group']
+                footnote_id = tag.attributes['id']
+                footnote_key = (footnote_group, footnote_id)
+                if footnote_key in reftable:                
+                    self.create_footnote_ref(dictionary, article_view, text_buffer, 
+                                             start, end, 
+                                             reftable[footnote_key])
             elif tag.name == "c":
                 if 'c' in tag.attributes:
                     color_code = tag.attributes['c']
@@ -145,6 +163,8 @@ class ArticleFormat:
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("em", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
+        buffer.create_tag("ref", underline=True, rise=4,
+                          scale=pango.SCALE_XX_SMALL, foreground='blue')
         buffer.create_tag("tt", family = 'monospace')        
         
         buffer.create_tag("pos", 
@@ -164,8 +184,8 @@ class ArticleFormat:
                           weight = pango.WEIGHT_BOLD, 
                           foreground = "darkred")
         
-        buffer.create_tag("sup", rise = 2, scale = pango.SCALE_XX_SMALL)
-        buffer.create_tag("sub", rise = -2, scale = pango.SCALE_XX_SMALL)
+        buffer.create_tag("sup", rise=2, scale=pango.SCALE_XX_SMALL)
+        buffer.create_tag("sub", rise=-2, scale=pango.SCALE_XX_SMALL)
         
         buffer.create_tag("blockquote", indent = 6)
         buffer.create_tag("cite", style=pango.STYLE_ITALIC, 

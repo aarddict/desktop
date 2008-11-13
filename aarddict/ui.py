@@ -72,7 +72,7 @@ def create_scrolled_window(widget):
     scrolled_window.add(widget)                                
     return scrolled_window
 
-def create_button(stock_id, action):
+def create_button(stock_id, action, data=None):
     button = gtk.Button(stock = stock_id)
     settings = button.get_settings()
     settings.set_property( "gtk-button-images", True )        
@@ -81,7 +81,7 @@ def create_button(stock_id, action):
                                               gtk.ICON_SIZE_SMALL_TOOLBAR))
     button.set_relief(gtk.RELIEF_NONE)
     button.set_focus_on_click(False)
-    button.connect("clicked", action);
+    button.connect("clicked", action, data);
     return button  
 
 def block(widget, handler):
@@ -310,7 +310,9 @@ class DictViewer(object):
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
         
-        self.article_formatter = articleformat.ArticleFormat(self.word_ref_clicked, self.external_link_callback)
+        self.article_formatter = articleformat.ArticleFormat(self.word_ref_clicked, 
+                                                             self.external_link_callback, 
+                                                             self.footnote_callback)
         
         self.start_worker_threads()
                                  
@@ -496,6 +498,35 @@ class DictViewer(object):
     def external_link_callback(self, tag, widget, event, iter, url):
         if self.is_link_click(widget, event, url):
             self.open_external_link(url)
+
+    def footnote_callback(self, tag, widget, event, iter, target_pos):
+        if self.is_link_click(widget, event, target_pos):
+            if hasattr(widget, 'backbtn') and widget.backbtn:
+                widget.remove(widget.backbtn.parent)
+                widget.backbtn = None
+                
+            r = widget.get_visible_rect()
+                                                 
+            widget.scroll_to_iter(widget.get_buffer().get_iter_at_offset(target_pos), 
+                                  0.0, use_align=True, xalign=0.0, yalign=0.0)
+            
+            def goback(btnwidget, iter):
+                widget.scroll_to_iter(iter, 0.0, use_align=True, 
+                                      xalign=0.0, yalign=0.0)
+                widget.remove(btnwidget.parent)
+                widget.backbtn = None                            
+             
+                        
+            iter = widget.get_iter_at_location(r.x, r.y)            
+            backbtn = create_button(gtk.STOCK_GO_UP, goback, iter)
+            child = gtk.EventBox()
+            child.add(backbtn)
+             
+            w, h = widget.buffer_to_window_coords(gtk.TEXT_WINDOW_WIDGET, 
+                                                  r.width, r.height)            
+            widget.add_child_in_window(child, gtk.TEXT_WINDOW_WIDGET, w - 32 - 2, 2)
+            widget.backbtn = backbtn
+            child.show_all()
   
     def open_external_link(self, url):
         webbrowser.open(url)
@@ -984,7 +1015,7 @@ class DictViewer(object):
         tags = textview.get_iter_at_location(x, y).get_tags()
         for tag in tags:
             tag_name = tag.get_property("name")
-            if tag_name == "r" or tag_name == "url":
+            if tag_name == "r" or tag_name == "url" or tag_name == "ref":
                 return True
         return False
         
