@@ -198,7 +198,6 @@ HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
                ('of',                       '>H'), # total number of volumes for the dictionary
                ('meta_length',              '>L'), #length of metadata compressed string
                ('index_count',              '>L'), #number of words in the dictionary
-               ('article_count',            '>L'), #number of articles in the dictionary
                ('article_offset',           '>L'), #article offset 
                ('index1_item_format',       '>4s'), #'>LLL' - represents key pointer, file number and article pointer
                ('key_length_format',        '>2s'), ##'>H' - key length format in index2_item
@@ -239,7 +238,6 @@ class Dictionary(object):
             raise Exception("%s is not compatible with this viewer" % file_name)
         
         self.index_count = header.index_count        
-        self.article_count = header.article_count
         self.sha1sum = header.sha1sum
         self.uuid = header.uuid
         self.volume = header.volume
@@ -247,6 +245,9 @@ class Dictionary(object):
         
         raw_meta = self.file.read(header.meta_length)
         self.metadata = simplejson.loads(decompress(raw_meta))
+        
+        self.article_count = self.metadata.get('article_count', 
+                                               self.index_count)
                 
         self.index_language = self.metadata.get("index_language", "")
         if isinstance(self.index_language, unicode):
@@ -283,7 +284,7 @@ class Dictionary(object):
                                     read_article)                                
             
     title = property(lambda self: self.metadata.get("title", ""))
-    version = property(lambda self: self.metadata.get("aarddict_version", ""))
+    version = property(lambda self: self.metadata.get("version", ""))
     description = property(lambda self: self.metadata.get("description", ""))
     copyright = property(lambda self: self.metadata.get("copyright", ""))    
     
