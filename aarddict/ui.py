@@ -242,24 +242,53 @@ class ArticleView(gtk.TextView):
         obj.set_data("handlers", None)
 
 class WordLookup(object):
-    def __init__(self, read_funcs):
+    def __init__(self, read_funcs, lookup_func):
         if read_funcs:            
             self.word = read_funcs[0].title
         else:
             self.word = u''  
         self.read_funcs = read_funcs
+        self.lookup_func = lookup_func
                 
     def __str__(self):
-        return self.word.encode('utf-8')
+        return self.word.encode('utf8')
 
     def __repr__(self):
         return str(self)
     
     def __unicode__(self):
         return self.word
+
+    def notfound(self, article):
+        narticle = dictionary.Article(article.title, 
+                                  'Redirect to %s not found' % article.redirect, 
+                                  dictionary=article.dictionary)        
+        return narticle
+
+    def redirect(self, article, level=0):        
+        redirect = article.redirect        
+        if redirect:
+            logging.debug('Redirect %s ==> %s (level %d)', 
+                          article.title, redirect, level)
+            if level > 5:
+                logging.warn("Can't resolve redirect %s, too many levels", redirect)
+                return article            
+            for result in self.lookup_func(redirect, uuid=article.dictionary.uuid):
+                    a = result()
+                    a.title = result.title
+                    return self.redirect(a, level=level+1)
+        else:
+            return article                
         
     def articles(self):
-        return [func() for func in self.read_funcs]
+        
+        def redirect(read_func):
+            article = read_func()
+            article.title = read_func.title
+            rarticle = self.redirect(article)
+            return rarticle if rarticle else self.notfound(article)
+            
+        return [redirect(func) for func in self.read_funcs]
     
 class LookupCanceled(Exception):        
     pass
@@ -348,8 +377,8 @@ class DictViewer(object):
             self.mi_drag_selects.set_active(self.config.getboolean('ui', 'drag-selects'))
             self.mi_show_word_list.set_active(self.config.getboolean('ui', 'show-word-list'))
             self.update_word_list_visibility()
-        except Exception, ex:
-            print 'Failed to load application state:', ex                     
+        except:
+            logging.exception('Failed to load application state')                     
     
     def start_worker_threads(self):
         self.open_q = Queue()
@@ -522,7 +551,7 @@ class DictViewer(object):
         if active == -1:
             s_word, s_lang = self.get_selected_word()
             for i, (word, lang) in enumerate(model):
-                print i, word, lang
+                logging.debug('history_back: %s %s %s', i, word, lang)
                 if s_word == word and s_lang == lang:
                     active = i
         if active + 1 < len(model):  
@@ -549,7 +578,7 @@ class DictViewer(object):
         word = str(wordlookup)
         self.clear_tabs()
         for article in articles:        
-            dict = article.source 
+            dict = article.dictionary 
             article_view = self.create_article_view()
             article_view.set_property("can-focus", False)
             scrollable_view = create_scrolled_window(article_view)                
@@ -646,8 +675,8 @@ class DictViewer(object):
             collator.setStrength(Collator.QUATERNARY)
             key = lambda a: collator.getCollationKey(a.title).getByteArray()
             articles.sort(key=key)
-            lang_word_list[lang] =  [WordLookup(list(g)) for k, g in 
-                                     groupby(articles, key)] 
+            lang_word_list[lang] =  [WordLookup(list(g), self.dictionaries.lookup) 
+                                     for k, g in groupby(articles, key)] 
         return lang_word_list
     
     def update_completion(self, word, to_select = None):

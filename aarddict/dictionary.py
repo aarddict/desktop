@@ -96,7 +96,7 @@ def _read_article(dictionary, offset, len_fmt, pos):
     compressed_article = _readstr(dictionary.file, offset + pos, len_fmt)        
     decompressed_article = decompress(compressed_article)
     article = to_article(decompressed_article)
-    article.source = dictionary
+    article.dictionary = dictionary
     return article 
 
 class WordList(object):
@@ -141,11 +141,17 @@ class ArticleList(object):
 
 class Article(object):
 
-    def __init__(self, title="", text="", tags=None, dictionary=None):
+    def __init__(self, title="", text="", tags=None, meta=None, dictionary=None):
         self.title = title
         self.text = text
         self.tags = [] if tags is None else tags
+        self.meta = {} if meta is None else meta
         self.dictionary = dictionary 
+
+    def _redirect(self):
+        return self.meta.get(u'redirect', u'').encode('utf8')
+    
+    redirect = property(_redirect)        
 
     def __repr__(self):        
         tags = '\n'.join([repr(t) for t in self.tags])
@@ -173,7 +179,7 @@ class Tag(object):
         
 def to_article(raw_article):
     try:
-        text, tag_list = simplejson.loads(raw_article)
+        text, tag_list, meta = simplejson.loads(raw_article)
     except:
         logging.exception('was trying to load article from string:\n%s', raw_article[:10])
         text = raw_article
@@ -181,7 +187,7 @@ def to_article(raw_article):
     else:
         tags = [Tag(name, start, end, attrs) 
                 for name, start, end, attrs in tag_list]            
-    return Article(text=text, tags=tags)
+    return Article(text=text, tags=tags, meta=meta)
 
             
 HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
@@ -235,8 +241,12 @@ class Dictionary(object):
         self.index_count = header.index_count        
         self.article_count = header.article_count
         self.sha1sum = header.sha1sum
+        self.uuid = header.uuid
+        self.volume = header.volume
+        self.total_volumes = header.of
         
-        self.metadata = simplejson.loads(decompress(self.file.read(header.meta_length)))
+        raw_meta = self.file.read(header.meta_length)
+        self.metadata = simplejson.loads(decompress(raw_meta))
                 
         self.index_language = self.metadata.get("index_language", "")
         if isinstance(self.index_language, unicode):
@@ -328,8 +338,15 @@ class DictionaryCollection(list):
     def langs(self):
         return set([d.index_language for d in self])
     
-    def lookup(self, start_word, max_from_one_dict=50):
-        for dictionary in self:
+    def volumes(self, uuid):
+        return [d for d in self if d.uuid == uuid] 
+    
+    def lookup(self, start_word, max_from_one_dict=50, uuid=None):
+        if uuid:
+            dicts = self.volumes(uuid)
+        else:
+            dicts = self
+        for dictionary in dicts:
             count = 0
             for article in dictionary[start_word]:
                 yield article
