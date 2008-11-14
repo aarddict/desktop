@@ -16,7 +16,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
-from aarddict import ui
 import aarddict
 
 import threading
@@ -144,7 +143,7 @@ class ArticleFormat:
         raw_article = A(text, [aarddict.dictionary.Tag(name, start, end, attrs) 
                                for name, start, end, attrs in tags])
         
-        cell_view = ui.ArticleView(article_view.drag_handler, 
+        cell_view = aarddict.ui.ArticleView(article_view.drag_handler, 
                                    article_view.selection_changed_callback, 
                                    article_view.phonetic_font_desc)
         buff, tables = self.create_tagged_text_buffer(dictionary, raw_article, article_view)
