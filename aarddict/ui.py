@@ -214,12 +214,12 @@ class ArticleView(gtk.TextView):
         handler = self.connect_after("event", self.drag_handler)
         handlers.append(handler)
     
-    def connect(self, signal, callback):
+    def connect(self, signal, callback, *userparams):
         handlers = self.get_data("handlers")
         if handlers == None:
             #this article view is already discarded
             return        
-        handler = gtk.TextView.connect(self, signal, callback)
+        handler = gtk.TextView.connect(self, signal, callback, *userparams)
         handlers.append(handler)
     
     def clear_selection(self):
