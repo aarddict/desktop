@@ -16,7 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
-import aarddict
+import aarddict.ui
+import aarddict.dictionary
 
 import threading
 from collections import defaultdict
@@ -48,10 +49,10 @@ class ArticleFormat:
             
             def set_buffer(view, buffer, tables):
                 view.set_buffer(buffer)
-                for treeview, anchor in tables:
-                    view.add_child_at_anchor(treeview, anchor)
+                for tbl, anchor in tables:
+                    view.add_child_at_anchor(tbl, anchor)
                 view.show_all()
-            
+                            
             if not self.stopped:
                 gobject.idle_add(set_buffer, self.article_view, text_buffer, tables)
                 self.formatter.workers.pop(self.dict, None)
@@ -148,6 +149,7 @@ class ArticleFormat:
                                    article_view.phonetic_font_desc)
         buff, tables = self.create_tagged_text_buffer(dictionary, raw_article, article_view)
         cell_view.set_buffer(buff)
+        cell_view.set_wrap_mode(gtk.WRAP_NONE)
         return cell_view
 
     def create_table(self, dictionary, article_view, text_buffer, tag, start, end):
