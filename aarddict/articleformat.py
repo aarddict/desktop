@@ -16,8 +16,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2008  Jeremy Mortis and Igor Tkach
 """
+from aarddict import ui
+import aarddict
 
 import threading
+from collections import defaultdict
 
 import gobject 
 import gtk
@@ -42,9 +45,16 @@ class ArticleFormat:
 
         def run(self):
             self.stopped = False
-            text_buffer = self.formatter.create_tagged_text_buffer(self.dict, self.article, self.article_view)
+            text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict, self.article, self.article_view)
+            
+            def set_buffer(view, buffer, tables):
+                view.set_buffer(buffer)
+                for treeview, anchor in tables:
+                    view.add_child_at_anchor(treeview, anchor)
+                view.show_all()
+            
             if not self.stopped:
-                gobject.idle_add(self.article_view.set_buffer, text_buffer)
+                gobject.idle_add(set_buffer, self.article_view, text_buffer, tables)
                 self.formatter.workers.pop(self.dict, None)
         
         def stop(self):
@@ -95,6 +105,7 @@ class ArticleFormat:
         reftable = dict([((tag.attributes['group'], tag.attributes['id']), tag.start)
                           for tag in tags if tag.name=='note'])
         
+        tables = []
         for tag in tags:
             start = text_buffer.get_iter_at_offset(tag.start)
             end = text_buffer.get_iter_at_offset(tag.end)
@@ -109,9 +120,12 @@ class ArticleFormat:
                 footnote_id = tag.attributes['id']
                 footnote_key = (footnote_group, footnote_id)
                 if footnote_key in reftable:                
-                    self.create_footnote_ref(dictionary, article_view, text_buffer, 
-                                             start, end, 
+                    self.create_footnote_ref(dictionary, article_view, 
+                                             text_buffer, start, end, 
                                              reftable[footnote_key])
+            elif tag.name == 'table':
+                tables.append(self.create_table(dictionary, article_view, 
+                                                text_buffer, tag, start, end))
             elif tag.name == "c":
                 if 'c' in tag.attributes:
                     color_code = tag.attributes['c']
@@ -119,7 +133,60 @@ class ArticleFormat:
                     text_buffer.apply_tag(t, start, end)
             else:
                 text_buffer.apply_tag_by_name(tag.name, start, end)
-        return text_buffer
+        return text_buffer, tables
+
+
+    def create_cell_view(self, dictionary, article_view, text, tags):
+        class A(object):
+            def __init__(self, text, tags):
+                self.text = text
+                self.tags = tags
+        raw_article = A(text, [aarddict.dictionary.Tag(name, start, end, attrs) 
+                               for name, start, end, attrs in tags])
+        
+        cell_view = ui.ArticleView(article_view.drag_handler, 
+                                   article_view.selection_changed_callback, 
+                                   article_view.phonetic_font_desc)
+        buff, tables = self.create_tagged_text_buffer(dictionary, raw_article, article_view)
+        cell_view.set_buffer(buff)
+        return cell_view
+
+    def create_table(self, dictionary, article_view, text_buffer, tag, start, end):
+        tabledata = tag.attributes['rows']
+        tableattrs = tag.attributes['attrs']
+        
+        table = gtk.Table()
+        table.set_property('column-spacing', 5)
+        table.set_property('row-spacing', 5)        
+        
+        i = 0
+        rowspanmap = defaultdict(int)
+        for row in tabledata:
+            rowdata, rowtags = row
+            j = 0            
+            for cell in rowdata:
+                while rowspanmap[j] > 0:
+                    rowspanmap[j] = rowspanmap[j] - 1
+                    j += 1                    
+                text, tags  = cell                                              
+                cellwidget = self.create_cell_view(dictionary, article_view, text, tags)
+                cellattrs = [attrs for name, s, e, attrs in tags if name == 'cell'][0]
+                cellspan = cellattrs.get('colspan', 1)
+                rowspan = cellattrs.get('rowspan', 1)
+                for k in range(j, j+cellspan):
+                    rowspanmap[k] = rowspan - 1
+                table.attach(cellwidget, j, j+cellspan, i, i+rowspan, 
+                             xoptions=gtk.EXPAND|gtk.FILL, 
+                             yoptions=gtk.EXPAND|gtk.FILL, 
+                             xpadding=0, ypadding=0)
+                j = j + cellspan                                             
+            i = i + 1        
+                                      
+        text_buffer.delete(start, end)            
+        anchor = text_buffer.create_child_anchor(start)
+        
+        return table, anchor        
+        
         
     def create_article_text_buffer(self):
         buffer = gtk.TextBuffer()
