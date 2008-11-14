@@ -265,8 +265,8 @@ class WordLookup(object):
                                   dictionary=article.dictionary)        
         return narticle
 
-    def redirect(self, article, level=0):        
-        redirect = article.redirect        
+    def redirect(self, article, level=0):
+        redirect = article.redirect
         if redirect:
             logging.debug('Redirect %s ==> %s (level %d)', 
                           article.title, redirect, level)
@@ -276,6 +276,8 @@ class WordLookup(object):
             for result in self.lookup_func(redirect, uuid=article.dictionary.uuid):
                     a = result()
                     a.title = result.title
+                    if a.title == article.title:
+                        continue
                     return self.redirect(a, level=level+1)
         else:
             return article                
