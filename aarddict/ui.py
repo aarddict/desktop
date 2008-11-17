@@ -200,6 +200,7 @@ class ArticleView(gtk.TextView):
         self.last_drag_coords = None
         self.selection_changed_callback = selection_changed_callback
         self.phonetic_font_desc = phonetic_font_desc
+        self.connect("motion_notify_event", self.on_mouse_motion)
     
     def set_buffer(self, buffer):
         handlers = self.get_data("handlers")
@@ -240,6 +241,21 @@ class ArticleView(gtk.TextView):
         for handler in handlers:
             obj.disconnect(handler)
         obj.set_data("handlers", None)
+        
+    def on_mouse_motion(self, widget, event, data = None):
+        cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if self.pointer_over_ref(widget) else None
+        widget.get_window(gtk.TEXT_WINDOW_TEXT).set_cursor(cursor)
+        return False
+    
+    def pointer_over_ref(self, textview):
+        x, y = textview.get_pointer()                    
+        x, y = textview.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
+        tags = textview.get_iter_at_location(x, y).get_tags()
+        for tag in tags:
+            tag_name = tag.get_property("name")
+            if tag_name == "r" or tag_name == "url" or tag_name == "ref":
+                return True
+        return False        
 
 class WordLookup(object):
     def __init__(self, read_funcs, lookup_func):
@@ -955,14 +971,18 @@ class DictViewer(object):
         article_view = ArticleView(self.article_drag_handler, 
                                    self.article_text_selection_changed, 
                                    self.phonetic_font_desc)
-        if self.supports_cursor_changes():        
-            article_view.connect("motion_notify_event", self.on_mouse_motion)
+#        if self.supports_cursor_changes():        
+#            article_view.connect("motion_notify_event", self.on_mouse_motion)
         return article_view   
     
-    def supports_cursor_changes(self):
-        return True         
+#    def supports_cursor_changes(self):
+#        return True         
     
     def article_drag_handler(self, widget, event):
+        
+        while not isinstance(widget.get_parent(), gtk.ScrolledWindow):
+            widget = widget.get_parent()
+        
         if self.mi_drag_selects.get_active():
             return False
         type = event.type        
@@ -1007,6 +1027,8 @@ class DictViewer(object):
         self.mi_copy_to_clipboard.set_sensitive(sensitive)
     
     def on_mouse_motion(self, widget, event, data = None):
+        if isinstance(widget.get_parent(), gtk.Table):
+            widget = widget.get_parent().get_parent()        
         cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if self.pointer_over_ref(widget) else None
         widget.get_window(gtk.TEXT_WINDOW_TEXT).set_cursor(cursor)
         return False

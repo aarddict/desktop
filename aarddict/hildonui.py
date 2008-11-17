@@ -87,6 +87,6 @@ class HildonDictViewer(ui.DictViewer):
     def open_external_link(self, url):
         webbrowser.open(url, context = osso_c)
         
-    def supports_cursor_changes(self):
-        return False         
+#    def supports_cursor_changes(self):
+#        return False         
         
