@@ -150,6 +150,10 @@ class ArticleFormat:
         buff, tables = self.create_tagged_text_buffer(dictionary, raw_article, article_view)
         cell_view.set_buffer(buff)
         cell_view.set_wrap_mode(gtk.WRAP_NONE)
+        for tbl, anchor in tables:
+            cell_view.add_child_at_anchor(tbl, anchor)
+        cell_view.show_all()
+        
         return cell_view
 
     def create_table(self, dictionary, article_view, text_buffer, tag, start, end):
