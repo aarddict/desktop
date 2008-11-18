@@ -278,6 +278,7 @@ class ArticleFormat:
                           foreground = "darkred")
         
         buffer.create_tag("p", pixels_above_lines=3, pixels_below_lines=3)
+        buffer.create_tag("div", pixels_above_lines=3, pixels_below_lines=3)
         
         buffer.create_tag("sup", rise=2, scale=pango.SCALE_XX_SMALL)
         buffer.create_tag("sub", rise=-2, scale=pango.SCALE_XX_SMALL)
