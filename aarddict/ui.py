@@ -147,9 +147,17 @@ class LangNotebook(gtk.Notebook):
     def __clear_word_list(self, tab):
         word_list = tab.child
         selection = word_list.get_selection()
-        selection.handler_block(word_list.selection_changed_handler)
-        word_list.get_model().clear()
-        selection.handler_unblock(word_list.selection_changed_handler)
+        iscurrent = tab == self.current()
+        if not iscurrent:
+            selection.handler_block(word_list.selection_changed_handler)
+        model = word_list.get_model()
+        word_list.set_model(None)
+        word_list.freeze_child_notify()
+        model.clear()
+        word_list.set_model(model)
+        word_list.thaw_child_notify()
+        if not iscurrent:         
+            selection.handler_unblock(word_list.selection_changed_handler)
 
     def clear(self):                        
         self.foreach(self.__clear_word_list)
