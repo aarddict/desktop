@@ -134,12 +134,25 @@ class LangNotebook(gtk.Notebook):
             self.__update_label(label, lang, len(model))
             model.connect("row-inserted", self.__row_inserted, label, lang)
             model.connect("row-deleted", self.__row_deleted, label, lang)
-            word_list.get_selection().connect("changed", self.word_selection_changed, lang)
+            handler = word_list.get_selection().connect("changed", 
+                                                        self.word_selection_changed, 
+                                                        lang)
+            word_list.selection_changed_handler = handler
             page = create_scrolled_window(word_list)
             page.lang = lang
             self.append_page(page, label)  
             self.set_tab_reorderable(page, True)
         self.show_all()
+
+    def __clear_word_list(self, tab):
+        word_list = tab.child
+        selection = word_list.get_selection()
+        selection.handler_block(word_list.selection_changed_handler)
+        word_list.get_model().clear()
+        selection.handler_unblock(word_list.selection_changed_handler)
+
+    def clear(self):                        
+        self.foreach(self.__clear_word_list)
 
     def __row_inserted(self, model, path, iter, label, lang):
         self.__update_label(label, lang, len(model))
@@ -297,16 +310,15 @@ class WordLookup(object):
                     return self.redirect(a, level=level+1)
         else:
             return article                
+
+    def do_redirect(self, read_func):
+        article = read_func()
+        article.title = read_func.title
+        rarticle = self.redirect(article)
+        return rarticle if rarticle else self.notfound(article)
         
-    def articles(self):
-        
-        def redirect(read_func):
-            article = read_func()
-            article.title = read_func.title
-            rarticle = self.redirect(article)
-            return rarticle if rarticle else self.notfound(article)
-            
-        return [redirect(func) for func in self.read_funcs]
+    def articles(self):                    
+        return [self.do_redirect(func) for func in self.read_funcs]
     
 class LookupCanceled(Exception):        
     pass
@@ -727,9 +739,9 @@ class DictViewer(object):
             lang_word_list[lang] =  [WordLookup(list(g), self.dictionaries.lookup) 
                                      for k, g in groupby(articles, key)] 
         return lang_word_list
-    
+            
     def update_completion(self, word, to_select = None):
-        self.word_completion.foreach(lambda s : s.child.get_model().clear())
+        self.word_completion.clear()
         self.stop_lookup()
         word = word.lstrip()
         self.update_completion_q.put((word, to_select))  
@@ -740,7 +752,11 @@ class DictViewer(object):
         for lang in lang_word_list.iterkeys():
             word_list = self.word_completion.word_list(lang)
             model = word_list.get_model()
-            [model.append((word,)) for word in lang_word_list[lang]]   
+            word_list.freeze_child_notify()
+            word_list.set_model(None)
+            [model.append((word,)) for word in lang_word_list[lang]]
+            word_list.set_model(model)
+            word_list.thaw_child_notify() 
         selected = False
         if to_select:
             word, lang = to_select
