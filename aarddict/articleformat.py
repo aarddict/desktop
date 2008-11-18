@@ -32,6 +32,10 @@ class FormattingStoppedException(Exception):
     def __str__(self):
         return repr(self.value)   
 
+def size_allocate(widget, allocation, table):
+    w = min(int(0.95*allocation.width), allocation.width - 1)
+    table.set_size_request(w, -1)
+
 class ArticleFormat:
     class Worker(threading.Thread):        
         def __init__(self, formatter, dict, word, article, article_view):
@@ -45,11 +49,12 @@ class ArticleFormat:
 
         def run(self):
             self.stopped = False
-            text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict, self.article, self.article_view)
+            text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict, self.article, self.article_view)                        
             
             def set_buffer(view, buffer, tables):
                 view.set_buffer(buffer)
                 for tbl, anchor in tables:
+                    view.connect('size-allocate', size_allocate, tbl)
                     view.add_child_at_anchor(tbl, anchor)
                 view.show_all()
                             
@@ -124,8 +129,10 @@ class ArticleFormat:
                                              text_buffer, start, end, 
                                              reftable[footnote_key])
             elif tag.name == 'table':
-                tables.append(self.create_table(dictionary, article_view, 
-                                                text_buffer, tag, start, end))
+                tbl = self.create_table(dictionary, article_view, 
+                                                text_buffer, tag, start, end)
+                if tbl:                
+                    tables.append(tbl)
             elif tag.name == "c":
                 if 'c' in tag.attributes:
                     color_code = tag.attributes['c']
@@ -136,7 +143,7 @@ class ArticleFormat:
         return text_buffer, tables
 
 
-    def create_cell_view(self, dictionary, article_view, text, tags):
+    def create_cell_view(self, dictionary, article_view, text, tags, wrap):
         class A(object):
             def __init__(self, text, tags):
                 self.text = text
@@ -149,7 +156,7 @@ class ArticleFormat:
                                    article_view.phonetic_font_desc)
         buff, tables = self.create_tagged_text_buffer(dictionary, raw_article, article_view)
         cell_view.set_buffer(buff)
-        cell_view.set_wrap_mode(gtk.WRAP_NONE)
+        cell_view.set_wrap_mode(wrap)
         for tbl, anchor in tables:
             cell_view.add_child_at_anchor(tbl, anchor)
         cell_view.show_all()
@@ -159,6 +166,9 @@ class ArticleFormat:
     def create_table(self, dictionary, article_view, text_buffer, tag, start, end):
         tabledata = tag.attributes['rows']
         tableattrs = tag.attributes['attrs']
+        tableclasses = tableattrs.get('class', '').split()
+        if 'navbox' in tableclasses:
+            return None
         
         table = gtk.Table()
         table.set_property('column-spacing', 5)
@@ -173,8 +183,14 @@ class ArticleFormat:
                 while rowspanmap[j] > 0:
                     rowspanmap[j] = rowspanmap[j] - 1
                     j += 1                    
-                text, tags  = cell                                              
-                cellwidget = self.create_cell_view(dictionary, article_view, text, tags)
+                text, tags  = cell   
+#                if tableattrs.get('class', '') in ('navtable', 'messagebox'):
+                if tableattrs.get('class', '') not in ('wikitable'):
+                    wrap = gtk.WRAP_WORD_CHAR
+                else:
+                    #wrap = gtk.WRAP_NONE
+                    wrap = gtk.WRAP_WORD_CHAR                    
+                cellwidget = self.create_cell_view(dictionary, article_view, text, tags, wrap)
                 cellattrs = [attrs for name, s, e, attrs in tags if name == 'cell'][0]
                 cellspan = cellattrs.get('colspan', 1)
                 rowspan = cellattrs.get('rowspan', 1)
