@@ -256,7 +256,7 @@ class ArticleFormat:
         buffer.create_tag("i", style = pango.STYLE_ITALIC)
         buffer.create_tag("em", style = pango.STYLE_ITALIC)
         buffer.create_tag("u", underline = True)
-        buffer.create_tag("ref", underline=True, rise=4,
+        buffer.create_tag("ref", underline=True, rise=8*pango.SCALE,                           
                           scale=pango.SCALE_XX_SMALL, foreground='blue')
         buffer.create_tag("tt", family = 'monospace')        
         
@@ -280,8 +280,8 @@ class ArticleFormat:
         buffer.create_tag("p", pixels_above_lines=3, pixels_below_lines=3)
         buffer.create_tag("div", pixels_above_lines=3, pixels_below_lines=3)
         
-        buffer.create_tag("sup", rise=2, scale=pango.SCALE_XX_SMALL)
-        buffer.create_tag("sub", rise=-2, scale=pango.SCALE_XX_SMALL)
+        buffer.create_tag("sup", rise=8*pango.SCALE, scale=pango.SCALE_XX_SMALL)
+        buffer.create_tag("sub", rise=-8*pango.SCALE, scale=pango.SCALE_XX_SMALL)
         
         buffer.create_tag("blockquote", indent = 6)
         buffer.create_tag("cite", style=pango.STYLE_ITALIC, 
