@@ -216,7 +216,7 @@ class ArticleFormat:
         
     def create_article_text_buffer(self):
         buffer = gtk.TextBuffer()
-        buffer.create_tag("b", weight = pango.WEIGHT_BOLD)
+        buffer.create_tag("b", weight = pango.WEIGHT_BOLD)        
         buffer.create_tag("strong", weight = pango.WEIGHT_BOLD)
         buffer.create_tag("small", scale = pango.SCALE_SMALL)
         buffer.create_tag("big", scale = pango.SCALE_LARGE)
@@ -276,6 +276,8 @@ class ArticleFormat:
         buffer.create_tag("tr", 
                           weight = pango.WEIGHT_BOLD, 
                           foreground = "darkred")
+        
+        buffer.create_tag("p", pixels_above_lines=3, pixels_below_lines=3)
         
         buffer.create_tag("sup", rise=2, scale=pango.SCALE_XX_SMALL)
         buffer.create_tag("sub", rise=-2, scale=pango.SCALE_XX_SMALL)
