@@ -601,13 +601,13 @@ class DictViewer(object):
                 break;
         if insert:
             model.insert(None, 0, [word, lang])  
-            self.word_input.set_active(0)
+            #self.word_input.set_active(0)
             i = model.get_iter_first()
             i = model.iter_next(i)
             for j in xrange(1, self.word_input.previous_active + 1):
                 if i and model.iter_is_valid(i): model.remove(i)            
-        else:
-            self.word_input.set_active(i)
+#        else:
+#            self.word_input.set_active(i)
         self.word_input.previous_active = self.word_input.get_active()
         history_size = model.iter_n_children(None)
         if history_size > 10:
@@ -618,11 +618,19 @@ class DictViewer(object):
         model = self.word_input.get_model()
         active = self.word_input.get_active()
         if active == -1:
-            s_word, s_lang = self.get_selected_word()
+            sword, slang = self.get_selected_word()
+            sword = str(sword)
+            logging.debug('selected: %s (%s)', sword, slang)
             for i, (word, lang) in enumerate(model):
-                logging.debug('history_back: %s %s %s', i, word, lang)
-                if s_word == word and s_lang == lang:
+                logging.debug('history_back: %s %s (%s)', i, word, lang)
+                logging.debug('%s == %s and %s == %s?', sword, word, slang, lang)
+                if sword == word and slang == lang:                    
                     active = i
+                    logging.debug('Yes')
+                    logging.debug('Current position in history: %s %s (%s)', i, word, lang)
+                    break
+                else:
+                    logging.debug('No')
         if active + 1 < len(model):  
             self.word_input.set_active(active + 1)     
             
@@ -632,14 +640,14 @@ class DictViewer(object):
             self.word_input.set_active(active - 1)                
                 
     def clear_tabs(self):
+        self.article_formatter.stop()
         while self.tabs.get_n_pages() > 0:            
             last_page = self.tabs.get_nth_page(self.tabs.get_n_pages() - 1)
             article_view = last_page.get_child()
             article_view.remove_handlers()
             self.tabs.remove_page(-1)        
         self.dict_key_to_tab.clear()       
-        self.update_copy_article_mi(self.tabs)
-        self.article_formatter.stop()
+        self.update_copy_article_mi(self.tabs)        
         return False 
         
     def show_article_for(self, wordlookup, lang = None):
