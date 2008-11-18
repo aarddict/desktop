@@ -2,7 +2,7 @@
 mkdir -p usr/{bin/,lib/python2.5/site-packages/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
 
 DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml, pyicu (>= 0.8.1), simplejson"
-cp ../aarddict.py usr/bin/aarddict || exit
+cp ../run usr/bin/aarddict || exit
 cp -R ../aarddict/*.py usr/lib/python2.5/site-packages/aarddict || exit
 cp -R ../icons/ usr/share/
 chmod +x usr/bin/aarddict
@@ -88,7 +88,7 @@ echo 2.0 > debian-binary
 
 tar -zcvf data.tar.gz ./usr 
 tar -zcvf control.tar.gz control postinst
-NAME="$PACKAGE"_"$VERSION"-2maemo_armel.deb
+NAME="$PACKAGE"_"$VERSION"-3maemo_armel.deb
 rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME
