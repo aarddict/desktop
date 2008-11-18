@@ -26,6 +26,8 @@ import gobject
 import gtk
 import pango
 
+WRAP_TBL_CLASSES = frozenset(('messagebox', 'metadata', 'ambox'))
+
 class FormattingStoppedException(Exception):
     def __init__(self):
         self.value = "Formatting stopped"
@@ -54,7 +56,8 @@ class ArticleFormat:
             def set_buffer(view, buffer, tables):
                 view.set_buffer(buffer)
                 for tbl, anchor in tables:
-                    view.connect('size-allocate', size_allocate, tbl)
+                    if tbl.fit_to_width:
+                        view.connect('size-allocate', size_allocate, tbl)
                     view.add_child_at_anchor(tbl, anchor)
                 view.show_all()
                             
@@ -184,12 +187,14 @@ class ArticleFormat:
                     rowspanmap[j] = rowspanmap[j] - 1
                     j += 1                    
                 text, tags  = cell   
-#                if tableattrs.get('class', '') in ('navtable', 'messagebox'):
-                if tableattrs.get('class', '') not in ('wikitable'):
+                
+                if any((tableclass in WRAP_TBL_CLASSES 
+                        for tableclass in tableclasses)):
                     wrap = gtk.WRAP_WORD_CHAR
+                    table.fit_to_width = True
                 else:
-                    #wrap = gtk.WRAP_NONE
-                    wrap = gtk.WRAP_WORD_CHAR                    
+                    wrap = gtk.WRAP_NONE
+                    table.fit_to_width = False
                 cellwidget = self.create_cell_view(dictionary, article_view, text, tags, wrap)
                 cellattrs = [attrs for name, s, e, attrs in tags if name == 'cell'][0]
                 cellspan = cellattrs.get('colspan', 1)
