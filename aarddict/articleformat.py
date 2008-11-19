@@ -170,8 +170,6 @@ class ArticleFormat:
         tabledata = tag.attributes['rows']
         tableattrs = tag.attributes['attrs']
         tableclasses = tableattrs.get('class', '').split()
-        if 'navbox' in tableclasses:
-            return None
         
         table = gtk.Table()
         table.set_property('column-spacing', 5)
