@@ -163,11 +163,11 @@ class Article(object):
     
 class Tag(object):
 
-    def __init__(self, name = "", start = -1, end = -1, attributes = None):
+    def __init__(self, name, start, end, attributes=None):
         self.name = name
         self.start = start
         self.end = end
-        self.attributes = attributes if attributes else {}
+        self.attributes = attributes if attributes is not None else {}
 
     def __repr__(self):
         attrs = ' '.join([ '%s = %s' % attr 
@@ -176,17 +176,25 @@ class Tag(object):
             attrs = ' ' + attrs 
         return '<%s%s> (start %d, end %d)' % (self.name, attrs, 
                                                self.start, self.end)        
+
+def to_tag(tagtuple):
+    return Tag(tagtuple[0], tagtuple[1], tagtuple[2], 
+               {} if len(tagtuple) < 4 else tagtuple[3])  
         
 def to_article(raw_article):
     try:
-        text, tag_list, meta = simplejson.loads(raw_article)
+        articletuple = simplejson.loads(raw_article)
+        if len(articletuple) == 3:
+            text, tag_list, meta = articletuple
+        else:
+            text, tag_list = articletuple
+            meta = {}
     except:
         logging.exception('was trying to load article from string:\n%s', raw_article[:10])
         text = raw_article
         tags = []
-    else:
-        tags = [Tag(name, start, end, attrs) 
-                for name, start, end, attrs in tag_list]            
+    else:        
+        tags = [to_tag(tagtuple) for tagtuple in tag_list]            
     return Article(text=text, tags=tags, meta=meta)
 
             

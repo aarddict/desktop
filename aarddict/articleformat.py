@@ -131,7 +131,7 @@ class ArticleFormat:
                     self.create_footnote_ref(dictionary, article_view, 
                                              text_buffer, start, end, 
                                              reftable[footnote_key])
-            elif tag.name == 'table':
+            elif tag.name == 'tbl':
                 tbl = self.create_table(dictionary, article_view, 
                                                 text_buffer, tag, start, end)
                 if tbl:                
@@ -151,8 +151,8 @@ class ArticleFormat:
             def __init__(self, text, tags):
                 self.text = text
                 self.tags = tags
-        raw_article = A(text, [aarddict.dictionary.Tag(name, start, end, attrs) 
-                               for name, start, end, attrs in tags])
+        raw_article = A(text, [aarddict.dictionary.to_tag(tagtuple) 
+                               for tagtuple in tags])
         
         cell_view = aarddict.ui.ArticleView(article_view.drag_handler, 
                                    article_view.selection_changed_callback, 
@@ -193,8 +193,10 @@ class ArticleFormat:
                 else:
                     wrap = gtk.WRAP_NONE
                     table.fit_to_width = False
-                cellwidget = self.create_cell_view(dictionary, article_view, text, tags, wrap)
-                cellattrs = [attrs for name, s, e, attrs in tags if name == 'cell'][0]
+                cellwidget = self.create_cell_view(dictionary, article_view, 
+                                                   text, tags, wrap)
+                cellattrs = [t[3] if len(t) > 3 else {} for t 
+                             in tags if t[0] == 'td'][0]
                 cellspan = cellattrs.get('colspan', 1)
                 rowspan = cellattrs.get('rowspan', 1)
                 for k in range(j, j+cellspan):
