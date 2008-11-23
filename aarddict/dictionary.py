@@ -33,6 +33,7 @@ ucollator =  Collator.createInstance(Locale(''))
 ucollator.setStrength(Collator.PRIMARY)
 
 from hashlib import sha1
+import time
 
 def calcsha1(file_name, offset, chunksize=100000):    
     with open(file_name, 'rb') as f:    
@@ -183,7 +184,9 @@ def to_tag(tagtuple):
         
 def to_article(raw_article):
     try:
+        t0 = time.time()
         articletuple = simplejson.loads(raw_article)
+        #print 'json loaded in %.6f s' % (time.time() - t0)
         if len(articletuple) == 3:
             text, tag_list, meta = articletuple
         else:

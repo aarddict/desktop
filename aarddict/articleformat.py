@@ -26,7 +26,189 @@ import gobject
 import gtk
 import pango
 
+import time
+
 WRAP_TBL_CLASSES = frozenset(('messagebox', 'metadata', 'ambox'))
+
+class TagTable(gtk.TextTagTable):
+    
+    def __init__(self):
+        gtk.TextTagTable.__init__(self)
+        
+        tag = gtk.TextTag('b')
+        tag.set_properties(weight=pango.WEIGHT_BOLD)
+        self.add(tag)
+
+        tag = gtk.TextTag('strong')
+        tag.set_properties(weight=pango.WEIGHT_BOLD)
+        self.add(tag)        
+
+        tag = gtk.TextTag('small')
+        tag.set_properties(scale=pango.SCALE_SMALL)
+        self.add(tag)        
+
+        tag = gtk.TextTag('big')
+        tag.set_properties(scale=pango.SCALE_LARGE)
+        self.add(tag)        
+
+        tag = gtk.TextTag('h1')
+        tag.set_properties(weight=pango.WEIGHT_ULTRABOLD, 
+                          scale=pango.SCALE_X_LARGE, 
+                          pixels_above_lines=12, 
+                          pixels_below_lines=6)
+        self.add(tag)        
+
+
+        tag = gtk.TextTag('h2')
+        tag.set_properties(weight=pango.WEIGHT_BOLD, 
+                          scale=pango.SCALE_LARGE, 
+                          pixels_above_lines=6, 
+                          pixels_below_lines=3)
+        self.add(tag)
+
+        tag = gtk.TextTag('h3')
+        tag.set_properties(weight=pango.WEIGHT_BOLD, 
+                          scale=pango.SCALE_MEDIUM, 
+                          pixels_above_lines=3, 
+                          pixels_below_lines=2)
+        self.add(tag)
+
+        tag = gtk.TextTag('h4')
+        tag.set_properties(weight=pango.WEIGHT_SEMIBOLD, 
+                          scale=pango.SCALE_MEDIUM, 
+                          pixels_above_lines=3, 
+                          pixels_below_lines=2)
+        self.add(tag)
+
+        tag = gtk.TextTag('h5')
+        tag.set_properties(weight=pango.WEIGHT_SEMIBOLD, 
+                          scale=pango.SCALE_MEDIUM, 
+                          style=pango.STYLE_ITALIC, 
+                          pixels_above_lines=3, 
+                          pixels_below_lines=2)
+        self.add(tag)
+
+        tag = gtk.TextTag('h6')
+        tag.set_properties(scale=pango.SCALE_MEDIUM, 
+                          underline=pango.UNDERLINE_SINGLE, 
+                          pixels_above_lines=3, 
+                          pixels_below_lines=2)
+        self.add(tag)
+
+        tag = gtk.TextTag('i')
+        tag.set_properties(style=pango.STYLE_ITALIC)
+        self.add(tag)
+
+        tag = gtk.TextTag('em')
+        tag.set_properties(style=pango.STYLE_ITALIC)
+        self.add(tag)
+
+        tag = gtk.TextTag('u')
+        tag.set_properties(underline=True)
+        self.add(tag)
+
+        tag = gtk.TextTag('ref')
+        tag.set_properties(underline=True, 
+                           rise=6*pango.SCALE,                           
+                           scale=pango.SCALE_X_SMALL, 
+                           foreground='blue')
+        self.add(tag)
+
+        tag = gtk.TextTag('tt')
+        tag.set_properties(family='monospace')
+        self.add(tag)
+
+        tag = gtk.TextTag('pos')
+        tag.set_properties(style=pango.STYLE_ITALIC, 
+                           weight=pango.WEIGHT_SEMIBOLD,
+                           foreground='darkgreen')
+        self.add(tag)
+
+        tag = gtk.TextTag('r')
+        tag.set_properties(underline=pango.UNDERLINE_SINGLE, 
+                           foreground="brown4")
+        self.add(tag)
+
+        tag = gtk.TextTag('url')
+        tag.set_properties(underline=pango.UNDERLINE_SINGLE, 
+                           foreground="steelblue4")
+        self.add(tag)
+
+        tag = gtk.TextTag('tr')
+        tag.set_properties(weight=pango.WEIGHT_BOLD, 
+                           foreground="darkred")
+        self.add(tag)
+
+        tag = gtk.TextTag('p')
+        tag.set_properties(pixels_above_lines=3, 
+                           pixels_below_lines=3)
+        self.add(tag)
+
+        tag = gtk.TextTag('div')
+        tag.set_properties(pixels_above_lines=3, 
+                           pixels_below_lines=3)
+        self.add(tag)
+                
+        tag = gtk.TextTag('sup')
+        tag.set_properties(rise=6*pango.SCALE, 
+                           scale=pango.SCALE_X_SMALL)
+        self.add(tag)
+
+        tag = gtk.TextTag('sub')
+        tag.set_properties(rise=-6*pango.SCALE, 
+                           scale=pango.SCALE_X_SMALL)
+        self.add(tag)
+
+        tag = gtk.TextTag('blockquote')
+        tag.set_properties(indent=6)
+        self.add(tag)
+
+        tag = gtk.TextTag('cite')
+        tag.set_properties(style=pango.STYLE_ITALIC, 
+                           family='serif', 
+                           indent=6)
+        self.add(tag)
+
+
+        #Key phrase
+        tag = gtk.TextTag('k')
+        tag.set_properties(weight=pango.WEIGHT_BOLD, 
+                           scale=pango.SCALE_LARGE, 
+                           pixels_above_lines=6, 
+                           pixels_below_lines=3)
+        self.add(tag)
+        
+        #Direct translation of the key-phrase
+        tag = gtk.TextTag('dtrn')
+        tag.set_properties(family='monospace')
+        self.add(tag)        
+        
+
+        #Marks the text of an editorial comment
+        tag = gtk.TextTag('co')
+        tag.set_properties(foreground="slategray4",
+                           scale=pango.SCALE_SMALL)
+        self.add(tag)        
+                        
+        #Marks the text of an example
+        tag = gtk.TextTag('ex')
+        tag.set_properties(style=pango.STYLE_ITALIC,
+                           family='serif',
+                           foreground="darkblue")
+        self.add(tag)        
+
+        #Marks an abbreviation that is listed in the <abbreviations> section
+        tag = gtk.TextTag('abr')
+        tag.set_properties(weight=pango.WEIGHT_SEMIBOLD,
+                           style = pango.STYLE_ITALIC,
+                           foreground = "darkred")
+        self.add(tag)        
+
+        #Tag that marks the whole article
+        tag = gtk.TextTag('ar')
+        self.add(tag)        
+
+TAGS_TABLE = TagTable()
 
 class FormattingStoppedException(Exception):
     def __init__(self):
@@ -51,15 +233,19 @@ class ArticleFormat:
 
         def run(self):
             self.stopped = False
-            text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict, self.article, self.article_view)                        
-            
+#            t0 = time.time()                                    
+            text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict, self.article.text, 
+                                                                           self.article.tags, self.article_view)                        
+#            print 'created text buffer in %.6f s' % (time.time() - t0)
             def set_buffer(view, buffer, tables):
+#                t1 = time.time()
                 view.set_buffer(buffer)
                 for tbl, anchor in tables:
                     if tbl.fit_to_width:
                         view.connect('size-allocate', size_allocate, tbl)
                     view.add_child_at_anchor(tbl, anchor)
                 view.show_all()
+#                print 'set buffer in %.6f s' % (time.time() - t1)
                             
             if not self.stopped:
                 gobject.idle_add(set_buffer, self.article_view, text_buffer, tables)
@@ -105,10 +291,9 @@ class ArticleFormat:
         text_buffer.apply_tag_by_name("ref", start, end)
         text_buffer.apply_tag(ref_tag, start, end) 
         
-    def create_tagged_text_buffer(self, dictionary, raw_article, article_view):
+    def create_tagged_text_buffer(self, dictionary, text, tags, article_view):
         text_buffer = self.create_article_text_buffer()
-        text_buffer.set_text(raw_article.text)
-        tags = raw_article.tags
+        text_buffer.set_text(text)
         
         reftable = dict([((tag.attributes['group'], tag.attributes['id']), tag.start)
                           for tag in tags if tag.name=='note'])
@@ -132,8 +317,10 @@ class ArticleFormat:
                                              text_buffer, start, end, 
                                              reftable[footnote_key])
             elif tag.name == 'tbl':
+#                t0 = time.time()
                 tbl = self.create_table(dictionary, article_view, 
                                                 text_buffer, tag, start, end)
+#                print 'created table in %.6f s' % (time.time() - t0)
                 if tbl:                
                     tables.append(tbl)
             elif tag.name == "c":
@@ -147,22 +334,25 @@ class ArticleFormat:
 
 
     def create_cell_view(self, dictionary, article_view, text, tags, wrap):
-        class A(object):
-            def __init__(self, text, tags):
-                self.text = text
-                self.tags = tags
-        raw_article = A(text, [aarddict.dictionary.to_tag(tagtuple) 
-                               for tagtuple in tags])
-        
+#        t0 = time.time()
+        tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tags]        
+#        print '\t\t\t\t converted tags in %.6f s' % (time.time() - t0)
+#        t0 = time.time()
         cell_view = aarddict.ui.ArticleView(article_view.drag_handler, 
                                    article_view.selection_changed_callback, 
                                    article_view.phonetic_font_desc)
-        buff, tables = self.create_tagged_text_buffer(dictionary, raw_article, article_view)
-        cell_view.set_buffer(buff)
+#        print '\t\t\t\t created view in %.6f s' % (time.time() - t0)
+#        t0 = time.time()
+        buff, tables = self.create_tagged_text_buffer(dictionary, text, 
+                                                      tags, article_view)
+#        print '\t\t\t\t created buffer in %.6f s' % (time.time() - t0)
+#        t0 = time.time()
         cell_view.set_wrap_mode(wrap)
+        cell_view.set_buffer(buff)
         for tbl, anchor in tables:
             cell_view.add_child_at_anchor(tbl, anchor)
-        cell_view.show_all()
+#        print '\t\t\t\t set buffer and chidlren in %.6f s' % (time.time() - t0)
+        #cell_view.show_all()
         
         return cell_view
 
@@ -174,38 +364,46 @@ class ArticleFormat:
         table = gtk.Table()
         table.set_property('column-spacing', 5)
         table.set_property('row-spacing', 5)        
+
+        if any((tableclass in WRAP_TBL_CLASSES 
+                for tableclass in tableclasses)):
+            wrap = gtk.WRAP_WORD_CHAR
+            table.fit_to_width = True
+        else:
+            wrap = gtk.WRAP_NONE
+            table.fit_to_width = False
         
         i = 0
         rowspanmap = defaultdict(int)
         for row in tabledata:
+#            t0 = time.time()                    
             rowdata, rowtags = row
             j = 0            
             for cell in rowdata:
+#                t2 = time.time()
                 while rowspanmap[j] > 0:
                     rowspanmap[j] = rowspanmap[j] - 1
                     j += 1                    
                 text, tags  = cell   
-                
-                if any((tableclass in WRAP_TBL_CLASSES 
-                        for tableclass in tableclasses)):
-                    wrap = gtk.WRAP_WORD_CHAR
-                    table.fit_to_width = True
-                else:
-                    wrap = gtk.WRAP_NONE
-                    table.fit_to_width = False
+#                t1 = time.time()
                 cellwidget = self.create_cell_view(dictionary, article_view, 
                                                    text, tags, wrap)
+#                print '\t\t\tcreated cell widget in %.6f s' % (time.time() - t1)                
                 cellattrs = [t[3] if len(t) > 3 else {} for t 
                              in tags if t[0] == 'td'][0]
                 cellspan = cellattrs.get('colspan', 1)
                 rowspan = cellattrs.get('rowspan', 1)
                 for k in range(j, j+cellspan):
                     rowspanmap[k] = rowspan - 1
+#                t1 = time.time()
                 table.attach(cellwidget, j, j+cellspan, i, i+rowspan, 
                              xoptions=gtk.EXPAND|gtk.FILL, 
                              yoptions=gtk.EXPAND|gtk.FILL, 
                              xpadding=0, ypadding=0)
-                j = j + cellspan                                             
+#                print '\t\t\tattached cell widgets in %.6f s' % (time.time() - t1)
+#                print '\t\tcreated cell in %.6f s' % (time.time() - t2)            
+                j = j + cellspan
+#            print '\tcreated row in %.6f s' % (time.time() - t0)                                                            
             i = i + 1        
                                       
         text_buffer.delete(start, end)            
@@ -215,106 +413,4 @@ class ArticleFormat:
         
         
     def create_article_text_buffer(self):
-        buffer = gtk.TextBuffer()
-        buffer.create_tag("b", weight = pango.WEIGHT_BOLD)        
-        buffer.create_tag("strong", weight = pango.WEIGHT_BOLD)
-        buffer.create_tag("small", scale = pango.SCALE_SMALL)
-        buffer.create_tag("big", scale = pango.SCALE_LARGE)
-        
-        buffer.create_tag("h1", 
-                          weight = pango.WEIGHT_ULTRABOLD, 
-                          scale = pango.SCALE_X_LARGE, 
-                          pixels_above_lines = 12, 
-                          pixels_below_lines = 6)
-        buffer.create_tag("h2", 
-                          weight = pango.WEIGHT_BOLD, 
-                          scale = pango.SCALE_LARGE, 
-                          pixels_above_lines = 6, 
-                          pixels_below_lines = 3)        
-        buffer.create_tag("h3", 
-                          weight = pango.WEIGHT_BOLD, 
-                          scale = pango.SCALE_MEDIUM, 
-                          pixels_above_lines = 3, 
-                          pixels_below_lines = 2)
-        buffer.create_tag("h4", 
-                          weight = pango.WEIGHT_SEMIBOLD, 
-                          scale = pango.SCALE_MEDIUM, 
-                          pixels_above_lines = 3, 
-                          pixels_below_lines = 2)
-        buffer.create_tag("h5", 
-                          weight = pango.WEIGHT_SEMIBOLD, 
-                          scale = pango.SCALE_MEDIUM, 
-                          style = pango.STYLE_ITALIC, 
-                          pixels_above_lines = 3, 
-                          pixels_below_lines = 2)
-        buffer.create_tag("h6", 
-                          scale = pango.SCALE_MEDIUM, 
-                          underline = pango.UNDERLINE_SINGLE, 
-                          pixels_above_lines = 3, 
-                          pixels_below_lines = 2)
-        
-        buffer.create_tag("i", style = pango.STYLE_ITALIC)
-        buffer.create_tag("em", style = pango.STYLE_ITALIC)
-        buffer.create_tag("u", underline = True)
-        buffer.create_tag("ref", underline=True, rise=8*pango.SCALE,                           
-                          scale=pango.SCALE_XX_SMALL, foreground='blue')
-        buffer.create_tag("tt", family = 'monospace')        
-        
-        buffer.create_tag("pos", 
-                          style = pango.STYLE_ITALIC, 
-                          weight = pango.WEIGHT_SEMIBOLD,
-                          foreground = "darkgreen")
-        
-        buffer.create_tag("r", 
-                          underline = pango.UNDERLINE_SINGLE, 
-                          foreground = "brown4")
-        
-        buffer.create_tag("url", 
-                          underline = pango.UNDERLINE_SINGLE, 
-                          foreground = "steelblue4")
-        
-        buffer.create_tag("tr", 
-                          weight = pango.WEIGHT_BOLD, 
-                          foreground = "darkred")
-        
-        buffer.create_tag("p", pixels_above_lines=3, pixels_below_lines=3)
-        buffer.create_tag("div", pixels_above_lines=3, pixels_below_lines=3)
-        
-        buffer.create_tag("sup", rise=8*pango.SCALE, scale=pango.SCALE_XX_SMALL)
-        buffer.create_tag("sub", rise=-8*pango.SCALE, scale=pango.SCALE_XX_SMALL)
-        
-        buffer.create_tag("blockquote", indent = 6)
-        buffer.create_tag("cite", style=pango.STYLE_ITALIC, 
-                          family = 'serif', indent=6)
-        
-        'Key phrase'
-        buffer.create_tag('k', 
-                          weight = pango.WEIGHT_BOLD, 
-                          scale = pango.SCALE_LARGE, 
-                          pixels_above_lines = 6, 
-                          pixels_below_lines = 3)        
-
-        'Direct translation of the key-phrase'
-        buffer.create_tag('dtrn')
-                
-        'Marks the text of an editorial comment'
-        buffer.create_tag('co',
-                          foreground = "slategray4",
-                          scale = pango.SCALE_SMALL)
-        
-        'Marks the text of an example'
-        buffer.create_tag('ex',
-                          style = pango.STYLE_ITALIC,
-                          family = 'serif',
-                          foreground = "darkblue")
-
-        'Marks an abbreviation that is listed in the <abbreviations> section'
-        buffer.create_tag('abr',
-                          weight = pango.WEIGHT_BOLD,
-                          style = pango.STYLE_ITALIC,
-                          foreground = "darkred")
-        
-        'Tag that marks the whole article'
-        buffer.create_tag('ar')
-        
-        return buffer                
+        return gtk.TextBuffer(TAGS_TABLE)
