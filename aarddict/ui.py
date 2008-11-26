@@ -211,7 +211,8 @@ class LangNotebook(gtk.Notebook):
     
 class ArticleView(gtk.TextView):
     
-    def __init__(self, drag_handler, selection_changed_callback, phonetic_font_desc):
+    def __init__(self, drag_handler, selection_changed_callback, 
+                 phonetic_font_desc, top_article_view=None):
         gtk.TextView.__init__(self)
         self.drag_handler = drag_handler
         self.set_wrap_mode(gtk.WRAP_WORD)
@@ -222,6 +223,10 @@ class ArticleView(gtk.TextView):
         self.selection_changed_callback = selection_changed_callback
         self.phonetic_font_desc = phonetic_font_desc
         self.connect("motion_notify_event", self.on_mouse_motion)
+        if not top_article_view:
+            self.top_article_view=self
+        else:
+            self.top_article_view = top_article_view
     
     def set_buffer(self, buffer):
         handlers = self.get_data("handlers")
@@ -1012,12 +1017,13 @@ class DictViewer(object):
 #        return True         
     
     def article_drag_handler(self, widget, event):
-        
-        while not isinstance(widget.get_parent(), gtk.ScrolledWindow):
-            widget = widget.get_parent()
-        
         if self.mi_drag_selects.get_active():
-            return False
+            return False        
+        
+        widget = widget.top_article_view
+#        while not isinstance(widget.get_parent(), gtk.ScrolledWindow):
+#            widget = widget.get_parent()
+        
         type = event.type        
         x, y = coords = widget.get_pointer()        
         if type in (BUTTON_PRESS, _2BUTTON_PRESS, _3BUTTON_PRESS):

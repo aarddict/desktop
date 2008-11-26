@@ -30,6 +30,15 @@ import time
 
 WRAP_TBL_CLASSES = frozenset(('messagebox', 'metadata', 'ambox'))
 
+def strwidth(text, font_desc=pango.FontDescription('monospace')):
+    layout = pango.Layout(gtk.TextView().get_pango_context())
+    layout.set_text(text)
+    layout.set_font_description(font_desc)
+    width, height = layout.get_pixel_size()
+    return width
+
+CHAR_WIDTH = strwidth(' ')
+
 class TagTable(gtk.TextTagTable):
     
     def __init__(self):
@@ -93,6 +102,14 @@ class TagTable(gtk.TextTagTable):
                           underline=pango.UNDERLINE_SINGLE, 
                           pixels_above_lines=3, 
                           pixels_below_lines=2)
+        self.add(tag)
+
+        tag = gtk.TextTag('row')
+        tag.set_properties(background='#eeeeee', pixels_below_lines=2)
+        self.add(tag)
+
+        tag = gtk.TextTag('td')
+        tag.set_properties(background='#00ee00', pixels_below_lines=2)
         self.add(tag)
 
         tag = gtk.TextTag('i')
@@ -241,8 +258,8 @@ class ArticleFormat:
 #                t1 = time.time()
                 view.set_buffer(buffer)
                 for tbl, anchor in tables:
-                    if tbl.fit_to_width:
-                        view.connect('size-allocate', size_allocate, tbl)
+#                    if tbl.fit_to_width:
+#                        view.connect('size-allocate', size_allocate, tbl)
                     view.add_child_at_anchor(tbl, anchor)
                 view.show_all()
 #                print 'set buffer in %.6f s' % (time.time() - t1)
@@ -340,7 +357,8 @@ class ArticleFormat:
 #        t0 = time.time()
         cell_view = aarddict.ui.ArticleView(article_view.drag_handler, 
                                    article_view.selection_changed_callback, 
-                                   article_view.phonetic_font_desc)
+                                   article_view.phonetic_font_desc, 
+                                   top_article_view=article_view.top_article_view)
 #        print '\t\t\t\t created view in %.6f s' % (time.time() - t0)
 #        t0 = time.time()
         buff, tables = self.create_tagged_text_buffer(dictionary, text, 
@@ -356,60 +374,87 @@ class ArticleFormat:
         
         return cell_view
 
-    def create_table(self, dictionary, article_view, text_buffer, tag, start, end):
-        tabledata = tag.attributes['rows']
-        tableattrs = tag.attributes['attrs']
-        tableclasses = tableattrs.get('class', '').split()
-        
-        table = gtk.Table()
-        table.set_property('column-spacing', 5)
-        table.set_property('row-spacing', 5)        
+    def maketabs(self, rawtabs):
+        tabs = pango.TabArray(len(rawtabs), 
+                                    positions_in_pixels=True)
+        for i in range(tabs.get_size()):
+            pos = rawtabs[i]
+            tabs.set_tab(i, pango.TAB_LEFT, pos*CHAR_WIDTH + 2)    
+        return tabs    
 
-        if any((tableclass in WRAP_TBL_CLASSES 
-                for tableclass in tableclasses)):
-            wrap = gtk.WRAP_WORD_CHAR
-            table.fit_to_width = True
-        else:
-            wrap = gtk.WRAP_NONE
-            table.fit_to_width = False
+
+    def create_table(self, dictionary, article_view, text_buffer, tag, start, end):
+        tabletxt = tag.attributes['text']        
+        tabletags = tag.attributes['tags']
+        tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tabletags]
+        tabletabs = tag.attributes['tabs']
+        rawglobaltabs = tabletabs.get('') 
         
-        i = 0
-        rowspanmap = defaultdict(int)
-        for row in tabledata:
-#            t0 = time.time()                    
-            rowdata, rowtags = row
-            j = 0            
-            for cell in rowdata:
-#                t2 = time.time()
-                while rowspanmap[j] > 0:
-                    rowspanmap[j] = rowspanmap[j] - 1
-                    j += 1                    
-                text, tags  = cell   
-#                t1 = time.time()
-                cellwidget = self.create_cell_view(dictionary, article_view, 
-                                                   text, tags, wrap)
-#                print '\t\t\tcreated cell widget in %.6f s' % (time.time() - t1)                
-                cellattrs = [t[3] if len(t) > 3 else {} for t 
-                             in tags if t[0] == 'td'][0]
-                cellspan = cellattrs.get('colspan', 1)
-                rowspan = cellattrs.get('rowspan', 1)
-                for k in range(j, j+cellspan):
-                    rowspanmap[k] = rowspan - 1
-#                t1 = time.time()
-                table.attach(cellwidget, j, j+cellspan, i, i+rowspan, 
-                             xoptions=gtk.EXPAND|gtk.FILL, 
-                             yoptions=gtk.EXPAND|gtk.FILL, 
-                             xpadding=0, ypadding=0)
-#                print '\t\t\tattached cell widgets in %.6f s' % (time.time() - t1)
-#                print '\t\tcreated cell in %.6f s' % (time.time() - t2)            
-                j = j + cellspan
-#            print '\tcreated row in %.6f s' % (time.time() - t0)                                                            
-            i = i + 1        
+        globaltabs = self.maketabs(rawglobaltabs)        
+        
+        tableview = aarddict.ui.ArticleView(article_view.drag_handler, 
+                                   article_view.selection_changed_callback, 
+                                   article_view.phonetic_font_desc, 
+                                   top_article_view=article_view.top_article_view)
+        tableview.set_wrap_mode(gtk.WRAP_NONE)
+        tableview.set_tabs(globaltabs)
+        
+        buff, tables = self.create_tagged_text_buffer(dictionary, tabletxt, 
+                                                      tags, tableview)
+        
+        rowtags = [tag for tag in tags if tag.name == 'row']
+        
+        for i, rowtag in enumerate(rowtags):
+            if i in tabletabs:            
+                tabs = self.maketabs(tabletabs[i])    
+                t = buff.create_tag(tabs=tabs)
+                buff.apply_tag(t, 
+                                 buff.get_iter_at_offset(rowtag.start), 
+                                 buff.get_iter_at_offset(rowtag.end))
+        
+            color = '#f0f0f0' if i % 2 else '#f9f9f9'
+            t = buff.create_tag(background=color, 
+                                      pixels_above_lines=1, 
+                                      pixels_below_lines=1,
+                                      family='monospace')
+            buff.apply_tag(t, 
+                                 buff.get_iter_at_offset(rowtag.start), 
+                                 buff.get_iter_at_offset(rowtag.end))
+        
+        
+        tableview.set_buffer(buff)
+        for tbl, anchor in tables:
+            tableview.add_child_at_anchor(tbl, anchor)
+        
+#        i = 0
+#        rowspanmap = defaultdict(int)
+#        for row in tabledata:
+#            rowdata, rowtags = row
+#            j = 0            
+#            for cell in rowdata:
+#                while rowspanmap[j] > 0:
+#                    rowspanmap[j] = rowspanmap[j] - 1
+#                    j += 1                    
+#                text, tags  = cell   
+#                cellwidget = self.create_cell_view(dictionary, article_view, 
+#                                                   text, tags, wrap)
+#                cellattrs = [t[3] if len(t) > 3 else {} for t 
+#                             in tags if t[0] == 'td'][0]
+#                cellspan = cellattrs.get('colspan', 1)
+#                rowspan = cellattrs.get('rowspan', 1)
+#                for k in range(j, j+cellspan):
+#                    rowspanmap[k] = rowspan - 1
+#                table.attach(cellwidget, j, j+cellspan, i, i+rowspan, 
+#                             xoptions=gtk.EXPAND|gtk.FILL, 
+#                             yoptions=gtk.EXPAND|gtk.FILL, 
+#                             xpadding=0, ypadding=0)
+#                j = j + cellspan
+#            i = i + 1        
                                       
         text_buffer.delete(start, end)            
         anchor = text_buffer.create_child_anchor(start)
         
-        return table, anchor        
+        return tableview, anchor        
         
         
     def create_article_text_buffer(self):
