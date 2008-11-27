@@ -34,7 +34,7 @@ def strwidth(text, font_desc=pango.FontDescription('monospace')):
     layout = pango.Layout(gtk.TextView().get_pango_context())
     layout.set_text(text)
     layout.set_font_description(font_desc)
-    width, height = layout.get_pixel_size()
+    width, height = layout.get_size()
     return width
 
 CHAR_WIDTH = strwidth(' ')
@@ -376,10 +376,10 @@ class ArticleFormat:
 
     def maketabs(self, rawtabs):
         tabs = pango.TabArray(len(rawtabs), 
-                                    positions_in_pixels=True)
+                                    positions_in_pixels=False)
         for i in range(tabs.get_size()):
             pos = rawtabs[i]
-            tabs.set_tab(i, pango.TAB_LEFT, pos*CHAR_WIDTH + 2)    
+            tabs.set_tab(i, pango.TAB_LEFT, pos*CHAR_WIDTH + 2*pango.SCALE)    
         return tabs    
 
 
@@ -416,7 +416,7 @@ class ArticleFormat:
             t = buff.create_tag(background=color, 
                                       pixels_above_lines=1, 
                                       pixels_below_lines=1,
-                                      family='monospace')
+                                      )
             buff.apply_tag(t, 
                                  buff.get_iter_at_offset(rowtag.start), 
                                  buff.get_iter_at_offset(rowtag.end))
