@@ -250,19 +250,13 @@ class ArticleFormat:
 
         def run(self):
             self.stopped = False
-#            t0 = time.time()                                    
             text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict, self.article.text, 
                                                                            self.article.tags, self.article_view)                        
-#            print 'created text buffer in %.6f s' % (time.time() - t0)
             def set_buffer(view, buffer, tables):
-#                t1 = time.time()
                 view.set_buffer(buffer)
                 for tbl, anchor in tables:
-#                    if tbl.fit_to_width:
-#                        view.connect('size-allocate', size_allocate, tbl)
                     view.add_child_at_anchor(tbl, anchor)
                 view.show_all()
-#                print 'set buffer in %.6f s' % (time.time() - t1)
                             
             if not self.stopped:
                 gobject.idle_add(set_buffer, self.article_view, text_buffer, tables)
@@ -334,10 +328,8 @@ class ArticleFormat:
                                              text_buffer, start, end, 
                                              reftable[footnote_key])
             elif tag.name == 'tbl':
-#                t0 = time.time()
                 tbl = self.create_table(dictionary, article_view, 
                                                 text_buffer, tag, start, end)
-#                print 'created table in %.6f s' % (time.time() - t0)
                 if tbl:                
                     tables.append(tbl)
             elif tag.name == "c":
@@ -351,26 +343,17 @@ class ArticleFormat:
 
 
     def create_cell_view(self, dictionary, article_view, text, tags, wrap):
-#        t0 = time.time()
         tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tags]        
-#        print '\t\t\t\t converted tags in %.6f s' % (time.time() - t0)
-#        t0 = time.time()
         cell_view = aarddict.ui.ArticleView(article_view.drag_handler, 
                                    article_view.selection_changed_callback, 
                                    article_view.phonetic_font_desc, 
                                    top_article_view=article_view.top_article_view)
-#        print '\t\t\t\t created view in %.6f s' % (time.time() - t0)
-#        t0 = time.time()
         buff, tables = self.create_tagged_text_buffer(dictionary, text, 
                                                       tags, article_view)
-#        print '\t\t\t\t created buffer in %.6f s' % (time.time() - t0)
-#        t0 = time.time()
         cell_view.set_wrap_mode(wrap)
         cell_view.set_buffer(buff)
         for tbl, anchor in tables:
             cell_view.add_child_at_anchor(tbl, anchor)
-#        print '\t\t\t\t set buffer and chidlren in %.6f s' % (time.time() - t0)
-        #cell_view.show_all()
         
         return cell_view
 
@@ -415,7 +398,7 @@ class ArticleFormat:
             color = '#f0f0f0' if i % 2 else '#f9f9f9'
             t = buff.create_tag(background=color, 
                                       pixels_above_lines=1, 
-                                      pixels_below_lines=1,
+                                      pixels_below_lines=1,                                                                        
                                       )
             buff.apply_tag(t, 
                                  buff.get_iter_at_offset(rowtag.start), 
@@ -426,31 +409,6 @@ class ArticleFormat:
         for tbl, anchor in tables:
             tableview.add_child_at_anchor(tbl, anchor)
         
-#        i = 0
-#        rowspanmap = defaultdict(int)
-#        for row in tabledata:
-#            rowdata, rowtags = row
-#            j = 0            
-#            for cell in rowdata:
-#                while rowspanmap[j] > 0:
-#                    rowspanmap[j] = rowspanmap[j] - 1
-#                    j += 1                    
-#                text, tags  = cell   
-#                cellwidget = self.create_cell_view(dictionary, article_view, 
-#                                                   text, tags, wrap)
-#                cellattrs = [t[3] if len(t) > 3 else {} for t 
-#                             in tags if t[0] == 'td'][0]
-#                cellspan = cellattrs.get('colspan', 1)
-#                rowspan = cellattrs.get('rowspan', 1)
-#                for k in range(j, j+cellspan):
-#                    rowspanmap[k] = rowspan - 1
-#                table.attach(cellwidget, j, j+cellspan, i, i+rowspan, 
-#                             xoptions=gtk.EXPAND|gtk.FILL, 
-#                             yoptions=gtk.EXPAND|gtk.FILL, 
-#                             xpadding=0, ypadding=0)
-#                j = j + cellspan
-#            i = i + 1        
-                                      
         text_buffer.delete(start, end)            
         anchor = text_buffer.create_child_anchor(start)
         
