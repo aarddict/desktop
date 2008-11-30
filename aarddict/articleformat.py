@@ -26,15 +26,13 @@ import gobject
 import gtk
 import pango
 
-import time
-
 WRAP_TBL_CLASSES = frozenset(('messagebox', 'metadata', 'ambox'))
 
 def strwidth(text, font_desc=pango.FontDescription('monospace')):
     layout = pango.Layout(gtk.TextView().get_pango_context())
     layout.set_text(text)
     layout.set_font_description(font_desc)
-    width, height = layout.get_size()
+    width, height = layout.get_pixel_size()
     return width
 
 CHAR_WIDTH = strwidth(' ')
@@ -359,10 +357,10 @@ class ArticleFormat:
 
     def maketabs(self, rawtabs):
         tabs = pango.TabArray(len(rawtabs), 
-                                    positions_in_pixels=False)
+                                    positions_in_pixels=True)
         for i in range(tabs.get_size()):
             pos = rawtabs[i]
-            tabs.set_tab(i, pango.TAB_LEFT, pos*CHAR_WIDTH + 2*pango.SCALE)    
+            tabs.set_tab(i, pango.TAB_LEFT, pos*CHAR_WIDTH + 5)    
         return tabs    
 
 
@@ -398,7 +396,8 @@ class ArticleFormat:
             color = '#f0f0f0' if i % 2 else '#f9f9f9'
             t = buff.create_tag(background=color, 
                                       pixels_above_lines=1, 
-                                      pixels_below_lines=1,                                                                        
+                                      pixels_below_lines=1,
+                                      family='monospace'                                                                        
                                       )
             buff.apply_tag(t, 
                                  buff.get_iter_at_offset(rowtag.start), 
