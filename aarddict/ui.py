@@ -543,6 +543,7 @@ class DictViewer(object):
             self.open_external_link(url)
 
     def footnote_callback(self, tag, widget, event, iter, target_pos):
+        widget = widget.top_article_view
         if self.is_link_click(widget, event, target_pos):
             if hasattr(widget, 'backbtn') and widget.backbtn:
                 widget.remove(widget.backbtn.parent)

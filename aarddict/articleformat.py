@@ -248,8 +248,11 @@ class ArticleFormat:
 
         def run(self):
             self.stopped = False
+            reftable = dict([((tag.attributes['group'], tag.attributes['id']), tag.start)
+                                  for tag in self.article.tags if tag.name=='note'])
+            
             text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict, self.article.text, 
-                                                                           self.article.tags, self.article_view)                        
+                                                                           self.article.tags, self.article_view, reftable)                        
             def set_buffer(view, buffer, tables):
                 view.set_buffer(buffer)
                 for tbl, anchor in tables:
@@ -300,13 +303,10 @@ class ArticleFormat:
         text_buffer.apply_tag_by_name("ref", start, end)
         text_buffer.apply_tag(ref_tag, start, end) 
         
-    def create_tagged_text_buffer(self, dictionary, text, tags, article_view):
+    def create_tagged_text_buffer(self, dictionary, text, tags, article_view, reftable):
         text_buffer = self.create_article_text_buffer()
         text_buffer.set_text(text)
-        
-        reftable = dict([((tag.attributes['group'], tag.attributes['id']), tag.start)
-                          for tag in tags if tag.name=='note'])
-        
+                
         tables = []
         for tag in tags:
             start = text_buffer.get_iter_at_offset(tag.start)
@@ -327,7 +327,7 @@ class ArticleFormat:
                                              reftable[footnote_key])
             elif tag.name == 'tbl':
                 tbl = self.create_table(dictionary, article_view, 
-                                                text_buffer, tag, start, end)
+                                                text_buffer, tag, start, end, reftable)
                 if tbl:                
                     tables.append(tbl)
             elif tag.name == "c":
@@ -364,7 +364,7 @@ class ArticleFormat:
         return tabs    
 
 
-    def create_table(self, dictionary, article_view, text_buffer, tag, start, end):
+    def create_table(self, dictionary, article_view, text_buffer, tag, start, end, reftable):
         tabletxt = tag.attributes['text']        
         tabletags = tag.attributes['tags']
         tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tabletags]
@@ -381,7 +381,7 @@ class ArticleFormat:
         tableview.set_tabs(globaltabs)
         
         buff, tables = self.create_tagged_text_buffer(dictionary, tabletxt, 
-                                                      tags, tableview)
+                                                      tags, tableview, reftable)
         
         rowtags = [tag for tag in tags if tag.name == 'row']
         
