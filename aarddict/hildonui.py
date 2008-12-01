@@ -22,6 +22,11 @@ import webbrowser, gtk
 
 osso_c = osso.Context("aarddict", ui.version, False)
 
+import articleformat
+#hack, normal way of determining char width for some reason yields incorrect
+#result
+articleformat.CHAR_WIDTH = 13
+
 class HildonDictViewer(ui.DictViewer):
             
     def create_top_level_widget(self):
