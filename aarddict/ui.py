@@ -450,7 +450,6 @@ class DictViewer(object):
         self.config.setlist('history', [' '.join((lang, word)) 
                                         for word, lang in history])
         
-        selected_word, selected_word_lang = self.get_selected_word()
         dict_files = [dict.file_name for dict in self.dictionaries]
         if not self.config.has_section('ui'):
             self.config.add_section('ui')
@@ -460,9 +459,12 @@ class DictViewer(object):
         word = self.word_input.child.get_text()
         self.config.set('ui', 'input-word', word)
 
-        if not self.config.has_section('selection'):
-            self.config.add_section('selection')                
-        self.config.set('selection', selected_word_lang, str(selected_word))
+        selected_word, selected_word_lang = self.get_selected_word()
+        if self.config.has_section('selection'):
+            self.config.remove_section('selection') 
+        if selected_word and selected_word_lang:
+            self.config.add_section('selection')
+            self.config.set('selection', selected_word_lang, str(selected_word))
                 
         self.config.setlist('dictionaries', dict_files)
         self.config.set('ui', 'last-dict-file-location', self.last_dict_file_location)
