@@ -400,12 +400,19 @@ class DictViewer(object):
         return self.split_pane.get_child1()
         
     word_list = property(_get_word_list) 
+    
+    def load_defaults(self):
+        import pkgutil
+        loader = pkgutil.find_loader(__name__)
+        confpath = os.path.join(os.path.dirname(__file__), 'defaults.cfg')
+        confdata = loader.get_data(confpath)
+        from StringIO import StringIO
+        self.config.readfp(StringIO(confdata))
         
     def load_app_state(self, filename = '~/.aarddict/aarddict.cfg'):
         try:                        
             self.config = Config()            
-            self.config.readfp(open(os.path.join(os.path.dirname(__file__), 
-                                                 'defaults.cfg')))
+            self.load_defaults()
             self.config.read(os.path.expanduser(filename))                                
             if self.config.has_option('ui', 'input-word'):            
                 self.set_word_input(self.config.get('ui', 'input-word'))
