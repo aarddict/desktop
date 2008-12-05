@@ -1133,13 +1133,15 @@ class DictViewer(object):
             self.open_errors = None
         
         if self.config.has_option('ui', 'langs'):
-            langs = self.config.get('ui', 'langs').split()                
+            langs = self.config.get('ui', 'langs').split()           
+            self.config.remove_option('ui', 'langs')     
             for page in self.word_completion:
                 try:
                     self.word_completion.reorder_child(page, 
                                                    langs.index(page.lang))
                 except:
-                    logging.exception('Failed to set position for %s', page.lang)                            
+                    logging.warn('Failed to set position for %s', page.lang, 
+                                 exc_info=1)                            
         
         if self.config.has_section('selection'):
             for lang in self.config.options('selection'):
