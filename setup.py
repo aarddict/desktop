@@ -43,6 +43,7 @@ setup(
     packages = find_packages(),
     windows=[{
         'script': 'run',
+        'icon_resources': [(0, 'windows/aarddict.ico')],
         }
     ], 
        
