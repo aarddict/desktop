@@ -195,7 +195,6 @@ class TagTable(gtk.TextTagTable):
         
         #Direct translation of the key-phrase
         tag = gtk.TextTag('dtrn')
-        tag.set_properties(family='monospace')
         self.add(tag)        
         
 
