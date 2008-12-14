@@ -76,13 +76,20 @@ class DictDetailPane(gtk.HBox):
             
             count_start = file_end
             article_count = locale.format("%u", d.article_count, True)
-            t += '%s articles\n' % article_count 
+            t += '%s articles\n\n' % article_count 
             count_end = len(t.decode('utf-8'))
-
-            if d.copyright:
-                t += 'Copyright %s\n' % d.copyright 
             
-            t += d.description
+            if d.description:                
+                t += '%s\n\n' % d.description
+
+            if d.source:
+                t += 'Source: %s\n\n' % d.source
+                
+            if d.copyright:
+                t += '%s\n\n' % d.copyright 
+
+            if d.license:
+                t += '%s\n' % d.license 
                         
             buffer.set_text(t)
             start = buffer.get_iter_at_offset(title_start)

@@ -298,6 +298,8 @@ class Dictionary(object):
     version = property(lambda self: self.metadata.get("version", ""))
     description = property(lambda self: self.metadata.get("description", ""))
     copyright = property(lambda self: self.metadata.get("copyright", ""))    
+    license = property(lambda self: self.metadata.get("license", ""))
+    source = property(lambda self: self.metadata.get("source", ""))
     
     def __len__(self):
         return self.index_count
