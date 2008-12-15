@@ -94,11 +94,14 @@ def _read_key(file, offset, len_fmt, pos):
     return _readstr(file, offset + pos, len_fmt)
 
 def _read_article(dictionary, offset, len_fmt, pos):
-    compressed_article = _readstr(dictionary.file, offset + pos, len_fmt)        
-    decompressed_article = decompress(compressed_article)
+    decompressed_article = _read_raw_article(dictionary, offset, len_fmt, pos)
     article = to_article(decompressed_article)
     article.dictionary = dictionary
     return article 
+
+def _read_raw_article(dictionary, offset, len_fmt, pos):
+    compressed_article = _readstr(dictionary.file, offset + pos, len_fmt)        
+    return decompress(compressed_article)
 
 class WordList(object):
     
@@ -234,19 +237,27 @@ class Header(object):
                             
 class Dictionary(object):
 
-    def __init__(self, file_name):    
-        self.file_name = file_name
-        self.file = open(file_name, "rb")
+    def __init__(self, file_or_filename, raw_articles=False):
+        if isinstance(file_or_filename, file):
+            self.file_name = file_or_filename.name
+            close_on_error = False 
+            self.file = file_or_filename
+        else:            
+            self.file_name = file_or_filename
+            close_on_error = True
+            self.file = open(file_or_filename, "rb")
         
         header = Header(self.file)
         
         if header.signature != 'aard':
-            file.close()
-            raise Exception("%s is not a recognized aarddict dictionary file" % file_name)
+            if close_on_error and self.file:
+                self.file.close()
+            raise DictFormatError("%s is not a recognized aarddict dictionary file" % self.file_name)
         
         if header.version != 1:
-            file.close()
-            raise Exception("%s is not compatible with this viewer" % file_name)
+            if close_on_error and self.file:
+                self.file.close()
+            raise DictFormatError("%s is not compatible with this viewer" % self.file_name)
         
         self.index_count = header.index_count        
         self.sha1sum = header.sha1sum
@@ -284,7 +295,8 @@ class Dictionary(object):
                                      self.file,
                                      header.index2_offset,
                                      header.key_length_format)
-        read_article = functools.partial(_read_article, 
+        read_article_func = _read_raw_article if raw_articles else _read_article 
+        read_article = functools.partial(read_article_func, 
                                          self, 
                                          header.article_offset,
                                          header.article_length_format)
