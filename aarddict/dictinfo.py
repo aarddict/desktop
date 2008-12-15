@@ -22,17 +22,25 @@ pygtk.require('2.0')
 import gtk
 import pango
 import locale
-import ui
+import ui 
+
+def create_text_view(wrap_mode=gtk.WRAP_NONE):
+    text_view = gtk.TextView()
+    text_view.set_wrap_mode(wrap_mode)
+    text_view.set_editable(False)        
+    text_view.set_cursor_visible(False)
+    return text_view
 
 class DictDetailPane(gtk.HBox):
     
     def __init__(self):
         super(DictDetailPane, self).__init__()
         
-        self.text_view = gtk.TextView()
-        self.text_view.set_wrap_mode(gtk.WRAP_WORD)
-        self.text_view.set_editable(False)        
-        self.text_view.set_cursor_visible(False)
+        self.tabs = gtk.Notebook()
+        self.tabs.set_tab_pos(gtk.POS_TOP)
+        self.tabs.set_show_border(True)
+                
+        self.text_view = create_text_view(gtk.WRAP_WORD)
         
         buffer = gtk.TextBuffer()
         buffer.create_tag("title", 
@@ -53,14 +61,20 @@ class DictDetailPane(gtk.HBox):
                           style = pango.STYLE_ITALIC,
                           pixels_below_lines = 3)
 
+        buffer.create_tag("license",
+                          wrap_mode = gtk.WRAP_NONE,
+                          pixels_below_lines = 3)
+
         self.text_view.set_buffer(buffer)        
         
-        scrolled_window = gtk.ScrolledWindow()
-        scrolled_window.set_shadow_type(gtk.SHADOW_IN)
-        scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        scrolled_window.add_with_viewport(self.text_view) 
-        
-        self.pack_start(scrolled_window, True, True, 0)                                                       
+        label = gtk.Label('Info')
+        self.tabs.append_page(ui.create_scrolled_window(self.text_view), label)        
+
+        self.license_view = create_text_view()
+
+        label = gtk.Label('License')
+        self.tabs.append_page(ui.create_scrolled_window(self.license_view), label)        
+        self.pack_start(self.tabs, True, True, 0)                                                       
     
     def set_dict(self, d):        
         buffer = self.text_view.get_buffer()
@@ -87,9 +101,15 @@ class DictDetailPane(gtk.HBox):
                 
             if d.copyright:
                 t += '%s\n\n' % d.copyright 
-
-            if d.license:
-                t += '%s\n' % d.license 
+            
+            lic_text = d.license if d.license else ''  
+            self.license_view.get_buffer().set_text(lic_text)
+            
+            if not d.license:
+                self.tabs.set_current_page(0)
+                self.tabs.set_show_tabs(False)
+            else:
+                self.tabs.set_show_tabs(True)
                         
             buffer.set_text(t)
             start = buffer.get_iter_at_offset(title_start)
@@ -102,7 +122,8 @@ class DictDetailPane(gtk.HBox):
 
             start = buffer.get_iter_at_offset(count_start)
             end = buffer.get_iter_at_offset(count_end)
-            buffer.apply_tag_by_name('count', start, end)                        
+            buffer.apply_tag_by_name('count', start, end)
+                                                
         else:
             buffer.set_text('')                
         
