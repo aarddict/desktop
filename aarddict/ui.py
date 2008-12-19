@@ -426,9 +426,15 @@ class DictViewer(object):
             [self.add_to_history(w, l) for l, w in history[::-1]]
             self.set_phonetic_font(self.config.get('ui', 'phonetic-font'))
             self.last_dict_file_location = self.config.get('ui', 'last-dict-file-location')
-            self.mi_drag_selects.set_active(self.config.getboolean('ui', 'drag-selects'))
-            self.mi_show_word_list.set_active(self.config.getboolean('ui', 'show-word-list'))
-            self.update_word_list_visibility()
+            
+            action = self.actiongroup.get_action('ToggleDragSelects')
+            action.set_active(self.config.getboolean('ui', 'drag-selects'))
+            
+            action = self.actiongroup.get_action('ToggleWordList')
+            action.set_active(self.config.getboolean('ui', 'show-word-list'))
+            self.update_word_list_visibility(action)
+#            self.mi_show_word_list.set_active(self.config.getboolean('ui', 'show-word-list'))
+#            self.update_word_list_visibility()
         except:
             logging.exception('Failed to load application state')                     
     
@@ -475,8 +481,8 @@ class DictViewer(object):
                 
         self.config.setlist('dictionaries', dict_files)
         self.config.set('ui', 'last-dict-file-location', self.last_dict_file_location)
-        self.config.set('ui', 'drag-selects', self.mi_drag_selects.get_active())
-        self.config.set('ui', 'show-word-list', self.mi_show_word_list.get_active())
+        self.config.set('ui', 'drag-selects', self.actiongroup.get_action('ToggleDragSelects').get_active())
+        self.config.set('ui', 'show-word-list', self.actiongroup.get_action('ToggleWordList').get_active())
         
         langs = [(self.word_completion.page_num(page), page.lang) 
                           for page in self.word_completion]
@@ -694,10 +700,16 @@ class DictViewer(object):
     
     def dict_label_callback(self, widget, event):
         if event.type == _2BUTTON_PRESS:
-            self.mi_show_word_list.set_active(not self.mi_show_word_list.get_active())
+            action = self.actiongroup.get_action('ToggleWordList')
+            action.set_active(not action.get_active())
+#            self.mi_show_word_list.set_active(not self.mi_show_word_list.get_active())
                 
-    def update_word_list_visibility(self, *arg, **kw):        
-        if not self.mi_show_word_list.get_active():
+    def update_word_list_visibility(self, action):
+#        # action has not toggled yet
+#        text = ('muted', 'not muted')[action.get_active()==False]
+#        self.mutelabel.set_text('Sound is %s' % text)
+#        return                
+        if not action.get_active():
             self.word_list.hide()
         else:
             self.word_list.show()    
@@ -895,19 +907,35 @@ class DictViewer(object):
         return key(u1) == key(u2)
 
     def create_menu_items(self):
-        self.mi_open = gtk.MenuItem("Add...")
-        self.mi_open.connect("activate", self.select_dict_file)
+        
+        accelgroup = gtk.AccelGroup()
+        self.window.add_accel_group(accelgroup)
+        actiongroup = gtk.ActionGroup('AarddictActionGroup')
+        self.actiongroup = actiongroup              
+        
+        actiongroup.add_toggle_actions([('ToggleWordList', None, '_Word List', '<Control>m',
+                                         'Toggles word list', self.update_word_list_visibility),
+                                         ('ToggleDragSelects', None, '_Drag Selects', '<Control>S',
+                                         'Toggles drag gesture between select text and article scroll', self.toggle_drag_selects)                                         
+                                         ])        
+        
+        actiongroup.add_actions([('Open', gtk.STOCK_OPEN, '_Open...', '<Control>o', 'Open a dictionary', self.select_dict_file),
+                                 ('Info', gtk.STOCK_INFO, '_Info...', '<Control>i', 'Information about dictionaries', self.show_dict_info),
+                                 ('Quit', gtk.STOCK_CLOSE, '_Quit', '<Control>q', 'Close application', self.destroy),
+                                 ('Back', gtk.STOCK_GO_BACK, '_Back', '<Alt>Left', 'Go back to previous word in history', lambda widget: self.history_back()),
+                                 ('Forward', gtk.STOCK_GO_FORWARD, '_Forward', '<Alt>Right', 'Go forward to next word in history', lambda widget: self.history_forward()),
+                                 ])        
+        for action in actiongroup.list_actions():
+            action.set_accel_group(accelgroup)
+                    
+        self.mi_open = actiongroup.get_action('Open').create_menu_item()
 
         self.mn_remove = gtk.Menu()
         self.mn_remove_item = gtk.MenuItem("Remove")
         self.mn_remove_item.set_submenu(self.mn_remove)                        
         
-        self.mi_info = gtk.MenuItem("Info...")
-        self.mi_info.connect("activate", self.show_dict_info)
-        
-        self.mi_exit = gtk.MenuItem("Close")
-        self.mi_exit.connect("activate", self.destroy)
-        
+        self.mi_info = actiongroup.get_action('Info').create_menu_item()
+        self.mi_exit = actiongroup.get_action('Quit').create_menu_item()
                         
         self.mi_about = gtk.MenuItem("About %s..." % app_name)
         self.mi_about.connect("activate", self.show_about)
@@ -915,16 +943,14 @@ class DictViewer(object):
         self.mi_select_phonetic_font = gtk.MenuItem("Phonetic Font...")
         self.mi_select_phonetic_font.connect("activate", self.select_phonetic_font)
 
-        self.mi_drag_selects = gtk.CheckMenuItem("Drag Selects")
-        self.mi_drag_selects.connect("activate", self.toggle_drag_selects)
+        self.mi_drag_selects = actiongroup.get_action('ToggleDragSelects').create_menu_item()
         
-        self.mi_show_word_list = gtk.CheckMenuItem("Show Word List")
-        self.mi_show_word_list.connect("activate", self.update_word_list_visibility)
         
-        self.mi_back = gtk.MenuItem("Back")
-        self.mi_back.connect("activate", lambda widget: self.history_back())    
-        self.mi_forward = gtk.MenuItem("Forward") 
-        self.mi_forward.connect("activate", lambda widget: self.history_forward())
+        self.mi_show_word_list = actiongroup.get_action('ToggleWordList').create_menu_item()
+        
+        self.mi_back = actiongroup.get_action('Back').create_menu_item()
+            
+        self.mi_forward = actiongroup.get_action('Forward').create_menu_item()
 
         self.mn_copy = gtk.Menu()
         self.mn_copy_item =gtk.MenuItem("Copy")
@@ -1027,7 +1053,7 @@ class DictViewer(object):
 #        return True         
     
     def article_drag_handler(self, widget, event):
-        if self.mi_drag_selects.get_active():
+        if self.actiongroup.get_action('ToggleDragSelects').get_active():
             return False        
         
         widget = widget.top_article_view
@@ -1273,9 +1299,9 @@ class DictViewer(object):
             self.tabs.foreach(lambda page: page.child
                               .set_phonetic_font(self.phonetic_font_desc))
     
-    def toggle_drag_selects(self, widget):
-        self.mi_drag_selects.toggled()
-        if not self.mi_drag_selects.get_active():
+    def toggle_drag_selects(self, action):
+        #self.mi_drag_selects.toggled()
+        if not action.get_active():
             self.tabs.foreach(lambda scroll_window: 
                               scroll_window.get_child().clear_selection())
     
