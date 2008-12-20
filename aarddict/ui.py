@@ -370,7 +370,6 @@ class DictViewer(object):
         input_box.pack_start(btn_paste, False, False, 0)
         self.word_input = self.create_word_input()
         input_box.pack_start(self.word_input, True, True, 0)
-        # btn_clear_input = create_button(gtk.STOCK_CLEAR, self.clear_word_input)
         btn_clear_input = self.actiongroup.get_action('NewLookup').create_tool_item()        
         input_box.pack_start(btn_clear_input, False, False, 2)
         
@@ -923,9 +922,17 @@ class DictViewer(object):
                                  ('Quit', gtk.STOCK_CLOSE, '_Quit',
                                   '<Control>q', 'Close application', self.destroy),
                                  ('Back', gtk.STOCK_GO_BACK, '_Back',
-                                  '<Alt>Left', 'Go back to previous word in history', lambda widget: self.history_back()),
+                                  '<Alt>Left', 'Go back to previous word in history', lambda action: self.history_back()),
                                  ('Forward', gtk.STOCK_GO_FORWARD, '_Forward',
-                                  '<Alt>Right', 'Go forward to next word in history', lambda widget: self.history_forward()),
+                                  '<Alt>Right', 'Go forward to next word in history', lambda action: self.history_forward()),
+                                 ('NextArticle', None, '_Next Article',
+                                  '<Alt>bracketright', 'Show next article', lambda action: self.tabs.next_page()),
+                                 ('PrevArticle', None, '_Previous Article',
+                                  '<Alt>bracketleft', 'Show previous article', lambda action: self.tabs.prev_page()),
+                                 ('NextLang', None, '_Next Language',
+                                  '<Alt>braceright', 'Show next language word list', lambda action: self.word_completion.next_page()),
+                                 ('PrevLang', None, '_Previous Language',
+                                  '<Alt>braceleft', 'Show previous language word list', lambda action: self.word_completion.prev_page()),
                                  ('CopyArticle', None, '_Article',
                                   None, 'Copy article text to clipboard', self.copy_article_to_clipboard),
                                  ('CopySelected', gtk.STOCK_COPY, '_Selected Text',
@@ -957,6 +964,12 @@ class DictViewer(object):
         self.mi_show_word_list = actiongroup.get_action('ToggleWordList').create_menu_item()
         self.mi_back = actiongroup.get_action('Back').create_menu_item()
         self.mi_forward = actiongroup.get_action('Forward').create_menu_item()
+
+        self.mi_next_article = actiongroup.get_action('NextArticle').create_menu_item()
+        self.mi_prev_article = actiongroup.get_action('PrevArticle').create_menu_item()
+
+        self.mi_next_lang = actiongroup.get_action('NextLang').create_menu_item()
+        self.mi_prev_lang = actiongroup.get_action('PrevLang').create_menu_item()
 
         self.mn_copy = gtk.Menu()
         self.mn_copy_item =gtk.MenuItem("Copy")
@@ -994,7 +1007,11 @@ class DictViewer(object):
         mn_nav_item.set_submenu(mn_nav)
         mn_nav.add(self.mi_back)
         mn_nav.add(self.mi_forward)
-                
+        mn_nav.add(self.mi_prev_article)
+        mn_nav.add(self.mi_next_article)
+        mn_nav.add(self.mi_prev_lang)
+        mn_nav.add(self.mi_next_lang)
+        
         mn_help = gtk.Menu()
         mn_help_item = gtk.MenuItem("Help")
         mn_help_item.set_submenu(mn_help)
