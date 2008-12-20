@@ -365,11 +365,13 @@ class DictViewer(object):
         box = gtk.VBox()        
         
         input_box = gtk.HBox()
-        btn_paste = create_button(gtk.STOCK_PASTE, self.paste_to_word_input)
+        btn_paste = self.actiongroup.get_action('Paste').create_tool_item()
+        
         input_box.pack_start(btn_paste, False, False, 0)
         self.word_input = self.create_word_input()
         input_box.pack_start(self.word_input, True, True, 0)
-        btn_clear_input = create_button(gtk.STOCK_CLEAR, self.clear_word_input)
+        # btn_clear_input = create_button(gtk.STOCK_CLEAR, self.clear_word_input)
+        btn_clear_input = self.actiongroup.get_action('NewLookup').create_tool_item()        
         input_box.pack_start(btn_clear_input, False, False, 2)
         
         box.pack_start(input_box, False, False, 4)
@@ -911,8 +913,8 @@ class DictViewer(object):
         actiongroup.add_toggle_actions([('ToggleWordList', None, '_Word List', '<Control>m',
                                          'Toggles word list', self.update_word_list_visibility),
                                          ('ToggleDragSelects', None, '_Drag Selects', '<Control>S',
-                                         'Toggles drag gesture between select text and article scroll', self.toggle_drag_selects)                                         
-                                         ])        
+                                         'Toggles drag gesture between select text and article scroll', self.toggle_drag_selects)
+                                        ])
         
         actiongroup.add_actions([('Open', gtk.STOCK_OPEN, '_Open...',
                                   '<Control>o', 'Open a dictionary', self.select_dict_file),
@@ -926,8 +928,12 @@ class DictViewer(object):
                                   '<Alt>Right', 'Go forward to next word in history', lambda widget: self.history_forward()),
                                  ('CopyArticle', None, '_Article',
                                   None, 'Copy article text to clipboard', self.copy_article_to_clipboard),
-                                 ('CopySelected', None, '_Selected Text',
-                                  None, 'Copy selected text to clipboard', self.copy_selected_to_clipboard),
+                                 ('CopySelected', gtk.STOCK_COPY, '_Selected Text',
+                                  '<Control>c', 'Copy selected text to clipboard', self.copy_selected_to_clipboard),
+                                 ('Paste', gtk.STOCK_PASTE, '_Paste',
+                                  '<Control>v', 'Paste text from clipboard as word to look up', self.paste_to_word_input),
+                                 ('NewLookup', gtk.STOCK_CLEAR, '_New Lookup',
+                                  '<Control>n', 'Move focus to word input and clear it', self.clear_word_input),
                                  ('PhoneticFont', None, '_Phonetic Font',
                                   None, 'Select font for displaying phonetic transcription', self.select_phonetic_font),
                                  ('About', None, '_About',
@@ -967,6 +973,9 @@ class DictViewer(object):
         self.mn_copy.append(self.mi_copy_article_to_clipboard)
         self.mn_copy.append(self.mi_copy_to_clipboard)
 
+        self.mi_paste = actiongroup.get_action('Paste').create_menu_item()
+        self.mi_new_lookup = actiongroup.get_action('NewLookup').create_menu_item()
+
     def create_menus(self):           
         mn_dict = gtk.Menu()
         mn_dict_item = gtk.MenuItem("Dictionary")
@@ -976,6 +985,8 @@ class DictViewer(object):
         mn_dict.append(self.mn_remove_item)
         mn_dict.append(self.mi_info)
         mn_dict.append(self.mn_copy_item)
+        mn_dict.append(self.mi_paste)
+        mn_dict.append(self.mi_new_lookup)
         mn_dict.append(self.mi_exit)
 
         mn_nav = gtk.Menu()
