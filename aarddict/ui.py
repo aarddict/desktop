@@ -351,7 +351,7 @@ class DictViewer(object):
         self.recent_menu_items = {}
         self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
-        
+        self.window_in_fullscreen = False
         self.article_formatter = articleformat.ArticleFormat(self.word_ref_clicked, 
                                                              self.external_link_callback, 
                                                              self.footnote_callback)
@@ -828,6 +828,7 @@ class DictViewer(object):
         window.resize(640, 480)
         window.set_position(gtk.WIN_POS_CENTER)        
         window.connect("key-press-event", self.on_key_press)
+        window.connect("window-state-event", self.on_window_state_change)        
         return window
     
     def window_event(self, window, event, data = None):
@@ -912,7 +913,9 @@ class DictViewer(object):
         actiongroup.add_toggle_actions([('ToggleWordList', None, '_Word List', '<Control>m',
                                          'Toggles word list', self.update_word_list_visibility),
                                          ('ToggleDragSelects', None, '_Drag Selects', '<Control>S',
-                                         'Toggles drag gesture between select text and article scroll', self.toggle_drag_selects)
+                                         'Toggles drag gesture between select text and article scroll', self.toggle_drag_selects),
+                                        ('FullScreen', gtk.STOCK_FULLSCREEN, '_Full Screen',
+                                         'F11', 'Toggle full screen mode', self.toggle_full_screen),                                 
                                         ])
         
         actiongroup.add_actions([('Open', gtk.STOCK_OPEN, '_Open...',
@@ -988,6 +991,9 @@ class DictViewer(object):
 
         self.mi_paste = actiongroup.get_action('Paste').create_menu_item()
         self.mi_new_lookup = actiongroup.get_action('NewLookup').create_menu_item()
+        full_screen_action = actiongroup.get_action('FullScreen')
+        full_screen_action.set_active(self.window_in_fullscreen)
+        self.mi_full_screen = full_screen_action.create_menu_item()
 
     def create_menus(self):           
         mn_dict = gtk.Menu()
@@ -1018,13 +1024,28 @@ class DictViewer(object):
         mn_help.add(self.mi_about)
                 
         mn_options = gtk.Menu()
-        mn_options_item = gtk.MenuItem("Options")
+        mn_options_item = gtk.MenuItem("View")
         mn_options_item.set_submenu(mn_options)
         
         mn_options.append(self.mi_select_phonetic_font)
         mn_options.append(self.mi_drag_selects)
-        mn_options.append(self.mi_show_word_list)        
+        mn_options.append(self.mi_show_word_list)
+        mn_options.append(self.mi_full_screen)
         return (mn_dict_item, mn_nav_item, mn_options_item, mn_help_item)        
+
+    def on_window_state_change(self, widget, event, *args):             
+        if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
+            self.window_in_fullscreen = True
+        else:
+            self.window_in_fullscreen = False
+        full_screen_action = self.actiongroup.get_action('FullScreen')
+        full_screen_action.set_active(self.window_in_fullscreen)
+    
+    def toggle_full_screen(self, action):
+        if self.window_in_fullscreen:
+            self.window.unfullscreen ()
+        else:
+            self.window.fullscreen ()
 
     def copy_selected_to_clipboard(self, action):
         page_num = self.tabs.get_current_page()

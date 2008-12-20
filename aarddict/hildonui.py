@@ -38,9 +38,7 @@ class HildonDictViewer(ui.DictViewer):
             gtk.set_application_name(ui.app_name)
         except:
             print 'Failed to set application name'
-        self.window_in_fullscreen = False
         window.connect("key-press-event", self.on_key_press)
-        window.connect("window-state-event", self.on_window_state_change)
         app.add_window(window)        
         window.connect("event", self.window_event)
         return window
@@ -48,22 +46,12 @@ class HildonDictViewer(ui.DictViewer):
     def update_title(self):
         self.window.set_title(self.create_dict_title())
     
-    def on_window_state_change(self, widget, event, *args):             
-        if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
-            self.window_in_fullscreen = True
-        else:
-            self.window_in_fullscreen = False    
-    
     def on_key_press(self, widget, event, *args):
         if event.keyval == gtk.keysyms.F6:
             # The "Full screen" hardware key has been pressed
-            if self.window_in_fullscreen:
-                self.window.unfullscreen ()
-            else:
-                self.window.fullscreen ()
+            self.toggle_full_screen(self.actiongroup.get_action('FullScreen'))
         else:
             ui.DictViewer.on_key_press(self, widget, event, *args)
-                
     
     def add_menu(self, content_box):        
         main_menu =  gtk.Menu()
