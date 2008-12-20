@@ -316,11 +316,10 @@ class WordLookup(object):
                 logging.warn("Can't resolve redirect %s, too many levels", redirect)
                 return article            
             for result in self.lookup_func(redirect, uuid=article.dictionary.uuid):
-                    a = result()
-                    a.title = result.title
-                    if a.title == article.title:
-                        continue
-                    return self.redirect(a, level=level+1)
+                a = result()
+                a.title = result.title
+                if a.title == article.title: continue
+                return self.redirect(a, level=level+1)
         else:
             return article                
 
@@ -449,7 +448,8 @@ class DictViewer(object):
         update_completion_thread.start()
                  
     def update_copy_article_mi(self, notebook = None, child = None, page_num = None):
-        self.mi_copy_article_to_clipboard.set_sensitive(notebook.get_n_pages() > 0)
+        copy_article_action = self.actiongroup.get_action('CopyArticle')
+        copy_article_action.set_sensitive(notebook.get_n_pages() > 0)
              
     def destroy(self, widget, data=None):
         self.stop_lookup()
@@ -702,13 +702,8 @@ class DictViewer(object):
         if event.type == _2BUTTON_PRESS:
             action = self.actiongroup.get_action('ToggleWordList')
             action.set_active(not action.get_active())
-#            self.mi_show_word_list.set_active(not self.mi_show_word_list.get_active())
                 
     def update_word_list_visibility(self, action):
-#        # action has not toggled yet
-#        text = ('muted', 'not muted')[action.get_active()==False]
-#        self.mutelabel.set_text('Sound is %s' % text)
-#        return                
         if not action.get_active():
             self.word_list.hide()
         else:
@@ -919,12 +914,26 @@ class DictViewer(object):
                                          'Toggles drag gesture between select text and article scroll', self.toggle_drag_selects)                                         
                                          ])        
         
-        actiongroup.add_actions([('Open', gtk.STOCK_OPEN, '_Open...', '<Control>o', 'Open a dictionary', self.select_dict_file),
-                                 ('Info', gtk.STOCK_INFO, '_Info...', '<Control>i', 'Information about dictionaries', self.show_dict_info),
-                                 ('Quit', gtk.STOCK_CLOSE, '_Quit', '<Control>q', 'Close application', self.destroy),
-                                 ('Back', gtk.STOCK_GO_BACK, '_Back', '<Alt>Left', 'Go back to previous word in history', lambda widget: self.history_back()),
-                                 ('Forward', gtk.STOCK_GO_FORWARD, '_Forward', '<Alt>Right', 'Go forward to next word in history', lambda widget: self.history_forward()),
-                                 ])        
+        actiongroup.add_actions([('Open', gtk.STOCK_OPEN, '_Open...',
+                                  '<Control>o', 'Open a dictionary', self.select_dict_file),
+                                 ('Info', gtk.STOCK_INFO, '_Info...',
+                                  '<Control>i', 'Information about dictionaries', self.show_dict_info),
+                                 ('Quit', gtk.STOCK_CLOSE, '_Quit',
+                                  '<Control>q', 'Close application', self.destroy),
+                                 ('Back', gtk.STOCK_GO_BACK, '_Back',
+                                  '<Alt>Left', 'Go back to previous word in history', lambda widget: self.history_back()),
+                                 ('Forward', gtk.STOCK_GO_FORWARD, '_Forward',
+                                  '<Alt>Right', 'Go forward to next word in history', lambda widget: self.history_forward()),
+                                 ('CopyArticle', None, '_Article',
+                                  None, 'Copy article text to clipboard', self.copy_article_to_clipboard),
+                                 ('CopySelected', None, '_Selected Text',
+                                  None, 'Copy selected text to clipboard', self.copy_selected_to_clipboard),
+                                 ('PhoneticFont', None, '_Phonetic Font',
+                                  None, 'Select font for displaying phonetic transcription', self.select_phonetic_font),
+                                 ('About', None, '_About',
+                                  None, 'About %s' % app_name, self.show_about),
+                                 ])
+        
         for action in actiongroup.list_actions():
             action.set_accel_group(accelgroup)
                     
@@ -936,33 +945,24 @@ class DictViewer(object):
         
         self.mi_info = actiongroup.get_action('Info').create_menu_item()
         self.mi_exit = actiongroup.get_action('Quit').create_menu_item()
-                        
-        self.mi_about = gtk.MenuItem("About %s..." % app_name)
-        self.mi_about.connect("activate", self.show_about)
-                        
-        self.mi_select_phonetic_font = gtk.MenuItem("Phonetic Font...")
-        self.mi_select_phonetic_font.connect("activate", self.select_phonetic_font)
-
+        self.mi_about = actiongroup.get_action('About').create_menu_item()
+        self.mi_select_phonetic_font = actiongroup.get_action('PhoneticFont').create_menu_item()
         self.mi_drag_selects = actiongroup.get_action('ToggleDragSelects').create_menu_item()
-        
-        
         self.mi_show_word_list = actiongroup.get_action('ToggleWordList').create_menu_item()
-        
         self.mi_back = actiongroup.get_action('Back').create_menu_item()
-            
         self.mi_forward = actiongroup.get_action('Forward').create_menu_item()
 
         self.mn_copy = gtk.Menu()
         self.mn_copy_item =gtk.MenuItem("Copy")
         self.mn_copy_item.set_submenu(self.mn_copy)
 
-        self.mi_copy_article_to_clipboard = gtk.MenuItem("Article")
-        self.mi_copy_article_to_clipboard.set_sensitive(False)
-        self.mi_copy_article_to_clipboard.connect("activate", self.copy_article_to_clipboard)
+        copy_article_action = actiongroup.get_action('CopyArticle')
+        copy_article_action.set_sensitive(False);
+        self.mi_copy_article_to_clipboard = copy_article_action.create_menu_item()
         
-        self.mi_copy_to_clipboard = gtk.MenuItem("Selected Text")
-        self.mi_copy_to_clipboard.set_sensitive(False)
-        self.mi_copy_to_clipboard.connect("activate", self.copy_selected_to_clipboard)
+        copy_selected_action = actiongroup.get_action('CopySelected')
+        copy_selected_action.set_sensitive(False)
+        self.mi_copy_to_clipboard = copy_selected_action.create_menu_item()
         
         self.mn_copy.append(self.mi_copy_article_to_clipboard)
         self.mn_copy.append(self.mi_copy_to_clipboard)
@@ -983,7 +983,6 @@ class DictViewer(object):
         mn_nav_item.set_submenu(mn_nav)
         mn_nav.add(self.mi_back)
         mn_nav.add(self.mi_forward)
-
                 
         mn_help = gtk.Menu()
         mn_help_item = gtk.MenuItem("Help")
@@ -999,7 +998,7 @@ class DictViewer(object):
         mn_options.append(self.mi_show_word_list)        
         return (mn_dict_item, mn_nav_item, mn_options_item, mn_help_item)        
 
-    def copy_selected_to_clipboard(self, widget):
+    def copy_selected_to_clipboard(self, action):
         page_num = self.tabs.get_current_page()
         if page_num < 0:
             return        
@@ -1007,7 +1006,7 @@ class DictViewer(object):
         text_buffer = article_view.get_buffer()
         text_buffer.copy_clipboard(gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD))
 
-    def copy_article_to_clipboard(self, widget):
+    def copy_article_to_clipboard(self, action):
         clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)        
         page_num = self.tabs.get_current_page()
         if page_num < 0:
@@ -1099,7 +1098,7 @@ class DictViewer(object):
             article_view = self.tabs.get_nth_page(page_num).get_child()
             text_buffer = article_view.get_buffer()
             sensitive = len(text_buffer.get_selection_bounds()) > 0
-        self.mi_copy_to_clipboard.set_sensitive(sensitive)
+        self.actiongroup.get_action('CopySelected').set_sensitive(sensitive)
     
     def on_mouse_motion(self, widget, event, data = None):
         if isinstance(widget.get_parent(), gtk.Table):
@@ -1274,7 +1273,7 @@ class DictViewer(object):
         info_dialog.run()
         info_dialog.destroy()
         
-    def show_about(self, widget):
+    def show_about(self, action):
         dialog = gtk.AboutDialog()
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
@@ -1285,7 +1284,7 @@ class DictViewer(object):
         dialog.run()     
         dialog.destroy()
         
-    def select_phonetic_font(self, widget):
+    def select_phonetic_font(self, action):
         dialog = gtk.FontSelectionDialog("Select Phonetic Font")        
         if self.phonetic_font_desc:
             dialog.set_font_name(self.phonetic_font_desc.to_string())                        
