@@ -282,7 +282,10 @@ class ArticleFormat:
         [worker.stop() for worker in self.workers.itervalues()]
         self.workers.clear()
    
-    def apply(self, dict, word, article, article_view):
+    def apply(self, article, article_view):
+        article_view.article = article
+        dict = article.dictionary
+        word = article.title.encode('utf8')        
         current_worker = self.workers.pop(dict, None)
         if current_worker:
             current_worker.stop()

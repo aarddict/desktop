@@ -214,6 +214,7 @@ class ArticleView(gtk.TextView):
     def __init__(self, drag_handler, selection_changed_callback, 
                  top_article_view=None):
         gtk.TextView.__init__(self)
+        self.article = None
         self.drag_handler = drag_handler
         self.set_wrap_mode(gtk.WRAP_WORD)
         self.set_editable(False)        
@@ -668,16 +669,13 @@ class DictViewer(object):
         
     def show_article_for(self, wordlookup, lang = None):
         articles = wordlookup.articles()
-        word = str(wordlookup)
         self.clear_tabs()
-        for article in articles:        
-            dict = article.dictionary 
+        for article in articles:
             article_view = self.create_article_view()            
             article_view.set_property("can-focus", False)
             scrollable_view = create_scrolled_window(article_view)                
             scrollable_view.set_property("can-focus", False)
-            article_view.article = article
-            label = gtk.Label(dict.title)
+            label = gtk.Label(article.dictionary.title)
             label.set_width_chars(6)
             label.set_ellipsize(pango.ELLIPSIZE_START)
             event_box = gtk.EventBox()
@@ -685,11 +683,11 @@ class DictViewer(object):
             event_box.connect("event", self.dict_label_callback)
             event_box.show_all()                            
             self.tabs.append_page(scrollable_view, event_box)
-            self.dict_key_to_tab[dict.key()] = scrollable_view
+            self.dict_key_to_tab[article.dictionary.key()] = scrollable_view
             self.tabs.set_tab_label_packing(scrollable_view, 
                                             True, True, gtk.PACK_START)
-            self.article_formatter.apply(dict, word, article, article_view)
-            self.add_to_history(word, lang)            
+            self.article_formatter.apply(article, article_view)
+            self.add_to_history(str(wordlookup), lang)            
         self.update_copy_article_mi(self.tabs)
         self.tabs.show_all()
     
@@ -1044,8 +1042,7 @@ class DictViewer(object):
         article_view = page.child
         if article_view.get_children():
             article = article_view.article
-            word = article.title
-            self.article_formatter.apply(article.dictionary, word, article, article_view)
+            self.article_formatter.apply(article, article_view)
            
     def increase_text_size(self, action):
         new_scale = articleformat.get_scale()*1.1
