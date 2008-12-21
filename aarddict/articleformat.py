@@ -20,22 +20,27 @@ import aarddict.ui
 import aarddict.dictionary
 
 import threading
-from collections import defaultdict
 
 import gobject 
 import gtk
 import pango
 
-WRAP_TBL_CLASSES = frozenset(('messagebox', 'metadata', 'ambox'))
-
-def strwidth(text, font_desc=pango.FontDescription('monospace')):
-    layout = pango.Layout(gtk.TextView().get_pango_context())
-    layout.set_text(text)
-    layout.set_font_description(font_desc)
-    width, height = layout.get_pixel_size()
+def strwidth(text):
+    view = gtk.TextView()
+    row_tag = TAGS_TABLE.lookup('row')
+    layout = view.create_pango_layout(text)
+    layout.set_font_description(row_tag.get_property('font-desc'))
+    attributes = pango.AttrList()
+    attributes.insert(pango.AttrScale(get_scale(), 0, len(text)))
+    layout.set_attributes(attributes)
+    width = layout.get_size()[0]
     return width
 
-CHAR_WIDTH = strwidth(' ')
+def get_scale():
+    return TAGS_TABLE.lookup('ar').get_property('scale')
+
+def set_scale(value):
+    TAGS_TABLE.lookup('ar').set_property('scale', value)
 
 class TagTable(gtk.TextTagTable):
     
@@ -103,7 +108,11 @@ class TagTable(gtk.TextTagTable):
         self.add(tag)
 
         tag = gtk.TextTag('row')
-        tag.set_properties(background='#eeeeee', pixels_below_lines=2)
+        tag.set_properties(background='#eeeeee',
+                           pixels_above_lines=1,
+                           pixels_below_lines=1,
+                           family='monospace'
+                           )
         self.add(tag)
 
         tag = gtk.TextTag('td')
@@ -230,10 +239,6 @@ class FormattingStoppedException(Exception):
     def __str__(self):
         return repr(self.value)   
 
-def size_allocate(widget, allocation, table):
-    w = min(int(0.95*allocation.width), allocation.width - 1)
-    table.set_size_request(w, -1)
-
 class ArticleFormat:
     class Worker(threading.Thread):        
         def __init__(self, formatter, dict, word, article, article_view):
@@ -250,8 +255,10 @@ class ArticleFormat:
             reftable = dict([((tag.attributes['group'], tag.attributes['id']), tag.start)
                                   for tag in self.article.tags if tag.name=='note'])
             
-            text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict, self.article.text, 
-                                                                           self.article.tags, self.article_view, reftable)                        
+            text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict,
+                                                                           self.article.text, 
+                                                                           self.article.tags,
+                                                                           self.article_view, reftable)
             def set_buffer(view, buffer, tables):
                 view.set_buffer(buffer)
                 for tbl, anchor in tables:
@@ -337,32 +344,18 @@ class ArticleFormat:
                     text_buffer.apply_tag(t, start, end)
             else:
                 text_buffer.apply_tag_by_name(tag.name, start, end)
+        text_buffer.apply_tag_by_name('ar', *text_buffer.get_bounds())
         return text_buffer, tables
 
-
-    def create_cell_view(self, dictionary, article_view, text, tags, wrap):
-        tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tags]        
-        cell_view = aarddict.ui.ArticleView(article_view.drag_handler, 
-                                   article_view.selection_changed_callback, 
-                                   article_view.phonetic_font_desc, 
-                                   top_article_view=article_view.top_article_view)
-        buff, tables = self.create_tagged_text_buffer(dictionary, text, 
-                                                      tags, article_view)
-        cell_view.set_wrap_mode(wrap)
-        cell_view.set_buffer(buff)
-        for tbl, anchor in tables:
-            cell_view.add_child_at_anchor(tbl, anchor)
-        
-        return cell_view
-
     def maketabs(self, rawtabs):
+        char_width = strwidth(' ')
+        scale = get_scale()
         tabs = pango.TabArray(len(rawtabs), 
-                                    positions_in_pixels=True)
+                                    positions_in_pixels=False)
         for i in range(tabs.get_size()):
             pos = rawtabs[i]
-            tabs.set_tab(i, pango.TAB_LEFT, pos*CHAR_WIDTH + 5)    
+            tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*scale)    
         return tabs    
-
 
     def create_table(self, dictionary, article_view, text_buffer, tag, start, end, reftable):
         tabletxt = tag.attributes['text']        
@@ -372,11 +365,9 @@ class ArticleFormat:
         rawglobaltabs = tabletabs.get('') 
         
         globaltabs = self.maketabs(rawglobaltabs)        
-        
         tableview = aarddict.ui.ArticleView(article_view.drag_handler, 
-                                   article_view.selection_changed_callback, 
-                                   article_view.phonetic_font_desc, 
-                                   top_article_view=article_view.top_article_view)
+                                            article_view.selection_changed_callback, 
+                                            top_article_view=article_view.top_article_view)
         tableview.set_wrap_mode(gtk.WRAP_NONE)
         tableview.set_tabs(globaltabs)
         
@@ -393,15 +384,15 @@ class ArticleFormat:
                                  buff.get_iter_at_offset(rowtag.start), 
                                  buff.get_iter_at_offset(rowtag.end))
         
-            color = '#f0f0f0' if i % 2 else '#f9f9f9'
-            t = buff.create_tag(background=color, 
-                                      pixels_above_lines=1, 
-                                      pixels_below_lines=1,
-                                      family='monospace'                                                                        
-                                      )
-            buff.apply_tag(t, 
-                                 buff.get_iter_at_offset(rowtag.start), 
-                                 buff.get_iter_at_offset(rowtag.end))
+#             color = '#f0f0f0' if i % 2 else '#f9f9f9'
+#             t = buff.create_tag(background=color, 
+#                                       pixels_above_lines=1, 
+#                                       pixels_below_lines=1,
+#                                       family='monospace'                                                                        
+#                                       )
+#             buff.apply_tag(t, 
+#                                  buff.get_iter_at_offset(rowtag.start), 
+#                                  buff.get_iter_at_offset(rowtag.end))
         
         
         tableview.set_buffer(buff)

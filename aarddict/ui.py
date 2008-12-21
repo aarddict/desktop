@@ -210,9 +210,9 @@ class LangNotebook(gtk.Notebook):
         
     
 class ArticleView(gtk.TextView):
-    
+
     def __init__(self, drag_handler, selection_changed_callback, 
-                 phonetic_font_desc, top_article_view=None):
+                 top_article_view=None):
         gtk.TextView.__init__(self)
         self.drag_handler = drag_handler
         self.set_wrap_mode(gtk.WRAP_WORD)
@@ -221,7 +221,6 @@ class ArticleView(gtk.TextView):
         self.set_data("handlers", [])
         self.last_drag_coords = None
         self.selection_changed_callback = selection_changed_callback
-        self.phonetic_font_desc = phonetic_font_desc
         self.connect("motion_notify_event", self.on_mouse_motion)
         if not top_article_view:
             self.top_article_view=self
@@ -237,10 +236,9 @@ class ArticleView(gtk.TextView):
         handler2 = buffer.connect("mark-deleted", self.selection_changed_callback)
         buffer.set_data("handlers", (handler1, handler2))        
         gtk.TextView.set_buffer(self, buffer)
-        self.set_phonetic_font(self.phonetic_font_desc)
         handler = self.connect_after("event", self.drag_handler)
         handlers.append(handler)
-    
+
     def connect(self, signal, callback, *userparams):
         handlers = self.get_data("handlers")
         if handlers == None:
@@ -257,11 +255,6 @@ class ArticleView(gtk.TextView):
         self.__remove_handlers(self)
         self.__remove_handlers(self.get_buffer())
         
-    def set_phonetic_font(self, font_desc):   
-        text_buffer = self.get_buffer()            
-        tag_table = text_buffer.get_tag_table()
-        tag_table.lookup("tr").set_property("font-desc", font_desc)
-    
     def __remove_handlers(self, obj):
         handlers = obj.get_data("handlers")
         for handler in handlers:
@@ -679,10 +672,11 @@ class DictViewer(object):
         self.clear_tabs()
         for article in articles:        
             dict = article.dictionary 
-            article_view = self.create_article_view()
+            article_view = self.create_article_view()            
             article_view.set_property("can-focus", False)
             scrollable_view = create_scrolled_window(article_view)                
             scrollable_view.set_property("can-focus", False)
+            article_view.article = article
             label = gtk.Label(dict.title)
             label.set_width_chars(6)
             label.set_ellipsize(pango.ELLIPSIZE_START)
@@ -946,6 +940,12 @@ class DictViewer(object):
                                   '<Control>n', 'Move focus to word input and clear it', self.clear_word_input),
                                  ('PhoneticFont', None, '_Phonetic Font',
                                   None, 'Select font for displaying phonetic transcription', self.select_phonetic_font),
+                                 ('IncreaseTextSize', None, '_Increase Text Size',
+                                  '<Control>equal', 'Increase size of article text', self.increase_text_size),
+                                 ('DecreaseTextSize', None, '_Decrease Text Size',
+                                  '<Control>minus', 'Decrease size of article text', self.decrease_text_size),
+                                 ('ResetTextSize', None, '_Decrease Text Size',
+                                  '<Control>0', 'Reset size of article text to default', self.reset_text_size),
                                  ('About', None, '_About',
                                   None, 'About %s' % app_name, self.show_about),
                                  ])
@@ -963,6 +963,10 @@ class DictViewer(object):
         self.mi_exit = actiongroup.get_action('Quit').create_menu_item()
         self.mi_about = actiongroup.get_action('About').create_menu_item()
         self.mi_select_phonetic_font = actiongroup.get_action('PhoneticFont').create_menu_item()
+        self.mi_increase_text_size = actiongroup.get_action('IncreaseTextSize').create_menu_item()
+        self.mi_decrease_text_size = actiongroup.get_action('DecreaseTextSize').create_menu_item()        
+        self.mi_reset_text_size = actiongroup.get_action('ResetTextSize').create_menu_item()
+        
         self.mi_drag_selects = actiongroup.get_action('ToggleDragSelects').create_menu_item()
         self.mi_show_word_list = actiongroup.get_action('ToggleWordList').create_menu_item()
         self.mi_back = actiongroup.get_action('Back').create_menu_item()
@@ -1028,10 +1032,38 @@ class DictViewer(object):
         mn_options_item.set_submenu(mn_options)
         
         mn_options.append(self.mi_select_phonetic_font)
+        mn_options.append(self.mi_increase_text_size)
+        mn_options.append(self.mi_decrease_text_size)
+        mn_options.append(self.mi_reset_text_size)
         mn_options.append(self.mi_drag_selects)
         mn_options.append(self.mi_show_word_list)
         mn_options.append(self.mi_full_screen)
         return (mn_dict_item, mn_nav_item, mn_options_item, mn_help_item)        
+
+    def _update_article_view_children(self, page):
+        article_view = page.child
+        if article_view.get_children():
+            article = article_view.article
+            word = article.title
+            self.article_formatter.apply(article.dictionary, word, article, article_view)
+           
+    def increase_text_size(self, action):
+        new_scale = articleformat.get_scale()*1.1
+        if new_scale > pango.SCALE_X_LARGE:
+            new_scale = pango.SCALE_X_LARGE
+        articleformat.set_scale(new_scale)
+        self.tabs.foreach(self._update_article_view_children)
+        
+    def decrease_text_size(self, action):
+        new_scale = articleformat.get_scale()*0.9
+        if new_scale < pango.SCALE_SMALL:
+            new_scale = pango.SCALE_SMALL
+        articleformat.set_scale(new_scale)
+        self.tabs.foreach(self._update_article_view_children)        
+
+    def reset_text_size(self, action):
+        articleformat.set_scale(pango.SCALE_MEDIUM)
+        self.tabs.foreach(self._update_article_view_children)        
 
     def on_window_state_change(self, widget, event, *args):             
         if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
@@ -1091,8 +1123,7 @@ class DictViewer(object):
         
     def create_article_view(self):
         article_view = ArticleView(self.article_drag_handler, 
-                                   self.article_text_selection_changed, 
-                                   self.phonetic_font_desc)
+                                   self.article_text_selection_changed)
 #        if self.supports_cursor_changes():        
 #            article_view.connect("motion_notify_event", self.on_mouse_motion)
         return article_view   
@@ -1265,7 +1296,7 @@ class DictViewer(object):
     def hide_status_display(self):
         self.status_display.destroy();
         self.status_display = None
-
+        
     def show_error(self, title, text):
         dlg = gtk.MessageDialog(parent=self.window, 
                                 flags=gtk.DIALOG_MODAL, 
@@ -1344,11 +1375,9 @@ class DictViewer(object):
     def set_phonetic_font(self, font_name):
         if font_name:
             self.phonetic_font_desc = pango.FontDescription(font_name)
-            self.tabs.foreach(lambda page: page.child
-                              .set_phonetic_font(self.phonetic_font_desc))
+            articleformat.TAGS_TABLE.lookup('tr').set_property('font-desc', self.phonetic_font_desc)
     
     def toggle_drag_selects(self, action):
-        #self.mi_drag_selects.toggled()
         if not action.get_active():
             self.tabs.foreach(lambda scroll_window: 
                               scroll_window.get_child().clear_selection())
