@@ -343,7 +343,6 @@ class DictViewer(object):
         self.phonetic_font_desc = None
         self.last_dict_file_location = None
         self.recent_menu_items = {}
-        self.dict_key_to_tab = {}
         self.file_chooser_dlg = None
         self.window_in_fullscreen = False
         self.article_formatter = articleformat.ArticleFormat(self.word_ref_clicked, 
@@ -663,7 +662,6 @@ class DictViewer(object):
             article_view = last_page.get_child()
             article_view.remove_handlers()
             self.tabs.remove_page(-1)        
-        self.dict_key_to_tab.clear()       
         self.update_copy_article_mi(self.tabs)        
         return False 
         
@@ -683,7 +681,6 @@ class DictViewer(object):
             event_box.connect("event", self.dict_label_callback)
             event_box.show_all()                            
             self.tabs.append_page(scrollable_view, event_box)
-            self.dict_key_to_tab[article.dictionary.key()] = scrollable_view
             self.tabs.set_tab_label_packing(scrollable_view, 
                                             True, True, gtk.PACK_START)
             self.article_formatter.apply(article, article_view)
@@ -1329,20 +1326,11 @@ class DictViewer(object):
         for l in view_langs:
             if l not in current_langs:
                 self.word_completion.remove_lang(l)
-        
-        tab = self.get_tab_for_dict(key)
-        if tab is not None:
-            self.tabs.remove_page(tab) 
-            del self.dict_key_to_tab[key]
+
         dict.close()
         self.update_completion(self.word_input.child.get_text(), (word, lang))
         self.update_title()
         
-    def get_tab_for_dict(self, dict_key):
-        if dict_key in self.dict_key_to_tab:
-            tab_child = self.dict_key_to_tab[dict_key]
-            return self.tabs.page_num(tab_child)
-        return None
 
     def show_dict_info(self, widget):        
         info_dialog = dictinfo.DictInfoDialog(self.dictionaries, 
