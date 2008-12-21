@@ -953,7 +953,7 @@ class DictViewer(object):
         self.mi_open = actiongroup.get_action('Open').create_menu_item()
 
         self.mn_remove = gtk.Menu()
-        self.mn_remove_item = gtk.MenuItem("Remove")
+        self.mn_remove_item = gtk.MenuItem("_Remove")
         self.mn_remove_item.set_submenu(self.mn_remove)                        
         
         self.mi_info = actiongroup.get_action('Info').create_menu_item()
@@ -976,7 +976,7 @@ class DictViewer(object):
         self.mi_prev_lang = actiongroup.get_action('PrevLang').create_menu_item()
 
         self.mn_copy = gtk.Menu()
-        self.mn_copy_item =gtk.MenuItem("Copy")
+        self.mn_copy_item =gtk.MenuItem("_Copy")
         self.mn_copy_item.set_submenu(self.mn_copy)
 
         copy_article_action = actiongroup.get_action('CopyArticle')
@@ -998,7 +998,7 @@ class DictViewer(object):
 
     def create_menus(self):           
         mn_dict = gtk.Menu()
-        mn_dict_item = gtk.MenuItem("Dictionary")
+        mn_dict_item = gtk.MenuItem("_Dictionary")
         mn_dict_item.set_submenu(mn_dict)        
         
         mn_dict.append(self.mi_open)        
@@ -1010,7 +1010,7 @@ class DictViewer(object):
         mn_dict.append(self.mi_exit)
 
         mn_nav = gtk.Menu()
-        mn_nav_item = gtk.MenuItem("Navigate")
+        mn_nav_item = gtk.MenuItem("_Navigate")
         mn_nav_item.set_submenu(mn_nav)
         mn_nav.add(self.mi_back)
         mn_nav.add(self.mi_forward)
@@ -1020,12 +1020,12 @@ class DictViewer(object):
         mn_nav.add(self.mi_next_lang)
         
         mn_help = gtk.Menu()
-        mn_help_item = gtk.MenuItem("Help")
+        mn_help_item = gtk.MenuItem("_Help")
         mn_help_item.set_submenu(mn_help)
         mn_help.add(self.mi_about)
                 
         mn_options = gtk.Menu()
-        mn_options_item = gtk.MenuItem("View")
+        mn_options_item = gtk.MenuItem("_View")
         mn_options_item.set_submenu(mn_options)
         
         mn_options.append(self.mi_select_phonetic_font)
