@@ -941,7 +941,7 @@ class DictViewer(object):
                                   '<Control>equal', 'Increase size of article text', self.increase_text_size),
                                  ('DecreaseTextSize', None, '_Decrease Text Size',
                                   '<Control>minus', 'Decrease size of article text', self.decrease_text_size),
-                                 ('ResetTextSize', None, '_Decrease Text Size',
+                                 ('ResetTextSize', None, '_Reset Text Size',
                                   '<Control>0', 'Reset size of article text to default', self.reset_text_size),
                                  ('About', None, '_About',
                                   None, 'About %s' % app_name, self.show_about),
