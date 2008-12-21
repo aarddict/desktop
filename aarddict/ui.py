@@ -409,6 +409,8 @@ class DictViewer(object):
             self.config.read(os.path.expanduser(filename))                                
             if self.config.has_option('ui', 'input-word'):            
                 self.set_word_input(self.config.get('ui', 'input-word'))
+            if self.config.has_option('ui', 'article-font-scale'):            
+                articleformat.set_scale(self.config.getfloat('ui', 'article-font-scale'))                
             self.lookup_delay = self.config.getint('ui', 'lookup-delay')
             self.article_delay = self.config.getint('ui', 'article-delay')
             self.max_words_per_dict = self.config.getint('ui', 'max-words-per-dict')
@@ -477,7 +479,7 @@ class DictViewer(object):
         self.config.set('ui', 'last-dict-file-location', self.last_dict_file_location)
         self.config.set('ui', 'drag-selects', self.actiongroup.get_action('ToggleDragSelects').get_active())
         self.config.set('ui', 'show-word-list', self.actiongroup.get_action('ToggleWordList').get_active())
-        
+        self.config.set('ui', 'article-font-scale', articleformat.get_scale())
         langs = [(self.word_completion.page_num(page), page.lang) 
                           for page in self.word_completion]
         langs = [item[1] for item in sorted(langs, key = lambda x: x[0])]

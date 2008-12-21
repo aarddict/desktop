@@ -36,7 +36,7 @@ def strwidth(text):
     width = layout.get_size()[0]
     return width
 
-def get_scale():
+def get_scale():    
     return TAGS_TABLE.lookup('ar').get_property('scale')
 
 def set_scale(value):
