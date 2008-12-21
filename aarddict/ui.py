@@ -1044,22 +1044,25 @@ class DictViewer(object):
             self.article_formatter.apply(article, article_view)
            
     def increase_text_size(self, action):
-        new_scale = articleformat.get_scale()*1.1
-        if new_scale > pango.SCALE_X_LARGE:
-            new_scale = pango.SCALE_X_LARGE
-        articleformat.set_scale(new_scale)
-        self.tabs.foreach(self._update_article_view_children)
+        scale = articleformat.get_scale()
+        self._apply_font_scale(scale*1.1)
         
     def decrease_text_size(self, action):
-        new_scale = articleformat.get_scale()*0.9
-        if new_scale < pango.SCALE_SMALL:
-            new_scale = pango.SCALE_SMALL
-        articleformat.set_scale(new_scale)
-        self.tabs.foreach(self._update_article_view_children)        
+        scale = articleformat.get_scale()
+        self._apply_font_scale(scale*0.9)
 
     def reset_text_size(self, action):
-        articleformat.set_scale(pango.SCALE_MEDIUM)
-        self.tabs.foreach(self._update_article_view_children)        
+        self._apply_font_scale(pango.SCALE_MEDIUM)
+
+    def _apply_font_scale(self, new_scale):
+        scale = articleformat.get_scale()
+        if new_scale < pango.SCALE_SMALL:
+            new_scale = pango.SCALE_SMALL
+        if new_scale > pango.SCALE_X_LARGE:
+            new_scale = pango.SCALE_X_LARGE            
+        if new_scale != scale:
+            articleformat.set_scale(new_scale)
+            self.tabs.foreach(self._update_article_view_children)            
 
     def on_window_state_change(self, widget, event, *args):             
         if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
