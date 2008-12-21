@@ -938,7 +938,7 @@ class DictViewer(object):
                                   '<Control>v', 'Paste text from clipboard as word to look up', self.paste_to_word_input),
                                  ('NewLookup', gtk.STOCK_CLEAR, '_New Lookup',
                                   '<Control>n', 'Move focus to word input and clear it', self.clear_word_input),
-                                 ('PhoneticFont', None, '_Phonetic Font',
+                                 ('PhoneticFont', None, '_Phonetic Font...',
                                   None, 'Select font for displaying phonetic transcription', self.select_phonetic_font),
                                  ('IncreaseTextSize', None, '_Increase Text Size',
                                   '<Control>equal', 'Increase size of article text', self.increase_text_size),
