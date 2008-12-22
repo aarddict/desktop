@@ -61,16 +61,37 @@ class HildonDictViewer(ui.DictViewer):
             main_menu.append(menu)
         main_menu.show_all()
     
-    def create_menus(self):           
+    def create_menus(self):
+        mn_nav = gtk.Menu()
+        mn_nav_item = gtk.MenuItem("_Navigate")
+        mn_nav_item.set_submenu(mn_nav)
+        mn_nav.add(self.mi_back)
+        mn_nav.add(self.mi_forward)
+        mn_nav.add(self.mi_prev_article)
+        mn_nav.add(self.mi_next_article)
+        mn_nav.add(self.mi_prev_lang)
+        mn_nav.add(self.mi_next_lang)
+        
+        mn_view = gtk.Menu()
+        mn_view_item = gtk.MenuItem("_View")
+        mn_view_item.set_submenu(mn_view)
+        
+        mn_view.append(self.mi_select_phonetic_font)
+        mn_view.append(self.mi_increase_text_size)
+        mn_view.append(self.mi_decrease_text_size)
+        mn_view.append(self.mi_reset_text_size)
+        mn_view.append(self.mi_drag_selects)
+        mn_view.append(self.mi_show_word_list)
+        mn_view.append(self.mi_full_screen)
+        
         return (self.mi_open, 
                 self.mn_remove_item, 
                 self.mi_info, 
-                self.mn_copy_item, 
-                self.mi_select_phonetic_font, 
-                self.mi_drag_selects, 
-                self.mi_show_word_list,
-                self.mi_back,
-                self.mi_forward,
+                self.mn_copy_item,
+                self.mi_paste,
+                self.mi_new_lookup,
+                mn_nav_item,
+                mn_view_item,
                 self.mi_about, 
                 self.mi_exit)
     
