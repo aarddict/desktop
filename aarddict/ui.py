@@ -510,22 +510,6 @@ class DictViewer(object):
     def errors_to_text(self, errors):
         return '\n'.join([str(e) for e in errors])
         
-    def on_key_press(self, widget, event, *args):
-        if (event.keyval == gtk.keysyms.Escape 
-            or (event.state & gtk.gdk.CONTROL_MASK 
-                and event.keyval == gtk.keysyms.b)):
-            self.history_back()
-        if (event.state & gtk.gdk.CONTROL_MASK 
-                and event.keyval == gtk.keysyms.f):
-            self.history_forward()
-        if (event.state & gtk.gdk.CONTROL_MASK 
-                and event.keyval == gtk.keysyms.z):
-            self.clear_word_input(None, None)                        
-        if event.keyval == gtk.keysyms.F7:
-            self.tabs.prev_page()
-        if event.keyval == gtk.keysyms.F8:
-            self.tabs.next_page()
-        
     def history_to_list(self, model, path, iter, history_list):
         word, lang = model[iter]
         history_list.append((word, lang))
@@ -820,7 +804,6 @@ class DictViewer(object):
         window.set_border_width(2)                
         window.resize(640, 480)
         window.set_position(gtk.WIN_POS_CENTER)        
-        window.connect("key-press-event", self.on_key_press)
         window.connect("window-state-event", self.on_window_state_change)        
         return window
     
@@ -1076,9 +1059,9 @@ class DictViewer(object):
     
     def toggle_full_screen(self, action):
         if self.window_in_fullscreen:
-            self.window.unfullscreen ()
+            self.window.unfullscreen()
         else:
-            self.window.fullscreen ()
+            self.window.fullscreen()
 
     def copy_selected_to_clipboard(self, action):
         page_num = self.tabs.get_current_page()
