@@ -743,7 +743,7 @@ class DictViewer(object):
             self.update_completion_t0 = time.time()
             try:
                 lang_word_list = self.do_lookup(start_word, to_select)
-            except LookupCanceled():
+            except LookupCanceled:
                 pass
             else:                                
                 gobject.idle_add(self.update_completion_callback, 
