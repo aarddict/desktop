@@ -656,9 +656,7 @@ class DictViewer(object):
         tooltips = gtk.Tooltips()
         for article in articles:
             article_view = self.create_article_view()            
-            article_view.set_property("can-focus", False)
             scrollable_view = create_scrolled_window(article_view)                
-            scrollable_view.set_property("can-focus", False)
             label = gtk.Label(article.dictionary.title)
             label.set_width_chars(6)
             label.set_ellipsize(pango.ELLIPSIZE_START)
