@@ -25,7 +25,8 @@ osso_c = osso.Context("aarddict", ui.version, False)
 import articleformat
 #hack, normal way of determining char width for some reason yields incorrect
 #result
-articleformat.CHAR_WIDTH = 13
+oldstrwidth = articleformat.strwidth
+articleformat.strwidth = lambda s: 1.625*oldstrwidth(s)
 
 class HildonDictViewer(ui.DictViewer):
             
