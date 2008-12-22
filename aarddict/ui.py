@@ -1043,8 +1043,8 @@ class DictViewer(object):
         scale = articleformat.get_scale()
         if new_scale < pango.SCALE_SMALL:
             new_scale = pango.SCALE_SMALL
-        if new_scale > pango.SCALE_X_LARGE:
-            new_scale = pango.SCALE_X_LARGE            
+        if new_scale > pango.SCALE_XX_LARGE:
+            new_scale = pango.SCALE_XX_LARGE            
         if new_scale != scale:
             articleformat.set_scale(new_scale)
             self.tabs.foreach(self._update_article_view_children)            
