@@ -357,7 +357,7 @@ class ArticleFormat:
                                     positions_in_pixels=False)
         for i in range(tabs.get_size()):
             pos = rawtabs[i]
-            tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*scale)    
+            tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*int(scale*pango.SCALE))    
         return tabs    
 
     def create_table(self, dictionary, article_view, text_buffer, tag, start, end, reftable):
