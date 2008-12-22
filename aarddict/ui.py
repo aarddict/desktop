@@ -685,6 +685,7 @@ class DictViewer(object):
             self.tabs.append_page(scrollable_view, event_box)
             self.tabs.set_tab_label_packing(scrollable_view, 
                                             True, True, gtk.PACK_START)
+            self.tabs.set_menu_label_text(scrollable_view, article.dictionary.title)
             self.article_formatter.apply(article, article_view)
             self.add_to_history(str(wordlookup), lang)            
         self.update_copy_article_mi(self.tabs)
