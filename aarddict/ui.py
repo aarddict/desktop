@@ -670,6 +670,7 @@ class DictViewer(object):
     def show_article_for(self, wordlookup, lang = None):
         articles = wordlookup.articles()
         self.clear_tabs()
+        tooltips = gtk.Tooltips()
         for article in articles:
             article_view = self.create_article_view()            
             article_view.set_property("can-focus", False)
@@ -681,7 +682,8 @@ class DictViewer(object):
             event_box = gtk.EventBox()
             event_box.add(label)
             event_box.connect("event", self.dict_label_callback)
-            event_box.show_all()                            
+            event_box.show_all()
+            tooltips.set_tip(event_box, article.dictionary.title)
             self.tabs.append_page(scrollable_view, event_box)
             self.tabs.set_tab_label_packing(scrollable_view, 
                                             True, True, gtk.PACK_START)
