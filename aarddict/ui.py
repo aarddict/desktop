@@ -550,18 +550,13 @@ class DictViewer(object):
             scrolled = top.scroll_to_iter(top.get_buffer().get_iter_at_offset(target_pos), 
                                   0.0, use_align=True, xalign=0.0, yalign=0.0)
 
-            print scroll_window.get_hadjustment().value, scroll_window.get_vadjustment().value
-            
             if scrolled:                
                 def goback(btnwidget, adjustment_values):
-                    def do_scroll():
-                        hval, vval = adjustment_values
-                        scroll_window.get_hadjustment().value = hval
-                        scroll_window.get_vadjustment().value = vval
-                        top.remove(btnwidget.parent)
-                        top.backbtn = None
-                    gobject.idle_add(do_scroll)
-                 
+                    hval, vval = adjustment_values
+                    scroll_window.get_hadjustment().value = hval
+                    scroll_window.get_vadjustment().value = vval
+                    top.remove(btnwidget.parent)
+                    top.backbtn = None
                                                 
                 backbtn = create_button(gtk.STOCK_GO_UP, goback, (hval, vval))
                 child = gtk.EventBox()
