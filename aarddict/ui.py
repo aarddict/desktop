@@ -537,34 +537,40 @@ class DictViewer(object):
             self.open_external_link(url)
 
     def footnote_callback(self, tag, widget, event, iter, target_pos):
-        widget = widget.top_article_view
-        if self.is_link_click(widget, event, target_pos):
-            if hasattr(widget, 'backbtn') and widget.backbtn:
-                widget.remove(widget.backbtn.parent)
-                widget.backbtn = None
-                
-            r = widget.get_visible_rect()
-                                                 
-            scrolled = widget.scroll_to_iter(widget.get_buffer().get_iter_at_offset(target_pos), 
+        top = widget.top_article_view
+        if self.is_link_click(top, event, target_pos):
+            if hasattr(top, 'backbtn') and top.backbtn:
+                top.remove(top.backbtn.parent)
+                top.backbtn = None
+
+            r = top.get_visible_rect()
+            scroll_window = top.parent
+            hval = scroll_window.get_hadjustment().value
+            vval = scroll_window.get_vadjustment().value
+            scrolled = top.scroll_to_iter(top.get_buffer().get_iter_at_offset(target_pos), 
                                   0.0, use_align=True, xalign=0.0, yalign=0.0)
+
+            print scroll_window.get_hadjustment().value, scroll_window.get_vadjustment().value
             
             if scrolled:                
-                def goback(btnwidget, iter):
-                    widget.scroll_to_iter(iter, 0.0, use_align=True, 
-                                          xalign=0.0, yalign=0.0)
-                    widget.remove(btnwidget.parent)
-                    widget.backbtn = None                            
+                def goback(btnwidget, adjustment_values):
+                    def do_scroll():
+                        hval, vval = adjustment_values
+                        scroll_window.get_hadjustment().value = hval
+                        scroll_window.get_vadjustment().value = vval
+                        top.remove(btnwidget.parent)
+                        top.backbtn = None
+                    gobject.idle_add(do_scroll)
                  
-                            
-                iter = widget.get_iter_at_location(r.x, r.y)            
-                backbtn = create_button(gtk.STOCK_GO_UP, goback, iter)
+                                                
+                backbtn = create_button(gtk.STOCK_GO_UP, goback, (hval, vval))
                 child = gtk.EventBox()
                 child.add(backbtn)
                  
                 w, h = widget.buffer_to_window_coords(gtk.TEXT_WINDOW_WIDGET, 
                                                       r.width, r.height)            
-                widget.add_child_in_window(child, gtk.TEXT_WINDOW_WIDGET, w - 32 - 2, 2)
-                widget.backbtn = backbtn
+                top.add_child_in_window(child, gtk.TEXT_WINDOW_WIDGET, w - 32 - 2, 2)
+                top.backbtn = backbtn
                 child.show_all()
   
     def open_external_link(self, url):
