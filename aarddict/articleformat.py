@@ -378,25 +378,14 @@ class ArticleFormat:
                                                       tags, tableview, reftable)
         
         rowtags = [tag for tag in tags if tag.name == 'row']
-        
         for i, rowtag in enumerate(rowtags):
-            if i in tabletabs:            
-                tabs = self.maketabs(tabletabs[i])    
+            strindex = str(i)
+            if strindex in tabletabs:
+                tabs = self.maketabs(tabletabs[strindex])    
                 t = buff.create_tag(tabs=tabs)
                 buff.apply_tag(t, 
                                  buff.get_iter_at_offset(rowtag.start), 
-                                 buff.get_iter_at_offset(rowtag.end))
-        
-#             color = '#f0f0f0' if i % 2 else '#f9f9f9'
-#             t = buff.create_tag(background=color, 
-#                                       pixels_above_lines=1, 
-#                                       pixels_below_lines=1,
-#                                       family='monospace'                                                                        
-#                                       )
-#             buff.apply_tag(t, 
-#                                  buff.get_iter_at_offset(rowtag.start), 
-#                                  buff.get_iter_at_offset(rowtag.end))
-        
+                                 buff.get_iter_at_offset(rowtag.end))                
         
         tableview.set_buffer(buff)
         for tbl, anchor in tables:
