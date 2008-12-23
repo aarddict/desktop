@@ -648,7 +648,6 @@ class DictViewer(object):
             article_view = last_page.get_child()
             article_view.remove_handlers()
             self.tabs.remove_page(-1)        
-#         self.update_copy_article_mi(self.tabs)        
         return False 
         
     def show_article_for(self, wordlookup, lang = None):
@@ -672,7 +671,6 @@ class DictViewer(object):
             self.tabs.set_menu_label_text(scrollable_view, article.dictionary.title)
             self.article_formatter.apply(article, article_view)
             self.add_to_history(str(wordlookup), lang)            
-#         self.update_copy_article_mi(self.tabs)
         self.tabs.show_all()
     
     def dict_label_callback(self, widget, event):
