@@ -149,6 +149,11 @@ class TagTable(gtk.TextTagTable):
                            foreground='blue')
         self.add(tag)
 
+        tag = gtk.TextTag('note')
+        tag.set_properties(scale=pango.SCALE_SMALL)
+        self.add(tag)
+
+
         tag = gtk.TextTag('tt')
         tag.set_properties(family='monospace')
         self.add(tag)
