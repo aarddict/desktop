@@ -42,6 +42,17 @@ def get_scale():
 def set_scale(value):
     TAGS_TABLE.lookup('ar').set_property('scale', value)
 
+def maketabs(rawtabs):
+    char_width = strwidth(' ')
+    scale = get_scale()
+    tabs = pango.TabArray(len(rawtabs), 
+                                positions_in_pixels=False)
+    for i in range(tabs.get_size()):
+        pos = rawtabs[i]
+        tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*int(scale*pango.SCALE))    
+    return tabs    
+
+
 class TagTable(gtk.TextTagTable):
     
     def __init__(self):
@@ -350,16 +361,6 @@ class ArticleFormat:
         text_buffer.apply_tag_by_name('ar', *text_buffer.get_bounds())
         return text_buffer, tables
 
-    def maketabs(self, rawtabs):
-        char_width = strwidth(' ')
-        scale = get_scale()
-        tabs = pango.TabArray(len(rawtabs), 
-                                    positions_in_pixels=False)
-        for i in range(tabs.get_size()):
-            pos = rawtabs[i]
-            tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*int(scale*pango.SCALE))    
-        return tabs    
-
     def create_table(self, dictionary, article_view, text_buffer, tag, start, end, reftable):
         tabletxt = tag.attributes['text']        
         tabletags = tag.attributes['tags']
@@ -367,7 +368,7 @@ class ArticleFormat:
         tabletabs = tag.attributes['tabs']
         rawglobaltabs = tabletabs.get('') 
         
-        globaltabs = self.maketabs(rawglobaltabs)        
+        globaltabs = maketabs(rawglobaltabs)        
         tableview = aarddict.ui.ArticleView(article_view.drag_handler, 
                                             article_view.selection_changed_callback, 
                                             top_article_view=article_view.top_article_view)
@@ -381,7 +382,7 @@ class ArticleFormat:
         for i, rowtag in enumerate(rowtags):
             strindex = str(i)
             if strindex in tabletabs:
-                tabs = self.maketabs(tabletabs[strindex])    
+                tabs = maketabs(tabletabs[strindex])    
                 t = buff.create_tag(tabs=tabs)
                 buff.apply_tag(t, 
                                  buff.get_iter_at_offset(rowtag.start), 
