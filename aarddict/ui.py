@@ -925,8 +925,9 @@ class DictViewer(object):
                                   '<Control>minus', 'Decrease size of article text', self.decrease_text_size),
                                  ('ResetTextSize', None, '_Reset Text Size',
                                   '<Control>0', 'Reset size of article text to default', self.reset_text_size),
-                                 ('About', None, '_About',
+                                 ('About', gtk.STOCK_ABOUT, '_About',
                                   None, 'About %s' % app_name, self.show_about),
+                                 
                                  ])
         
         for action in actiongroup.list_actions():
