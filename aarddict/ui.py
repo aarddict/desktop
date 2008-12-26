@@ -550,6 +550,7 @@ class DictViewer(object):
         to_select = next_iter_func(model, itr)
         if to_select: 
             word_list.get_selection().select_iter(to_select)
+            word_list.scroll_to_cell(model.get_path(to_select))
         if grab_focus:
             self.word_completion.current().child.grab_focus()        
 
