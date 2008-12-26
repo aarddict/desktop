@@ -330,8 +330,17 @@ class LookupCanceled(Exception):
     pass
 
 class DictViewer(object):
+
+    def blah(self, widget, event, *args):
+        if event.keyval == gtk.keysyms.Down:
+            self.select_next_word_in_completion()
+            return True
+        if event.keyval == gtk.keysyms.Up:
+            self.select_prev_word_in_completion()
+            return True
              
     def __init__(self):
+                    
         self.select_word_exact = functools.partial(self.__select_word, eq_func = self.__exact_eq)
         self.select_word_weak = functools.partial(self.__select_word, eq_func = self.__weak_eq)
         self.lookup_stop_requested = False
@@ -339,7 +348,8 @@ class DictViewer(object):
         self.status_display = None
         self.dictionaries = dictionary.DictionaryCollection()
         self.current_word_handler = None                               
-        self.window = self.create_top_level_widget()                               
+        self.window = self.create_top_level_widget()
+        
         self.phonetic_font_desc = None
         self.last_dict_file_location = None
         self.recent_menu_items = {}
@@ -386,6 +396,7 @@ class DictViewer(object):
         self.update_title()
         self.window.show_all()
         self.word_input.child.grab_focus()
+        self.word_input.child.connect("key-press-event", self.blah)
         self.load_app_state()
     
     def _get_word_list(self):
@@ -526,6 +537,32 @@ class DictViewer(object):
         first_word = model.get_iter_first()
         if first_word: 
             word_list.get_selection().select_iter(first_word)
+
+    def select_next_word_in_completion(self, grab_focus=False):
+        self._select_next_completion(self._next_iter_to_select, grab_focus)
+        
+    def select_prev_word_in_completion(self, grab_focus=False):
+        self._select_next_completion(self._prev_iter_to_select, grab_focus)
+
+    def _select_next_completion(self, next_iter_func, grab_focus):
+        word_list = self.word_completion.current().child
+        model, itr = word_list.get_selection().get_selected()
+        to_select = next_iter_func(model, itr)
+        if to_select: 
+            word_list.get_selection().select_iter(to_select)
+        if grab_focus:
+            self.word_completion.current().child.grab_focus()        
+
+    def _next_iter_to_select(self, model, itr):
+        return model.iter_next(itr) if itr else model.get_iter_first()
+
+    def _prev_iter_to_select(self, model, itr):
+        if itr:
+            path = model.get_path(itr)
+            path_prev = (path[0]-1,)
+            return model.get_iter(path_prev)            
+        else:
+            return model.get_iter(len(model) - 1)
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
         if self.is_link_click(widget, event, word):
@@ -827,9 +864,9 @@ class DictViewer(object):
         word_input.pack_start(cell1, False)        
         word_input.set_cell_data_func(cell1, self.format_history_item)
         word_input.child.connect("activate", 
-                                 lambda x: self.select_first_word_in_completion())                
+                                 lambda x: self.select_next_word_in_completion(grab_focus=True))
         self.word_change_handler = word_input.connect("changed", 
-                                                      self.word_selected_in_history)
+                                                      self.word_selected_in_history)        
         return word_input
     
     def format_history_item(self, celllayout, cell, model, iter, user_data = None):
