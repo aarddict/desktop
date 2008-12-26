@@ -1351,6 +1351,15 @@ class DictViewer(object):
         self.dictionaries.remove(dict) 
         current_langs = self.dictionaries.langs()
         view_langs = self.word_completion.langs()
+
+        tabs_to_remove = []
+        def collect_to_remove(page):
+            article = page.child.article
+            if article and article.dictionary == dict:
+                tabs_to_remove.append(page)
+        self.tabs.foreach(collect_to_remove)
+        for page in tabs_to_remove:
+            self.tabs.remove_page(self.tabs.page_num(page))
         
         for l in view_langs:
             if l not in current_langs:
