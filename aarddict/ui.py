@@ -558,12 +558,15 @@ class DictViewer(object):
         return model.iter_next(itr) if itr else model.get_iter_first()
 
     def _prev_iter_to_select(self, model, itr):
-        if itr:
-            path = model.get_path(itr)
-            path_prev = (path[0]-1,)
-            return model.get_iter(path_prev)            
-        else:
-            return model.get_iter(len(model) - 1)
+        try:
+            if itr:
+                path = model.get_path(itr)
+                path_prev = (path[0]-1,)
+                return model.get_iter(path_prev)            
+            else:
+                return model.get_iter(len(model) - 1)
+        except ValueError:
+            return None
                         
     def word_ref_clicked(self, tag, widget, event, iter, word, dict):
         if self.is_link_click(widget, event, word):
