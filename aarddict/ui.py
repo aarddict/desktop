@@ -331,7 +331,7 @@ class LookupCanceled(Exception):
 
 class DictViewer(object):
 
-    def blah(self, widget, event, *args):
+    def word_input_updown_handler(self, widget, event, *args):
         if event.keyval == gtk.keysyms.Down:
             self.select_next_word_in_completion()
             return True
@@ -396,7 +396,7 @@ class DictViewer(object):
         self.update_title()
         self.window.show_all()
         self.word_input.child.grab_focus()
-        self.word_input.child.connect("key-press-event", self.blah)
+        self.word_input.child.connect("key-press-event", self.word_input_updown_handler)
         self.load_app_state()
     
     def _get_word_list(self):
