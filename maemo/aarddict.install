@@ -3,7 +3,7 @@ catalogues = s
 package = aarddict
 
 [s]
-name = SDict Viewer
-uri = http://sdictviewer.sourceforge.net/
+name = Aard Dictionary
+uri = http://aarddict.org
 components = user
-dist = chinook
+dist = diablo
