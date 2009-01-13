@@ -1,0 +1,15 @@
+#!/bin/bash
+VERSION=$1
+RELEASE=$2
+pushd ..
+python setup.py bdist
+pushd dist
+mkdir deb
+tar -xvf aarddict-$VERSION*.tar.gz -C deb
+find deb/usr/ -name *.pyc | xargs rm
+cp -r ../debian/DEBIAN deb/
+dpkg -b deb/ aarddict_$VERSION-${RELEASE}_all.deb
+rm -rf deb/
+popd
+popd
+
