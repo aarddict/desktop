@@ -397,6 +397,7 @@ class DictViewer(object):
         self.window.show_all()
         self.word_input.child.grab_focus()
         self.word_input.child.connect("key-press-event", self.word_input_updown_handler)
+        gtk.about_dialog_set_url_hook(lambda dialog, link: self.open_external_link(link))
         self.load_app_state()
     
     def _get_word_list(self):
@@ -1376,7 +1377,7 @@ class DictViewer(object):
         info_dialog.run()
         info_dialog.destroy()
         
-    def show_about(self, action):
+    def show_about(self, action):        
         dialog = gtk.AboutDialog()
         dialog.set_position(gtk.WIN_POS_CENTER)
         dialog.set_name(app_name)
