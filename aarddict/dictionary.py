@@ -22,6 +22,8 @@ import functools
 
 import struct
 import logging
+import zlib
+import bz2
 from bisect import bisect_left
 
 import simplejson
@@ -35,6 +37,12 @@ ucollator.setStrength(Collator.PRIMARY)
 from hashlib import sha1
 import time
 
+compression = (zlib.compress,
+               bz2.compress)
+
+decompression = (zlib.decompress,
+                 bz2.decompress)
+
 def calcsha1(file_name, offset, chunksize=100000):    
     with open(file_name, 'rb') as f:    
         f.seek(offset)
@@ -47,7 +55,7 @@ def calcsha1(file_name, offset, chunksize=100000):
 
 def decompress(s):
     decompressed = s
-    for decompress in aarddict.decompression:
+    for decompress in decompression:
         try:
             decompressed = decompress(s)
         except:

@@ -1,17 +1,8 @@
 from __future__ import with_statement
-import zlib
-import bz2
 import optparse
 import logging
 
 logging.basicConfig(format='%(levelname)s: %(message)s')
-    
-compression = (zlib.compress,
-               bz2.compress)
-
-decompression = (zlib.decompress,
-                 bz2.decompress)
-
 
 def main():
     
