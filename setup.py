@@ -67,12 +67,12 @@ setup(
        (os.path.join(sys.prefix,'share/applications'), inst_desktop)
     ],      
     author = "Igor Tkach",
-    author_email = "itkach@gmail.com",
+    author_email = "itkach@aarddict.org",
     description =  '''Aarddict is a dictionary application providing offline 
     access to dictionaries, Wikipedia and other reference materials.''',
     license = "GPL 3",
     keywords = ['aarddict', 'dict', 'dictionary', 'maemo'],
-    url = "http://code.google.com/p/aarddict",  
+    url = "http://aarddict.org",  
     classifiers=[
                  'Development Status :: 3 - Alpha',
                  'Operating System :: OS Independent',

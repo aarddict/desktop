@@ -12,7 +12,7 @@ echo "Section: user/other
 Priority: optional
 Package: aarddict
 Version: $VERSION
-Maintainer: Igor Tkach <itkach@users.sourceforge.net>
+Maintainer: Igor Tkach <itkach@aarddict.org>
 Description: 
 	Aard Dictionary is a dictionary application providing offline 
         access to dictionaries, Wikipedia and other reference materials.        
