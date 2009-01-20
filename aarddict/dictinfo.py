@@ -1,21 +1,17 @@
-"""
-This file is part of AardDict (http://code.google.com/p/aarddict) - 
-a dictionary for Nokia Internet Tablets. 
+# This file is part of Aard Dictionary <http://aarddict.org>.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3
+# as published by the Free Software Foundation. 
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License <http://www.gnu.org/licenses/gpl-3.0.txt>
+# for more details.
+#
+# Copyright (C) 2006-2009  Igor Tkach
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-Copyright (C) 2006-2008 Igor Tkach
-"""
 import pygtk
 pygtk.require('2.0')
 
