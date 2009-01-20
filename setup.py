@@ -37,9 +37,11 @@ inst_icons_40   = [ 'icons/hicolor/40x40/hildon/aarddict.png' ]
 inst_icons_64   = [ 'icons/hicolor/scalable/hildon/aarddict.png' ]
 inst_desktop    = [ 'desktop/aarddict.desktop']
 
+import aarddict
+
 setup(
-    name = "aarddict",
-    version = '0.7.0',
+    name = aarddict.__name__,
+    version = aarddict.__version__,
     packages = find_packages(),
     windows=[{
         'script': 'run',

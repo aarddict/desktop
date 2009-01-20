@@ -1,4 +1,6 @@
 #!/bin/bash
+RELEASE=$1
+
 mkdir -p usr/{bin/,lib/python2.5/site-packages/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
 
 DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml, pyicu (>= 0.8.1), simplejson"
@@ -8,14 +10,12 @@ cp -R ../aarddict/*.cfg usr/lib/python2.5/site-packages/aarddict || exit
 cp -R ../icons/ usr/share/
 chmod +x usr/bin/aarddict
 
-#export LD_LIBRARY_PATH=/usr/lib
-
 DIRS="usr"
 find $DIRS| grep \~ && rm -i $(find $DIRS| grep \~)
 
 PACKAGE=aarddict
-VERSION=$(grep "^version =" ../aarddict/ui.py | sed s/version\ =\ \"// | sed s/\"//)
-APP_NAME=$(grep "^app_name =" ../aarddict/ui.py | sed s/app_name\ =\ \"// | sed s/\"//)
+VERSION=`python -c "import aarddict; print aarddict.__version__"`
+APP_NAME=`python -c "import aarddict; print aarddict.__appname__"`
 SIZE=$(du -sc $DIRS|grep total|sed s/total//)
 
 echo $VERSION	
@@ -89,7 +89,7 @@ echo 2.0 > debian-binary
 
 tar -zcvf data.tar.gz ./usr 
 tar -zcvf control.tar.gz control postinst
-NAME="$PACKAGE"_"$VERSION"-4maemo_armel.deb
+NAME=${PACKAGE}_${VERSION}-${RELEASE}maemo_armel.deb
 rm $NAME
 ar q $NAME debian-binary control.tar.gz data.tar.gz 
 ar t $NAME

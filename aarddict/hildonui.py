@@ -18,10 +18,11 @@ import webbrowser
 import osso
 import hildon
 
+import aarddict
 import ui
 import articleformat
 
-osso_c = osso.Context("aarddict", ui.version, False)
+osso_c = osso.Context(aarddict.__name__, aarddict.__version__, False)
 
 #hack, normal way of determining char width for some reason yields incorrect
 #result
@@ -36,7 +37,7 @@ class HildonDictViewer(ui.DictViewer):
         try:
             #This function has been omited twice already during significant 
             #Pymaemo updates - hence try/except
-            gtk.set_application_name(ui.app_name)
+            gtk.set_application_name(aarddict.__appname__)
         except:
             print 'Failed to set application name'
         window.connect("key-press-event", self.on_key_press)

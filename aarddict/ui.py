@@ -37,15 +37,13 @@ from gtk.gdk import (_2BUTTON_PRESS, _3BUTTON_PRESS, BUTTON_PRESS,
                     MOTION_NOTIFY, BUTTON_RELEASE, NO_EXPOSE, EXPOSE, 
                     VISIBILITY_NOTIFY)
 
+import aarddict
 import dictinfo 
 import articleformat
 import dictionary
 from dictionary import Dictionary, key
 
 gobject.threads_init()
-
-version = "0.7.0"
-app_name = "Aard Dictionary"
 
 class Config(ConfigParser):
         
@@ -964,7 +962,7 @@ class DictViewer(object):
                                  ('ResetTextSize', None, '_Reset Text Size',
                                   '<Control>0', 'Reset size of article text to default', self.reset_text_size),
                                  ('About', gtk.STOCK_ABOUT, '_About',
-                                  None, 'About %s' % app_name, self.show_about),
+                                  None, 'About %s' % aarddict.__appname__, self.show_about),
                                  
                                  ])
         
@@ -1132,7 +1130,7 @@ class DictViewer(object):
 
     def update_title(self):
         dict_title = self.create_dict_title()
-        title = "%s - %s" % (app_name, dict_title)
+        title = "%s - %s" % (aarddict.__appname__, dict_title)
         self.window.set_title(title)
         
     def create_dict_title(self):
@@ -1376,8 +1374,8 @@ class DictViewer(object):
     def show_about(self, action):        
         dialog = gtk.AboutDialog()
         dialog.set_position(gtk.WIN_POS_CENTER)
-        dialog.set_name(app_name)
-        dialog.set_version(version)
+        dialog.set_name(aarddict.__appname__)
+        dialog.set_version(aarddict.__version__)
         dialog.set_copyright("(C) 2006-2009 Igor Tkach, Jeremy Mortis")
         dialog.set_website("http://aarddict.org")
         dialog.set_comments("Distributed under terms and conditions of GNU Public License Version 3")

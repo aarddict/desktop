@@ -1,13 +1,27 @@
 #!/bin/bash
-VERSION=$1
-RELEASE=$2
+VERSION=`python -c "import aarddict; print aarddict.__version__"`
+RELEASE=$1
 pushd ..
 python setup.py bdist
 pushd dist
-mkdir deb
+mkdir -p deb/DEBIAN
 tar -xvf aarddict-$VERSION*.tar.gz -C deb
 find deb/usr/ -name *.pyc | xargs rm
-cp -r ../debian/DEBIAN deb/
+
+echo "Section: user/other
+Priority: optional
+Package: aarddict
+Version: $VERSION
+Maintainer: Igor Tkach <itkach@users.sourceforge.net>
+Description: 
+	Aard Dictionary is a dictionary application providing offline 
+        access to dictionaries, Wikipedia and other reference materials.        
+Architecture: all
+Depends: python-pyicu (>= 0.8.1), python-simplejson
+" > deb/DEBIAN/control
+
+echo 2.0 > deb/DEBIAN/debian-binary
+ 
 dpkg -b deb/ aarddict_$VERSION-${RELEASE}_all.deb
 rm -rf deb/
 popd
