@@ -1,6 +1,5 @@
 [Desktop Entry]
-Name=Aard Dict
-Comment=Aard Dict is a dictionary and encyclopedia
+Name=Aard Dictionary
 Type=Application
 Exec=aarddict
 Icon=aarddict.png

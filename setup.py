@@ -68,10 +68,10 @@ setup(
     ],      
     author = "Igor Tkach",
     author_email = "itkach@aarddict.org",
-    description =  '''Aarddict is a dictionary application providing offline 
+    description =  '''Aard Dictionary is a dictionary application providing offline 
     access to dictionaries, Wikipedia and other reference materials.''',
     license = "GPL 3",
-    keywords = ['aarddict', 'dict', 'dictionary', 'maemo'],
+    keywords = ['aarddict', 'dict', 'dictionary', 'maemo', 'netbook'],
     url = "http://aarddict.org",  
     classifiers=[
                  'Development Status :: 3 - Alpha',

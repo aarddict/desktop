@@ -1,7 +1,7 @@
 [Setup]
-AppName=Aard Dict
-AppVerName=Aard Dict 0.7.0
-DefaultDirName={pf}\Aard Dict
+AppName=Aard Dictionary
+AppVerName=Aard Dictionary 0.7.0
+DefaultDirName={pf}\Aard Dictionary
 DefaultGroupName=Accessories
 UninstallDisplayIcon={app}\aarddict.exe
 Compression=lzma
@@ -12,4 +12,4 @@ OutputDir=..\winsetup
 Source: "..\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Aard Dict"; Filename: "{app}\run.exe"
+Name: "{group}\Aard Dictionary"; Filename: "{app}\run.exe"
