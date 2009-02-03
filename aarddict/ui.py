@@ -295,19 +295,36 @@ class WordLookup(object):
                                   dictionary=article.dictionary)        
         return narticle
 
-    def redirect(self, article, level=0):
+    def redirect(self, article, level=0, seen=None):
+        if seen is None:
+            seen = set()
+        seen.add(article.title)
         redirect = article.redirect
-        if redirect:
-            logging.debug('Redirect %s ==> %s (level %d)', 
+        if redirect:            
+            logging.debug('Redirect "%s" ==> "%s" (level %d)', 
                           article.title, redirect, level)
             if level > 5:
-                logging.warn("Can't resolve redirect %s, too many levels", redirect)
-                return article            
+                logging.warn('Can''t resolve redirect "%s", too many levels', redirect)
+                return article
+            redirected = None
             for result in self.lookup_func(redirect, uuid=article.dictionary.uuid):
+                if result.title in seen:
+                    logging.debug('Already saw "%s"', result.title)                    
+                    continue
                 a = result()
                 a.title = result.title
-                if a.title == article.title: continue
-                return self.redirect(a, level=level+1)
+                logging.debug('Considering "%s"', a.title)
+                redirected = self.redirect(a, level=level+1, seen=seen)
+                if redirected and redirected.title == redirect:
+                    logging.debug('Found exact match: "%s"', redirect)
+                    return redirected
+                else:
+                    if redirected:
+                        logging.debug('"%s" is not good enough, keep looking', redirected.title)
+                    continue                
+            if redirected:
+                logging.debug('Exact match not found, returning "%s"', redirected.title)
+                return redirected
         else:
             return article                
 
