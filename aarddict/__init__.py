@@ -26,7 +26,7 @@ __appname__ = "Aard Dictionary"
 def main():
     
     usage = "usage: %prog [options] [FILE1] [FILE2] ..."
-    parser = optparse.OptionParser(version="%prog 0.7.0", usage=usage)
+    parser = optparse.OptionParser(version="%%prog %s" % __version__, usage=usage)
     parser.add_option(
         '-i', '--identify',
         action='store_true',        
