@@ -300,9 +300,16 @@ class WordLookup(object):
             seen = set()
         seen.add(article.title)
         redirect = article.redirect
-        if redirect:            
+        if redirect:
+            
             logging.debug('Redirect "%s" ==> "%s" (level %d)', 
                           article.title, redirect, level)
+            
+            sharp_pos = redirect.find('#')
+            if sharp_pos > -1:
+                redirect = redirect[:sharp_pos]
+                logging.debug('Will redirect do "%s"', redirect)
+                
             if level > 5:
                 logging.warn('Can''t resolve redirect "%s", too many levels', redirect)
                 return article
