@@ -313,7 +313,7 @@ class WordLookup(object):
             if level > 5:
                 logging.warn('Can''t resolve redirect "%s", too many levels', redirect)
                 return article
-            redirected = None
+            first = None
             for result in self.lookup_func(redirect, uuid=article.dictionary.uuid):
                 if result.title in seen:
                     logging.debug('Already saw "%s"', result.title)                    
@@ -322,16 +322,13 @@ class WordLookup(object):
                 a.title = result.title
                 logging.debug('Considering "%s"', a.title)
                 redirected = self.redirect(a, level=level+1, seen=seen)
+                if not first:
+                    first = redirected
                 if redirected and redirected.title == redirect:
                     logging.debug('Found exact match: "%s"', redirect)
                     return redirected
-                else:
-                    if redirected:
-                        logging.debug('"%s" is not good enough, keep looking', redirected.title)
-                    continue                
-            if redirected:
-                logging.debug('Exact match not found, returning "%s"', redirected.title)
-                return redirected
+            if first:
+                return first
         else:
             return article                
 
