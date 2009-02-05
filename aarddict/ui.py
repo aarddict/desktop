@@ -720,6 +720,7 @@ class DictViewer(object):
             label.set_ellipsize(pango.ELLIPSIZE_END)
             event_box = gtk.EventBox()
             event_box.add(label)
+            event_box.set_visible_window(False)
             event_box.connect("event", self.dict_label_callback)
             event_box.show_all()
             tooltips.set_tip(event_box, article.dictionary.title)
