@@ -229,7 +229,8 @@ class ArticleView(gtk.TextView):
             return
         handler1 = buffer.connect("mark-set", self.selection_changed_callback)
         handler2 = buffer.connect("mark-deleted", self.selection_changed_callback)
-        buffer.set_data("handlers", (handler1, handler2))        
+        buffer.set_data("handlers", (handler1, handler2))
+        buffer.place_cursor(buffer.get_start_iter())
         gtk.TextView.set_buffer(self, buffer)
         handler = self.connect_after("event", self.drag_handler)
         handlers.append(handler)
