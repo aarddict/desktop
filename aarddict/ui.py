@@ -1148,12 +1148,19 @@ class DictViewer(object):
 
     def add_to_menu_remove(self, dict):        
         key = dict.key()
-        title, version, file_name = key
-        mi_dict = gtk.MenuItem("%s %s" % (title, version))                 
+
+        if dict.total_volumes > 1:
+            menu_label = '%s Vol. %s' % (dict.title, dict.volume)
+        else:
+            menu_label = dict.title
+
+        mi_dict = gtk.MenuItem(menu_label)
+        
         if key in self.recent_menu_items:
             old_mi = self.recent_menu_items[key]
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]
+            
         self.recent_menu_items[key] = mi_dict;        
         self.mn_remove.append(mi_dict)
         mi_dict.connect("activate", lambda f: self.remove_dict(dict))

@@ -344,7 +344,7 @@ class Dictionary(object):
         return self.key().__hash__()
 
     def key(self):
-        return (self.title, self.version, self.file_name)
+        return self.sha1sum
 
     def verify(self):
         sha1sum = calcsha1(self.file_name, spec_len(HEADER_SPEC[:2]))
