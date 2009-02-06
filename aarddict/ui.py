@@ -754,6 +754,10 @@ class DictViewer(object):
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
         self.word_input.child.grab_focus()
+
+    def select_word_input(self):
+        self.word_input.child.select_region(0,-1)
+        self.word_input.child.grab_focus()
         
     def paste_to_word_input(self, btn, data = None): 
         clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)
@@ -956,6 +960,8 @@ class DictViewer(object):
                                   '<Control>i', 'Information about dictionaries', self.show_dict_info),
                                  ('Quit', gtk.STOCK_CLOSE, '_Quit',
                                   '<Control>q', 'Close application', self.destroy),
+                                 ('LookupBox', None, '_Lookup Box',
+                                  '<Control>L', 'Move focus to word input and select its content', lambda action: self.select_word_input()),
                                  ('Back', gtk.STOCK_GO_BACK, '_Back',
                                   '<Alt>Left', 'Go back to previous word in history', lambda action: self.history_back()),
                                  ('Forward', gtk.STOCK_GO_FORWARD, '_Forward',
@@ -1008,6 +1014,7 @@ class DictViewer(object):
         
         self.mi_drag_selects = actiongroup.get_action('ToggleDragSelects').create_menu_item()
         self.mi_show_word_list = actiongroup.get_action('ToggleWordList').create_menu_item()
+        self.mi_lookup_box = actiongroup.get_action('LookupBox').create_menu_item()
         self.mi_back = actiongroup.get_action('Back').create_menu_item()
         self.mi_forward = actiongroup.get_action('Forward').create_menu_item()
 
@@ -1054,6 +1061,7 @@ class DictViewer(object):
         mn_nav = gtk.Menu()
         mn_nav_item = gtk.MenuItem("_Navigate")
         mn_nav_item.set_submenu(mn_nav)
+        mn_nav.add(self.mi_lookup_box)
         mn_nav.add(self.mi_back)
         mn_nav.add(self.mi_forward)
         mn_nav.add(self.mi_prev_article)

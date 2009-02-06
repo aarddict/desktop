@@ -76,6 +76,7 @@ class HildonDictViewer(ui.DictViewer):
         mn_nav = gtk.Menu()
         mn_nav_item = gtk.MenuItem("_Navigate")
         mn_nav_item.set_submenu(mn_nav)
+        mn_nav.add(self.mi_lookup_box)
         mn_nav.add(self.mi_back)
         mn_nav.add(self.mi_forward)
         mn_nav.add(self.mi_prev_article)
