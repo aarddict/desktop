@@ -18,7 +18,10 @@ pygtk.require('2.0')
 import gtk
 import pango
 import locale
-import ui 
+
+from collections import defaultdict
+
+import ui
 
 def create_text_view(wrap_mode=gtk.WRAP_NONE):
     text_view = gtk.TextView()
@@ -37,32 +40,8 @@ class DictDetailPane(gtk.HBox):
         self.tabs.set_show_border(True)
                 
         self.text_view = create_text_view(gtk.WRAP_WORD)
-        
-        buffer = gtk.TextBuffer()
-        buffer.create_tag("title", 
-                          weight = pango.WEIGHT_BOLD, 
-                          justification = gtk.JUSTIFY_CENTER,
-                          scale = pango.SCALE_LARGE,
-                          pixels_above_lines = 3, 
-                          pixels_below_lines = 3)        
-        
-        
-        buffer.create_tag("file", 
-                          style = pango.STYLE_ITALIC,
-                          scale = pango.SCALE_SMALL,
-                          justification = gtk.JUSTIFY_CENTER)                
-
-        buffer.create_tag("count", 
-                          justification = gtk.JUSTIFY_CENTER,
-                          style = pango.STYLE_ITALIC,
-                          pixels_below_lines = 3)
-
-        buffer.create_tag("license",
-                          wrap_mode = gtk.WRAP_NONE,
-                          pixels_below_lines = 3)
-
-        self.text_view.set_buffer(buffer)        
-        
+        self.text_view.set_left_margin(6)
+                
         label = gtk.Label('Info')
         self.tabs.append_page(ui.create_scrolled_window(self.text_view), label)        
 
@@ -72,31 +51,76 @@ class DictDetailPane(gtk.HBox):
         self.tabs.append_page(ui.create_scrolled_window(self.license_view), label)        
         self.pack_start(self.tabs, True, True, 0)                                                       
     
-    def set_dict(self, d):        
-        buffer = self.text_view.get_buffer()
-                
-        if d:
-            title_start = 0
-            t = '%s %s\n' % (d.title, d.version)
-            title_end = title_start + len(t.decode('utf-8'))
+    def set_dict(self, volumes):
+        
+        buff = self.text_view.get_buffer()
+        buff.set_text('')
+        
+        if volumes:
+            
+            volumes = sorted(volumes, key=lambda v: v.volume)
+            d = volumes[0]
 
-            file_start = title_end
-            t += '(%s)\n' % d.file_name 
-            file_end = len(t.decode('utf-8'))
+            def add(text, **attrs):
+                if attrs:
+                    buff.insert_with_tags(buff.get_end_iter(), text,
+                                          buff.create_tag(**attrs))
+                else:                    
+                    buff.insert(buff.get_end_iter(), text)
+
+            add('%s %s' % (d.title, d.version),                
+                weight=pango.WEIGHT_BOLD,                
+                scale=pango.SCALE_LARGE,
+                pixels_above_lines=8)
+            add('\n')
+
+            add('Volumes: %s' % d.total_volumes,
+                weight=pango.WEIGHT_BOLD,
+                scale=pango.SCALE_SMALL,
+                pixels_below_lines=8)
+            add('\n')
+                        
+
+            for dictionary in volumes:
+                add('Volume %s: ' % dictionary.volume,
+                    weight=pango.WEIGHT_BOLD,
+                    left_margin=20)
+                add(dictionary.file_name,
+                    style=pango.STYLE_ITALIC,
+                    left_margin=20)
+                add('\n')
+
+            add('Number of articles: ',
+                weight=pango.WEIGHT_BOLD,
+                pixels_below_lines=8,
+                left_margin=20)
+            add(locale.format("%u", d.article_count, True),
+                style=pango.STYLE_ITALIC,
+                pixels_below_lines=8,
+                left_margin=20)
+            add('\n')
             
-            count_start = file_end
-            article_count = locale.format("%u", d.article_count, True)
-            t += '%s articles\n\n' % article_count 
-            count_end = len(t.decode('utf-8'))
-            
-            if d.description:                
-                t += '%s\n\n' % d.description
+            if d.description:
+                add(d.description)
+                add('\n')
 
             if d.source:
-                t += 'Source: %s\n\n' % d.source
+                add('Source\n',
+                    weight=pango.WEIGHT_BOLD,
+                    scale=pango.SCALE_LARGE,
+                    pixels_below_lines=4,
+                    pixels_above_lines=8)
+                add(d.source)
+                add('\n')
                 
             if d.copyright:
-                t += '%s\n\n' % d.copyright 
+                add('Copyright Notice\n',
+                    weight=pango.WEIGHT_BOLD,
+                    scale=pango.SCALE_LARGE,
+                    pixels_below_lines=4,
+                    pixels_above_lines=8)
+                add(d.copyright)
+                add('\n')
             
             lic_text = d.license if d.license else ''  
             self.license_view.get_buffer().set_text(lic_text)
@@ -106,24 +130,10 @@ class DictDetailPane(gtk.HBox):
                 self.tabs.set_show_tabs(False)
             else:
                 self.tabs.set_show_tabs(True)
-                        
-            buffer.set_text(t)
-            start = buffer.get_iter_at_offset(title_start)
-            end = buffer.get_iter_at_offset(title_end)
-            buffer.apply_tag_by_name('title', start, end)
-            
-            start = buffer.get_iter_at_offset(file_start)
-            end = buffer.get_iter_at_offset(file_end)
-            buffer.apply_tag_by_name('file', start, end)            
 
-            start = buffer.get_iter_at_offset(count_start)
-            end = buffer.get_iter_at_offset(count_end)
-            buffer.apply_tag_by_name('count', start, end)
-                                                
-        else:
-            buffer.set_text('')                
         
 class DictInfoDialog(gtk.Dialog):
+    
     def __init__(self, dicts, parent):        
         super(DictInfoDialog, self).__init__(title="Dictionary Info", flags=gtk.DIALOG_MODAL, parent = parent)
         self.set_position(gtk.WIN_POS_CENTER_ON_PARENT)
@@ -136,8 +146,7 @@ class DictInfoDialog(gtk.Dialog):
         dict_list = gtk.TreeView(gtk.ListStore(object))
         cell = gtk.CellRendererText()
         dict_column = gtk.TreeViewColumn('Dictionary', cell)
-        dict_list.append_column(dict_column)
-        dict_column.set_cell_data_func(cell, self.extract_dict_title_for_cell)
+        dict_list.append_column(dict_column)        
                                     
         box.pack_start(ui.create_scrolled_window(dict_list), True, True, 0)
 
@@ -153,11 +162,18 @@ class DictInfoDialog(gtk.Dialog):
         self.resize(600, 320)
         
         model = dict_list.get_model()
-        
-        for dict in dicts:
-            model.append([dict])
+
+        dictmap = defaultdict(list)
+                
+        for dictionary in dicts:
+            dictmap[dictionary.uuid].append(dictionary)
+
+        for uuid in dictmap:
+            model.append([uuid])
             
-        dict_list.get_selection().connect("changed", self.dict_selected)
+        dict_list.get_selection().connect("changed", self.dict_selected, dictmap)
+
+        dict_column.set_cell_data_func(cell, self.extract_dict_title_for_cell, dictmap)
         
         if dicts:
             dict_list.get_selection().select_iter(model.get_iter_first())        
@@ -165,14 +181,17 @@ class DictInfoDialog(gtk.Dialog):
         self.show_all()
                                         
         
-    def extract_dict_title_for_cell(self, column, cell_renderer, model, iter, data = None):
-        dict = model[iter][0]
-        cell_renderer.set_property('text', dict.title)
+    def extract_dict_title_for_cell(self, column, cell_renderer, model, iter, dictmap):
+        uuid = model[iter][0]
+        dicts = dictmap[uuid]
+        cell_renderer.set_property('text', dicts[0].title)
         return        
     
-    def dict_selected(self, selection):
-        dict = None
+    def dict_selected(self, selection, dictmap):
         if selection.count_selected_rows() > 0:
-            model, iter = selection.get_selected()
-            dict = model[iter][0]
-        self.detail_pane.set_dict(dict)
+            model, itr = selection.get_selected()
+            uuid = model[itr][0]
+            volumes = dictmap[uuid]
+        else:
+            volumes = []
+        self.detail_pane.set_dict(volumes)
