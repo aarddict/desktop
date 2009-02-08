@@ -1172,10 +1172,13 @@ class DictViewer(object):
         self.window.set_title(title)
         
     def create_dict_title(self):
-        size = len(self.dictionaries)
-        if size == 0:
+        dcount = len(set((d.uuid for d in self.dictionaries)))
+        vcount = len(self.dictionaries)
+        if vcount == 0:
             return "No dictionaries"
-        return ("%d dictionary") % size if size == 1 else ("%d dictionaries") % size
+        volumestr = "%d volume" % vcount if vcount == 1 else "%d volumes" % vcount
+        dictstr = "%d dictionary" % dcount if dcount == 1 else "%d dictionaries" % dcount
+        return '%s (%s)' % (dictstr, volumestr)
         
     def create_article_view(self):
         article_view = ArticleView(self.article_drag_handler, 
