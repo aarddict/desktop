@@ -84,7 +84,7 @@ setup(
     options = {
         'py2exe' : {
             'packages': 'encodings',
-            'includes': 'cairo, pango, pangocairo, atk, gobject',
+            'includes': 'cairo, pango, pangocairo, atk, gobject, gtk, gtk.keysyms',
             },
         'sdist': {
             'formats': 'zip',
