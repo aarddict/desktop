@@ -74,7 +74,7 @@ setup(
     keywords = ['aarddict', 'dict', 'dictionary', 'maemo', 'netbook'],
     url = "http://aarddict.org",  
     classifiers=[
-                 'Development Status :: 3 - Alpha',
+                 'Development Status :: 4 - Beta',
                  'Operating System :: OS Independent',
                  'Programming Language :: Python',
                  'License :: OSI Approved :: GNU General Public License (GPL)',
