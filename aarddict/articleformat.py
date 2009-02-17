@@ -241,7 +241,12 @@ class TagTable(gtk.TextTagTable):
 
         #Tag that marks the whole article
         tag = gtk.TextTag('ar')
-        self.add(tag)        
+        self.add(tag)
+
+        tag = gtk.TextTag('highlight')
+        tag.set_properties(background='#99ccff')
+        self.add(tag)
+        
 
 TAGS_TABLE = TagTable()
 

@@ -76,7 +76,30 @@ def create_button(stock_id, action, data=None):
     button.set_relief(gtk.RELIEF_NONE)
     button.set_focus_on_click(False)
     button.connect("clicked", action, data);
-    return button  
+    return button
+
+def highlight_tag(tag, itr):
+    start = itr.copy()
+    end = itr
+    start.backward_to_tag_toggle(tag)
+    end.forward_to_tag_toggle(tag)
+    buf = itr.get_buffer()
+    buf.apply_tag_by_name('highlight', start, end)
+
+    while gtk.events_pending():
+        gtk.main_iteration(False)
+
+def unhighlight_tag(tag, itr):
+    start = itr.copy()
+    end = itr
+    start.backward_to_tag_toggle(tag)
+    end.forward_to_tag_toggle(tag)
+    buf = itr.get_buffer()
+    buf.remove_tag_by_name('highlight', start, end)
+
+    while gtk.events_pending():
+        gtk.main_iteration(False)
+
 
 def block(widget, handler):
     def wrap(f):
@@ -583,18 +606,23 @@ class DictViewer(object):
             else:
                 return model.get_iter(len(model) - 1)
         except ValueError:
-            return None
-                        
-    def word_ref_clicked(self, tag, widget, event, iter, word, dict):
+            return None        
+        
+    def word_ref_clicked(self, tag, widget, event, itr, word, dict):
+        
         if self.is_link_click(widget, event, word):
+            highlight_tag(tag, itr)
             self.set_word_input(word)
             self.update_completion(word, (word, dict.index_language))
+            
         
-    def external_link_callback(self, tag, widget, event, iter, url):
+    def external_link_callback(self, tag, widget, event, itr, url):
         if self.is_link_click(widget, event, url):
+            highlight_tag(tag, itr)
             self.open_external_link(url)
+            unhighlight_tag(tag, itr)
 
-    def footnote_callback(self, tag, widget, event, iter, target_pos):
+    def footnote_callback(self, tag, widget, event, itr, target_pos):
         top = widget.top_article_view
         if self.is_link_click(top, event, target_pos):
             if hasattr(top, 'backbtn') and top.backbtn:
