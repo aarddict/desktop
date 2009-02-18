@@ -110,7 +110,7 @@ class LangNotebook(gtk.Notebook):
         self.set_tab_pos(gtk.POS_TOP)
         self.set_show_border(True)
         self.word_selection_changed = word_selection_changed
-        self.connect("switch-page", self.__page_switched)
+        self.connect("switch-page", self._page_switched)
     
     def __getitem__(self, index):
         return self.get_nth_page(index)
@@ -121,24 +121,24 @@ class LangNotebook(gtk.Notebook):
     def word_list(self, lang):
         if lang is None:
             return None
-        page = self.__page(lang)
+        page = self._page(lang)
         return page.child if page else None
     
     def langs(self):
         return [page.lang for page in self]
     
     def has_lang(self, lang):
-        page = self.__page(lang)
+        page = self._page(lang)
         return True if page else False
     
     def add_lang(self, lang):
         if not self.has_lang(lang):
-            word_list = self.__create_word_list()
+            word_list = self._create_word_list()
             model = word_list.get_model()
             label = gtk.Label()
-            self.__update_label(label, lang, len(model))
-            model.connect("row-inserted", self.__row_inserted, label, lang)
-            model.connect("row-deleted", self.__row_deleted, label, lang)
+            self._update_label(label, lang, len(model))
+            model.connect("row-inserted", self._row_inserted, label, lang)
+            model.connect("row-deleted", self._row_deleted, label, lang)
             handler = word_list.get_selection().connect("changed", 
                                                         self.word_selection_changed, 
                                                         lang)
@@ -149,7 +149,7 @@ class LangNotebook(gtk.Notebook):
             self.set_tab_reorderable(page, True)
         self.show_all()
 
-    def __clear_word_list(self, tab):
+    def _clear_word_list(self, tab):
         word_list = tab.child
         selection = word_list.get_selection()
         iscurrent = tab == self.current()
@@ -165,18 +165,18 @@ class LangNotebook(gtk.Notebook):
             selection.handler_unblock(word_list.selection_changed_handler)
 
     def clear(self):                        
-        self.foreach(self.__clear_word_list)
+        self.foreach(self._clear_word_list)
 
-    def __row_inserted(self, model, path, iter, label, lang):
-        self.__update_label(label, lang, len(model))
+    def _row_inserted(self, model, path, iter, label, lang):
+        self._update_label(label, lang, len(model))
 
-    def __row_deleted(self, model, path, label, lang):
-        self.__update_label(label, lang, len(model))
+    def _row_deleted(self, model, path, label, lang):
+        self._update_label(label, lang, len(model))
         
-    def __update_label(self, label, lang, count):
+    def _update_label(self, label, lang, count):
         label.set_text(self.label_pattern % (lang, count))
         
-    def __page(self, lang):
+    def _page(self, lang):
         for page in self: 
             if page.lang == lang: return page        
                 
@@ -192,24 +192,24 @@ class LangNotebook(gtk.Notebook):
         return current.lang if current else None
     
     def set_current_lang(self, lang):
-        page = self.__page(lang)
+        page = self._page(lang)
         self.set_current_page(self.page_num(page))
     
-    def __create_word_list(self):
+    def _create_word_list(self):
         word_list = gtk.TreeView(gtk.ListStore(object))
         cell = gtk.CellRendererText()
         column = gtk.TreeViewColumn(None, cell)
-        column.set_cell_data_func(cell, self.__wordlookup_to_text)
+        column.set_cell_data_func(cell, self._wordlookup_to_text)
         word_list.set_headers_visible(False)
         word_list.append_column(column)
         return word_list
 
-    def __wordlookup_to_text(self, treeviewcolumn, cell_renderer, model, iter):
+    def _wordlookup_to_text(self, treeviewcolumn, cell_renderer, model, iter):
         wordlookup = model[iter][0]
         cell_renderer.set_property('text', str(wordlookup))
         return  
     
-    def __page_switched(self, notebook, page_gpointer, page_num):
+    def _page_switched(self, notebook, page_gpointer, page_num):
         page = self.get_nth_page(page_num)
         self.word_selection_changed(page.child.get_selection(), page.lang)
         
@@ -259,10 +259,10 @@ class ArticleView(gtk.TextView):
         b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
     
     def remove_handlers(self):
-        self.__remove_handlers(self)
-        self.__remove_handlers(self.get_buffer())
+        self._remove_handlers(self)
+        self._remove_handlers(self.get_buffer())
         
-    def __remove_handlers(self, obj):
+    def _remove_handlers(self, obj):
         handlers = obj.get_data("handlers")
         for handler in handlers:
             obj.disconnect(handler)
@@ -368,8 +368,8 @@ class DictViewer(object):
              
     def __init__(self):
                     
-        self.select_word_exact = functools.partial(self.__select_word, eq_func = self.__exact_eq)
-        self.select_word_weak = functools.partial(self.__select_word, eq_func = self.__weak_eq)
+        self.select_word_exact = functools.partial(self._select_word, eq_func = self._exact_eq)
+        self.select_word_weak = functools.partial(self._select_word, eq_func = self._weak_eq)
         self.lookup_stop_requested = False
         self.update_completion_t0 = None
         self.status_display = None
@@ -932,7 +932,7 @@ class DictViewer(object):
         return True if self.select_word_exact(word, lang)\
                     else self.select_word_weak(word, lang)
 
-    def __select_word(self, word, lang, eq_func):     
+    def _select_word(self, word, lang, eq_func):     
         word_list = self.word_completion.word_list(lang)
         if word_list:                    
             model = word_list.get_model()
@@ -947,10 +947,10 @@ class DictViewer(object):
                 word_iter = model.iter_next(word_iter)
         return False
     
-    def __exact_eq(self, word_lookup1, word_lookup2):
+    def _exact_eq(self, word_lookup1, word_lookup2):
         return str(word_lookup1) == str(word_lookup2)
     
-    def __weak_eq(self, word_lookup1, word_lookup2):
+    def _weak_eq(self, word_lookup1, word_lookup2):
         u1 = unicode(word_lookup1)
         u2 = unicode(word_lookup2)
         return key(u1) == key(u2)
