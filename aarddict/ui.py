@@ -99,18 +99,6 @@ def unhighlight_tag(tag, itr):
 
     while gtk.events_pending():
         gtk.main_iteration(False)
-
-
-def block(widget, handler):
-    def wrap(f):
-        def newFunction(*args, **kw):
-            widget.handler_block(handler)
-            result = f(*args, **kw)
-            widget.handler_unblock(handler)
-            return result 
-        return newFunction
-    return wrap
-
             
 
 class LangNotebook(gtk.Notebook):
