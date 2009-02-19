@@ -83,8 +83,10 @@ def create_button(stock_id, action, data=None):
 def highlight_tag(tag, itr):
     start = itr.copy()
     end = itr
-    start.backward_to_tag_toggle(tag)
-    end.forward_to_tag_toggle(tag)
+    if not start.begins_tag(tag):
+        start.backward_to_tag_toggle(tag)
+    if not end.ends_tag(tag):
+        end.forward_to_tag_toggle(tag)
     buf = itr.get_buffer()
     buf.apply_tag_by_name('highlight', start, end)
 
