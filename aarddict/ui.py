@@ -45,6 +45,8 @@ from dictionary import Dictionary, key
 
 gobject.threads_init()
 
+from timef import timef
+
 class Config(ConfigParser):
         
     def getlist(self, section):
@@ -232,6 +234,13 @@ class ArticleView(gtk.TextView):
             self.top_article_view=self
         else:
             self.top_article_view = top_article_view
+
+    def set_phonetic_font(self, font_name):
+        buff = self.get_buffer()
+        if buff:
+            tagtable = buff.get_tag_table()
+            tagtable.lookup('tr').set_property('font', font_name)
+        self.foreach(lambda child: child.set_phonetic_font(font_name))
     
     def set_buffer(self, buffer):
         handlers = self.get_data("handlers")
@@ -377,7 +386,6 @@ class DictViewer(object):
         self.current_word_handler = None                               
         self.window = self.create_top_level_widget()
         
-        self.phonetic_font_desc = None
         self.last_dict_file_location = None
         self.recent_menu_items = {}
         self.file_chooser_dlg = None
@@ -448,7 +456,7 @@ class DictViewer(object):
             if self.config.has_option('ui', 'input-word'):            
                 self.set_word_input(self.config.get('ui', 'input-word'))
             if self.config.has_option('ui', 'article-font-scale'):            
-                articleformat.set_scale(self.config.getfloat('ui', 'article-font-scale'))                
+                articleformat.font_scale = self.config.getfloat('ui', 'article-font-scale')
             self.lookup_delay = self.config.getint('ui', 'lookup-delay')
             self.article_delay = self.config.getint('ui', 'article-delay')
             self.max_words_per_dict = self.config.getint('ui', 'max-words-per-dict')
@@ -500,8 +508,8 @@ class DictViewer(object):
         dict_files = [dict.file_name for dict in self.dictionaries]
         if not self.config.has_section('ui'):
             self.config.add_section('ui')
-        if self.phonetic_font_desc:
-            self.config.set('ui', 'phonetic-font', self.phonetic_font_desc.to_string())
+        if articleformat.phonetic_font:
+            self.config.set('ui', 'phonetic-font', articleformat.phonetic_font)
         
         word = self.word_input.child.get_text()
         self.config.set('ui', 'input-word', word)
@@ -517,7 +525,7 @@ class DictViewer(object):
         self.config.set('ui', 'last-dict-file-location', self.last_dict_file_location)
         self.config.set('ui', 'drag-selects', self.actiongroup.get_action('ToggleDragSelects').get_active())
         self.config.set('ui', 'show-word-list', self.actiongroup.get_action('ToggleWordList').get_active())
-        self.config.set('ui', 'article-font-scale', articleformat.get_scale())
+        self.config.set('ui', 'article-font-scale', articleformat.font_scale)
         langs = [(self.word_completion.page_num(page), page.lang) 
                           for page in self.word_completion]
         langs = [item[1] for item in sorted(langs, key = lambda x: x[0])]
@@ -714,7 +722,8 @@ class DictViewer(object):
         active = self.word_input.get_active()
         if active > 0:
             self.word_input.set_active(active - 1)                
-                
+
+    @timef
     def clear_tabs(self):
         self.article_formatter.stop()
         while self.tabs.get_n_pages() > 0:            
@@ -1110,25 +1119,28 @@ class DictViewer(object):
             self.article_formatter.apply(article, article_view)
            
     def increase_text_size(self, action):
-        scale = articleformat.get_scale()
+        scale = articleformat.font_scale
         self._apply_font_scale(scale*1.1)
         
     def decrease_text_size(self, action):
-        scale = articleformat.get_scale()
+        scale = articleformat.font_scale
         self._apply_font_scale(scale*0.9)
 
     def reset_text_size(self, action):
         self._apply_font_scale(pango.SCALE_MEDIUM)
 
     def _apply_font_scale(self, new_scale):
-        scale = articleformat.get_scale()
+        scale = articleformat.font_scale
         if new_scale < pango.SCALE_SMALL:
             new_scale = pango.SCALE_SMALL
         if new_scale > pango.SCALE_XX_LARGE:
             new_scale = pango.SCALE_XX_LARGE            
         if new_scale != scale:
-            articleformat.set_scale(new_scale)
-            self.tabs.foreach(self._update_article_view_children)            
+            self.set_font_scale(new_scale)
+
+    def set_font_scale(self, scale):        
+        articleformat.font_scale = scale
+        self.tabs.foreach(self._update_article_view_children)            
 
     def on_window_state_change(self, widget, event, *args):             
         if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:
@@ -1441,21 +1453,19 @@ class DictViewer(object):
         
     def select_phonetic_font(self, action):
         dialog = gtk.FontSelectionDialog("Select Phonetic Font")        
-        if self.phonetic_font_desc:
-            dialog.set_font_name(self.phonetic_font_desc.to_string())                        
+        if articleformat.phonetic_font:
+            dialog.set_font_name(articleformat.phonetic_font)                        
         if dialog.run() == gtk.RESPONSE_OK:
             self.set_phonetic_font(dialog.get_font_name())
         dialog.destroy()
                 
     def set_phonetic_font(self, font_name):
-        if font_name:
-            self.phonetic_font_desc = pango.FontDescription(font_name)
-            articleformat.TAGS_TABLE.lookup('tr').set_property('font-desc', self.phonetic_font_desc)
-    
+        articleformat.phonetic_font = font_name
+        self.tabs.foreach(lambda page: page.child.set_phonetic_font(font_name))
+            
     def toggle_drag_selects(self, action):
         if not action.get_active():
-            self.tabs.foreach(lambda scroll_window: 
-                              scroll_window.get_child().clear_selection())
+            self.tabs.foreach(lambda page: page.child.clear_selection())
     
     def main(self):
         gtk.main()

@@ -21,234 +21,34 @@ import gobject
 import gtk
 import pango
 
+def tag(name, **props):
+    t = gtk.TextTag(name)
+    t.set_properties(**props)
+    return t
+
 def strwidth(text):
     view = gtk.TextView()
-    row_tag = TAGS_TABLE.lookup('row')
     layout = view.create_pango_layout(text)
-    layout.set_font_description(row_tag.get_property('font-desc'))
+    layout.set_font_description(pango.FontDescription(table_font_family))
     attributes = pango.AttrList()
-    attributes.insert(pango.AttrScale(get_scale(), 0, len(text)))
+    attributes.insert(pango.AttrScale(font_scale, 0, len(text)))
     layout.set_attributes(attributes)
     width = layout.get_size()[0]
     return width
 
-def get_scale():    
-    return TAGS_TABLE.lookup('ar').get_property('scale')
-
-def set_scale(value):
-    TAGS_TABLE.lookup('ar').set_property('scale', value)
+font_scale = pango.SCALE_MEDIUM
+phonetic_font = 'serif'
+table_font_family = 'monospace'
 
 def maketabs(rawtabs):
     char_width = strwidth(' ')
-    scale = get_scale()
     tabs = pango.TabArray(len(rawtabs), 
                                 positions_in_pixels=False)
     for i in range(tabs.get_size()):
         pos = rawtabs[i]
-        tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*int(scale*pango.SCALE))    
+        tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*int(font_scale*pango.SCALE))    
     return tabs    
 
-
-class TagTable(gtk.TextTagTable):
-    
-    def __init__(self):
-        gtk.TextTagTable.__init__(self)
-        
-        tag = gtk.TextTag('b')
-        tag.set_properties(weight=pango.WEIGHT_BOLD)
-        self.add(tag)
-
-        tag = gtk.TextTag('strong')
-        tag.set_properties(weight=pango.WEIGHT_BOLD)
-        self.add(tag)        
-
-        tag = gtk.TextTag('small')
-        tag.set_properties(scale=pango.SCALE_SMALL)
-        self.add(tag)        
-
-        tag = gtk.TextTag('big')
-        tag.set_properties(scale=pango.SCALE_LARGE)
-        self.add(tag)        
-
-        tag = gtk.TextTag('h1')
-        tag.set_properties(weight=pango.WEIGHT_ULTRABOLD, 
-                          scale=pango.SCALE_X_LARGE, 
-                          pixels_above_lines=12, 
-                          pixels_below_lines=6)
-        self.add(tag)        
-
-
-        tag = gtk.TextTag('h2')
-        tag.set_properties(weight=pango.WEIGHT_BOLD, 
-                          scale=pango.SCALE_LARGE, 
-                          pixels_above_lines=6, 
-                          pixels_below_lines=3)
-        self.add(tag)
-
-        tag = gtk.TextTag('h3')
-        tag.set_properties(weight=pango.WEIGHT_BOLD, 
-                          scale=pango.SCALE_MEDIUM, 
-                          pixels_above_lines=3, 
-                          pixels_below_lines=2)
-        self.add(tag)
-
-        tag = gtk.TextTag('h4')
-        tag.set_properties(weight=pango.WEIGHT_SEMIBOLD, 
-                          scale=pango.SCALE_MEDIUM, 
-                          pixels_above_lines=3, 
-                          pixels_below_lines=2)
-        self.add(tag)
-
-        tag = gtk.TextTag('h5')
-        tag.set_properties(weight=pango.WEIGHT_SEMIBOLD, 
-                          scale=pango.SCALE_MEDIUM, 
-                          style=pango.STYLE_ITALIC, 
-                          pixels_above_lines=3, 
-                          pixels_below_lines=2)
-        self.add(tag)
-
-        tag = gtk.TextTag('h6')
-        tag.set_properties(scale=pango.SCALE_MEDIUM, 
-                          underline=pango.UNDERLINE_SINGLE, 
-                          pixels_above_lines=3, 
-                          pixels_below_lines=2)
-        self.add(tag)
-
-        tag = gtk.TextTag('row')
-        tag.set_properties(background='#eeeeee',
-                           pixels_above_lines=1,
-                           pixels_below_lines=1,
-                           family='monospace'
-                           )
-        self.add(tag)
-
-        tag = gtk.TextTag('td')
-        tag.set_properties(background='#00ee00', pixels_below_lines=2)
-        self.add(tag)
-
-        tag = gtk.TextTag('i')
-        tag.set_properties(style=pango.STYLE_ITALIC)
-        self.add(tag)
-
-        tag = gtk.TextTag('em')
-        tag.set_properties(style=pango.STYLE_ITALIC)
-        self.add(tag)
-
-        tag = gtk.TextTag('u')
-        tag.set_properties(underline=True)
-        self.add(tag)
-
-        tag = gtk.TextTag('ref')
-        tag.set_properties(underline=True, 
-                           rise=6*pango.SCALE,                           
-                           scale=pango.SCALE_X_SMALL, 
-                           foreground='blue')
-        self.add(tag)
-
-        tag = gtk.TextTag('note')
-        tag.set_properties(scale=pango.SCALE_SMALL)
-        self.add(tag)
-
-
-        tag = gtk.TextTag('tt')
-        tag.set_properties(family='monospace')
-        self.add(tag)
-
-        tag = gtk.TextTag('pos')
-        tag.set_properties(style=pango.STYLE_ITALIC, 
-                           weight=pango.WEIGHT_SEMIBOLD,
-                           foreground='darkgreen')
-        self.add(tag)
-
-        tag = gtk.TextTag('r')
-        tag.set_properties(underline=pango.UNDERLINE_SINGLE, 
-                           foreground="brown4")
-        self.add(tag)
-
-        tag = gtk.TextTag('url')
-        tag.set_properties(underline=pango.UNDERLINE_SINGLE, 
-                           foreground="steelblue4")
-        self.add(tag)
-
-        tag = gtk.TextTag('tr')
-        tag.set_properties(weight=pango.WEIGHT_BOLD, 
-                           foreground="darkred")
-        self.add(tag)
-
-        tag = gtk.TextTag('p')
-        tag.set_properties(pixels_above_lines=3, 
-                           pixels_below_lines=3)
-        self.add(tag)
-
-        tag = gtk.TextTag('div')
-        tag.set_properties(pixels_above_lines=3, 
-                           pixels_below_lines=3)
-        self.add(tag)
-                
-        tag = gtk.TextTag('sup')
-        tag.set_properties(rise=6*pango.SCALE, 
-                           scale=pango.SCALE_X_SMALL)
-        self.add(tag)
-
-        tag = gtk.TextTag('sub')
-        tag.set_properties(rise=-6*pango.SCALE, 
-                           scale=pango.SCALE_X_SMALL)
-        self.add(tag)
-
-        tag = gtk.TextTag('blockquote')
-        tag.set_properties(indent=6)
-        self.add(tag)
-
-        tag = gtk.TextTag('cite')
-        tag.set_properties(style=pango.STYLE_ITALIC, 
-                           family='serif', 
-                           indent=6)
-        self.add(tag)
-
-
-        #Key phrase
-        tag = gtk.TextTag('k')
-        tag.set_properties(weight=pango.WEIGHT_BOLD, 
-                           scale=pango.SCALE_LARGE, 
-                           pixels_above_lines=6, 
-                           pixels_below_lines=3)
-        self.add(tag)
-        
-        #Direct translation of the key-phrase
-        tag = gtk.TextTag('dtrn')
-        self.add(tag)        
-        
-
-        #Marks the text of an editorial comment
-        tag = gtk.TextTag('co')
-        tag.set_properties(foreground="slategray4",
-                           scale=pango.SCALE_SMALL)
-        self.add(tag)        
-                        
-        #Marks the text of an example
-        tag = gtk.TextTag('ex')
-        tag.set_properties(style=pango.STYLE_ITALIC,
-                           family='serif',
-                           foreground="darkblue")
-        self.add(tag)        
-
-        #Marks an abbreviation that is listed in the <abbreviations> section
-        tag = gtk.TextTag('abr')
-        tag.set_properties(weight=pango.WEIGHT_SEMIBOLD,
-                           style = pango.STYLE_ITALIC,
-                           foreground = "darkred")
-        self.add(tag)        
-
-        #Tag that marks the whole article
-        tag = gtk.TextTag('ar')
-        self.add(tag)
-
-        tag = gtk.TextTag('highlight')
-        tag.set_properties(background='#99ccff')
-        self.add(tag)
-        
-
-TAGS_TABLE = TagTable()
 
 class FormattingStoppedException(Exception):
     def __init__(self):
@@ -307,7 +107,7 @@ class ArticleFormat:
         if current_worker:
             current_worker.stop()
         self.article_view = article_view
-        loading = self.create_article_text_buffer()
+        loading = create_article_text_buffer()
         loading.set_text("Loading...")
         article_view.set_buffer(loading)
         self.workers[dict] = self.Worker(self, dict, word, article, article_view)
@@ -331,7 +131,7 @@ class ArticleFormat:
         text_buffer.apply_tag(ref_tag, start, end) 
         
     def create_tagged_text_buffer(self, dictionary, text, tags, article_view, reftable):
-        text_buffer = self.create_article_text_buffer()
+        text_buffer = create_article_text_buffer()
         text_buffer.set_text(text)
                 
         tables = []
@@ -404,5 +204,168 @@ class ArticleFormat:
         return tableview, anchor        
         
         
-    def create_article_text_buffer(self):
-        return gtk.TextBuffer(TAGS_TABLE)
+def create_article_text_buffer():    
+
+    tags = (tag('b',
+                weight=pango.WEIGHT_BOLD),
+            
+            tag('strong',
+                weight=pango.WEIGHT_BOLD),
+            
+            tag('small',
+                scale=pango.SCALE_SMALL),
+            
+            tag('big',
+                scale=pango.SCALE_LARGE),
+            
+            tag('h1',
+                weight=pango.WEIGHT_ULTRABOLD, 
+                scale=pango.SCALE_X_LARGE, 
+                pixels_above_lines=12, 
+                pixels_below_lines=6),
+            
+            tag('h2',
+                weight=pango.WEIGHT_BOLD, 
+                scale=pango.SCALE_LARGE, 
+                pixels_above_lines=6, 
+                pixels_below_lines=3),
+            
+            tag('h3',
+                weight=pango.WEIGHT_BOLD, 
+                scale=pango.SCALE_MEDIUM, 
+                pixels_above_lines=3, 
+                pixels_below_lines=2),
+            
+            tag('h4',
+                weight=pango.WEIGHT_SEMIBOLD, 
+                scale=pango.SCALE_MEDIUM, 
+                pixels_above_lines=3, 
+                pixels_below_lines=2),
+            
+            tag('h5',
+                weight=pango.WEIGHT_SEMIBOLD, 
+                scale=pango.SCALE_MEDIUM, 
+                style=pango.STYLE_ITALIC, 
+                pixels_above_lines=3, 
+                pixels_below_lines=2),
+            
+            tag('h6',
+                scale=pango.SCALE_MEDIUM, 
+                underline=pango.UNDERLINE_SINGLE, 
+                pixels_above_lines=3, 
+                pixels_below_lines=2),
+            
+            tag('row',
+                background='#eeeeee',
+                pixels_above_lines=1,
+                pixels_below_lines=1,
+                family=table_font_family),
+            
+            tag('td',
+                background='#00ee00',
+                pixels_below_lines=2),
+            
+            tag('i',
+                style=pango.STYLE_ITALIC),
+            
+            tag('em',
+                style=pango.STYLE_ITALIC),
+            
+            tag('u',
+                underline=True),
+            
+            tag('ref',
+                underline=True, 
+                rise=6*pango.SCALE,                           
+                scale=pango.SCALE_X_SMALL, 
+                foreground='blue'),
+            
+            tag('note',
+                scale=pango.SCALE_SMALL),
+            
+            tag('tt',
+                family='monospace'),
+            
+            tag('pos',
+                style=pango.STYLE_ITALIC, 
+                weight=pango.WEIGHT_SEMIBOLD,
+                foreground='darkgreen'),
+            
+            tag('r',
+                underline=pango.UNDERLINE_SINGLE, 
+                foreground="brown4"),
+            
+            tag('url',
+                 underline=pango.UNDERLINE_SINGLE, 
+                 foreground="steelblue4"),
+            
+            tag('tr',
+                weight=pango.WEIGHT_BOLD, 
+                foreground="darkred",
+                font=phonetic_font),
+            
+            tag('p', 
+                pixels_above_lines=3, 
+                pixels_below_lines=3),
+            
+            tag('div',
+                pixels_above_lines=3, 
+                pixels_below_lines=3),
+            
+            tag('sup',
+                rise=6*pango.SCALE, 
+                scale=pango.SCALE_X_SMALL),
+            
+            tag('sub',
+                rise=-6*pango.SCALE, 
+                scale=pango.SCALE_X_SMALL),
+            
+            tag('blockquote',
+                indent=6),
+            
+            tag('cite',
+                style=pango.STYLE_ITALIC, 
+                family='serif', 
+                indent=6),
+            
+            #Key phrase
+            tag('k',
+                weight=pango.WEIGHT_BOLD, 
+                scale=pango.SCALE_LARGE, 
+                pixels_above_lines=6, 
+                pixels_below_lines=3),
+            
+            #Direct translation of the key-phrase
+            tag('dtrn'),
+            
+            #Marks the text of an editorial comment
+            tag('co',
+                foreground="slategray4",
+                scale=pango.SCALE_SMALL),
+            
+            #Marks the text of an example
+            tag('ex',
+                style=pango.STYLE_ITALIC,
+                family='serif',
+                foreground="darkblue"),
+            
+            #Marks an abbreviation that is listed in the <abbreviations> section
+            tag('abr',
+                weight=pango.WEIGHT_SEMIBOLD,
+                style=pango.STYLE_ITALIC,
+                foreground="darkred"),
+            
+            #Tag that marks the whole article
+            tag('ar',
+                scale=font_scale),
+            
+            tag('highlight',
+                background='#99ccff')
+            )            
+    
+    tagtable = gtk.TextTagTable()
+    
+    for t in tags:
+        tagtable.add(t)
+        
+    return gtk.TextBuffer(tagtable)
