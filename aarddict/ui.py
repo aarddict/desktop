@@ -215,14 +215,15 @@ class LangNotebook(gtk.Notebook):
         page = self.get_nth_page(page_num)
         self.word_selection_changed(page.child.get_selection(), page.lang)
         
-
 def top_parent(widget, parentclass):
     top = widget
-    currentwidget = widget
-    while currentwidget.parent:
-        if isinstance(currentwidget.parent, parentclass):
-            top = currentwidget.parent
-        currentwidget = currentwidget.parent
+    parent = widget.parent
+    while parent:
+        if isinstance(parent, parentclass):
+            top = parent
+        else:
+            break
+        parent = parent.parent
     return top
 
 def on_mouse_motion(widget, event, data=None):
