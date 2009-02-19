@@ -261,8 +261,9 @@ class ArticleView(gtk.TextView):
         self._remove_buff_handlers()    
         gtk.TextView.set_buffer(self, buff)            
         if buff:
-            buff.connect("mark-set", self.selection_changed_callback)
-            buff.connect("mark-deleted", self.selection_changed_callback)
+            if self.selection_changed_callback:
+                buff.connect("mark-set", self.selection_changed_callback)
+                buff.connect("mark-deleted", self.selection_changed_callback)
             buff.place_cursor(buff.get_start_iter())        
 
     def set_phonetic_font(self, font_name):
@@ -393,9 +394,6 @@ class DictViewer(object):
         self.recent_menu_items = {}
         self.file_chooser_dlg = None
         self.window_in_fullscreen = False
-        self.article_formatter = articleformat.ArticleFormat(self.word_ref_clicked, 
-                                                             self.external_link_callback, 
-                                                             self.footnote_callback)
         
         self.start_worker_threads()
                                  
@@ -607,12 +605,12 @@ class DictViewer(object):
         except ValueError:
             return None        
         
-    def word_ref_clicked(self, tag, widget, event, itr, word, dict):
+    def word_ref_clicked(self, tag, widget, event, itr, word, lang):
         
         if self.is_link_click(widget, event, word):
             highlight_tag(tag, itr)
             self.set_word_input(word)
-            self.update_completion(word, (word, dict.index_language))
+            self.update_completion(word, (word, lang))
             
         
     def external_link_callback(self, tag, widget, event, itr, url):
@@ -733,32 +731,60 @@ class DictViewer(object):
         page.destroy()
 
     def clear_tabs(self):
-        self.article_formatter.stop()
+        articleformat.stop()
         self.tabs.foreach(self._kill_tab)
         
-    def show_article_for(self, wordlookup, lang = None):
+    def show_article_for(self, wordlookup, lang=None):
         articles = wordlookup.articles()
         self.clear_tabs()
         tooltips = gtk.Tooltips()
-        for article in articles:
-            article_view = self.create_article_view()            
-            scrollable_view = create_scrolled_window(article_view)                
-            label = gtk.Label(article.dictionary.title)
-            label.set_width_chars(8)
-            label.set_ellipsize(pango.ELLIPSIZE_END)
-            event_box = gtk.EventBox()
-            event_box.add(label)
-            event_box.set_visible_window(False)
-            event_box.connect("event", self.dict_label_callback)
-            event_box.show_all()
-            tooltips.set_tip(event_box, article.dictionary.title)
-            self.tabs.append_page(scrollable_view, event_box)
-            self.tabs.set_tab_label_packing(scrollable_view, 
-                                            True, True, gtk.PACK_START)
-            self.tabs.set_menu_label_text(scrollable_view, article.dictionary.title)
-            self.article_formatter.apply(article, article_view)
-            self.add_to_history(str(wordlookup), lang)            
+        for article in articles:            
+            article_view = self.create_article_view()
+            article_view.get_buffer().set_text('Loading...')
+            self.maketab(article_view, article.dictionary.title, tooltips)
+            Thread(name='format', target=self.format_article,
+                   args=(article, self.makeview, article_view)).start()
+            #self.format_article(article, self.makeview, article_view)            
+            self.add_to_history(str(wordlookup), lang)
         self.tabs.show_all()
+
+    def format_article(self, article, callback, *data):
+        try:
+            buff, tables = articleformat.create_buffer(article,
+                                                       self.word_ref_clicked, 
+                                                       self.external_link_callback, 
+                                                       self.footnote_callback)
+        except articleformat.FormatStop:
+            logging.debug('Cought format stop')
+        else:
+            if not articleformat.interrupted:
+                gobject.idle_add(callback, buff, tables, *data)
+        
+
+    def maketab(self, article_view, title, tooltips):
+        page = create_scrolled_window(article_view)
+        label = gtk.Label(title)
+        label.set_width_chars(8)
+        label.set_ellipsize(pango.ELLIPSIZE_END)
+        event_box = gtk.EventBox()
+        event_box.add(label)
+        event_box.set_visible_window(False)
+        event_box.connect("event", self.dict_label_callback)
+        event_box.show_all()
+        tooltips.set_tip(event_box, title)        
+        self.tabs.append_page(page, event_box)
+        self.tabs.set_tab_label_packing(page, 
+                                        True, True, gtk.PACK_START)
+        self.tabs.set_menu_label_text(page, title)
+        
+
+    def makeview(self, buff, tables, topview):
+        topview.set_buffer(buff)
+        for table in tables:
+            tableview = table.makeview(self.create_article_view)
+            topview.add_child_at_anchor(tableview,
+                                             table.anchor)
+        topview.show_all()
     
     def dict_label_callback(self, widget, event):
         if event.type == _2BUTTON_PRESS:
@@ -1114,12 +1140,6 @@ class DictViewer(object):
         mn_options.append(self.mi_show_word_list)
         mn_options.append(self.mi_full_screen)
         return (mn_dict_item, mn_nav_item, mn_options_item, mn_help_item)        
-
-    def _update_article_view_children(self, page):
-        article_view = page.child
-        if article_view.get_children():
-            article = article_view.article
-            self.article_formatter.apply(article, article_view)
            
     def increase_text_size(self, action):
         scale = articleformat.font_scale
@@ -1143,7 +1163,9 @@ class DictViewer(object):
 
     def set_font_scale(self, scale):        
         articleformat.font_scale = scale
-        self.tabs.foreach(self._update_article_view_children)            
+        word, lang = self.get_selected_word()
+        if word:
+            self.show_article_for(word, lang)
 
     def on_window_state_change(self, widget, event, *args):             
         if event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN:

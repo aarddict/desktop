@@ -15,11 +15,10 @@
 import aarddict.ui
 import aarddict.dictionary
 
-import threading
-
-import gobject 
 import gtk
 import pango
+
+class FormatStop(Exception): pass
 
 def tag(name, **props):
     t = gtk.TextTag(name)
@@ -49,158 +48,126 @@ def maketabs(rawtabs):
         tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*int(font_scale*pango.SCALE))    
     return tabs    
 
+def create_buffer(article, intcallback, extcallback, footcallback):    
+    lang = article.dictionary.index_language
+    text = article.text
+    tags = article.tags
+    reftable = dict([((tag.attributes['group'], tag.attributes['id']), tag.start)
+                     for tag in article.tags if tag.name=='note'])
+    return _new_tagged_buffer(text, tags, reftable, lang, intcallback, extcallback, footcallback)
 
-class FormattingStoppedException(Exception):
-    def __init__(self):
-        self.value = "Formatting stopped"
-    def __str__(self):
-        return repr(self.value)   
+def _new_tagged_buffer(text, tags, reftable, wordlang, intcallback, extcallback, footcallback):
+    if interrupted:
+        raise FormatStop
+    buff = create_article_text_buffer()
+    buff.set_text(text)
 
-class ArticleFormat:
-    class Worker(threading.Thread):        
-        def __init__(self, formatter, dict, word, article, article_view):
-            super(ArticleFormat.Worker, self).__init__()
-            self.dict = dict
-            self.word = word
-            self.article = article
-            self.article_view = article_view
-            self.formatter = formatter
-            self.stopped = True
-
-        def run(self):
-            self.stopped = False
-            reftable = dict([((tag.attributes['group'], tag.attributes['id']), tag.start)
-                                  for tag in self.article.tags if tag.name=='note'])
-            
-            text_buffer, tables = self.formatter.create_tagged_text_buffer(self.dict,
-                                                                           self.article.text, 
-                                                                           self.article.tags,
-                                                                           self.article_view, reftable)
-            def set_buffer(view, buffer, tables):
-                view.set_buffer(buffer)
-                for tbl, anchor in tables:
-                    view.add_child_at_anchor(tbl, anchor)
-                view.show_all()
-                            
-            if not self.stopped:
-                gobject.idle_add(set_buffer, self.article_view, text_buffer, tables)
-                self.formatter.workers.pop(self.dict, None)
+    tables = []
+    for tag in tags:
         
-        def stop(self):
-            self.stopped = True
-            
-    def __init__(self, internal_link_callback, external_link_callback, footnote_callback):
-        self.internal_link_callback = internal_link_callback
-        self.external_link_callback = external_link_callback
-        self.footnote_callback = footnote_callback
-        self.workers = {}
-   
-    def stop(self):
-        [worker.stop() for worker in self.workers.itervalues()]
-        self.workers.clear()
-   
-    def apply(self, article, article_view):
-        article_view.article = article
-        dict = article.dictionary
-        word = article.title.encode('utf8')        
-        current_worker = self.workers.pop(dict, None)
-        if current_worker:
-            current_worker.stop()
-        self.article_view = article_view
-        loading = create_article_text_buffer()
-        loading.set_text("Loading...")
-        article_view.set_buffer(loading)
-        self.workers[dict] = self.Worker(self, dict, word, article, article_view)
-        self.workers[dict].start()
+        if interrupted:
+            raise FormatStop
         
-    def create_ref(self, dict, text_buffer, start, end, target):
-        ref_tag = text_buffer.create_tag()
-        if (target.lower().startswith("http://") or 
-            target.lower().startswith("https://")):
-            ref_tag.connect("event", self.external_link_callback , target)
-            text_buffer.apply_tag_by_name("url", start, end)
-        else:
-            ref_tag.connect("event", self.internal_link_callback, target, dict)
-            text_buffer.apply_tag_by_name("r", start, end)
-        text_buffer.apply_tag(ref_tag, start, end) 
-
-    def create_footnote_ref(self, dict, article_view, text_buffer, start, end, target_pos):
-        ref_tag = text_buffer.create_tag()
-        ref_tag.connect("event", self.footnote_callback , target_pos)
-        text_buffer.apply_tag_by_name("ref", start, end)
-        text_buffer.apply_tag(ref_tag, start, end) 
-        
-    def create_tagged_text_buffer(self, dictionary, text, tags, article_view, reftable):
-        text_buffer = create_article_text_buffer()
-        text_buffer.set_text(text)
-                
-        tables = []
-        for tag in tags:
-            start = text_buffer.get_iter_at_offset(tag.start)
-            end = text_buffer.get_iter_at_offset(tag.end)
-            if tag.name in ('a', 'iref'):
-                self.create_ref(dictionary, text_buffer, start, end, 
-                                str(tag.attributes['href']))
-            elif tag.name == 'kref':
-                self.create_ref(dictionary, text_buffer, start, end, 
-                                text_buffer.get_text(start, end))
-            elif tag.name == 'ref':
-                footnote_group = tag.attributes['group']
-                footnote_id = tag.attributes['id']
-                footnote_key = (footnote_group, footnote_id)
-                if footnote_key in reftable:                
-                    self.create_footnote_ref(dictionary, article_view, 
-                                             text_buffer, start, end, 
-                                             reftable[footnote_key])
-            elif tag.name == 'tbl':
-                tbl = self.create_table(dictionary, article_view, 
-                                                text_buffer, tag, start, end, reftable)
-                if tbl:                
-                    tables.append(tbl)
-            elif tag.name == "c":
-                if 'c' in tag.attributes:
-                    color_code = tag.attributes['c']
-                    t = text_buffer.create_tag(None, foreground = color_code)                    
-                    text_buffer.apply_tag(t, start, end)
+        start = buff.get_iter_at_offset(tag.start)
+        end = buff.get_iter_at_offset(tag.end)
+        if tag.name in ('a', 'iref'):
+            target = str(tag.attributes['href'])
+            if (target.lower().startswith("http://") or 
+                target.lower().startswith("https://")):            
+                _extref(buff, start, end, target, extcallback)
             else:
-                text_buffer.apply_tag_by_name(tag.name, start, end)
-        text_buffer.apply_tag_by_name('ar', *text_buffer.get_bounds())
-        return text_buffer, tables
+                _intref(buff, start, end, target,  wordlang, intcallback)
+        elif tag.name == 'kref':
+            _intref(buff, start, end, buff.get_text(start, end), wordlang, intcallback)
+        elif tag.name == 'ref':
+            footnote_group = tag.attributes['group']
+            footnote_id = tag.attributes['id']
+            footnote_key = (footnote_group, footnote_id)
+            if footnote_key in reftable:                
+                _footref(buff, start, end, reftable[footnote_key], footcallback)
+        elif tag.name == 'tbl':
+            tabletxt = tag.attributes['text']
+            tabletags = tag.attributes['tags']
+            tabletabs = tag.attributes['tabs']
+            
+            tbl = _new_table(tabletxt, tabletags, tabletabs,
+                             buff, start, end, reftable, wordlang, intcallback, extcallback, footcallback)
+            if tbl:                
+                tables.append(tbl)
+        elif tag.name == "c":
+            if 'c' in tag.attributes:
+                color_code = tag.attributes['c']
+                t = buff.create_tag(None, foreground=color_code)                    
+                buff.apply_tag(t, start, end)
+        else:
+            buff.apply_tag_by_name(tag.name, start, end)
+    buff.apply_tag_by_name('ar', *buff.get_bounds())    
+    return buff, tables
 
-    def create_table(self, dictionary, article_view, text_buffer, tag, start, end, reftable):
-        tabletxt = tag.attributes['text']        
-        tabletags = tag.attributes['tags']
-        tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tabletags]
-        tabletabs = tag.attributes['tabs']
-        rawglobaltabs = tabletabs.get('') 
-        
-        globaltabs = maketabs(rawglobaltabs)        
-        tableview = aarddict.ui.ArticleView(article_view.drag_handler, 
-                                            article_view.selection_changed_callback)
+class Table(object):
+
+    def __init__(self, tablebuff, tables, globaltabs, anchor):
+        self.tablebuff = tablebuff
+        self.tables = tables
+        self.globaltabs = globaltabs
+        self.anchor = anchor
+
+    def makeview(self, viewfactory):
+        tableview = viewfactory()
         tableview.set_wrap_mode(gtk.WRAP_NONE)
-        tableview.set_tabs(globaltabs)
+        tableview.set_tabs(self.globaltabs)
+        tableview.set_buffer(self.tablebuff)
+        for table in self.tables:
+            tableview.add_child_at_anchor(table.makeview(viewfactory),
+                                          table.anchor)
+        return tableview
         
-        buff, tables = self.create_tagged_text_buffer(dictionary, tabletxt, 
-                                                      tags, tableview, reftable)
-        
-        rowtags = [tag for tag in tags if tag.name == 'row']
-        for i, rowtag in enumerate(rowtags):
-            strindex = str(i)
-            if strindex in tabletabs:
-                tabs = maketabs(tabletabs[strindex])    
-                t = buff.create_tag(tabs=tabs)
-                buff.apply_tag(t, 
-                                 buff.get_iter_at_offset(rowtag.start), 
-                                 buff.get_iter_at_offset(rowtag.end))                
-        
-        tableview.set_buffer(buff)
-        for tbl, anchor in tables:
-            tableview.add_child_at_anchor(tbl, anchor)
-        
-        text_buffer.delete(start, end)            
-        anchor = text_buffer.create_child_anchor(start)
-        
-        return tableview, anchor        
+def _new_table(tabletxt, tabletags, tabletabs, buff, start, end,
+               reftable, wordlang, intcallback, extcallback, footcallback):
+    if interrupted:
+        raise FormatStop
+    tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tabletags]
+    rawglobaltabs = tabletabs.get('') 
+
+    globaltabs = maketabs(rawglobaltabs)        
+    tablebuff, tables = _new_tagged_buffer(tabletxt, tags,
+                                           reftable, wordlang, intcallback, extcallback, footcallback)
+
+    rowtags = [tag for tag in tags if tag.name == 'row']
+    for i, rowtag in enumerate(rowtags):
+        if interrupted:
+            raise FormatStop        
+        strindex = str(i)
+        if strindex in tabletabs:
+            tabs = maketabs(tabletabs[strindex])    
+            t = tablebuff.create_tag(tabs=tabs)
+            tablebuff.apply_tag(t, 
+                                tablebuff.get_iter_at_offset(rowtag.start), 
+                                tablebuff.get_iter_at_offset(rowtag.end))                
+
+    buff.delete(start, end)            
+    anchor = buff.create_child_anchor(start)
+    
+    return Table(tablebuff, tables, globaltabs, anchor)
+
+
+def _intref(buff, start, end, target, targetlang, callback):
+    ref_tag = buff.create_tag()
+    ref_tag.connect("event", callback, target, targetlang)
+    buff.apply_tag_by_name("r", start, end)
+    buff.apply_tag(ref_tag, start, end)
+
+def _extref(buff, start, end, target, callback):
+    ref_tag = buff.create_tag()
+    ref_tag.connect("event", callback , target)
+    buff.apply_tag_by_name("url", start, end)
+    buff.apply_tag(ref_tag, start, end)
+
+def _footref(buff, start, end, targetpos, callback):
+    ref_tag = buff.create_tag()
+    ref_tag.connect("event", callback, targetpos)
+    buff.apply_tag_by_name("ref", start, end)
+    buff.apply_tag(ref_tag, start, end)    
         
         
 def create_article_text_buffer():    
@@ -365,6 +332,17 @@ def create_article_text_buffer():
     tagtable = gtk.TextTagTable()
     
     for t in tags:
+        if interrupted:
+            raise FormatStop
         tagtable.add(t)
         
     return gtk.TextBuffer(tagtable)
+
+interrupted = False
+import threading
+
+def stop():
+    global interrupted
+    interrupted = True
+    [thread.join() for thread in threading.enumerate() if thread.getName() == 'format']
+    interrupted = False
