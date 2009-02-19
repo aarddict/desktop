@@ -45,8 +45,6 @@ from dictionary import Dictionary, key
 
 gobject.threads_init()
 
-from timef import timef
-
 class Config(ConfigParser):
         
     def getlist(self, section):
