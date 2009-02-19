@@ -176,8 +176,7 @@ class ArticleFormat:
         
         globaltabs = maketabs(rawglobaltabs)        
         tableview = aarddict.ui.ArticleView(article_view.drag_handler, 
-                                            article_view.selection_changed_callback, 
-                                            top_article_view=article_view.top_article_view)
+                                            article_view.selection_changed_callback)
         tableview.set_wrap_mode(gtk.WRAP_NONE)
         tableview.set_tabs(globaltabs)
         

@@ -215,25 +215,55 @@ class LangNotebook(gtk.Notebook):
         page = self.get_nth_page(page_num)
         self.word_selection_changed(page.child.get_selection(), page.lang)
         
-    
+
+def top_parent(widget, parentclass):
+    top = widget
+    currentwidget = widget
+    while currentwidget.parent:
+        if isinstance(currentwidget.parent, parentclass):
+            top = currentwidget.parent
+        currentwidget = currentwidget.parent
+    return top
+
+def on_mouse_motion(widget, event, data=None):
+    cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if pointer_over_ref(widget) else None
+    widget.get_window(gtk.TEXT_WINDOW_TEXT).set_cursor(cursor)
+    return False
+
+def pointer_over_ref(textview):
+    x, y = textview.get_pointer()                    
+    x, y = textview.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
+    tags = textview.get_iter_at_location(x, y).get_tags()
+    for tag in tags:
+        tag_name = tag.get_property("name")
+        if tag_name == "r" or tag_name == "url" or tag_name == "ref":
+            return True
+    return False        
+
+
 class ArticleView(gtk.TextView):
 
-    def __init__(self, drag_handler, selection_changed_callback, 
-                 top_article_view=None):
+    def __init__(self, drag_handler, selection_changed_callback):
         gtk.TextView.__init__(self)
         self.article = None
         self.drag_handler = drag_handler
         self.set_wrap_mode(gtk.WRAP_WORD)
         self.set_editable(False)        
         self.set_cursor_visible(False)
-        self.set_data("handlers", [])
         self.last_drag_coords = None
         self.selection_changed_callback = selection_changed_callback
-        self.connect("motion_notify_event", self.on_mouse_motion)
-        if not top_article_view:
-            self.top_article_view=self
-        else:
-            self.top_article_view = top_article_view
+        self.h1 = self.connect("motion_notify_event", on_mouse_motion)
+        self.h2 = self.connect_after("event", self.drag_handler)
+        self.h3 = None
+        self.h4 = None
+  
+    def set_buffer(self, buff):
+        self._remove_buff_handlers()    
+        gtk.TextView.set_buffer(self, buff)            
+        if buff:
+            buff.connect("mark-set", self.selection_changed_callback)
+            buff.connect("mark-deleted", self.selection_changed_callback)
+            buff.place_cursor(buff.get_start_iter())        
 
     def set_phonetic_font(self, font_name):
         buff = self.get_buffer()
@@ -242,55 +272,28 @@ class ArticleView(gtk.TextView):
             tagtable.lookup('tr').set_property('font', font_name)
         self.foreach(lambda child: child.set_phonetic_font(font_name))
     
-    def set_buffer(self, buffer):
-        handlers = self.get_data("handlers")
-        if handlers == None:
-            #this article view is already discarded
-            return
-        handler1 = buffer.connect("mark-set", self.selection_changed_callback)
-        handler2 = buffer.connect("mark-deleted", self.selection_changed_callback)
-        buffer.set_data("handlers", (handler1, handler2))
-        buffer.place_cursor(buffer.get_start_iter())
-        gtk.TextView.set_buffer(self, buffer)
-        handler = self.connect_after("event", self.drag_handler)
-        handlers.append(handler)
-
-    def connect(self, signal, callback, *userparams):
-        handlers = self.get_data("handlers")
-        if handlers == None:
-            #this article view is already discarded
-            return        
-        handler = gtk.TextView.connect(self, signal, callback, *userparams)
-        handlers.append(handler)
-    
     def clear_selection(self):
         b = self.get_buffer()
         b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
-    
-    def remove_handlers(self):
-        self._remove_handlers(self)
-        self._remove_handlers(self.get_buffer())
+
+    def _remove_buff_handlers(self):
+        current_buff = self.get_buffer()
+        if self.h3 and current_buff:
+            current_buff.disconnect(self.h3)
+        if self.h4 and current_buff:
+            current_buff.disconnect(self.h4)
         
-    def _remove_handlers(self, obj):
-        handlers = obj.get_data("handlers")
-        for handler in handlers:
-            obj.disconnect(handler)
-        obj.set_data("handlers", None)
-        
-    def on_mouse_motion(self, widget, event, data = None):
-        cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if self.pointer_over_ref(widget) else None
-        widget.get_window(gtk.TEXT_WINDOW_TEXT).set_cursor(cursor)
-        return False
-    
-    def pointer_over_ref(self, textview):
-        x, y = textview.get_pointer()                    
-        x, y = textview.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
-        tags = textview.get_iter_at_location(x, y).get_tags()
-        for tag in tags:
-            tag_name = tag.get_property("name")
-            if tag_name == "r" or tag_name == "url" or tag_name == "ref":
-                return True
-        return False        
+    def cleanup(self):
+        buff = self.get_buffer()
+        if buff:
+            buff.set_text('')
+        self.disconnect(self.h1)
+        self.disconnect(self.h2)
+        self._remove_buff_handlers()
+        self.article = None
+        self.drag_handler = None
+        self.selection_changed_callback = None
+           
 
 class WordLookup(object):
     def __init__(self, read_funcs, lookup_func):
@@ -619,7 +622,9 @@ class DictViewer(object):
             unhighlight_tag(tag, itr)
 
     def footnote_callback(self, tag, widget, event, itr, target_pos):
-        top = widget.top_article_view
+        
+        top = top_parent(widget, ArticleView)
+        
         if self.is_link_click(top, event, target_pos):
             if hasattr(top, 'backbtn') and top.backbtn:
                 top.remove(top.backbtn.parent)
@@ -723,15 +728,13 @@ class DictViewer(object):
         if active > 0:
             self.word_input.set_active(active - 1)                
 
-    @timef
+    def _kill_tab(self, page):
+        page.child.cleanup()
+        page.destroy()
+
     def clear_tabs(self):
         self.article_formatter.stop()
-        while self.tabs.get_n_pages() > 0:            
-            last_page = self.tabs.get_nth_page(self.tabs.get_n_pages() - 1)
-            article_view = last_page.get_child()
-            article_view.remove_handlers()
-            self.tabs.remove_page(-1)        
-        return False 
+        self.tabs.foreach(self._kill_tab)
         
     def show_article_for(self, wordlookup, lang = None):
         articles = wordlookup.articles()
@@ -1219,12 +1222,11 @@ class DictViewer(object):
 #        return True         
     
     def article_drag_handler(self, widget, event):
-        if self.actiongroup.get_action('ToggleDragSelects').get_active():
-            return False        
         
-        widget = widget.top_article_view
-#        while not isinstance(widget.get_parent(), gtk.ScrolledWindow):
-#            widget = widget.get_parent()
+        if self.actiongroup.get_action('ToggleDragSelects').get_active():
+            return False
+        
+        widget = top_parent(widget, ArticleView)        
         
         type = event.type        
         x, y = coords = widget.get_pointer()        
