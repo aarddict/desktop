@@ -254,11 +254,8 @@ class ArticleView(gtk.TextView):
         self.selection_changed_callback = selection_changed_callback
         self.h1 = self.connect("motion_notify_event", on_mouse_motion)
         self.h2 = self.connect_after("event", self.drag_handler)
-        self.h3 = None
-        self.h4 = None
   
     def set_buffer(self, buff):
-        self._remove_buff_handlers()    
         gtk.TextView.set_buffer(self, buff)            
         if buff:
             if self.selection_changed_callback:
@@ -276,21 +273,10 @@ class ArticleView(gtk.TextView):
     def clear_selection(self):
         b = self.get_buffer()
         b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
-
-    def _remove_buff_handlers(self):
-        current_buff = self.get_buffer()
-        if self.h3 and current_buff:
-            current_buff.disconnect(self.h3)
-        if self.h4 and current_buff:
-            current_buff.disconnect(self.h4)
         
     def cleanup(self):
-        buff = self.get_buffer()
-        if buff:
-            buff.set_text('')
         self.disconnect(self.h1)
         self.disconnect(self.h2)
-        self._remove_buff_handlers()
         self.article = None
         self.drag_handler = None
         self.selection_changed_callback = None
