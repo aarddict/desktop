@@ -2,6 +2,17 @@
 Release Notes (aarddict)
 ========================
 
+0.7.2
+=====
+
+- Much faster word navigation (`issue #4`_)
+
+- Fixed memory leak (`issue #4`_)
+
+- Visual feedback when link clicked
+
+.. _issue #4: http://bitbucket.org/itkach/aarddict/issue/4
+
 0.7.1
 =====
 
