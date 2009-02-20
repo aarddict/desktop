@@ -35,7 +35,9 @@ import pango
 import gobject
 from gtk.gdk import (_2BUTTON_PRESS, _3BUTTON_PRESS, BUTTON_PRESS, 
                     MOTION_NOTIFY, BUTTON_RELEASE, NO_EXPOSE, EXPOSE, 
-                    VISIBILITY_NOTIFY)
+                    VISIBILITY_NOTIFY, HAND2)
+from gtk.gdk import Cursor
+from gtk import TEXT_WINDOW_TEXT
 
 import aarddict
 import dictinfo 
@@ -44,6 +46,8 @@ import dictionary
 from dictionary import Dictionary, key
 
 gobject.threads_init()
+
+press_events = set((BUTTON_PRESS, _2BUTTON_PRESS, _3BUTTON_PRESS))
 
 class Config(ConfigParser):
         
@@ -222,25 +226,22 @@ def top_parent(widget, parentclass):
         if isinstance(parent, parentclass):
             top = parent
         else:
-            break
+            return top
         parent = parent.parent
     return top
 
 def on_mouse_motion(widget, event, data=None):
-    cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if pointer_over_ref(widget) else None
-    widget.get_window(gtk.TEXT_WINDOW_TEXT).set_cursor(cursor)
+    cursor = Cursor(HAND2) if pointer_over_ref(widget) else None
+    widget.get_window(TEXT_WINDOW_TEXT).set_cursor(cursor)
     return False
+
+ref_tag_names = set(("r", "url", "ref"))
 
 def pointer_over_ref(textview):
     x, y = textview.get_pointer()                    
-    x, y = textview.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
+    x, y = textview.window_to_buffer_coords(TEXT_WINDOW_TEXT, x, y)
     tags = textview.get_iter_at_location(x, y).get_tags()
-    for tag in tags:
-        tag_name = tag.get_property("name")
-        if tag_name == "r" or tag_name == "url" or tag_name == "ref":
-            return True
-    return False        
-
+    return any(tag.get_property("name") in ref_tag_names for tag in tags)
 
 class ArticleView(gtk.TextView):
 
@@ -1223,13 +1224,10 @@ class DictViewer(object):
     def create_article_view(self):
         article_view = ArticleView(self.article_drag_handler, 
                                    self.article_text_selection_changed)
-#        if self.supports_cursor_changes():        
-#            article_view.connect("motion_notify_event", self.on_mouse_motion)
         return article_view   
     
-#    def supports_cursor_changes(self):
-#        return True         
-    
+
+
     def article_drag_handler(self, widget, event):
         
         if self.actiongroup.get_action('ToggleDragSelects').get_active():
@@ -1237,16 +1235,18 @@ class DictViewer(object):
         
         widget = top_parent(widget, ArticleView)        
         
-        type = event.type        
-        x, y = coords = widget.get_pointer()        
-        if type in (BUTTON_PRESS, _2BUTTON_PRESS, _3BUTTON_PRESS):
+        typ = event.type        
+        coords = widget.get_pointer()        
+        if typ in press_events:
             widget.last_drag_coords = coords
             return True
-        if type == BUTTON_RELEASE:
+        if typ == BUTTON_RELEASE:
             widget.last_drag_coords = None
             return False
         if not widget.last_drag_coords:
             return False
+
+        x, y = coords
         
         x0, y0 = widget.last_drag_coords
         widget.last_drag_coords = coords        
@@ -1256,18 +1256,22 @@ class DictViewer(object):
         h = scroll_window.get_hadjustment()
         hvalue = h.get_value() + hstep
         maxhvalue = h.upper - h.page_size
-        if hvalue > maxhvalue: hvalue = maxhvalue
-        if hvalue < h.lower: hvalue = h.lower
+        if hvalue > maxhvalue:
+            hvalue = maxhvalue
+        elif hvalue < h.lower:
+            hvalue = h.lower
         h.set_value(hvalue)
         
         vstep = y0 - y
         v = scroll_window.get_vadjustment()
         vvalue = v.get_value() + vstep
         maxvvalue = v.upper - v.page_size
-        if vvalue > maxvvalue: vvalue = maxvvalue
-        if vvalue < v.lower: vvalue = v.lower
+        if vvalue > maxvvalue:
+            vvalue = maxvvalue
+        elif vvalue < v.lower:
+            vvalue = v.lower
         v.set_value(vvalue)
-        return type == MOTION_NOTIFY
+        return typ == MOTION_NOTIFY
     
     def article_text_selection_changed(self, *args):
         page_num = self.tabs.get_current_page() 
