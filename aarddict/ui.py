@@ -1277,24 +1277,7 @@ class DictViewer(object):
             text_buffer = article_view.get_buffer()
             sensitive = len(text_buffer.get_selection_bounds()) > 0
         self.actiongroup.get_action('CopySelected').set_sensitive(sensitive)
-    
-    def on_mouse_motion(self, widget, event, data = None):
-        if isinstance(widget.get_parent(), gtk.Table):
-            widget = widget.get_parent().get_parent()        
-        cursor = gtk.gdk.Cursor(gtk.gdk.HAND2) if self.pointer_over_ref(widget) else None
-        widget.get_window(gtk.TEXT_WINDOW_TEXT).set_cursor(cursor)
-        return False
-    
-    def pointer_over_ref(self, textview):
-        x, y = textview.get_pointer()                    
-        x, y = textview.window_to_buffer_coords(gtk.TEXT_WINDOW_TEXT, x, y)
-        tags = textview.get_iter_at_location(x, y).get_tags()
-        for tag in tags:
-            tag_name = tag.get_property("name")
-            if tag_name == "r" or tag_name == "url" or tag_name == "ref":
-                return True
-        return False
-        
+                
     def select_dict_file(self, widget):
         if not self.file_chooser_dlg:
             self.file_chooser_dlg = self.create_file_chooser_dlg()
