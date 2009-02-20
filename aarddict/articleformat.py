@@ -56,10 +56,10 @@ def create_buffer(article, intcallback, extcallback, footcallback):
                      for tag in article.tags if tag.name=='note'])
     return _new_tagged_buffer(text, tags, reftable, lang, intcallback, extcallback, footcallback)
 
-def _new_tagged_buffer(text, tags, reftable, wordlang, intcallback, extcallback, footcallback):
+def _new_tagged_buffer(text, tags, reftable, wordlang, intcallback, extcallback, footcallback, texttagtable=None):
     if interrupted:
         raise FormatStop
-    buff = create_article_text_buffer()
+    buff = create_article_text_buffer(texttagtable)
     buff.set_text(text)
 
     tables = []
@@ -91,7 +91,7 @@ def _new_tagged_buffer(text, tags, reftable, wordlang, intcallback, extcallback,
             tabletabs = tag.attributes['tabs']
             
             tbl = _new_table(tabletxt, tabletags, tabletabs,
-                             buff, start, end, reftable, wordlang, intcallback, extcallback, footcallback)
+                             buff, start, end, reftable, wordlang, intcallback, extcallback, footcallback, buff.get_tag_table())
             if tbl:                
                 tables.append(tbl)
         elif tag.name == "c":
@@ -123,7 +123,7 @@ class Table(object):
         return tableview
         
 def _new_table(tabletxt, tabletags, tabletabs, buff, start, end,
-               reftable, wordlang, intcallback, extcallback, footcallback):
+               reftable, wordlang, intcallback, extcallback, footcallback, texttagtable):
     if interrupted:
         raise FormatStop
     tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tabletags]
@@ -131,7 +131,7 @@ def _new_table(tabletxt, tabletags, tabletabs, buff, start, end,
 
     globaltabs = maketabs(rawglobaltabs)        
     tablebuff, tables = _new_tagged_buffer(tabletxt, tags,
-                                           reftable, wordlang, intcallback, extcallback, footcallback)
+                                           reftable, wordlang, intcallback, extcallback, footcallback, texttagtable=texttagtable)
 
     rowtags = [tag for tag in tags if tag.name == 'row']
     for i, rowtag in enumerate(rowtags):
@@ -170,171 +170,173 @@ def _footref(buff, start, end, targetpos, callback):
     buff.apply_tag(ref_tag, start, end)    
         
         
-def create_article_text_buffer():    
+def create_article_text_buffer(texttagtable=None):    
+    if texttagtable is None:
+        tags = (tag('b',
+                    weight=pango.WEIGHT_BOLD),
 
-    tags = (tag('b',
-                weight=pango.WEIGHT_BOLD),
-            
-            tag('strong',
-                weight=pango.WEIGHT_BOLD),
-            
-            tag('small',
-                scale=pango.SCALE_SMALL),
-            
-            tag('big',
-                scale=pango.SCALE_LARGE),
-            
-            tag('h1',
-                weight=pango.WEIGHT_ULTRABOLD, 
-                scale=pango.SCALE_X_LARGE, 
-                pixels_above_lines=12, 
-                pixels_below_lines=6),
-            
-            tag('h2',
-                weight=pango.WEIGHT_BOLD, 
-                scale=pango.SCALE_LARGE, 
-                pixels_above_lines=6, 
-                pixels_below_lines=3),
-            
-            tag('h3',
-                weight=pango.WEIGHT_BOLD, 
-                scale=pango.SCALE_MEDIUM, 
-                pixels_above_lines=3, 
-                pixels_below_lines=2),
-            
-            tag('h4',
-                weight=pango.WEIGHT_SEMIBOLD, 
-                scale=pango.SCALE_MEDIUM, 
-                pixels_above_lines=3, 
-                pixels_below_lines=2),
-            
-            tag('h5',
-                weight=pango.WEIGHT_SEMIBOLD, 
-                scale=pango.SCALE_MEDIUM, 
-                style=pango.STYLE_ITALIC, 
-                pixels_above_lines=3, 
-                pixels_below_lines=2),
-            
-            tag('h6',
-                scale=pango.SCALE_MEDIUM, 
-                underline=pango.UNDERLINE_SINGLE, 
-                pixels_above_lines=3, 
-                pixels_below_lines=2),
-            
-            tag('row',
-                background='#eeeeee',
-                pixels_above_lines=1,
-                pixels_below_lines=1,
-                family=table_font_family),
-            
-            tag('td',
-                background='#00ee00',
-                pixels_below_lines=2),
-            
-            tag('i',
-                style=pango.STYLE_ITALIC),
-            
-            tag('em',
-                style=pango.STYLE_ITALIC),
-            
-            tag('u',
-                underline=True),
-            
-            tag('ref',
-                underline=True, 
-                rise=6*pango.SCALE,                           
-                scale=pango.SCALE_X_SMALL, 
-                foreground='blue'),
-            
-            tag('note',
-                scale=pango.SCALE_SMALL),
-            
-            tag('tt',
-                family='monospace'),
-            
-            tag('pos',
-                style=pango.STYLE_ITALIC, 
-                weight=pango.WEIGHT_SEMIBOLD,
-                foreground='darkgreen'),
-            
-            tag('r',
-                underline=pango.UNDERLINE_SINGLE, 
-                foreground="brown4"),
-            
-            tag('url',
-                 underline=pango.UNDERLINE_SINGLE, 
-                 foreground="steelblue4"),
-            
-            tag('tr',
-                weight=pango.WEIGHT_BOLD, 
-                foreground="darkred",
-                font=phonetic_font),
-            
-            tag('p', 
-                pixels_above_lines=3, 
-                pixels_below_lines=3),
-            
-            tag('div',
-                pixels_above_lines=3, 
-                pixels_below_lines=3),
-            
-            tag('sup',
-                rise=6*pango.SCALE, 
-                scale=pango.SCALE_X_SMALL),
-            
-            tag('sub',
-                rise=-6*pango.SCALE, 
-                scale=pango.SCALE_X_SMALL),
-            
-            tag('blockquote',
-                indent=6),
-            
-            tag('cite',
-                style=pango.STYLE_ITALIC, 
-                family='serif', 
-                indent=6),
-            
-            #Key phrase
-            tag('k',
-                weight=pango.WEIGHT_BOLD, 
-                scale=pango.SCALE_LARGE, 
-                pixels_above_lines=6, 
-                pixels_below_lines=3),
-            
-            #Direct translation of the key-phrase
-            tag('dtrn'),
-            
-            #Marks the text of an editorial comment
-            tag('co',
-                foreground="slategray4",
-                scale=pango.SCALE_SMALL),
-            
-            #Marks the text of an example
-            tag('ex',
-                style=pango.STYLE_ITALIC,
-                family='serif',
-                foreground="darkblue"),
-            
-            #Marks an abbreviation that is listed in the <abbreviations> section
-            tag('abr',
-                weight=pango.WEIGHT_SEMIBOLD,
-                style=pango.STYLE_ITALIC,
-                foreground="darkred"),
-            
-            #Tag that marks the whole article
-            tag('ar',
-                scale=font_scale),
-            
-            tag('highlight',
-                background='#99ccff')
-            )            
-    
-    tagtable = gtk.TextTagTable()
-    
-    for t in tags:
-        if interrupted:
-            raise FormatStop
-        tagtable.add(t)
+                tag('strong',
+                    weight=pango.WEIGHT_BOLD),
+
+                tag('small',
+                    scale=pango.SCALE_SMALL),
+
+                tag('big',
+                    scale=pango.SCALE_LARGE),
+
+                tag('h1',
+                    weight=pango.WEIGHT_ULTRABOLD, 
+                    scale=pango.SCALE_X_LARGE, 
+                    pixels_above_lines=12, 
+                    pixels_below_lines=6),
+
+                tag('h2',
+                    weight=pango.WEIGHT_BOLD, 
+                    scale=pango.SCALE_LARGE, 
+                    pixels_above_lines=6, 
+                    pixels_below_lines=3),
+
+                tag('h3',
+                    weight=pango.WEIGHT_BOLD, 
+                    scale=pango.SCALE_MEDIUM, 
+                    pixels_above_lines=3, 
+                    pixels_below_lines=2),
+
+                tag('h4',
+                    weight=pango.WEIGHT_SEMIBOLD, 
+                    scale=pango.SCALE_MEDIUM, 
+                    pixels_above_lines=3, 
+                    pixels_below_lines=2),
+
+                tag('h5',
+                    weight=pango.WEIGHT_SEMIBOLD, 
+                    scale=pango.SCALE_MEDIUM, 
+                    style=pango.STYLE_ITALIC, 
+                    pixels_above_lines=3, 
+                    pixels_below_lines=2),
+
+                tag('h6',
+                    scale=pango.SCALE_MEDIUM, 
+                    underline=pango.UNDERLINE_SINGLE, 
+                    pixels_above_lines=3, 
+                    pixels_below_lines=2),
+
+                tag('row',
+                    background='#eeeeee',
+                    pixels_above_lines=1,
+                    pixels_below_lines=1,
+                    family=table_font_family),
+
+                tag('td',
+                    background='#00ee00',
+                    pixels_below_lines=2),
+
+                tag('i',
+                    style=pango.STYLE_ITALIC),
+
+                tag('em',
+                    style=pango.STYLE_ITALIC),
+
+                tag('u',
+                    underline=True),
+
+                tag('ref',
+                    underline=True, 
+                    rise=6*pango.SCALE,                           
+                    scale=pango.SCALE_X_SMALL, 
+                    foreground='blue'),
+
+                tag('note',
+                    scale=pango.SCALE_SMALL),
+
+                tag('tt',
+                    family='monospace'),
+
+                tag('pos',
+                    style=pango.STYLE_ITALIC, 
+                    weight=pango.WEIGHT_SEMIBOLD,
+                    foreground='darkgreen'),
+
+                tag('r',
+                    underline=pango.UNDERLINE_SINGLE, 
+                    foreground="brown4"),
+
+                tag('url',
+                     underline=pango.UNDERLINE_SINGLE, 
+                     foreground="steelblue4"),
+
+                tag('tr',
+                    weight=pango.WEIGHT_BOLD, 
+                    foreground="darkred",
+                    font=phonetic_font),
+
+                tag('p', 
+                    pixels_above_lines=3, 
+                    pixels_below_lines=3),
+
+                tag('div',
+                    pixels_above_lines=3, 
+                    pixels_below_lines=3),
+
+                tag('sup',
+                    rise=6*pango.SCALE, 
+                    scale=pango.SCALE_X_SMALL),
+
+                tag('sub',
+                    rise=-6*pango.SCALE, 
+                    scale=pango.SCALE_X_SMALL),
+
+                tag('blockquote',
+                    indent=6),
+
+                tag('cite',
+                    style=pango.STYLE_ITALIC, 
+                    family='serif', 
+                    indent=6),
+
+                #Key phrase
+                tag('k',
+                    weight=pango.WEIGHT_BOLD, 
+                    scale=pango.SCALE_LARGE, 
+                    pixels_above_lines=6, 
+                    pixels_below_lines=3),
+
+                #Direct translation of the key-phrase
+                tag('dtrn'),
+
+                #Marks the text of an editorial comment
+                tag('co',
+                    foreground="slategray4",
+                    scale=pango.SCALE_SMALL),
+
+                #Marks the text of an example
+                tag('ex',
+                    style=pango.STYLE_ITALIC,
+                    family='serif',
+                    foreground="darkblue"),
+
+                #Marks an abbreviation that is listed in the <abbreviations> section
+                tag('abr',
+                    weight=pango.WEIGHT_SEMIBOLD,
+                    style=pango.STYLE_ITALIC,
+                    foreground="darkred"),
+
+                #Tag that marks the whole article
+                tag('ar',
+                    scale=font_scale),
+
+                tag('highlight',
+                    background='#99ccff')
+                )            
+
+        tagtable = gtk.TextTagTable()
+
+        for t in tags:
+            if interrupted:
+                raise FormatStop
+            tagtable.add(t)
+    else:
+        tagtable = texttagtable
         
     return gtk.TextBuffer(tagtable)
 
