@@ -38,6 +38,10 @@ def strwidth(text):
 font_scale = pango.SCALE_MEDIUM
 phonetic_font = 'serif'
 table_font_family = 'monospace'
+int_link_fgcolor = gtk.gdk.color_parse('brown4')
+ext_link_fgcolor = gtk.gdk.color_parse('steelblue4')
+highlight_bgcolor = gtk.gdk.color_parse('#99ccff')
+footnote_fgcolor = gtk.gdk.color_parse('blue')
 
 def maketabs(rawtabs):
     char_width = strwidth(' ')
@@ -238,13 +242,14 @@ def create_article_text_buffer(texttagtable=None):
                     style=pango.STYLE_ITALIC),
 
                 tag('u',
-                    underline=True),
+                    underline=pango.UNDERLINE_SINGLE),
 
                 tag('ref',
-                    underline=True, 
+                     underline=pango.UNDERLINE_SINGLE,
+#                     weight=pango.WEIGHT_SEMIBOLD,
                     rise=6*pango.SCALE,                           
                     scale=pango.SCALE_X_SMALL, 
-                    foreground='blue'),
+                    foreground_gdk=footnote_fgcolor),
 
                 tag('note',
                     scale=pango.SCALE_SMALL),
@@ -259,11 +264,11 @@ def create_article_text_buffer(texttagtable=None):
 
                 tag('r',
                     underline=pango.UNDERLINE_SINGLE, 
-                    foreground="brown4"),
+                    foreground_gdk=int_link_fgcolor),
 
                 tag('url',
                      underline=pango.UNDERLINE_SINGLE, 
-                     foreground="steelblue4"),
+                     foreground_gdk=ext_link_fgcolor),
 
                 tag('tr',
                     weight=pango.WEIGHT_BOLD, 
@@ -326,7 +331,7 @@ def create_article_text_buffer(texttagtable=None):
                     scale=font_scale),
 
                 tag('highlight',
-                    background='#99ccff')
+                    background_gdk=highlight_bgcolor)
                 )            
 
         tagtable = gtk.TextTagTable()

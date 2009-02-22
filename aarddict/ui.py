@@ -243,6 +243,7 @@ def pointer_over_ref(textview):
     tags = textview.get_iter_at_location(x, y).get_tags()
     return any(tag.get_property("name") in ref_tag_names for tag in tags)
 
+
 class ArticleView(gtk.TextView):
 
     def __init__(self, drag_handler, selection_changed_callback):
@@ -271,6 +272,16 @@ class ArticleView(gtk.TextView):
             tagtable = buff.get_tag_table()
             tagtable.lookup('tr').set_property('font', font_name)
         self.foreach(lambda child: child.set_phonetic_font(font_name))
+
+    def set_colors(self, **colors):
+        buff = self.get_buffer()
+        if buff:
+            tagtable = buff.get_tag_table()
+            tagtable.lookup('r').set_property('foreground-gdk', colors['int_link_fgcolor'])
+            tagtable.lookup('url').set_property('foreground-gdk', colors['ext_link_fgcolor'])
+            tagtable.lookup('highlight').set_property('background-gdk', colors['highlight_bgcolor'])
+            tagtable.lookup('ref').set_property('foreground-gdk', colors['footnote_fgcolor'])
+        self.foreach(lambda child: child.set_colors(**colors))
     
     def clear_selection(self):
         b = self.get_buffer()
@@ -456,6 +467,11 @@ class DictViewer(object):
             [self.add_to_history(w, l) for l, w in history[::-1]]
             self.set_phonetic_font(self.config.get('ui', 'phonetic-font'))
             self.last_dict_file_location = self.config.get('ui', 'last-dict-file-location')
+
+            if self.config.has_section('colors'):
+                for opt in self.config.options('colors'):                    
+                    color = gtk.gdk.color_parse(self.config.get('colors', opt))
+                    setattr(articleformat, opt, color)
             
             action = self.actiongroup.get_action('ToggleDragSelects')
             action.set_active(self.config.getboolean('ui', 'drag-selects'))
@@ -519,6 +535,15 @@ class DictViewer(object):
                           for page in self.word_completion]
         langs = [item[1] for item in sorted(langs, key = lambda x: x[0])]
         self.config.set('ui', 'langs', ' '.join(langs))
+
+        if self.config.has_section('colors'):
+            self.config.remove_section('colors')
+        self.config.add_section('colors')
+        colors = [(name, val.to_string()) for name, val in vars(articleformat).iteritems()
+                  if isinstance(val, gtk.gdk.Color)]        
+        for name, val in colors:
+            self.config.set('colors', name, val)
+        
         
         d = os.path.expanduser('~/.aarddict')
         if not os.path.exists(d):
@@ -1026,6 +1051,8 @@ class DictViewer(object):
                                   '<Control>n', 'Move focus to word input and clear it', self.clear_word_input),
                                  ('PhoneticFont', None, '_Phonetic Font...',
                                   None, 'Select font for displaying phonetic transcription', self.select_phonetic_font),
+                                 ('Colors', None, '_Colors...',
+                                  None, 'Customize colors of some article formatting elements', self.select_colors),
                                  ('IncreaseTextSize', None, '_Increase Text Size',
                                   '<Control>equal', 'Increase size of article text', self.increase_text_size),
                                  ('DecreaseTextSize', None, '_Decrease Text Size',
@@ -1050,6 +1077,7 @@ class DictViewer(object):
         self.mi_exit = actiongroup.get_action('Quit').create_menu_item()
         self.mi_about = actiongroup.get_action('About').create_menu_item()
         self.mi_select_phonetic_font = actiongroup.get_action('PhoneticFont').create_menu_item()
+        self.mi_select_colors = actiongroup.get_action('Colors').create_menu_item()
         self.mi_increase_text_size = actiongroup.get_action('IncreaseTextSize').create_menu_item()
         self.mi_decrease_text_size = actiongroup.get_action('DecreaseTextSize').create_menu_item()        
         self.mi_reset_text_size = actiongroup.get_action('ResetTextSize').create_menu_item()
@@ -1121,6 +1149,7 @@ class DictViewer(object):
         mn_options_item.set_submenu(mn_options)
         
         mn_options.append(self.mi_select_phonetic_font)
+        mn_options.append(self.mi_select_colors)
         mn_options.append(self.mi_increase_text_size)
         mn_options.append(self.mi_decrease_text_size)
         mn_options.append(self.mi_reset_text_size)
@@ -1448,10 +1477,71 @@ class DictViewer(object):
         if dialog.run() == gtk.RESPONSE_OK:
             self.set_phonetic_font(dialog.get_font_name())
         dialog.destroy()
+
+    def select_colors(self, action):
+        dialog = gtk.Dialog(title='Customize Colors', parent=self.window, flags=gtk.DIALOG_MODAL)
+
+        lbl_int_link = gtk.Label('Internal Link')
+        btn_int_link = gtk.ColorButton()
+        btn_int_link.set_title('Internal Link Color')
+        btn_int_link.set_color(articleformat.int_link_fgcolor)
+        box_int_link = gtk.HBox()
+        box_int_link.pack_start(btn_int_link, False, False, 5)        
+        box_int_link.pack_start(lbl_int_link, False, False, 5)
+        dialog.vbox.pack_start(box_int_link, False, False, 5)
+
+        lbl_ext_link = gtk.Label('External Link')
+        btn_ext_link = gtk.ColorButton()
+        btn_ext_link.set_title('External Link Color')
+        btn_ext_link.set_color(articleformat.ext_link_fgcolor)
+        box_ext_link = gtk.HBox()
+        box_ext_link.pack_start(btn_ext_link, False, False, 5)        
+        box_ext_link.pack_start(lbl_ext_link, False, False, 5)
+        dialog.vbox.pack_start(box_ext_link, False, False, 5)
+
+        lbl_footnote_link = gtk.Label('Footnote Link')
+        btn_footnote_link = gtk.ColorButton()
+        btn_footnote_link.set_title('Footnote Link Color')
+        btn_footnote_link.set_color(articleformat.footnote_fgcolor)
+        box_footnote_link = gtk.HBox()
+        box_footnote_link.pack_start(btn_footnote_link, False, False, 5)        
+        box_footnote_link.pack_start(lbl_footnote_link, False, False, 5)
+        dialog.vbox.pack_start(box_footnote_link, False, False, 5)
+
+        lbl_act_link = gtk.Label('Activated Link')
+        btn_act_link = gtk.ColorButton()
+        btn_act_link.set_title('Activated Link Color')
+        btn_act_link.set_color(articleformat.highlight_bgcolor)
+        box_act_link = gtk.HBox()
+        box_act_link.pack_start(btn_act_link, False, False, 5)        
+        box_act_link.pack_start(lbl_act_link, False, False, 5)
+        dialog.vbox.pack_start(box_act_link, False, False, 5)
+        
+        dialog.set_position(gtk.WIN_POS_CENTER_ON_PARENT)
+        
+        dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
+        dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+        
+        dialog.show_all()
+        
+        if dialog.run() == gtk.RESPONSE_OK:
+            self.set_colors(footnote_fgcolor=btn_footnote_link.get_color(),
+                            int_link_fgcolor=btn_int_link.get_color(),
+                            ext_link_fgcolor=btn_ext_link.get_color(),
+                            highlight_bgcolor=btn_act_link.get_color()
+                            )            
+        dialog.destroy()
                 
     def set_phonetic_font(self, font_name):
         articleformat.phonetic_font = font_name
         self.tabs.foreach(lambda page: page.child.set_phonetic_font(font_name))
+
+    def set_colors(self, **kwargs):
+        articleformat.footnote_fgcolor = kwargs['footnote_fgcolor']
+        articleformat.int_link_fgcolor = kwargs['int_link_fgcolor']
+        articleformat.ext_link_fgcolor = kwargs['ext_link_fgcolor']
+        articleformat.highlight_bgcolor = kwargs['highlight_bgcolor']
+        self.tabs.foreach(lambda page: page.child.set_colors(**kwargs))
             
     def toggle_drag_selects(self, action):
         if not action.get_active():
