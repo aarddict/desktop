@@ -89,6 +89,7 @@ class HildonDictViewer(ui.DictViewer):
         mn_view_item.set_submenu(mn_view)
         
         mn_view.append(self.mi_select_phonetic_font)
+        mn_view.append(self.mi_select_colors)
         mn_view.append(self.mi_increase_text_size)
         mn_view.append(self.mi_decrease_text_size)
         mn_view.append(self.mi_reset_text_size)

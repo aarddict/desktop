@@ -539,7 +539,14 @@ class DictViewer(object):
         if self.config.has_section('colors'):
             self.config.remove_section('colors')
         self.config.add_section('colors')
-        colors = [(name, val.to_string()) for name, val in vars(articleformat).iteritems()
+        
+        def color_to_str(c):
+            """gtk.gdk.Color.to_string() is only available since gtk 2.12.
+            Maemo 4.1 is still using 2.10.
+            """
+            return '#%04x%04x%04x' % (c.red, c.green, c.blue)
+        
+        colors = [(name, color_to_str(val)) for name, val in vars(articleformat).iteritems()
                   if isinstance(val, gtk.gdk.Color)]        
         for name, val in colors:
             self.config.set('colors', name, val)
