@@ -287,12 +287,12 @@ def create_article_text_buffer(texttagtable=None):
                     scale=pango.SCALE_X_SMALL),
 
                 tag('blockquote',
-                    indent=6),
+                    left_margin=10),
 
                 tag('cite',
                     style=pango.STYLE_ITALIC, 
                     family='serif', 
-                    indent=6),
+                    left_margin=10),
 
                 #Key phrase
                 tag('k',
