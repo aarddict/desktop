@@ -1404,33 +1404,25 @@ class DictViewer(object):
         gobject.idle_add(add)
         
     def remove_dict(self, dict):          
-        word, lang = self.get_selected_word()
+        word, lang = self.get_selected_word()        
         key = dict.key()
+        
         if key in self.recent_menu_items:
             old_mi = self.recent_menu_items[key]
             self.mn_remove.remove(old_mi)
-            del self.recent_menu_items[key]                
-        self.dictionaries.remove(dict) 
+            del self.recent_menu_items[key]
+            
+        self.dictionaries.remove(dict)
+        dict.close()
+        
         current_langs = self.dictionaries.langs()
         view_langs = self.word_completion.langs()
+        [self.word_completion.remove_lang(l) for l in view_langs
+         if l not in current_langs]        
 
-        tabs_to_remove = []
-        def collect_to_remove(page):
-            article = page.child.article
-            if article and article.dictionary == dict:
-                tabs_to_remove.append(page)
-        self.tabs.foreach(collect_to_remove)
-        for page in tabs_to_remove:
-            self.tabs.remove_page(self.tabs.page_num(page))
-        
-        for l in view_langs:
-            if l not in current_langs:
-                self.word_completion.remove_lang(l)
-
-        dict.close()
+        self.clear_tabs()        
         self.update_completion(self.word_input.child.get_text(), (word, lang))
         self.update_title()
-        
 
     def show_dict_info(self, widget):        
         info_dialog = dictinfo.DictInfoDialog(self.dictionaries, 
