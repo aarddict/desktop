@@ -154,7 +154,7 @@ class Article(object):
         self.dictionary = dictionary 
 
     def _redirect(self):
-        return self.meta.get(u'redirect', u'').encode('utf8')
+        return self.meta.get(u'r', self.meta.get('redirect', u'')).encode('utf8')
     
     redirect = property(_redirect)        
 
@@ -188,9 +188,7 @@ def to_tag(tagtuple):
         
 def to_article(raw_article):
     try:
-        t0 = time.time()
         articletuple = simplejson.loads(raw_article)
-        #print 'json loaded in %.6f s' % (time.time() - t0)
         if len(articletuple) == 3:
             text, tag_list, meta = articletuple
         else:
