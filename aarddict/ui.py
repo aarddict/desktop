@@ -1285,28 +1285,29 @@ class DictViewer(object):
         
         x0, y0 = widget.last_drag_coords
         widget.last_drag_coords = coords        
-        scroll_window = widget.get_parent()
+        scroll_window = widget.parent
         
         hstep = x0 - x
-        h = scroll_window.get_hadjustment()
-        hvalue = h.get_value() + hstep
-        maxhvalue = h.upper - h.page_size
-        if hvalue > maxhvalue:
-            hvalue = maxhvalue
-        elif hvalue < h.lower:
-            hvalue = h.lower
-        h.set_value(hvalue)
-        
+        if hstep:
+            h = scroll_window.get_hadjustment()
+            hvalue = h.value + hstep
+            maxhvalue = h.upper - h.page_size
+            if hvalue > maxhvalue:
+                hvalue = maxhvalue
+            elif hvalue < h.lower:
+                hvalue = h.lower
+            h.value = hvalue
+
         vstep = y0 - y
-        v = scroll_window.get_vadjustment()
-        vvalue = v.get_value() + vstep
-        maxvvalue = v.upper - v.page_size
-        if vvalue > maxvvalue:
-            vvalue = maxvvalue
-        elif vvalue < v.lower:
-            vvalue = v.lower
-        v.set_value(vvalue)
-        return typ == MOTION_NOTIFY
+        if vstep:
+            v = scroll_window.get_vadjustment()
+            vvalue = v.value + vstep
+            maxvvalue = v.upper - v.page_size
+            if vvalue > maxvvalue:
+                vvalue = maxvvalue
+            elif vvalue < v.lower:
+                vvalue = v.lower
+            v.value = vvalue
     
     def article_text_selection_changed(self, *args):
         page_num = self.tabs.get_current_page() 
