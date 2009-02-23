@@ -1308,6 +1308,8 @@ class DictViewer(object):
             elif vvalue < v.lower:
                 vvalue = v.lower
             v.value = vvalue
+            
+        return typ == MOTION_NOTIFY and (vstep or hstep)
     
     def article_text_selection_changed(self, *args):
         page_num = self.tabs.get_current_page() 
