@@ -248,7 +248,6 @@ class ArticleView(gtk.TextView):
 
     def __init__(self, drag_handler, selection_changed_callback):
         gtk.TextView.__init__(self)
-        self.article = None
         self.drag_handler = drag_handler
         self.set_wrap_mode(gtk.WRAP_WORD)
         self.set_editable(False)        
@@ -286,11 +285,11 @@ class ArticleView(gtk.TextView):
     def clear_selection(self):
         b = self.get_buffer()
         b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
+        self.foreach(lambda child: child.clear_selection())
         
     def cleanup(self):
         self.disconnect(self.h1)
         self.disconnect(self.h2)
-        self.article = None
         self.drag_handler = None
         self.selection_changed_callback = None
            
