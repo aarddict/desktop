@@ -58,9 +58,9 @@ class HildonDictViewer(ui.DictViewer):
                 and event.keyval == gtk.keysyms.f):
             self.history_forward()
         elif event.keyval == gtk.keysyms.F7:
-            self.tabs.prev_page()
+            self.actiongroup.get_action('IncreaseTextSize').activate()            
         elif event.keyval == gtk.keysyms.F8:
-            self.tabs.next_page()        
+            self.actiongroup.get_action('DecreaseTextSize').activate()
         elif event.keyval == gtk.keysyms.F6:
             # The "Full screen" hardware key has been pressed
             self.actiongroup.get_action('FullScreen').activate()
