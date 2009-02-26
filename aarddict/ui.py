@@ -243,6 +243,22 @@ def pointer_over_ref(textview):
     tags = textview.get_iter_at_location(x, y).get_tags()
     return any(tag.get_property("name") in ref_tag_names for tag in tags)
 
+def is_link_click(tag, event, reference):
+    if event.type == BUTTON_PRESS:
+        tag.set_data('armed', (event.get_coords(), event.get_time()))
+    elif event.type == BUTTON_RELEASE:
+        armed = tag.get_data('armed')
+        if armed:                
+            armed_coords, t0 = armed
+            x, y = event.get_coords()
+            x0, y0 = armed_coords
+            tag.set_data('armed', None)
+            dt = event.get_time() - t0
+            result = (10 < dt < 200 and 
+                      fabs(x - x0) < 3 and
+                      fabs(y - y0) < 3)
+            return result 
+
 
 class ArticleView(gtk.TextView):
 
@@ -626,14 +642,14 @@ class DictViewer(object):
         
     def word_ref_clicked(self, tag, widget, event, itr, word, lang):
         
-        if self.is_link_click(widget, event, word):
+        if is_link_click(tag, event, word):
             highlight_tag(tag, itr)
             self.set_word_input(word)
             self.update_completion(word, (word, lang))
             
         
     def external_link_callback(self, tag, widget, event, itr, url):
-        if self.is_link_click(widget, event, url):
+        if is_link_click(tag, event, url):
             highlight_tag(tag, itr)
             self.open_external_link(url)
             unhighlight_tag(tag, itr)
@@ -642,7 +658,7 @@ class DictViewer(object):
         
         top = top_parent(widget, ArticleView)
         
-        if self.is_link_click(top, event, target_pos):
+        if is_link_click(tag, event, target_pos):
             if hasattr(top, 'backbtn') and top.backbtn:
                 top.remove(top.backbtn.parent)
                 top.backbtn = None
@@ -674,23 +690,7 @@ class DictViewer(object):
   
     def open_external_link(self, url):
         webbrowser.open(url)
-    
-    def is_link_click(self, widget, event, reference):
-        if event.type == BUTTON_PRESS:
-            widget.armed_link = (reference, event.get_coords(), event.get_time())
-        elif hasattr(widget, "armed_link") and widget.armed_link:
-            if event.type == BUTTON_RELEASE and widget.armed_link:
-                armed_ref, armed_coords, t0 = widget.armed_link
-                x, y = event.get_coords()
-                x0, y0 = armed_coords
-                widget.armed_link = None
-                dt = event.get_time() - t0
-                result = (50 < dt < 200 and 
-                          fabs(x - x0) < 3 and
-                          fabs(y - y0) < 3 and
-                          armed_ref is reference)
-                return result 
-                       
+                           
     def set_word_input(self, word, supress_update = True):
         if supress_update: self.word_input.handler_block(self.word_change_handler)
         self.word_input.child.set_text(word)
