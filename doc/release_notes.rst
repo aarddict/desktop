@@ -2,6 +2,20 @@
 Release Notes (aarddict)
 ========================
 
+0.7.3
+=====
+
+- Customizable link colors (`issue #2`_)
+
+- Updated default link colors (`issue #2`_)
+
+- +/- keys on N800/N810 change article text size (`issue #3`_)
+
+- Article finger scrolling and link sensitivity tweaks
+
+.. _issue #2: http://bitbucket.org/itkach/aarddict/issue/2
+.. _issue #3: http://bitbucket.org/itkach/aarddict/issue/3
+
 0.7.2
 =====
 
