@@ -1,0 +1,373 @@
+# Russian translations for PACKAGE package
+# Английские переводы для пакета PACKAGE.
+# Copyright (C) 2009 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Igor Tkach <itkach@aarddict.org>, 2009.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Aard Dictionary 0.7.4\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-03-31 23:34-0400\n"
+"PO-Revision-Date: 2009-04-02 23:31-0500\n"
+"Last-Translator: Igor Tkach <itkach@aarddict.org>\n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: ../dictinfo.py:45
+msgid "Info"
+msgstr "Информация"
+
+#: ../dictinfo.py:50
+msgid "License"
+msgstr "Лицензия"
+
+#: ../dictinfo.py:77
+#, python-format
+msgid "Volumes: %s"
+msgstr "Количество томов: %s"
+
+#: ../dictinfo.py:85
+#, python-format
+msgid "Volume %s: "
+msgstr "Том %s: "
+
+#: ../dictinfo.py:93
+msgid "Number of articles: "
+msgstr "Количество статей: "
+
+#: ../dictinfo.py:108
+msgid "Source\n"
+msgstr "Источник\n"
+
+#: ../dictinfo.py:117
+msgid "Copyright Notice\n"
+msgstr "Информация об авторских правах\n"
+
+#: ../dictinfo.py:138
+msgid "Dictionary Info"
+msgstr "Информация о словарях"
+
+#: ../dictinfo.py:150
+msgid "Dictionary"
+msgstr "Словарь"
+
+#: ../hildonui.py:77
+#: ../ui.py:1195
+msgid "_Navigate"
+msgstr "_Навигация"
+
+#: ../hildonui.py:88
+#: ../ui.py:1211
+msgid "_View"
+msgstr "_Вид"
+
+#: ../ui.py:344
+#, python-format
+msgid "Redirect to %s not found"
+msgstr "Перенаправление %s не найдено"
+
+#: ../ui.py:528
+msgid "Saving application state..."
+msgstr "Сохраняется состояние приложения..."
+
+#: ../ui.py:529
+msgid "Exiting"
+msgstr "Приложение завершает работу"
+
+#: ../ui.py:600
+msgid "Failed to Save State"
+msgstr "Не удалось сохранить состояние"
+
+#: ../ui.py:772
+msgid "Loading..."
+msgstr "Идёт загрузка..."
+
+#: ../ui.py:1035
+msgid "_Word List"
+msgstr "_Список слов"
+
+#: ../ui.py:1036
+msgid "Toggles word list"
+msgstr "Переключает показ списка слов"
+
+#: ../ui.py:1038
+msgid "Drag _Selects"
+msgstr "_Перетаскивание выделяет"
+
+#: ../ui.py:1039
+msgid "Toggles drag gesture between select text and article scroll"
+msgstr "Переключает действие, выполняемое перетаскиванием мыши между выделением текста и прокруткой статьи"
+
+#: ../ui.py:1042
+msgid "_Full Screen"
+msgstr "На весь _экран"
+
+#: ../ui.py:1043
+msgid "Toggle full screen mode"
+msgstr "Переключает полноэкранный режим"
+
+#: ../ui.py:1047
+msgid "_Open..."
+msgstr "_Открыть..."
+
+#: ../ui.py:1048
+msgid "Open a dictionary"
+msgstr "Открыть словарь"
+
+#: ../ui.py:1051
+msgid "_Info..."
+msgstr "_Информация..."
+
+#: ../ui.py:1052
+msgid "Information about dictionaries"
+msgstr "Информация о словарях"
+
+#: ../ui.py:1055
+msgid "_Quit"
+msgstr "_Выйти"
+
+#: ../ui.py:1056
+msgid "Close application"
+msgstr "Закрыть приложение"
+
+#: ../ui.py:1059
+msgid "_Lookup Box"
+msgstr "П_оле ввода"
+
+#: ../ui.py:1061
+msgid "Move focus to word input and select its content"
+msgstr "Переместить фокус в поле ввода и выделить текст в нём"
+
+#: ../ui.py:1064
+msgid "_Back"
+msgstr "_Назад"
+
+#: ../ui.py:1065
+msgid "Go back to previous word in history"
+msgstr "Вернуться к предыдущему слову"
+
+#: ../ui.py:1068
+msgid "_Forward"
+msgstr "_Вперёд"
+
+#: ../ui.py:1069
+msgid "Go forward to next word in history"
+msgstr "Перейти к следующему слову"
+
+#: ../ui.py:1072
+msgid "_Next Article"
+msgstr "_Следующая статья"
+
+#: ../ui.py:1073
+msgid "Show next article"
+msgstr "Показать следующую статью"
+
+#: ../ui.py:1076
+msgid "_Previous Article"
+msgstr "_Предыдущая статья"
+
+#: ../ui.py:1077
+msgid "Show previous article"
+msgstr "Показать предыдущую статью"
+
+#: ../ui.py:1080
+msgid "N_ext Language"
+msgstr "С_ледующий язык"
+
+#: ../ui.py:1081
+msgid "Show next language word list"
+msgstr "Показывать список слов для следующего языка"
+
+#: ../ui.py:1084
+msgid "P_revious Language"
+msgstr "П_редыдущий язык"
+
+#: ../ui.py:1085
+msgid "Show previous language word list"
+msgstr "Показывать список слов для предыдущего языка"
+
+#: ../ui.py:1088
+msgid "_Article"
+msgstr "Стать_ю"
+
+#: ../ui.py:1089
+msgid "Copy article text to clipboard"
+msgstr "Скопировать текст статьи в буфер обмена"
+
+#: ../ui.py:1092
+msgid "_Selected Text"
+msgstr "_Выделенный текст"
+
+#: ../ui.py:1093
+msgid "Copy selected text to clipboard"
+msgstr "Скопировать выделенный текст в буфер обмена"
+
+#: ../ui.py:1096
+msgid "_Paste"
+msgstr "Вс_тавить"
+
+#: ../ui.py:1097
+msgid "Paste text from clipboard as word to look up"
+msgstr "Вставить текст из буфера обмена в поле ввода слова"
+
+#: ../ui.py:1100
+msgid "_New Lookup"
+msgstr "_Новый поиск"
+
+#: ../ui.py:1101
+msgid "Move focus to word input and clear it"
+msgstr "Переместить фокус в поле ввода и очистить его"
+
+#: ../ui.py:1104
+msgid "_Phonetic Font..."
+msgstr "_Фонетический шрифт..."
+
+#: ../ui.py:1105
+msgid "Select font for displaying phonetic transcription"
+msgstr "Выберите шрифт для показа фонетической транскрипции"
+
+#: ../ui.py:1108
+msgid "_Colors..."
+msgstr "_Цвета..."
+
+#: ../ui.py:1109
+msgid "Customize colors of some article formatting elements"
+msgstr "Изменить цвета некоторых элементов форматирования статей"
+
+#: ../ui.py:1112
+msgid "_Increase Text Size"
+msgstr "_Увеличить размер текста"
+
+#: ../ui.py:1113
+msgid "Increase size of article text"
+msgstr "Увеличивает размера текста статьи"
+
+#: ../ui.py:1116
+msgid "_Decrease Text Size"
+msgstr "У_меньшить размер текста"
+
+#: ../ui.py:1117
+msgid "Decrease size of article text"
+msgstr "Уменьшает размер текста статьи"
+
+#: ../ui.py:1120
+msgid "_Reset Text Size"
+msgstr "_Нормальный размер текста"
+
+#: ../ui.py:1121
+msgid "Reset size of article text to default"
+msgstr "Возращает размер текста к размеру по умолчанию"
+
+#: ../ui.py:1124
+msgid "_About"
+msgstr "_О программе"
+
+#: ../ui.py:1125
+#, python-format
+msgid "About %s"
+msgstr "О программе %s"
+
+#: ../ui.py:1136
+msgid "_Remove"
+msgstr "_Закрыть"
+
+#: ../ui.py:1161
+msgid "_Copy"
+msgstr "С_копировать"
+
+#: ../ui.py:1183
+msgid "_Dictionary"
+msgstr "_Словарь"
+
+#: ../ui.py:1206
+msgid "_Help"
+msgstr "Спр_авка"
+
+#: ../ui.py:1311
+msgid "No dictionaries"
+msgstr "Словарей нет"
+
+#: ../ui.py:1312
+#, python-format
+msgid "%d volume"
+msgid_plural "%d volumes"
+msgstr[0] "%d том"
+msgstr[1] "%d тома"
+msgstr[2] "%d томов"
+
+#: ../ui.py:1314
+#, python-format
+msgid "%d dictionary"
+msgid_plural "%d dictionaries"
+msgstr[0] "%d словарь"
+msgstr[1] "%d словаря"
+msgstr[2] "%d словарей"
+
+#: ../ui.py:1385
+msgid "Open Dictionary"
+msgstr "Открыть словарь"
+
+#: ../ui.py:1425
+msgid "Open Failed"
+msgstr "Не удалось открыть"
+
+#: ../ui.py:1456
+msgid "Please wait..."
+msgstr "Пожалуйста подождите..."
+
+#: ../ui.py:1456
+msgid "Loading"
+msgstr "Идёт загрузка"
+
+#: ../ui.py:1535
+msgid "(C) 2006-2009 Igor Tkach, Jeremy Mortis"
+msgstr "(C) 2006-2009 Игорь Ткач, Джереми Мортис"
+
+#: ../ui.py:1537
+msgid "Distributed under terms and conditions of GNU Public License Version 3"
+msgstr "Распространяется на условиях GNU Public License версии 3"
+
+#: ../ui.py:1543
+msgid "Select Phonetic Font"
+msgstr "Выбрать фонетический шрифт"
+
+#: ../ui.py:1551
+msgid "Customize Colors"
+msgstr "Цвета"
+
+#: ../ui.py:1555
+msgid "Internal Link"
+msgstr "Внутренняя ссылка"
+
+#: ../ui.py:1557
+msgid "Internal Link Color"
+msgstr "Цвет внутренней ссылки"
+
+#: ../ui.py:1564
+msgid "External Link"
+msgstr "Внешняя ссылка"
+
+#: ../ui.py:1566
+msgid "External Link Color"
+msgstr "Цвет внешней ссылки"
+
+#: ../ui.py:1573
+msgid "Footnote Link"
+msgstr "Сноска"
+
+#: ../ui.py:1575
+msgid "Footnote Link Color"
+msgstr "Цвет сноски"
+
+#: ../ui.py:1582
+msgid "Activated Link"
+msgstr "Активированная ссылка"
+
+#: ../ui.py:1584
+msgid "Activated Link Color"
+msgstr "Цвет активированной ссылки"
+
