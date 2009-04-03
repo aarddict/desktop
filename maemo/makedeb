@@ -1,17 +1,20 @@
 #!/bin/bash
 RELEASE=$1
 
-mkdir -p usr/{bin/,lib/python2.5/site-packages/aarddict,share/{applications/hildon/,dbus-1/services/,pixmaps}}
+mkdir -p usr/{bin/,lib/python2.5/site-packages/aarddict/locale,share/{applications/hildon/,dbus-1/services/,pixmaps}}
 
 DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml, pyicu (>= 0.8.1), simplejson"
 cp ../run usr/bin/aarddict || exit
 cp -R ../aarddict/*.py usr/lib/python2.5/site-packages/aarddict || exit
+cp -R ../aarddict/locale usr/lib/python2.5/site-packages/aarddict || exit
 cp -R ../aarddict/*.cfg usr/lib/python2.5/site-packages/aarddict || exit
 cp -R ../icons/ usr/share/
 chmod +x usr/bin/aarddict
 
 DIRS="usr"
-find $DIRS| grep \~ && rm -i $(find $DIRS| grep \~)
+rm $(find $DIRS -name "*~")
+rm $(find $DIRS -name "*.po")
+rm $(find $DIRS -name "*.pot")
 
 PACKAGE=aarddict
 VERSION=`python -c "import aarddict; print aarddict.__version__"`
