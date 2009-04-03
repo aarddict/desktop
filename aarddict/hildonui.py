@@ -74,7 +74,7 @@ class HildonDictViewer(ui.DictViewer):
     
     def create_menus(self):
         mn_nav = gtk.Menu()
-        mn_nav_item = gtk.MenuItem("_Navigate")
+        mn_nav_item = gtk.MenuItem(_("_Navigate"))
         mn_nav_item.set_submenu(mn_nav)
         mn_nav.add(self.mi_lookup_box)
         mn_nav.add(self.mi_back)
@@ -85,7 +85,7 @@ class HildonDictViewer(ui.DictViewer):
         mn_nav.add(self.mi_next_lang)
         
         mn_view = gtk.Menu()
-        mn_view_item = gtk.MenuItem("_View")
+        mn_view_item = gtk.MenuItem(_("_View"))
         mn_view_item.set_submenu(mn_view)
         
         mn_view.append(self.mi_select_phonetic_font)
@@ -110,7 +110,7 @@ class HildonDictViewer(ui.DictViewer):
     
     def create_file_chooser_dlg(self):
         return hildon.FileChooserDialog(self.window, 
-                                        gtk.FILE_CHOOSER_ACTION_OPEN);  
+                                        gtk.FILE_CHOOSER_ACTION_OPEN)  
     
     def open_external_link(self, url):
         webbrowser.open(url, context = osso_c)

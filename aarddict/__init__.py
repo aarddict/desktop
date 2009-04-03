@@ -23,6 +23,9 @@ logging.basicConfig(format='%(levelname)s: %(message)s')
 __version__ = "0.7.3"
 __appname__ = "Aard Dictionary"
 
+from os import path
+package_dir = path.abspath(path.dirname(__file__))
+
 def main():
     
     usage = "usage: %prog [options] [FILE1] [FILE2] ..."
