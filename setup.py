@@ -56,7 +56,7 @@ setup(
     install_requires = ['PyICU >= 0.8.1', 
                         'simplejson'],
     package_data = {
-             'aarddict': ['*.cfg']
+             'aarddict': ['*.cfg', 'locale/*/*/*.mo']
     },
     data_files   =     
     [
@@ -83,6 +83,7 @@ setup(
     ],
     options = {
         'py2exe' : {
+            'skip_archive': True,
             'packages': 'encodings',
             'includes': 'cairo, pango, pangocairo, atk, gobject, gtk, gtk.keysyms',
             },
