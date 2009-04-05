@@ -1557,50 +1557,34 @@ class DictViewer(object):
                             parent=self.window,
                             flags=gtk.DIALOG_MODAL)
 
-        lbl_int_link = gtk.Label(_('Internal Link'))
-        btn_int_link = gtk.ColorButton()
-        btn_int_link.set_title(_('Internal Link Color'))
-        btn_int_link.set_color(articleformat.int_link_fgcolor)
-        box_int_link = gtk.HBox()
-        box_int_link.pack_start(btn_int_link, False, False, 5)
-        box_int_link.pack_start(lbl_int_link, False, False, 5)
-        dialog.vbox.pack_start(box_int_link, False, False, 5)
+        def make_color_btn(lbltxt, title, colorattr):
+            lbl = gtk.Label(lbltxt)
+            btn = gtk.ColorButton()
+            btn.set_title(title)
+            btn.set_color(getattr(articleformat, colorattr))
+            btn.set_data('colorattr', colorattr)
+            box = gtk.HBox()
+            box.pack_start(btn, False, False, 5)
+            box.pack_start(lbl, False, False, 5)
+            dialog.vbox.pack_start(box, False, False, 5)
+            return btn
 
-        lbl_ext_link = gtk.Label(_('External Link'))
-        btn_ext_link = gtk.ColorButton()
-        btn_ext_link.set_title(_('External Link Color'))
-        btn_ext_link.set_color(articleformat.ext_link_fgcolor)
-        box_ext_link = gtk.HBox()
-        box_ext_link.pack_start(btn_ext_link, False, False, 5)
-        box_ext_link.pack_start(lbl_ext_link, False, False, 5)
-        dialog.vbox.pack_start(box_ext_link, False, False, 5)
-
-        lbl_footnote_link = gtk.Label(_('Footnote Link'))
-        btn_footnote_link = gtk.ColorButton()
-        btn_footnote_link.set_title(_('Footnote Link Color'))
-        btn_footnote_link.set_color(articleformat.footnote_fgcolor)
-        box_footnote_link = gtk.HBox()
-        box_footnote_link.pack_start(btn_footnote_link, False, False, 5)
-        box_footnote_link.pack_start(lbl_footnote_link, False, False, 5)
-        dialog.vbox.pack_start(box_footnote_link, False, False, 5)
-
-        lbl_act_link = gtk.Label(_('Activated Link'))
-        btn_act_link = gtk.ColorButton()
-        btn_act_link.set_title(_('Activated Link Color'))
-        btn_act_link.set_color(articleformat.highlight_bgcolor)
-        box_act_link = gtk.HBox()
-        box_act_link.pack_start(btn_act_link, False, False, 5)
-        box_act_link.pack_start(lbl_act_link, False, False, 5)
-        dialog.vbox.pack_start(box_act_link, False, False, 5)
-
-        lbl_table_bg = gtk.Label(_('Table Background'))
-        btn_table_bg = gtk.ColorButton()
-        btn_table_bg.set_title(_('Table Background Color'))
-        btn_table_bg.set_color(articleformat.table_bgcolor)
-        box_table_bg = gtk.HBox()
-        box_table_bg.pack_start(btn_table_bg, False, False, 5)
-        box_table_bg.pack_start(lbl_table_bg, False, False, 5)
-        dialog.vbox.pack_start(box_table_bg, False, False, 5)
+        color_buttons = (make_color_btn(_('Internal Link'),
+                                        _('Internal Link Color'),
+                                        'int_link_fgcolor'),
+                         make_color_btn(_('External Link'),
+                                        _('External Link Color'),
+                                        'ext_link_fgcolor'),
+                         make_color_btn(_('Footnote Link'),
+                                        _('Footnote Link Color'),
+                                        'footnote_fgcolor'),
+                         make_color_btn(_('Activated Link'),
+                                        _('Activated Link Color'),
+                                        'highlight_bgcolor'),
+                         make_color_btn(_('Table Background'),
+                                        _('Table Background Color'),
+                                        'table_bgcolor')
+                         )
 
         dialog.set_position(gtk.WIN_POS_CENTER_ON_PARENT)
 
@@ -1610,12 +1594,9 @@ class DictViewer(object):
         dialog.show_all()
 
         if dialog.run() == gtk.RESPONSE_OK:
-            self.set_colors(footnote_fgcolor=btn_footnote_link.get_color(),
-                            int_link_fgcolor=btn_int_link.get_color(),
-                            ext_link_fgcolor=btn_ext_link.get_color(),
-                            highlight_bgcolor=btn_act_link.get_color(),
-                            table_bgcolor=btn_table_bg.get_color()
-                            )
+            colors = dict((btn.get_data('colorattr'), btn.get_color())
+                          for btn in color_buttons)
+            self.set_colors(**colors)
         dialog.destroy()
 
     def set_phonetic_font(self, font_name):
@@ -1623,11 +1604,8 @@ class DictViewer(object):
         self.tabs.foreach(lambda page: page.child.set_phonetic_font(font_name))
 
     def set_colors(self, **kwargs):
-        articleformat.footnote_fgcolor = kwargs['footnote_fgcolor']
-        articleformat.int_link_fgcolor = kwargs['int_link_fgcolor']
-        articleformat.ext_link_fgcolor = kwargs['ext_link_fgcolor']
-        articleformat.highlight_bgcolor = kwargs['highlight_bgcolor']
-        articleformat.table_bgcolor = kwargs['table_bgcolor']
+        for key, value in kwargs.iteritems():
+            setattr(articleformat, key, value)
         self.tabs.foreach(lambda page: page.child.set_colors(**kwargs))
 
     def toggle_drag_selects(self, action):
