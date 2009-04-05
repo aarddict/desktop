@@ -14,19 +14,21 @@ else:
         def copy_extensions(self, extensions):
             build_exe.copy_extensions(self, extensions)
             
-            # Create subdir where the
-            # Python files are collected.
-            full = os.path.join(self.collect_dir, 'aarddict')
-            if not os.path.exists(full):
-                self.mkpath(full)
-                
             # Copy the files to the collection dir.
             # Also add the copied file to the list of compiled
             # files so it will be included in zipfile.
-            for f in glob.glob('aarddict/*.cfg'):
-                name = os.path.basename(f)
-                self.copy_file(f, os.path.join(full, name))
-                self.compiled_files.append(os.path.join('aarddict', name))
+            all_files = ([f for f in glob.glob('aarddict/*.cfg')] + 
+                         [f for f in glob.glob('aarddict/locale/*/*/*.mo')])
+            for f in all_files:
+                
+                dirname = os.path.dirname(f)
+                collect_subdir = os.path.join(self.collect_dir, dirname)
+                if not os.path.exists(collect_subdir):
+                    self.mkpath(collect_subdir)
+                
+                self.copy_file(f, collect_subdir)
+                self.compiled_files.append(f)
+
     py2exe_options = {
         'cmdclass': {'py2exe': Collector}        
         }
