@@ -38,6 +38,7 @@ def strwidth(text):
 font_scale = pango.SCALE_MEDIUM
 phonetic_font = 'serif'
 table_font_family = 'monospace'
+table_bgcolor = gtk.gdk.color_parse('#eeeeee')
 int_link_fgcolor = gtk.gdk.color_parse('brown4')
 ext_link_fgcolor = gtk.gdk.color_parse('steelblue4')
 highlight_bgcolor = gtk.gdk.color_parse('#99ccff')
@@ -226,7 +227,7 @@ def create_article_text_buffer(texttagtable=None):
                     pixels_below_lines=2),
 
                 tag('row',
-                    background='#eeeeee',
+                    background_gdk=table_bgcolor,
                     pixels_above_lines=1,
                     pixels_below_lines=1,
                     family=table_font_family),

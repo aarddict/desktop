@@ -52,6 +52,7 @@ from dictionary import Dictionary, key
 locale.setlocale(locale.LC_ALL, '')
 
 locale_dir = os.path.join(aarddict.package_dir, 'locale')
+
 gettext.bindtextdomain(aarddict.__name__, locale_dir)
 gettext.textdomain(aarddict.__name__)
 
@@ -310,6 +311,7 @@ class ArticleView(gtk.TextView):
             tagtable.lookup('url').set_property('foreground-gdk', colors['ext_link_fgcolor'])
             tagtable.lookup('highlight').set_property('background-gdk', colors['highlight_bgcolor'])
             tagtable.lookup('ref').set_property('foreground-gdk', colors['footnote_fgcolor'])
+            tagtable.lookup('row').set_property('background-gdk', colors['table_bgcolor'])
         self.foreach(lambda child: child.set_colors(**colors))
 
     def clear_selection(self):
@@ -1591,6 +1593,15 @@ class DictViewer(object):
         box_act_link.pack_start(lbl_act_link, False, False, 5)
         dialog.vbox.pack_start(box_act_link, False, False, 5)
 
+        lbl_table_bg = gtk.Label(_('Table Background'))
+        btn_table_bg = gtk.ColorButton()
+        btn_table_bg.set_title(_('Table Background Color'))
+        btn_table_bg.set_color(articleformat.table_bgcolor)
+        box_table_bg = gtk.HBox()
+        box_table_bg.pack_start(btn_table_bg, False, False, 5)
+        box_table_bg.pack_start(lbl_table_bg, False, False, 5)
+        dialog.vbox.pack_start(box_table_bg, False, False, 5)
+
         dialog.set_position(gtk.WIN_POS_CENTER_ON_PARENT)
 
         dialog.add_button(gtk.STOCK_OK, gtk.RESPONSE_OK)
@@ -1602,7 +1613,8 @@ class DictViewer(object):
             self.set_colors(footnote_fgcolor=btn_footnote_link.get_color(),
                             int_link_fgcolor=btn_int_link.get_color(),
                             ext_link_fgcolor=btn_ext_link.get_color(),
-                            highlight_bgcolor=btn_act_link.get_color()
+                            highlight_bgcolor=btn_act_link.get_color(),
+                            table_bgcolor=btn_table_bg.get_color()
                             )
         dialog.destroy()
 
@@ -1615,6 +1627,7 @@ class DictViewer(object):
         articleformat.int_link_fgcolor = kwargs['int_link_fgcolor']
         articleformat.ext_link_fgcolor = kwargs['ext_link_fgcolor']
         articleformat.highlight_bgcolor = kwargs['highlight_bgcolor']
+        articleformat.table_bgcolor = kwargs['table_bgcolor']
         self.tabs.foreach(lambda page: page.child.set_colors(**kwargs))
 
     def toggle_drag_selects(self, action):
