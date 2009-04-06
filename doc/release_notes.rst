@@ -2,6 +2,13 @@
 Release Notes (aarddict)
 ========================
 
+0.7.4
+=====
+
+- Customizable table rows background
+
+- Added Russian translation
+
 0.7.3
 =====
 
