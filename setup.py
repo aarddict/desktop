@@ -70,8 +70,8 @@ setup(
     ],      
     author = "Igor Tkach",
     author_email = "itkach@aarddict.org",
-    description =  '''Aard Dictionary is a dictionary application providing offline 
-    access to dictionaries, Wikipedia and other reference materials.''',
+    description = 'Aard Dictionary is a multiplatform dictionary '
+    'and offline Wikipedia reader.',
     license = "GPL 3",
     keywords = ['aarddict', 'dict', 'dictionary', 'maemo', 'netbook'],
     url = "http://aarddict.org",  
