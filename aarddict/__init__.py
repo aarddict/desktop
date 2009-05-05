@@ -48,7 +48,12 @@ def main():
         default=False,
         help='Turn on debugging information'
         )
-    
+    parser.add_option(
+        '-m', '--metadata',
+        action='store_true',        
+        default=False,
+        help='Print metadata for dictionary files specified'
+        )        
     options, args = parser.parse_args()
     
     if options.debug:
@@ -77,8 +82,15 @@ def main():
                 sys.stdout.write(': OK\n')
             else:
                 sys.stdout.write(': CORRUPTED\n')
+
+    if options.metadata:
+        from aarddict import dictionary
+        for file_name in args:
+            d = dictionary.Dictionary(file_name)
+            print '%s metadata:' % file_name
+            print '\n'.join(('\t%s: %s' % item) for item in d.metadata.iteritems())
                 
-    if options.identify or options.verify:
+    if options.identify or options.verify or options.metadata:
         raise SystemExit             
     
     try:
