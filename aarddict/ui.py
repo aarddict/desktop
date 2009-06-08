@@ -129,6 +129,7 @@ class LangNotebook(gtk.Notebook):
     def __init__(self, word_selection_changed):
         gtk.Notebook.__init__(self)
         self.set_tab_pos(gtk.POS_TOP)
+        self.set_scrollable(True)
         self.set_show_border(True)
         self.word_selection_changed = word_selection_changed
         self.connect("switch-page", self._page_switched)
