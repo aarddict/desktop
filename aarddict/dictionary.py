@@ -158,14 +158,27 @@ class Article(object):
     
     redirect = property(_redirect)        
 
-    def __repr__(self):        
-        tags = '\n'.join([repr(t) for t in self.tags])
-        return '%s\n%s\n%s\n%s\n%s' % (self.title.encode('utf-8'), 
-                                       '-'*50, 
-                                       self.text.encode('utf-8'), 
-                                       '='*50, 
-                                       tags) 
+    def __repr__(self):
+        """
+        >>> a = Article(title=u'a', text=u'Article about a', 
+        ...             tags=[Tag(u'b', 1, 2)], meta={u'c': u'whatever'})
+        >>> a1 = eval(repr(a))
+        >>> a1.title
+        u'a'
+        >>> a1.text
+        u'Article about a'
+        >>> a1.tags
+        [Tag(u'b', 1, 2, attributes={})]
+        >>> a1.meta
+        {u'c': u'whatever'}
+
+        """
+        return 'Article(title=%r, text=%r, tags=%r, meta=%r)' % (self.title, 
+                                                                 self.text, 
+                                                                 self.tags, 
+                                                                 self.meta)
     
+
 class Tag(object):
 
     def __init__(self, name, start, end, attributes=None):
@@ -175,12 +188,22 @@ class Tag(object):
         self.attributes = attributes if attributes is not None else {}
 
     def __repr__(self):
-        attrs = ' '.join([ '%s = %s' % attr 
-                          for attr in self.attributes.iteritems()])
-        if attrs:
-            attrs = ' ' + attrs 
-        return '<%s%s> (start %d, end %d)' % (self.name, attrs, 
-                                               self.start, self.end)        
+        """
+        >>> t = Tag(u'a', 1, 5, attributes={u'href': u'abc'})
+        >>> t1 = eval(repr(t))
+        >>> t1.name
+        u'a'
+        >>> t1.start
+        1
+        >>> t1.end
+        5
+        >>> t1.attributes
+        {u'href': u'abc'}
+
+        """
+        return 'Tag(%r, %r, %r, attributes=%r)'%(self.name, self.start, 
+                                                 self.end, self.attributes)
+
 
 def to_tag(tagtuple):
     return Tag(tagtuple[0], tagtuple[1], tagtuple[2], 
