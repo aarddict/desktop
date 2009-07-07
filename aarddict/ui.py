@@ -513,6 +513,10 @@ class DictViewer(object):
                     color = gtk.gdk.color_parse(self.config.get('colors', opt))
                     setattr(articleformat, opt, color)
 
+            if self.config.has_section('preferred'):
+                for opt in self.config.options('preferred'):
+                    self.preferred_dicts[opt] = self.config.getfloat('preferred', opt)
+
             action = self.actiongroup.get_action('ToggleDragSelects')
             action.set_active(self.config.getboolean('ui', 'drag-selects'))
 
@@ -592,6 +596,11 @@ class DictViewer(object):
         for name, val in colors:
             self.config.set('colors', name, val)
 
+        if self.config.has_section('preferred'):
+            self.config.remove_section('preferred')
+        self.config.add_section('preferred')
+        for name, val in self.preferred_dicts.iteritems():
+            self.config.set('preferred', name, val)
 
         d = os.path.expanduser('~/.aarddict')
         if not os.path.exists(d):
@@ -1544,7 +1553,8 @@ class DictViewer(object):
     def remove_dict(self, dict):
         word, lang = self.get_selected_word()
         key = dict.key()
-
+        if key in self.preferred_dicts:
+            del self.preferred_dicts[key]
         if key in self.recent_menu_items:
             old_mi = self.recent_menu_items[key]
             self.mn_remove.remove(old_mi)
