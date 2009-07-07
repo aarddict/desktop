@@ -457,6 +457,16 @@ class DictViewer(object):
         self.tabs.popup_enable()
         self.tabs.connect("page-added", self.update_copy_article_mi)
         self.tabs.connect("page-removed", self.update_copy_article_mi)
+
+        self.preferred_dicts = {}
+
+        def _switch_page_cb(notebook, page, page_num):
+            dict_key = notebook.get_nth_page(page_num).get_data('dictionary')
+            self.preferred_dicts[dict_key] = time.time()
+            print 'switch-page', dict_key
+
+        self.dict_switch_handler = self.tabs.connect("switch-page", _switch_page_cb)
+
         self.split_pane.add(self.tabs)
 
         self.add_content(contentBox)
@@ -767,21 +777,45 @@ class DictViewer(object):
 
     def clear_tabs(self):
         articleformat.stop()
+        self.tabs.handler_block(self.dict_switch_handler)
         self.tabs.foreach(self._kill_tab)
+        self.tabs.handler_unblock(self.dict_switch_handler)
 
     def show_article_for(self, wordlookup, lang=None):
         articles = wordlookup.articles()
         self.clear_tabs()
         tooltips = gtk.Tooltips()
+        self.tabs.handler_block(self.dict_switch_handler)
         for article in articles:
             article_view = self.create_article_view()
             article_view.get_buffer().set_text(_('Loading...'))
-            self.maketab(article_view, article.dictionary.title, tooltips)
+            tab = self.maketab(article_view, article.dictionary.title, tooltips)
+            tab.set_data('dictionary', article.dictionary.key())
             Thread(name='format', target=self.format_article,
                    args=(article, self.makeview, article_view)).start()
             #self.format_article(article, self.makeview, article_view)
             self.add_to_history(str(wordlookup), lang)
+
         self.tabs.show_all()
+        self.select_preferred_dict()
+        #enable dictionary switch handler after evertyhing is shown
+        #so that it only gets called when user switches tabs
+        gobject.idle_add(self.tabs.handler_unblock, self.dict_switch_handler)
+
+    def select_preferred_dict(self):
+        preferred_dict_keys = (item[0] for item 
+                               in sorted(self.preferred_dicts.iteritems(),
+                                         key=lambda x: -x[1]))
+        try:
+            for dict_key in preferred_dict_keys:
+                for page_num in range(self.tabs.get_n_pages()):
+                    page = self.tabs.get_nth_page(page_num)
+                    if page.get_data('dictionary') == dict_key:
+                        print '*'
+                        self.tabs.set_current_page(page_num)
+                        raise StopIteration()
+        except StopIteration:
+            pass
 
     def format_article(self, article, callback, *data):
         try:
@@ -811,6 +845,7 @@ class DictViewer(object):
         self.tabs.set_tab_label_packing(page,
                                         True, True, gtk.PACK_START)
         self.tabs.set_menu_label_text(page, title)
+        return page
 
 
     def makeview(self, buff, tables, topview):
@@ -818,7 +853,7 @@ class DictViewer(object):
         for table in tables:
             tableview = table.makeview(self.create_article_view)
             topview.add_child_at_anchor(tableview,
-                                             table.anchor)
+                                        table.anchor)
         topview.show_all()
 
     def dict_label_callback(self, widget, event):
