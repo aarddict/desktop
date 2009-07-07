@@ -423,6 +423,7 @@ class DictViewer(object):
 
         self.last_dict_file_location = None
         self.recent_menu_items = {}
+        self.verify_menu_items = {}
         self.file_chooser_dlg = None
         self.window_in_fullscreen = False
 
@@ -463,7 +464,6 @@ class DictViewer(object):
         def _switch_page_cb(notebook, page, page_num):
             dict_key = notebook.get_nth_page(page_num).get_data('dictionary')
             self.preferred_dicts[dict_key] = time.time()
-            print 'switch-page', dict_key
 
         self.dict_switch_handler = self.tabs.connect("switch-page", _switch_page_cb)
 
@@ -812,7 +812,7 @@ class DictViewer(object):
         gobject.idle_add(self.tabs.handler_unblock, self.dict_switch_handler)
 
     def select_preferred_dict(self):
-        preferred_dict_keys = (item[0] for item 
+        preferred_dict_keys = (item[0] for item
                                in sorted(self.preferred_dicts.iteritems(),
                                          key=lambda x: -x[1]))
         try:
@@ -820,7 +820,6 @@ class DictViewer(object):
                 for page_num in range(self.tabs.get_n_pages()):
                     page = self.tabs.get_nth_page(page_num)
                     if page.get_data('dictionary') == dict_key:
-                        print '*'
                         self.tabs.set_current_page(page_num)
                         raise StopIteration()
         except StopIteration:
@@ -1186,6 +1185,11 @@ class DictViewer(object):
         self.mn_remove_item = gtk.MenuItem(_('_Remove'))
         self.mn_remove_item.set_submenu(self.mn_remove)
 
+
+        self.mn_verify = gtk.Menu()
+        self.mn_verify_item = gtk.MenuItem(_('_Verify'))
+        self.mn_verify_item.set_submenu(self.mn_verify)
+
         self.mi_info = actiongroup.get_action('Info').create_menu_item()
         self.mi_exit = actiongroup.get_action('Quit').create_menu_item()
         self.mi_about = actiongroup.get_action('About').create_menu_item()
@@ -1235,6 +1239,7 @@ class DictViewer(object):
 
         mn_dict.append(self.mi_open)
         mn_dict.append(self.mn_remove_item)
+        mn_dict.append(self.mn_verify_item)
         mn_dict.append(self.mi_info)
         mn_dict.append(self.mn_copy_item)
         mn_dict.append(self.mi_paste)
@@ -1329,13 +1334,16 @@ class DictViewer(object):
         text = text_buffer.get_text(*text_buffer.get_bounds())
         clipboard.set_text(text)
 
+    def dict_menu_label(self, d):        
+        if d.total_volumes > 1:
+            return '%s Vol. %s' % (d.title, d.volume)
+        else:
+            return d.title
+
     def add_to_menu_remove(self, dict):
         key = dict.key()
 
-        if dict.total_volumes > 1:
-            menu_label = '%s Vol. %s' % (dict.title, dict.volume)
-        else:
-            menu_label = dict.title
+        menu_label = self.dict_menu_label(dict)
 
         mi_dict = gtk.MenuItem(menu_label)
 
@@ -1347,6 +1355,22 @@ class DictViewer(object):
         self.recent_menu_items[key] = mi_dict
         self.mn_remove.append(mi_dict)
         mi_dict.connect("activate", lambda f: self.remove_dict(dict))
+        mi_dict.show_all()
+
+    def add_to_menu_verify(self, dict):
+        key = dict.key()
+
+        menu_label = self.dict_menu_label(dict)
+        mi_dict = gtk.MenuItem(menu_label)
+
+        if key in self.verify_menu_items:
+            old_mi = self.verify_menu_items[key]
+            self.mn_verify.remove(old_mi)
+            del self.verify_menu_items[key]
+
+        self.verify_menu_items[key] = mi_dict
+        self.mn_verify.append(mi_dict)
+        mi_dict.connect("activate", lambda f: self.verify_dict(dict))
         mi_dict.show_all()
 
     def update_title(self):
@@ -1547,6 +1571,7 @@ class DictViewer(object):
             self.last_dict_file_location = dict.file_name
             self.word_completion.add_lang(dict.index_language)
             self.add_to_menu_remove(dict)
+            self.add_to_menu_verify(dict)
             self.update_title()
         gobject.idle_add(add)
 
@@ -1560,6 +1585,11 @@ class DictViewer(object):
             self.mn_remove.remove(old_mi)
             del self.recent_menu_items[key]
 
+        if key in self.verify_menu_items:
+            old_mi = self.verify_menu_items[key]
+            self.mn_verify.remove(old_mi)
+            del self.verify_menu_items[key]
+
         self.dictionaries.remove(dict)
         dict.close()
 
@@ -1571,6 +1601,42 @@ class DictViewer(object):
         self.clear_tabs()
         self.update_completion(self.word_input.child.get_text(), (word, lang))
         self.update_title()
+
+    def verify_dict(self, dict):
+
+        dialog = gtk.Dialog(title=_('Verifying'),
+                            parent=self.window,
+                            flags=gtk.DIALOG_MODAL)
+        progress_bar = gtk.ProgressBar()
+        dict_menu_label  = self.dict_menu_label(dict)
+        message_lbl = gtk.Label(dict_menu_label)
+        dialog.vbox.pack_start(message_lbl)
+        dialog.vbox.pack_start(progress_bar)
+        dialog.set_position(gtk.WIN_POS_CENTER_ON_PARENT)
+        dialog.add_button(gtk.STOCK_CLOSE, gtk.RESPONSE_CLOSE)
+        dialog.show_all()
+        stop = False
+        def verify():
+            try:
+                for progress in dict.verify():
+                    if stop:
+                        return
+                    if progress > 1.0:
+                        progress = 1.0
+                    gobject.idle_add(progress_bar.set_text, '%.1f%%' % (100*progress))
+                    gobject.idle_add(progress_bar.set_fraction, progress)
+            except dictionary.VerifyError:                
+                gobject.idle_add(progress_bar.set_text, 'Corrupted')
+            else:
+                gobject.idle_add(progress_bar.set_text, 'Ok')
+
+        t = Thread(target=verify)
+        t.start()
+        dialog.run()
+        stop = True
+        t.join()
+        dialog.destroy()
+
 
     def show_dict_info(self, widget):
         info_dialog = dictinfo.DictInfoDialog(self.dictionaries,
