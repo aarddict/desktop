@@ -22,6 +22,7 @@ import locale
 from collections import defaultdict
 
 import ui
+from dictionary import format_title
 
 def create_text_view(wrap_mode=gtk.WRAP_NONE):
     text_view = gtk.TextView()
@@ -182,11 +183,10 @@ class DictInfoDialog(gtk.Dialog):
 
         self.show_all()
 
-
     def extract_dict_title_for_cell(self, column, cell_renderer, model, iter, dictmap):
         uuid = model[iter][0]
         dicts = dictmap[uuid]
-        cell_renderer.set_property('text', dicts[0].title)
+        cell_renderer.set_property('text', format_title(dicts[0], with_vol_num=False))
         return
 
     def dict_selected(self, selection, dictmap):

@@ -798,7 +798,10 @@ class DictViewer(object):
         for article in articles:
             article_view = self.create_article_view()
             article_view.get_buffer().set_text(_('Loading...'))
-            tab = self.maketab(article_view, article.dictionary.title, tooltips)
+            tab = self.maketab(article_view,
+                               dictionary.format_title(article.dictionary, 
+                                                       with_vol_num=False),
+                               tooltips)
             tab.set_data('dictionary', article.dictionary.key())
             Thread(name='format', target=self.format_article,
                    args=(article, self.makeview, article_view)).start()
@@ -1334,16 +1337,10 @@ class DictViewer(object):
         text = text_buffer.get_text(*text_buffer.get_bounds())
         clipboard.set_text(text)
 
-    def dict_menu_label(self, d):        
-        if d.total_volumes > 1:
-            return '%s Vol. %s' % (d.title, d.volume)
-        else:
-            return d.title
-
     def add_to_menu_remove(self, dict):
         key = dict.key()
 
-        menu_label = self.dict_menu_label(dict)
+        menu_label = dictionary.format_title(dict)
 
         mi_dict = gtk.MenuItem(menu_label)
 
@@ -1360,7 +1357,7 @@ class DictViewer(object):
     def add_to_menu_verify(self, dict):
         key = dict.key()
 
-        menu_label = self.dict_menu_label(dict)
+        menu_label = dictionary.format_title(dict)
         mi_dict = gtk.MenuItem(menu_label)
 
         if key in self.verify_menu_items:
@@ -1608,7 +1605,7 @@ class DictViewer(object):
                             parent=self.window,
                             flags=gtk.DIALOG_MODAL)
         progress_bar = gtk.ProgressBar()
-        dict_menu_label  = self.dict_menu_label(dict)
+        dict_menu_label  = dictionary.format_title(dict)
         message_lbl = gtk.Label(dict_menu_label)
         dialog.vbox.pack_start(message_lbl)
         dialog.vbox.pack_start(progress_bar)
@@ -1625,7 +1622,7 @@ class DictViewer(object):
                         progress = 1.0
                     gobject.idle_add(progress_bar.set_text, '%.1f%%' % (100*progress))
                     gobject.idle_add(progress_bar.set_fraction, progress)
-            except dictionary.VerifyError:                
+            except dictionary.VerifyError:
                 gobject.idle_add(progress_bar.set_text, 'Corrupted')
             else:
                 gobject.idle_add(progress_bar.set_text, 'Ok')

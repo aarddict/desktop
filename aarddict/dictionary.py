@@ -29,13 +29,21 @@ ucollator =  Collator.createInstance(Locale(''))
 ucollator.setStrength(Collator.PRIMARY)
 
 from hashlib import sha1
-import time
 
 compression = (zlib.compress,
                bz2.compress)
 
 decompression = (zlib.decompress,
                  bz2.decompress)
+
+def format_title(d, with_vol_num=True):
+    parts = [d.title]
+    sitelang = d.metadata.get('sitelang')
+    if sitelang:
+        parts.append(' (%s)' % sitelang)
+    if with_vol_num and d.total_volumes > 1:
+        parts.append(' Vol. %s' % d.volume)
+    return ''.join(parts)    
 
 def calcsha1(file_name, offset, chunksize=100000):
     with open(file_name, 'rb') as f:
