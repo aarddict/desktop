@@ -47,7 +47,7 @@ import aarddict
 import dictinfo
 import articleformat
 import dictionary
-from dictionary import Dictionary, key
+from dictionary import Dictionary, collation_key, PRIMARY
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -1075,7 +1075,7 @@ class DictViewer(object):
     def _weak_eq(self, word_lookup1, word_lookup2):
         u1 = unicode(word_lookup1)
         u2 = unicode(word_lookup2)
-        return key(u1) == key(u2)
+        return collation_key(u1, PRIMARY).compareTo(collation_key(u2, PRIMARY)) == 0
 
     def create_menu_items(self):
 

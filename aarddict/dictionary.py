@@ -1,3 +1,4 @@
+# coding: utf-8
 # This file is part of Aard Dictionary <http://aarddict.org>.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -24,9 +25,12 @@ from bisect import bisect_left
 
 import simplejson
 from PyICU import Locale, Collator
-
-ucollator =  Collator.createInstance(Locale(''))
-ucollator.setStrength(Collator.PRIMARY)
+ 
+PRIMARY = Collator.PRIMARY
+SECONDARY = Collator.SECONDARY
+TERTIARY = Collator.TERTIARY
+QUATERNARY = Collator.QUATERNARY
+IDENTICAL = Collator.IDENTICAL
 
 from hashlib import sha1
 
@@ -43,7 +47,7 @@ def format_title(d, with_vol_num=True):
         parts.append(' (%s)' % sitelang)
     if with_vol_num and d.total_volumes > 1:
         parts.append(' Vol. %s' % d.volume)
-    return ''.join(parts)    
+    return ''.join(parts)
 
 def calcsha1(file_name, offset, chunksize=100000):
     with open(file_name, 'rb') as f:
@@ -51,7 +55,7 @@ def calcsha1(file_name, offset, chunksize=100000):
         result = sha1()
         while True:
             s = f.read(chunksize)
-            if not s: break            
+            if not s: break
             result.update(s)
             yield (f.tell(), result)
 
@@ -66,42 +70,67 @@ def decompress(s):
             break
     return decompressed
 
-def key(s):
-    return ucollator.getCollationKey(s).getByteArray()
 
-class Word(object):
-    def __init__(self, word):
-        self.word = word
-        self.unicode = self.word.decode('utf-8')
+def _collators():
 
-    def __str__(self):
-        return self.word
+    def create_collator(strength):
+        c = Collator.createInstance(Locale(''))
+        c.setStrength(strength)
+        return c
 
-    def __unicode__(self):
-        return self.unicode
+    return dict([(strength, create_collator(strength).getCollationKey)
+                 for strength in (PRIMARY, SECONDARY, TERTIARY,
+                                  QUATERNARY, IDENTICAL)])    
 
-    def __repr__(self):
-        return self.word
+_collators = _collators()
 
-    def __cmp__(self, other):
-        k1 = key(self.unicode[:len(other.unicode)])
-        k2 = key(other.unicode)
-        return cmp(k1, k2)
+def collation_key(word, strength):
+    return _collators[strength](word)
+
+def cmp_words(word1, word2, strength):
+    """
+    >>> cmp_words(u'a', u'b', PRIMARY)
+    -1
+
+    >>> cmp_words(u'abc', u'a', PRIMARY)
+    0
+
+    >>> cmp_words('ábc'.decode('utf8'), u'a', PRIMARY)
+    0
+
+    >>> cmp_words('ábc'.decode('utf8'), u'a', SECONDARY)
+    1
+
+    >>> cmp_words('ábc'.decode('utf8'), 'Á'.decode('utf8'), SECONDARY)
+    0
+
+    >>> cmp_words('ábc'.decode('utf8'), 'Á'.decode('utf8'), TERTIARY)
+    -1
+
+    """
+    k1 = collation_key(word1[:len(word2)], strength)
+    k2 = collation_key(word2, strength)
+    return k1.compareTo(k2)
+
 
 def _read(file, pos, fmt):
     file.seek(pos)
     s = file.read(struct.calcsize(fmt))
     return struct.unpack(fmt, s)
 
+
 def _readstr(file, pos, len_fmt):
     strlen, = _read(file, pos, len_fmt)
     return file.read(strlen)
 
+
 def _read_index_item(file, offset, itemfmt, itemno):
     return _read(file, offset + itemno * struct.calcsize(itemfmt), itemfmt)
 
+
 def _read_key(file, offset, len_fmt, pos):
     return _readstr(file, offset + pos, len_fmt)
+
 
 def _read_article(dictionary, offset, len_fmt, pos):
     decompressed_article = _read_raw_article(dictionary, offset, len_fmt, pos)
@@ -109,11 +138,17 @@ def _read_article(dictionary, offset, len_fmt, pos):
     article.dictionary = dictionary
     return article
 
+
 def _read_raw_article(dictionary, offset, len_fmt, pos):
     compressed_article = _readstr(dictionary.file, offset + pos, len_fmt)
     return decompress(compressed_article)
 
+
 class WordList(object):
+    """
+    List of all words in the dictionary (unicode).
+
+    """
 
     def __init__(self, length, read_index_item, read_key):
         self.length = length
@@ -125,11 +160,32 @@ class WordList(object):
 
     def __getitem__(self, i):
         if 0 <= i < len(self):
-            key_pos, article_unit_ptr = self.read_index_item(i)
+            key_pos = self.read_index_item(i)[0]
             key = self.read_key(key_pos)
-            return Word(key)
+            return key.decode('utf8')
         else:
             raise IndexError
+
+
+class CollationKeyList(object):
+    """
+    List of collation keys (returned as byte array) of specified strength 
+    for the given word list.
+
+    """
+
+    def __init__(self, wordlist, strength):
+        self.wordlist = wordlist
+        self.key_func = _collators[strength]
+
+    def __len__(self):
+        return len(self.wordlist)
+    
+    def __getitem__(self, i):        
+        word = self.wordlist[i]        
+        key = self.key_func(word)
+        return key.getByteArray()
+
 
 class ArticleList(object):
 
@@ -147,11 +203,12 @@ class ArticleList(object):
             key_pos, article_unit_ptr = self.read_index_item(i)
             key = self.read_key(key_pos)
             article_func = functools.partial(self.read_article, article_unit_ptr)
-            article_func.title = key.decode('utf-8')
+            article_func.title = key.decode('utf8')
             article_func.source = self.dictionary
             return article_func
         else:
             raise IndexError
+
 
 class Article(object):
 
@@ -249,11 +306,13 @@ HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
                ('article_length_format',    '>2s'), ##'>L' - article length format
                )
 
+
 def spec_len(spec):
     result = 0
     for name, fmt in spec:
         result += struct.calcsize(fmt)
     return result
+
 
 class Header(object):
 
@@ -265,6 +324,7 @@ class Header(object):
 
     index1_offset = property(lambda self: spec_len(HEADER_SPEC) + self.meta_length)
     index2_offset = property(lambda self: self.index1_offset + self.index_count*struct.calcsize(self.index1_item_format))
+
 
 class Dictionary(object):
 
@@ -348,16 +408,7 @@ class Dictionary(object):
         return self.index_count
 
     def __getitem__(self, s):
-        startword = Word(s)
-        pos = bisect_left(self.words, startword)
-        try:
-            while True:
-                matched_word = self.words[pos]
-                if matched_word != startword: break
-                yield self.articles[pos]
-                pos += 1
-        except IndexError:
-            raise StopIteration
+        return self.lookup(s)
 
     def __contains__(self, s):
         for item in self[s]:
@@ -373,6 +424,21 @@ class Dictionary(object):
     def __hash__(self):
         return self.key().__hash__()
 
+    def lookup(self, word, strength=PRIMARY):
+        startword = word.decode('utf8')
+        strength = PRIMARY
+        pos = bisect_left(CollationKeyList(self.words, strength), 
+                          collation_key(startword, strength).getByteArray())
+        try:
+            while True:
+                matched_word = self.words[pos]
+                if cmp_words(matched_word, startword, strength) != 0:
+                    break
+                yield self.articles[pos]
+                pos += 1
+        except IndexError:
+            raise StopIteration        
+
     def key(self):
         return self.sha1sum
 
@@ -384,7 +450,7 @@ class Dictionary(object):
         for pos, result in calcsha1(self.file_name, offset):
             yield pos/size
         if not result or result.hexdigest() != self.sha1sum:
-            raise VerifyError()            
+            raise VerifyError()
 
     def close(self):
         self.file.close()
