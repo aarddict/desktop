@@ -2,7 +2,7 @@
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3
-# as published by the Free Software Foundation. 
+# as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -46,14 +46,14 @@ footnote_fgcolor = gtk.gdk.color_parse('blue')
 
 def maketabs(rawtabs):
     char_width = strwidth(' ')
-    tabs = pango.TabArray(len(rawtabs), 
+    tabs = pango.TabArray(len(rawtabs),
                                 positions_in_pixels=False)
     for i in range(tabs.get_size()):
         pos = rawtabs[i]
-        tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*int(font_scale*pango.SCALE))    
-    return tabs    
+        tabs.set_tab(i, pango.TAB_LEFT, pos*char_width+5*int(font_scale*pango.SCALE))
+    return tabs
 
-def create_buffer(article, intcallback, extcallback, footcallback):    
+def create_buffer(article, intcallback, extcallback, footcallback):
     lang = article.dictionary.index_language
     text = article.text
     tags = article.tags
@@ -69,16 +69,16 @@ def _new_tagged_buffer(text, tags, reftable, wordlang, intcallback, extcallback,
 
     tables = []
     for tag in tags:
-        
+
         if interrupted:
             raise FormatStop
-        
+
         start = buff.get_iter_at_offset(tag.start)
         end = buff.get_iter_at_offset(tag.end)
         if tag.name in ('a', 'iref'):
             target = str(tag.attributes['href'])
-            if (target.lower().startswith("http://") or 
-                target.lower().startswith("https://")):            
+            if (target.lower().startswith("http://") or
+                target.lower().startswith("https://")):
                 _extref(buff, start, end, target, extcallback)
             else:
                 _intref(buff, start, end, target,  wordlang, intcallback)
@@ -88,25 +88,25 @@ def _new_tagged_buffer(text, tags, reftable, wordlang, intcallback, extcallback,
             footnote_group = tag.attributes['group']
             footnote_id = tag.attributes['id']
             footnote_key = (footnote_group, footnote_id)
-            if footnote_key in reftable:                
+            if footnote_key in reftable:
                 _footref(buff, start, end, reftable[footnote_key], footcallback)
         elif tag.name == 'tbl':
             tabletxt = tag.attributes['text']
             tabletags = tag.attributes['tags']
             tabletabs = tag.attributes['tabs']
-            
+
             tbl = _new_table(tabletxt, tabletags, tabletabs,
                              buff, start, end, reftable, wordlang, intcallback, extcallback, footcallback, buff.get_tag_table())
-            if tbl:                
+            if tbl:
                 tables.append(tbl)
         elif tag.name == "c":
             if 'c' in tag.attributes:
                 color_code = tag.attributes['c']
-                t = buff.create_tag(None, foreground=color_code)                    
+                t = buff.create_tag(None, foreground=color_code)
                 buff.apply_tag(t, start, end)
         else:
             buff.apply_tag_by_name(tag.name, start, end)
-    buff.apply_tag_by_name('ar', *buff.get_bounds())    
+    buff.apply_tag_by_name('ar', *buff.get_bounds())
     return buff, tables
 
 class Table(object):
@@ -126,33 +126,33 @@ class Table(object):
             tableview.add_child_at_anchor(table.makeview(viewfactory),
                                           table.anchor)
         return tableview
-        
+
 def _new_table(tabletxt, tabletags, tabletabs, buff, start, end,
                reftable, wordlang, intcallback, extcallback, footcallback, texttagtable):
     if interrupted:
         raise FormatStop
     tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tabletags]
-    rawglobaltabs = tabletabs.get('') 
+    rawglobaltabs = tabletabs.get('')
 
-    globaltabs = maketabs(rawglobaltabs)        
+    globaltabs = maketabs(rawglobaltabs)
     tablebuff, tables = _new_tagged_buffer(tabletxt, tags,
                                            reftable, wordlang, intcallback, extcallback, footcallback, texttagtable=texttagtable)
 
     rowtags = [tag for tag in tags if tag.name == 'row']
     for i, rowtag in enumerate(rowtags):
         if interrupted:
-            raise FormatStop        
+            raise FormatStop
         strindex = str(i)
         if strindex in tabletabs:
-            tabs = maketabs(tabletabs[strindex])    
+            tabs = maketabs(tabletabs[strindex])
             t = tablebuff.create_tag(tabs=tabs)
-            tablebuff.apply_tag(t, 
-                                tablebuff.get_iter_at_offset(rowtag.start), 
-                                tablebuff.get_iter_at_offset(rowtag.end))                
+            tablebuff.apply_tag(t,
+                                tablebuff.get_iter_at_offset(rowtag.start),
+                                tablebuff.get_iter_at_offset(rowtag.end))
 
-    buff.delete(start, end)            
+    buff.delete(start, end)
     anchor = buff.create_child_anchor(start)
-    
+
     return Table(tablebuff, tables, globaltabs, anchor)
 
 
@@ -172,10 +172,10 @@ def _footref(buff, start, end, targetpos, callback):
     ref_tag = buff.create_tag()
     ref_tag.connect("event", callback, targetpos)
     buff.apply_tag_by_name("ref", start, end)
-    buff.apply_tag(ref_tag, start, end)    
-        
-        
-def create_article_text_buffer(texttagtable=None):    
+    buff.apply_tag(ref_tag, start, end)
+
+
+def create_article_text_buffer(texttagtable=None):
     if texttagtable is None:
         tags = (tag('b',
                     weight=pango.WEIGHT_BOLD),
@@ -190,40 +190,40 @@ def create_article_text_buffer(texttagtable=None):
                     scale=pango.SCALE_LARGE),
 
                 tag('h1',
-                    weight=pango.WEIGHT_ULTRABOLD, 
-                    scale=pango.SCALE_X_LARGE, 
-                    pixels_above_lines=12, 
+                    weight=pango.WEIGHT_ULTRABOLD,
+                    scale=pango.SCALE_X_LARGE,
+                    pixels_above_lines=12,
                     pixels_below_lines=6),
 
                 tag('h2',
-                    weight=pango.WEIGHT_BOLD, 
-                    scale=pango.SCALE_LARGE, 
-                    pixels_above_lines=6, 
+                    weight=pango.WEIGHT_BOLD,
+                    scale=pango.SCALE_LARGE,
+                    pixels_above_lines=6,
                     pixels_below_lines=3),
 
                 tag('h3',
-                    weight=pango.WEIGHT_BOLD, 
-                    scale=pango.SCALE_MEDIUM, 
-                    pixels_above_lines=3, 
+                    weight=pango.WEIGHT_BOLD,
+                    scale=pango.SCALE_MEDIUM,
+                    pixels_above_lines=3,
                     pixels_below_lines=2),
 
                 tag('h4',
-                    weight=pango.WEIGHT_SEMIBOLD, 
-                    scale=pango.SCALE_MEDIUM, 
-                    pixels_above_lines=3, 
+                    weight=pango.WEIGHT_SEMIBOLD,
+                    scale=pango.SCALE_MEDIUM,
+                    pixels_above_lines=3,
                     pixels_below_lines=2),
 
                 tag('h5',
-                    weight=pango.WEIGHT_SEMIBOLD, 
-                    scale=pango.SCALE_MEDIUM, 
-                    style=pango.STYLE_ITALIC, 
-                    pixels_above_lines=3, 
+                    weight=pango.WEIGHT_SEMIBOLD,
+                    scale=pango.SCALE_MEDIUM,
+                    style=pango.STYLE_ITALIC,
+                    pixels_above_lines=3,
                     pixels_below_lines=2),
 
                 tag('h6',
-                    scale=pango.SCALE_MEDIUM, 
-                    underline=pango.UNDERLINE_SINGLE, 
-                    pixels_above_lines=3, 
+                    scale=pango.SCALE_MEDIUM,
+                    underline=pango.UNDERLINE_SINGLE,
+                    pixels_above_lines=3,
                     pixels_below_lines=2),
 
                 tag('row',
@@ -248,8 +248,8 @@ def create_article_text_buffer(texttagtable=None):
                 tag('ref',
                      underline=pango.UNDERLINE_SINGLE,
 #                     weight=pango.WEIGHT_SEMIBOLD,
-                    rise=6*pango.SCALE,                           
-                    scale=pango.SCALE_X_SMALL, 
+                    rise=6*pango.SCALE,
+                    scale=pango.SCALE_X_SMALL,
                     foreground_gdk=footnote_fgcolor),
 
                 tag('note',
@@ -259,52 +259,52 @@ def create_article_text_buffer(texttagtable=None):
                     family='monospace'),
 
                 tag('pos',
-                    style=pango.STYLE_ITALIC, 
+                    style=pango.STYLE_ITALIC,
                     weight=pango.WEIGHT_SEMIBOLD,
                     foreground='darkgreen'),
 
                 tag('r',
-                    underline=pango.UNDERLINE_SINGLE, 
+                    underline=pango.UNDERLINE_SINGLE,
                     foreground_gdk=int_link_fgcolor),
 
                 tag('url',
-                     underline=pango.UNDERLINE_SINGLE, 
+                     underline=pango.UNDERLINE_SINGLE,
                      foreground_gdk=ext_link_fgcolor),
 
                 tag('tr',
-                    weight=pango.WEIGHT_BOLD, 
+                    weight=pango.WEIGHT_BOLD,
                     foreground="darkred",
                     font=phonetic_font),
 
-                tag('p', 
-                    pixels_above_lines=3, 
+                tag('p',
+                    pixels_above_lines=3,
                     pixels_below_lines=3),
 
                 tag('div',
-                    pixels_above_lines=3, 
+                    pixels_above_lines=3,
                     pixels_below_lines=3),
 
                 tag('sup',
-                    rise=6*pango.SCALE, 
+                    rise=6*pango.SCALE,
                     scale=pango.SCALE_X_SMALL),
 
                 tag('sub',
-                    rise=-6*pango.SCALE, 
+                    rise=-6*pango.SCALE,
                     scale=pango.SCALE_X_SMALL),
 
                 tag('blockquote',
                     left_margin=10),
 
                 tag('cite',
-                    style=pango.STYLE_ITALIC, 
-                    family='serif', 
+                    style=pango.STYLE_ITALIC,
+                    family='serif',
                     left_margin=10),
 
                 #Key phrase
                 tag('k',
-                    weight=pango.WEIGHT_BOLD, 
-                    scale=pango.SCALE_LARGE, 
-                    pixels_above_lines=6, 
+                    weight=pango.WEIGHT_BOLD,
+                    scale=pango.SCALE_LARGE,
+                    pixels_above_lines=6,
                     pixels_below_lines=3),
 
                 #Direct translation of the key-phrase
@@ -332,8 +332,13 @@ def create_article_text_buffer(texttagtable=None):
                     scale=font_scale),
 
                 tag('highlight',
-                    background_gdk=highlight_bgcolor)
-                )            
+                    background_gdk=highlight_bgcolor),
+
+                #The definition of a term, in a definition list.
+                tag('dd', 
+                    family='serif',
+                    style=pango.STYLE_ITALIC),
+                )
 
         tagtable = gtk.TextTagTable()
 
@@ -343,7 +348,7 @@ def create_article_text_buffer(texttagtable=None):
             tagtable.add(t)
     else:
         tagtable = texttagtable
-        
+
     return gtk.TextBuffer(tagtable)
 
 interrupted = False
