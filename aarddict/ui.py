@@ -494,6 +494,16 @@ class DictViewer(object):
             self.config.read(os.path.expanduser(filename))
             if self.config.has_option('ui', 'input-word'):
                 self.set_word_input(self.config.get('ui', 'input-word'))
+
+            if self.config.has_option('ui', 'lookup-strength'):
+                lookup_strength = self.config.getint('ui', 'lookup-strength')
+                for action in (self.actiongroup.get_action('BaseCharacters'), 
+                               self.actiongroup.get_action('Accents'), 
+                               self.actiongroup.get_action('Case')):
+                    if action.get_property('value') == lookup_strength:
+                        self.lookup_strength = lookup_strength
+                        action.set_active(True)                    
+                
             if self.config.has_option('ui', 'article-font-scale'):
                 articleformat.font_scale = self.config.getfloat('ui', 'article-font-scale')
             self.lookup_delay = self.config.getint('ui', 'lookup-delay')
@@ -505,6 +515,7 @@ class DictViewer(object):
             history = [s.split(' ', 1) for s in history]
             [self.add_to_history(w, l) for l, w in history[::-1]]
             self.set_phonetic_font(self.config.get('ui', 'phonetic-font'))
+
             self.last_dict_file_location = self.config.get('ui', 'last-dict-file-location')
 
             if self.config.has_section('colors'):
@@ -562,6 +573,8 @@ class DictViewer(object):
 
         word = self.word_input.child.get_text()
         self.config.set('ui', 'input-word', word)
+
+        self.config.set('ui', 'lookup-strength', self.lookup_strength)
 
         selected_word, selected_word_lang = self.get_selected_word()
         if self.config.has_section('selection'):
