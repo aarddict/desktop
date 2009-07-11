@@ -47,7 +47,8 @@ import aarddict
 import dictinfo
 import articleformat
 import dictionary
-from dictionary import Dictionary, collation_key, PRIMARY
+from dictionary import (Dictionary, collation_key, PRIMARY, SECONDARY,
+                        TERTIARY, QUATERNARY, IDENTICAL)
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -351,42 +352,39 @@ class WordLookup(object):
                                       dictionary=article.dictionary)
         return narticle
 
-    def redirect(self, article, level=0, seen=None):
-        if seen is None:
-            seen = set()
-        seen.add(article.title)
+    def redirect(self, article, level=0):
         redirect = article.redirect
-        if redirect:
 
-            logging.debug('Redirect "%s" ==> "%s" (level %d)',
-                          article.title, redirect, level)
+        if not redirect:
+            return article
 
-            sharp_pos = redirect.find('#')
-            if sharp_pos > -1:
-                redirect = redirect[:sharp_pos]
-                logging.debug('Will redirect do "%s"', redirect)
+        logging.debug('Redirect "%s" ==> "%s" (level %d)',
+                      article.title, redirect, level)
 
-            if level > 5:
-                logging.warn('Can''t resolve redirect "%s", too many levels', redirect)
-                return article
-            first = None
-            for result in self.lookup_func(redirect, uuid=article.dictionary.uuid):
-                if result.title in seen:
-                    logging.debug('Already saw "%s"', result.title)
-                    continue
+        if level > 5:
+            logging.warn('Can\'t resolve redirect "%s", too many levels',
+                         redirect)
+            return article
+
+        sharp_pos = redirect.find('#')
+
+        if sharp_pos > -1:
+            redirect = redirect[:sharp_pos]
+            logging.debug('Will redirect to "%s"', redirect)
+
+        for strength in (IDENTICAL, QUATERNARY, TERTIARY,
+                         SECONDARY, PRIMARY):
+            resulti = self.lookup_func(redirect,
+                                      uuid=article.dictionary.uuid,
+                                      strength=strength)
+            try:
+                result = resulti.next()
+            except StopIteration:
+                pass
+            else:
                 a = result()
                 a.title = result.title
-                logging.debug('Considering "%s"', a.title)
-                redirected = self.redirect(a, level=level+1, seen=seen)
-                if not first:
-                    first = redirected
-                if redirected and redirected.title == redirect:
-                    logging.debug('Found exact match: "%s"', redirect)
-                    return redirected
-            if first:
-                return first
-        else:
-            return article
+                return self.redirect(a, level=level+1)
 
     def do_redirect(self, read_func):
         article = read_func()
@@ -799,7 +797,7 @@ class DictViewer(object):
             article_view = self.create_article_view()
             article_view.get_buffer().set_text(_('Loading...'))
             tab = self.maketab(article_view,
-                               dictionary.format_title(article.dictionary, 
+                               dictionary.format_title(article.dictionary,
                                                        with_vol_num=False),
                                tooltips)
             tab.set_data('dictionary', article.dictionary.key())
@@ -948,8 +946,8 @@ class DictViewer(object):
             collator.setStrength(Collator.QUATERNARY)
             key = lambda a: collator.getCollationKey(a.title).getByteArray()
             articles.sort(key=key)
-            lang_word_list[lang] =  [WordLookup(list(g), self.dictionaries.lookup)
-                                     for k, g in groupby(articles, key)]
+            lang_word_list[lang] = [WordLookup(list(g), self.dictionaries.lookup)
+                                    for k, g in groupby(articles, key)]
         return lang_word_list
 
     def update_completion(self, word, to_select = None):

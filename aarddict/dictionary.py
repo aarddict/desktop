@@ -22,10 +22,11 @@ import zlib
 import bz2
 import os
 from bisect import bisect_left
+from itertools import islice
 
 import simplejson
 from PyICU import Locale, Collator
- 
+
 PRIMARY = Collator.PRIMARY
 SECONDARY = Collator.SECONDARY
 TERTIARY = Collator.TERTIARY
@@ -80,7 +81,7 @@ def _collators():
 
     return dict([(strength, create_collator(strength).getCollationKey)
                  for strength in (PRIMARY, SECONDARY, TERTIARY,
-                                  QUATERNARY, IDENTICAL)])    
+                                  QUATERNARY, IDENTICAL)])
 
 _collators = _collators()
 
@@ -169,7 +170,7 @@ class WordList(object):
 
 class CollationKeyList(object):
     """
-    List of collation keys (returned as byte array) of specified strength 
+    List of collation keys (returned as byte array) of specified strength
     for the given word list.
 
     """
@@ -180,9 +181,9 @@ class CollationKeyList(object):
 
     def __len__(self):
         return len(self.wordlist)
-    
-    def __getitem__(self, i):        
-        word = self.wordlist[i]        
+
+    def __getitem__(self, i):
+        word = self.wordlist[i]
         key = self.key_func(word)
         return key.getByteArray()
 
@@ -426,8 +427,7 @@ class Dictionary(object):
 
     def lookup(self, word, strength=PRIMARY):
         startword = word.decode('utf8')
-        strength = PRIMARY
-        pos = bisect_left(CollationKeyList(self.words, strength), 
+        pos = bisect_left(CollationKeyList(self.words, strength),
                           collation_key(startword, strength).getByteArray())
         try:
             while True:
@@ -437,7 +437,7 @@ class Dictionary(object):
                 yield self.articles[pos]
                 pos += 1
         except IndexError:
-            raise StopIteration        
+            raise StopIteration
 
     def key(self):
         return self.sha1sum
@@ -473,14 +473,11 @@ class DictionaryCollection(list):
     def volumes(self, uuid):
         return [d for d in self if d.uuid == uuid]
 
-    def lookup(self, start_word, max_from_one_dict=50, uuid=None):
-        if uuid:
-            dicts = self.volumes(uuid)
-        else:
-            dicts = self
+    def lookup(self, start_word, max_from_one_dict=50,
+               uuid=None, strength=PRIMARY):
+        dicts = self.volumes(uuid) if uuid else self
         for dictionary in dicts:
-            count = 0
-            for article in dictionary[start_word]:
+            for article in islice(dictionary.lookup(start_word,
+                                                    strength=strength),
+                                  max_from_one_dict):
                 yield article
-                count += 1
-                if count >= max_from_one_dict: break
