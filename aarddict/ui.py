@@ -410,6 +410,7 @@ class DictViewer(object):
 
     def __init__(self):
 
+        self.lookup_strength = PRIMARY
         self.select_word_exact = functools.partial(self._select_word, eq_func = self._exact_eq)
         self.select_word_weak = functools.partial(self._select_word, eq_func = self._weak_eq)
         self.lookup_stop_requested = False
@@ -935,7 +936,8 @@ class DictViewer(object):
         lang_word_list = defaultdict(list)
 
         for item in self.dictionaries.lookup(start_word,
-                                             max_from_one_dict=self.max_words_per_dict):
+                                             max_from_one_dict=self.max_words_per_dict,
+                                             strength=self.lookup_strength):
             time.sleep(0)
             if self.lookup_stop_requested:
                 raise LookupCanceled()
@@ -1094,6 +1096,21 @@ class DictViewer(object):
                                          self.toggle_full_screen),
                                         ])
 
+        actiongroup.add_radio_actions([('BaseCharacters', None, _('_Base Characters'),
+                                        '<Control>b', _('Consider only base characters when looking up words'),
+                                        PRIMARY),
+
+                                       ('Accents', None, _('_Accents'),
+                                        '<Control><Alt>b', _('Consider base characters and accents when looking up words'),
+                                        SECONDARY),
+
+                                       ('Case', None, _('_Case'),
+                                        '<Control><Shift>b', _('Consider base characters, accents and case when looking up words'),
+                                        TERTIARY),
+                                       ],
+                                      value=self.lookup_strength,
+                                      on_change=lambda action, current: self.set_lookup_strength(current.get_current_value()))
+
         actiongroup.add_actions([('Open', gtk.STOCK_OPEN, _('_Open...'),
                                   '<Control>o', _('Open a dictionary'),
                                   self.select_dict_file),
@@ -1182,6 +1199,18 @@ class DictViewer(object):
 
         self.mi_open = actiongroup.get_action('Open').create_menu_item()
 
+        self.mn_match = gtk.Menu()
+        self.mn_match_item = gtk.MenuItem(_('_Match'))
+        self.mn_match_item.set_submenu(self.mn_match)
+
+        self.mi_match_base_chars = actiongroup.get_action('BaseCharacters').create_menu_item()
+        self.mi_match_accents = actiongroup.get_action('Accents').create_menu_item()
+        self.mi_match_case = actiongroup.get_action('Case').create_menu_item()
+
+        self.mn_match.append(self.mi_match_base_chars)
+        self.mn_match.append(self.mi_match_accents)
+        self.mn_match.append(self.mi_match_case)
+
         self.mn_remove = gtk.Menu()
         self.mn_remove_item = gtk.MenuItem(_('_Remove'))
         self.mn_remove_item.set_submenu(self.mn_remove)
@@ -1239,6 +1268,7 @@ class DictViewer(object):
         mn_dict_item.set_submenu(mn_dict)
 
         mn_dict.append(self.mi_open)
+        mn_dict.append(self.mn_match_item)
         mn_dict.append(self.mn_remove_item)
         mn_dict.append(self.mn_verify_item)
         mn_dict.append(self.mi_info)
@@ -1718,6 +1748,11 @@ class DictViewer(object):
     def toggle_drag_selects(self, action):
         if not action.get_active():
             self.tabs.foreach(lambda page: page.child.clear_selection())
+
+    def set_lookup_strength(self, strength):
+        self.lookup_strength = strength
+        self.update_completion(self.word_input.child.get_text(),
+                               self.get_selected_word())
 
     def main(self):
         gtk.main()
