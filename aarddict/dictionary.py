@@ -114,6 +114,27 @@ def cmp_words(word1, word2, strength):
     return k1.compareTo(k2)
 
 
+def split_word(word):
+    """
+    >>> split_word(u'a#b')
+    (u'a', u'b')
+
+    >>> split_word(u'a#')
+    (u'a#', u'')
+
+    >>> split_word(u'a')
+    (u'a', u'')
+
+    >>> split_word(u'#')
+    (u'#', u'')
+
+    """
+    parts = word.split('#', 1)    
+    section = u'' if len(parts) == 1 else parts[1]
+    lookupword = parts[0] if (parts[0] and section) else word
+    return lookupword, section
+
+
 def _read(file, pos, fmt):
     file.seek(pos)
     s = file.read(struct.calcsize(fmt))
@@ -219,9 +240,14 @@ class Article(object):
         self.tags = [] if tags is None else tags
         self.meta = {} if meta is None else meta
         self.dictionary = dictionary
+        self.section = None
 
     def _redirect(self):
-        return self.meta.get(u'r', self.meta.get('redirect', u'')).encode('utf8')
+        redirect = self.meta.get(u'r',
+                                 self.meta.get('redirect', u''))
+        if redirect and self.section:
+            redirect = '#'.join((redirect, self.section))
+        return redirect.encode('utf8')
 
     redirect = property(_redirect)
 
@@ -426,15 +452,19 @@ class Dictionary(object):
         return self.key().__hash__()
 
     def lookup(self, word, strength=PRIMARY):
-        startword = word.decode('utf8')
+
+        lookupword, section = split_word(word.decode('utf8'))
+
         pos = bisect_left(CollationKeyList(self.words, strength),
-                          collation_key(startword, strength).getByteArray())
+                          collation_key(lookupword, strength).getByteArray())
         try:
             while True:
                 matched_word = self.words[pos]
-                if cmp_words(matched_word, startword, strength) != 0:
+                if cmp_words(matched_word, lookupword, strength) != 0:
                     break
-                yield self.articles[pos]
+                article_func = self.articles[pos]
+                article_func.section = section
+                yield article_func
                 pos += 1
         except IndexError:
             raise StopIteration

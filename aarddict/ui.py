@@ -358,22 +358,17 @@ class WordLookup(object):
         if not redirect:
             return article
 
-        logging.debug('Redirect "%s" ==> "%s" (level %d)',
-                      article.title, redirect, level)
-
+        logging.debug('Redirect "%s" section "%s" ==> "%s" (level %d)',
+                      article.title, article.section, redirect, level)
+        
         if level > 5:
             logging.warn('Can\'t resolve redirect "%s", too many levels',
                          redirect)
             return article
 
-        sharp_pos = redirect.find('#')
-
-        if sharp_pos > -1:
-            redirect = redirect[:sharp_pos]
-            logging.debug('Will redirect to "%s"', redirect)
-
         for strength in (IDENTICAL, QUATERNARY, TERTIARY,
                          SECONDARY, PRIMARY):
+                
             resulti = self.lookup_func(redirect,
                                       uuid=article.dictionary.uuid,
                                       strength=strength)
@@ -384,11 +379,13 @@ class WordLookup(object):
             else:
                 a = result()
                 a.title = result.title
+                a.section = result.section
                 return self.redirect(a, level=level+1)
 
     def do_redirect(self, read_func):
         article = read_func()
         article.title = read_func.title
+        article.section = read_func.section
         rarticle = self.redirect(article)
         return rarticle if rarticle else self.notfound(article)
 
@@ -411,8 +408,6 @@ class DictViewer(object):
     def __init__(self):
 
         self.lookup_strength = PRIMARY
-        self.select_word_exact = functools.partial(self._select_word, eq_func = self._exact_eq)
-        self.select_word_weak = functools.partial(self._select_word, eq_func = self._weak_eq)
         self.lookup_stop_requested = False
         self.update_completion_t0 = None
         self.status_display = None
@@ -497,13 +492,13 @@ class DictViewer(object):
 
             if self.config.has_option('ui', 'lookup-strength'):
                 lookup_strength = self.config.getint('ui', 'lookup-strength')
-                for action in (self.actiongroup.get_action('BaseCharacters'), 
-                               self.actiongroup.get_action('Accents'), 
+                for action in (self.actiongroup.get_action('BaseCharacters'),
+                               self.actiongroup.get_action('Accents'),
                                self.actiongroup.get_action('Case')):
                     if action.get_property('value') == lookup_strength:
                         self.lookup_strength = lookup_strength
-                        action.set_active(True)                    
-                
+                        action.set_active(True)
+
             if self.config.has_option('ui', 'article-font-scale'):
                 articleformat.font_scale = self.config.getfloat('ui', 'article-font-scale')
             self.lookup_delay = self.config.getint('ui', 'lookup-delay')
@@ -817,7 +812,6 @@ class DictViewer(object):
             tab.set_data('dictionary', article.dictionary.key())
             Thread(name='format', target=self.format_article,
                    args=(article, self.makeview, article_view)).start()
-            #self.format_article(article, self.makeview, article_view)
             self.add_to_history(str(wordlookup), lang)
 
         self.tabs.show_all()
@@ -850,7 +844,7 @@ class DictViewer(object):
             logging.debug('Cought format stop')
         else:
             if not articleformat.interrupted:
-                gobject.idle_add(callback, buff, tables, *data)
+                gobject.idle_add(callback, article, buff, tables, *data)
 
 
     def maketab(self, article_view, title, tooltips):
@@ -871,13 +865,32 @@ class DictViewer(object):
         return page
 
 
-    def makeview(self, buff, tables, topview):
+    def makeview(self, article, buff, tables, topview):
         topview.set_buffer(buff)
         for table in tables:
             tableview = table.makeview(self.create_article_view)
             topview.add_child_at_anchor(tableview,
                                         table.anchor)
         topview.show_all()
+        if article.section:
+            logging.debug('Looking for section "%s"', article.section.encode('utf8'))
+            section_tags = [tag for tag in article.tags
+                            if tag.name in ('h1', 'h2', 'h3',
+                                            'h4', 'h5', 'h6')]
+            section = article.section.strip()
+            try:
+                for strength in (TERTIARY, SECONDARY, PRIMARY):
+                    for tag in section_tags:
+                        if dictionary.cmp_words(article.text[tag.start:tag.end],
+                                                section, strength=strength) == 0:
+                            logging.debug('Found section "%s"', 
+                                          article.text[tag.start:tag.end].encode('utf8'))
+                            i = buff.get_iter_at_offset(tag.start)
+                            gobject.idle_add(topview.scroll_to_iter, 
+                                             i, 0, True, 0.0, 0.0)
+                            raise StopIteration()
+            except StopIteration:
+                pass
 
     def dict_label_callback(self, widget, event):
         if event.type == _2BUTTON_PRESS:
@@ -934,6 +947,8 @@ class DictViewer(object):
         while True:
             start_word, to_select = self.update_completion_q.get()
             self.update_completion_t0 = time.time()
+            logging.debug('Update completion for %s', start_word)
+
             try:
                 lang_word_list = self.do_lookup(start_word, to_select)
             except LookupCanceled:
@@ -1064,22 +1079,20 @@ class DictViewer(object):
         self.schedule(self.update_completion, 0, word, (word, lang))
 
     def select_word(self, word, lang):
-        return True if self.select_word_exact(word, lang)\
-                    else self.select_word_weak(word, lang)
-
-    def _select_word(self, word, lang, eq_func):
+        word, section = dictionary.split_word(word.decode('utf8'))
         word_list = self.word_completion.word_list(lang)
         if word_list:
             model = word_list.get_model()
-            word_iter = model.get_iter_first()
-            while word_iter:
-                if eq_func(model[word_iter][0], word):
-                    word_list.get_selection().select_iter(word_iter)
-                    word_path = model.get_path(word_iter)
-                    word_list.scroll_to_cell(word_path)
-                    self.word_completion.set_current_lang(lang)
-                    return True
-                word_iter = model.iter_next(word_iter)
+            for strength in (TERTIARY, SECONDARY, PRIMARY):
+                word_iter = model.get_iter_first()
+                while word_iter:
+                    if dictionary.cmp_words(unicode(model[word_iter][0]), word, strength=strength) == 0:
+                        word_list.get_selection().select_iter(word_iter)
+                        word_path = model.get_path(word_iter)
+                        word_list.scroll_to_cell(word_path)
+                        self.word_completion.set_current_lang(lang)
+                        return True
+                    word_iter = model.iter_next(word_iter)
         return False
 
     def _exact_eq(self, word_lookup1, word_lookup2):
