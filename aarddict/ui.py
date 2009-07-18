@@ -683,11 +683,24 @@ class DictViewer(object):
             return None
 
     def word_ref_clicked(self, tag, widget, event, itr, word, lang):
-
-        if is_link_click(tag, event, word):
-            highlight_tag(tag, itr)
-            self.set_word_input(word)
-            self.update_completion(word, (word, lang))
+        if is_link_click(tag, event, word):            
+            title, section = dictionary.split_word(word.decode('utf8'))
+            if not title and section:
+                selected_word, selected_lang = self.get_selected_word()
+                current_tab = self.tabs.get_nth_page(self.tabs.get_current_page())
+                current_dict = current_tab.get_data('dictionary')
+                for article in selected_word.articles():
+                    if article.dictionary.key() == current_dict:
+                        word_input = ''.join((str(selected_word), word))
+                        self.set_word_input(word_input)
+                        self.add_to_history(word_input, selected_lang)
+                        article.section = section
+                        self.go_to_section(current_tab.child, article)
+                        return
+            else:
+                highlight_tag(tag, itr)
+                self.set_word_input(word)
+                self.update_completion(word, (word, lang))
 
 
     def external_link_callback(self, tag, widget, event, itr, url):
@@ -872,6 +885,9 @@ class DictViewer(object):
             topview.add_child_at_anchor(tableview,
                                         table.anchor)
         topview.show_all()
+        self.go_to_section(topview, article)
+
+    def go_to_section(self, articleview, article):
         if article.section:
             logging.debug('Looking for section "%s"', article.section.encode('utf8'))
             section_tags = [tag for tag in article.tags
@@ -885,8 +901,8 @@ class DictViewer(object):
                                                 section, strength=strength) == 0:
                             logging.debug('Found section "%s"', 
                                           article.text[tag.start:tag.end].encode('utf8'))
-                            i = buff.get_iter_at_offset(tag.start)
-                            gobject.idle_add(topview.scroll_to_iter, 
+                            i = articleview.get_buffer().get_iter_at_offset(tag.start)
+                            gobject.idle_add(articleview.scroll_to_iter, 
                                              i, 0, True, 0.0, 0.0)
                             raise StopIteration()
             except StopIteration:

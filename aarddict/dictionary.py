@@ -128,10 +128,15 @@ def split_word(word):
     >>> split_word(u'#')
     (u'#', u'')
 
+    >>> split_word(u'#W')
+    (u'', u'W')
+
     """
+    if word.strip() == u'#':
+        return (u'#', u'')
     parts = word.split('#', 1)    
     section = u'' if len(parts) == 1 else parts[1]
-    lookupword = parts[0] if parts[0] else word
+    lookupword = parts[0] if (parts[0] or section) else word
     return lookupword, section
 
 
