@@ -1079,6 +1079,10 @@ class DictViewer(object):
         self.schedule(self.update_completion, 0, word, (word, lang))
 
     def select_word(self, word, lang):
+        if isinstance(word, str):
+            word = word.decode('utf8')
+        elif isinstance(word, WordLookup):
+            word = unicode(word)
         word, section = dictionary.split_word(word.decode('utf8'))
         word_list = self.word_completion.word_list(lang)
         if word_list:
