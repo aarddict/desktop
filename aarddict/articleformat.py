@@ -338,6 +338,9 @@ def create_article_text_buffer(texttagtable=None):
                 tag('dd', 
                     family='serif',
                     style=pango.STYLE_ITALIC),
+
+                #Text font, ignore for now
+                tag('font'),
                 )
 
         tagtable = gtk.TextTagTable()
