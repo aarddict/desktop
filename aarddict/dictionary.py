@@ -120,7 +120,7 @@ def split_word(word):
     (u'a', u'b')
 
     >>> split_word(u'a#')
-    (u'a#', u'')
+    (u'a', u'')
 
     >>> split_word(u'a')
     (u'a', u'')
@@ -131,7 +131,7 @@ def split_word(word):
     """
     parts = word.split('#', 1)    
     section = u'' if len(parts) == 1 else parts[1]
-    lookupword = parts[0] if (parts[0] and section) else word
+    lookupword = parts[0] if parts[0] else word
     return lookupword, section
 
 
