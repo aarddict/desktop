@@ -494,7 +494,7 @@ class DictViewer(object):
                 lookup_strength = self.config.getint('ui', 'lookup-strength')
                 for action in (self.actiongroup.get_action('BaseCharacters'),
                                self.actiongroup.get_action('Accents'),
-                               self.actiongroup.get_action('Case')):
+                               self.actiongroup.get_action('AccentsAndCase')):
                     if action.get_property('value') == lookup_strength:
                         self.lookup_strength = lookup_strength
                         action.set_active(True)
@@ -1168,7 +1168,7 @@ class DictViewer(object):
                                         '<Control><Alt>b', _('Consider base characters and accents when looking up words'),
                                         SECONDARY),
 
-                                       ('Case', None, _('_Case'),
+                                       ('AccentsAndCase', None, _('Accents and _Case'),
                                         '<Control><Shift>b', _('Consider base characters, accents and case when looking up words'),
                                         TERTIARY),
                                        ],
@@ -1269,7 +1269,7 @@ class DictViewer(object):
 
         self.mi_match_base_chars = actiongroup.get_action('BaseCharacters').create_menu_item()
         self.mi_match_accents = actiongroup.get_action('Accents').create_menu_item()
-        self.mi_match_case = actiongroup.get_action('Case').create_menu_item()
+        self.mi_match_case = actiongroup.get_action('AccentsAndCase').create_menu_item()
 
         self.mn_match.append(self.mi_match_base_chars)
         self.mn_match.append(self.mi_match_accents)
