@@ -360,7 +360,7 @@ class WordLookup(object):
 
         logging.debug('Redirect "%s" section "%s" ==> "%s" (level %d)',
                       article.title, article.section, redirect, level)
-        
+
         if level > 5:
             logging.warn('Can\'t resolve redirect "%s", too many levels',
                          redirect)
@@ -368,7 +368,7 @@ class WordLookup(object):
 
         for strength in (IDENTICAL, QUATERNARY, TERTIARY,
                          SECONDARY, PRIMARY):
-                
+
             resulti = self.lookup_func(redirect,
                                       uuid=article.dictionary.uuid,
                                       strength=strength)
@@ -509,6 +509,9 @@ class DictViewer(object):
             history = self.config.getlist('history')
             history = [s.split(' ', 1) for s in history]
             [self.add_to_history(w, l) for l, w in history[::-1]]
+            if self.config.has_option('ui', 'active-history'):
+                active_history = self.config.getint('ui', 'active-history')
+                self.word_input.set_active(active_history)
             self.set_phonetic_font(self.config.get('ui', 'phonetic-font'))
 
             self.last_dict_file_location = self.config.get('ui', 'last-dict-file-location')
@@ -528,8 +531,6 @@ class DictViewer(object):
             action = self.actiongroup.get_action('ToggleWordList')
             action.set_active(self.config.getboolean('ui', 'show-word-list'))
             self.update_word_list_visibility(action)
-#            self.mi_show_word_list.set_active(self.config.getboolean('ui', 'show-word-list'))
-#            self.update_word_list_visibility()
         except:
             logging.exception('Failed to load application state')
 
@@ -568,7 +569,7 @@ class DictViewer(object):
 
         word = self.word_input.child.get_text()
         self.config.set('ui', 'input-word', word)
-
+        self.config.set('ui', 'active-history', self.word_input.get_active())
         self.config.set('ui', 'lookup-strength', self.lookup_strength)
 
         selected_word, selected_word_lang = self.get_selected_word()
@@ -683,7 +684,7 @@ class DictViewer(object):
             return None
 
     def word_ref_clicked(self, tag, widget, event, itr, word, lang):
-        if is_link_click(tag, event, word):            
+        if is_link_click(tag, event, word):
             title, section = dictionary.split_word(word.decode('utf8'))
             if not title and section:
                 selected_word, selected_lang = self.get_selected_word()
@@ -756,19 +757,21 @@ class DictViewer(object):
         self.word_input.handler_block(self.word_change_handler)
         model = self.word_input.get_model()
         insert = True
-        for i, row in enumerate(model):
+        if len(model) > 0:
+            row = model[0]
             if word == row[0] and lang == row[1]:
                 insert = False
-                break
+            elif self.word_input.get_active() > -1:
+                row = model[self.word_input.get_active()]
+                if word == row[0] and lang == row[1]:
+                    insert = False
+
         if insert:
             model.insert(None, 0, [word, lang])
-            #self.word_input.set_active(0)
             i = model.get_iter_first()
             i = model.iter_next(i)
             for j in xrange(1, self.word_input.previous_active + 1):
                 if i and model.iter_is_valid(i): model.remove(i)
-#        else:
-#            self.word_input.set_active(i)
         self.word_input.previous_active = self.word_input.get_active()
         history_size = model.iter_n_children(None)
         if history_size > 10:
@@ -825,7 +828,6 @@ class DictViewer(object):
             tab.set_data('dictionary', article.dictionary.key())
             Thread(name='format', target=self.format_article,
                    args=(article, self.makeview, article_view)).start()
-            self.add_to_history(str(wordlookup), lang)
 
         self.tabs.show_all()
         self.select_preferred_dict()
@@ -899,10 +901,10 @@ class DictViewer(object):
                     for tag in section_tags:
                         if dictionary.cmp_words(article.text[tag.start:tag.end],
                                                 section, strength=strength) == 0:
-                            logging.debug('Found section "%s"', 
+                            logging.debug('Found section "%s"',
                                           article.text[tag.start:tag.end].encode('utf8'))
                             i = articleview.get_buffer().get_iter_at_offset(tag.start)
-                            gobject.idle_add(articleview.scroll_to_iter, 
+                            gobject.idle_add(articleview.scroll_to_iter,
                                              i, 0, True, 0.0, 0.0)
                             raise StopIteration()
             except StopIteration:
@@ -925,7 +927,11 @@ class DictViewer(object):
             return
         model, iter = selection.get_selected()
         word = model[iter][0]
-        self.schedule(self.show_article_for, self.article_delay, word, lang)
+        self.schedule(self.show_article_for_selected, self.article_delay, word, lang)
+
+    def show_article_for_selected(self, word, lang):
+        self.show_article_for(word, lang)
+        self.add_to_history(str(word), lang)
 
     def clear_word_input(self, btn, data = None):
         self.word_input.child.set_text('')
@@ -1077,6 +1083,10 @@ class DictViewer(object):
     def format_history_item(self, celllayout, cell, model, iter, user_data = None):
         word, lang  = model[iter]
         word = escape(word)
+        active = self.word_input.get_active()
+        path = model.get_path(iter)
+        if path[0] == active:
+            word = '<b>%s</b>' % word
         cell.set_property('markup',
                           '<span>%s</span> <span foreground="darkgrey">'
                           '(<i>%s</i>)</span>' %
