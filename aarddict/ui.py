@@ -493,8 +493,8 @@ class DictViewer(object):
             if self.config.has_option('ui', 'lookup-strength'):
                 lookup_strength = self.config.getint('ui', 'lookup-strength')
                 for action in (self.actiongroup.get_action('BaseCharacters'),
-                               self.actiongroup.get_action('Accents'),
-                               self.actiongroup.get_action('AccentsAndCase')):
+                               self.actiongroup.get_action('Diacritics'),
+                               self.actiongroup.get_action('DiacriticsAndCase')):
                     if action.get_property('value') == lookup_strength:
                         self.lookup_strength = lookup_strength
                         action.set_active(True)
@@ -1164,11 +1164,11 @@ class DictViewer(object):
                                         '<Control>b', _('Consider only base characters when looking up words'),
                                         PRIMARY),
 
-                                       ('Accents', None, _('_Accents'),
+                                       ('Diacritics', None, _('_Diacritics'),
                                         '<Control><Alt>b', _('Consider base characters and accents when looking up words'),
                                         SECONDARY),
 
-                                       ('AccentsAndCase', None, _('Accents and _Case'),
+                                       ('DiacriticsAndCase', None, _('Diacritics and _Case'),
                                         '<Control><Shift>b', _('Consider base characters, accents and case when looking up words'),
                                         TERTIARY),
                                        ],
@@ -1268,8 +1268,8 @@ class DictViewer(object):
         self.mn_match_item.set_submenu(self.mn_match)
 
         self.mi_match_base_chars = actiongroup.get_action('BaseCharacters').create_menu_item()
-        self.mi_match_accents = actiongroup.get_action('Accents').create_menu_item()
-        self.mi_match_case = actiongroup.get_action('AccentsAndCase').create_menu_item()
+        self.mi_match_accents = actiongroup.get_action('Diacritics').create_menu_item()
+        self.mi_match_case = actiongroup.get_action('DiacriticsAndCase').create_menu_item()
 
         self.mn_match.append(self.mi_match_base_chars)
         self.mn_match.append(self.mi_match_accents)

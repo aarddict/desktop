@@ -8,369 +8,400 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-04-04 23:29-0400\n"
+"POT-Creation-Date: 2009-07-19 10:27-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: ../dictinfo.py:45
+#: ../dictinfo.py:46
 msgid "Info"
 msgstr ""
 
-#: ../dictinfo.py:50
+#: ../dictinfo.py:51
 msgid "License"
 msgstr ""
 
-#: ../dictinfo.py:77
+#: ../dictinfo.py:78
 #, python-format
 msgid "Volumes: %s"
 msgstr ""
 
-#: ../dictinfo.py:85
+#: ../dictinfo.py:86
 #, python-format
 msgid "Volume %s: "
 msgstr ""
 
-#: ../dictinfo.py:93
+#: ../dictinfo.py:94
 msgid "Number of articles: "
 msgstr ""
 
-#: ../dictinfo.py:108
+#: ../dictinfo.py:109
 msgid "Source\n"
 msgstr ""
 
-#: ../dictinfo.py:117
+#: ../dictinfo.py:118
 msgid "Copyright Notice\n"
 msgstr ""
 
-#: ../dictinfo.py:138
+#: ../dictinfo.py:139
 msgid "Dictionary Info"
 msgstr ""
 
-#: ../dictinfo.py:150
+#: ../dictinfo.py:151
 msgid "Dictionary"
 msgstr ""
 
-#: ../hildonui.py:77 ../ui.py:1200
+#: ../hildonui.py:77 ../ui.py:1345
 msgid "_Navigate"
 msgstr ""
 
-#: ../hildonui.py:88 ../ui.py:1216
+#: ../hildonui.py:88 ../ui.py:1361
 msgid "_View"
 msgstr ""
 
-#: ../ui.py:349
+#: ../ui.py:351
 #, python-format
 msgid "Redirect to %s not found"
 msgstr ""
 
-#: ../ui.py:533
+#: ../ui.py:554
 msgid "Saving application state..."
 msgstr ""
 
-#: ../ui.py:534
+#: ../ui.py:555
 msgid "Exiting"
 msgstr ""
 
-#: ../ui.py:605
+#: ../ui.py:633
 msgid "Failed to Save State"
 msgstr ""
 
-#: ../ui.py:777
+#: ../ui.py:821
 msgid "Loading..."
 msgstr ""
 
-#: ../ui.py:1040
+#: ../ui.py:1151
 msgid "_Word List"
 msgstr ""
 
-#: ../ui.py:1041
+#: ../ui.py:1152
 msgid "Toggles word list"
 msgstr ""
 
-#: ../ui.py:1043
+#: ../ui.py:1154
 msgid "Drag _Selects"
 msgstr ""
 
-#: ../ui.py:1044
+#: ../ui.py:1155
 msgid "Toggles drag gesture between select text and article scroll"
 msgstr ""
 
-#: ../ui.py:1047
+#: ../ui.py:1158
 msgid "_Full Screen"
 msgstr ""
 
-#: ../ui.py:1048
+#: ../ui.py:1159
 msgid "Toggle full screen mode"
 msgstr ""
 
-#: ../ui.py:1052
+#: ../ui.py:1163
+msgid "_Base Characters"
+msgstr ""
+
+#: ../ui.py:1164
+msgid "Consider only base characters when looking up words"
+msgstr ""
+
+#: ../ui.py:1167
+msgid "_Diacritics"
+msgstr ""
+
+#: ../ui.py:1168
+msgid "Consider base characters and accents when looking up words"
+msgstr ""
+
+#: ../ui.py:1171
+msgid "Diacritics and _Case"
+msgstr ""
+
+#: ../ui.py:1172
+msgid "Consider base characters, accents and case when looking up words"
+msgstr ""
+
+#: ../ui.py:1178
 msgid "_Open..."
 msgstr ""
 
-#: ../ui.py:1053
+#: ../ui.py:1179
 msgid "Open a dictionary"
 msgstr ""
 
-#: ../ui.py:1056
+#: ../ui.py:1182
 msgid "_Info..."
 msgstr ""
 
-#: ../ui.py:1057
+#: ../ui.py:1183
 msgid "Information about dictionaries"
 msgstr ""
 
-#: ../ui.py:1060
+#: ../ui.py:1186
 msgid "_Quit"
 msgstr ""
 
-#: ../ui.py:1061
+#: ../ui.py:1187
 msgid "Close application"
 msgstr ""
 
-#: ../ui.py:1064
+#: ../ui.py:1190
 msgid "_Lookup Box"
 msgstr ""
 
-#: ../ui.py:1066
+#: ../ui.py:1192
 msgid "Move focus to word input and select its content"
 msgstr ""
 
-#: ../ui.py:1069
+#: ../ui.py:1195
 msgid "_Back"
 msgstr ""
 
-#: ../ui.py:1070
+#: ../ui.py:1196
 msgid "Go back to previous word in history"
 msgstr ""
 
-#: ../ui.py:1073
+#: ../ui.py:1199
 msgid "_Forward"
 msgstr ""
 
-#: ../ui.py:1074
+#: ../ui.py:1200
 msgid "Go forward to next word in history"
 msgstr ""
 
-#: ../ui.py:1077
+#: ../ui.py:1203
 msgid "_Next Article"
 msgstr ""
 
-#: ../ui.py:1078
+#: ../ui.py:1204
 msgid "Show next article"
 msgstr ""
 
-#: ../ui.py:1081
+#: ../ui.py:1207
 msgid "_Previous Article"
 msgstr ""
 
-#: ../ui.py:1082
+#: ../ui.py:1208
 msgid "Show previous article"
 msgstr ""
 
-#: ../ui.py:1085
+#: ../ui.py:1211
 msgid "N_ext Language"
 msgstr ""
 
-#: ../ui.py:1086
+#: ../ui.py:1212
 msgid "Show next language word list"
 msgstr ""
 
-#: ../ui.py:1089
+#: ../ui.py:1215
 msgid "P_revious Language"
 msgstr ""
 
-#: ../ui.py:1090
+#: ../ui.py:1216
 msgid "Show previous language word list"
 msgstr ""
 
-#: ../ui.py:1093
+#: ../ui.py:1219
 msgid "_Article"
 msgstr ""
 
-#: ../ui.py:1094
+#: ../ui.py:1220
 msgid "Copy article text to clipboard"
 msgstr ""
 
-#: ../ui.py:1097
+#: ../ui.py:1223
 msgid "_Selected Text"
 msgstr ""
 
-#: ../ui.py:1098
+#: ../ui.py:1224
 msgid "Copy selected text to clipboard"
 msgstr ""
 
-#: ../ui.py:1101
+#: ../ui.py:1227
 msgid "_Paste"
 msgstr ""
 
-#: ../ui.py:1102
+#: ../ui.py:1228
 msgid "Paste text from clipboard as word to look up"
 msgstr ""
 
-#: ../ui.py:1105
+#: ../ui.py:1231
 msgid "_New Lookup"
 msgstr ""
 
-#: ../ui.py:1106
+#: ../ui.py:1232
 msgid "Move focus to word input and clear it"
 msgstr ""
 
-#: ../ui.py:1109
+#: ../ui.py:1235
 msgid "_Phonetic Font..."
 msgstr ""
 
-#: ../ui.py:1110
+#: ../ui.py:1236
 msgid "Select font for displaying phonetic transcription"
 msgstr ""
 
-#: ../ui.py:1113
+#: ../ui.py:1239
 msgid "_Colors..."
 msgstr ""
 
-#: ../ui.py:1114
+#: ../ui.py:1240
 msgid "Customize colors of some article formatting elements"
 msgstr ""
 
-#: ../ui.py:1117
+#: ../ui.py:1243
 msgid "_Increase Text Size"
 msgstr ""
 
-#: ../ui.py:1118
+#: ../ui.py:1244
 msgid "Increase size of article text"
 msgstr ""
 
-#: ../ui.py:1121
+#: ../ui.py:1247
 msgid "_Decrease Text Size"
 msgstr ""
 
-#: ../ui.py:1122
+#: ../ui.py:1248
 msgid "Decrease size of article text"
 msgstr ""
 
-#: ../ui.py:1125
+#: ../ui.py:1251
 msgid "_Reset Text Size"
 msgstr ""
 
-#: ../ui.py:1126
+#: ../ui.py:1252
 msgid "Reset size of article text to default"
 msgstr ""
 
-#: ../ui.py:1129
+#: ../ui.py:1255
 msgid "_About"
 msgstr ""
 
-#: ../ui.py:1130
+#: ../ui.py:1256
 #, python-format
 msgid "About %s"
 msgstr ""
 
-#: ../ui.py:1141
+#: ../ui.py:1267
+msgid "_Match"
+msgstr ""
+
+#: ../ui.py:1279
 msgid "_Remove"
 msgstr ""
 
-#: ../ui.py:1166
+#: ../ui.py:1284
+msgid "_Verify"
+msgstr ""
+
+#: ../ui.py:1309
 msgid "_Copy"
 msgstr ""
 
-#: ../ui.py:1188
+#: ../ui.py:1331
 msgid "_Dictionary"
 msgstr ""
 
-#: ../ui.py:1211
+#: ../ui.py:1356
 msgid "_Help"
 msgstr ""
 
-#: ../ui.py:1316
+#: ../ui.py:1474
 msgid "No dictionaries"
 msgstr ""
 
-#: ../ui.py:1317
+#: ../ui.py:1475
 #, python-format
 msgid "%d volume"
-msgid_plural "%d volumes"
-msgstr[0] ""
-msgstr[1] ""
+msgstr ""
 
-#: ../ui.py:1319
+#: ../ui.py:1477
 #, python-format
 msgid "%d dictionary"
-msgid_plural "%d dictionaries"
-msgstr[0] ""
-msgstr[1] ""
-
-#: ../ui.py:1390
-msgid "Open Dictionary"
-msgstr ""
-
-#: ../ui.py:1430
-msgid "Open Failed"
-msgstr ""
-
-#: ../ui.py:1461
-msgid "Please wait..."
-msgstr ""
-
-#: ../ui.py:1461
-msgid "Loading"
-msgstr ""
-
-#: ../ui.py:1540
-msgid "(C) 2006-2009 Igor Tkach, Jeremy Mortis"
-msgstr ""
-
-#: ../ui.py:1542
-msgid "Distributed under terms and conditions of GNU Public License Version 3"
 msgstr ""
 
 #: ../ui.py:1548
+msgid "Open Dictionary"
+msgstr ""
+
+#: ../ui.py:1588
+msgid "Open Failed"
+msgstr ""
+
+#: ../ui.py:1619
+msgid "Please wait..."
+msgstr ""
+
+#: ../ui.py:1619
+msgid "Loading"
+msgstr ""
+
+#: ../ui.py:1696
+msgid "Verifying"
+msgstr ""
+
+#: ../ui.py:1741
+msgid "(C) 2006-2009 Igor Tkach, Jeremy Mortis"
+msgstr ""
+
+#: ../ui.py:1743
+msgid "Distributed under terms and conditions of GNU Public License Version 3"
+msgstr ""
+
+#: ../ui.py:1749
 msgid "Select Phonetic Font"
 msgstr ""
 
-#: ../ui.py:1556
+#: ../ui.py:1757
 msgid "Customize Colors"
 msgstr ""
 
-#: ../ui.py:1560
+#: ../ui.py:1773
 msgid "Internal Link"
 msgstr ""
 
-#: ../ui.py:1562
+#: ../ui.py:1774
 msgid "Internal Link Color"
 msgstr ""
 
-#: ../ui.py:1569
+#: ../ui.py:1776
 msgid "External Link"
 msgstr ""
 
-#: ../ui.py:1571
+#: ../ui.py:1777
 msgid "External Link Color"
 msgstr ""
 
-#: ../ui.py:1578
+#: ../ui.py:1779
 msgid "Footnote Link"
 msgstr ""
 
-#: ../ui.py:1580
+#: ../ui.py:1780
 msgid "Footnote Link Color"
 msgstr ""
 
-#: ../ui.py:1587
+#: ../ui.py:1782
 msgid "Activated Link"
 msgstr ""
 
-#: ../ui.py:1589
+#: ../ui.py:1783
 msgid "Activated Link Color"
 msgstr ""
 
-#: ../ui.py:1596
+#: ../ui.py:1785
 msgid "Table Background"
 msgstr ""
 
-#: ../ui.py:1598
+#: ../ui.py:1786
 msgid "Table Background Color"
 msgstr ""
