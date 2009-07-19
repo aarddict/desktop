@@ -686,22 +686,20 @@ class DictViewer(object):
     def word_ref_clicked(self, tag, widget, event, itr, word, lang):
         if is_link_click(tag, event, word):
             title, section = dictionary.split_word(word.decode('utf8'))
-            if not title and section:
-                selected_word, selected_lang = self.get_selected_word()
+            if section:
                 current_tab = self.tabs.get_nth_page(self.tabs.get_current_page())
-                current_dict = current_tab.get_data('dictionary')
-                for article in selected_word.articles():
-                    if article.dictionary.key() == current_dict:
-                        word_input = ''.join((str(selected_word), word))
-                        self.set_word_input(word_input)
-                        self.add_to_history(word_input, selected_lang)
-                        article.section = section
-                        self.go_to_section(current_tab.child, article)
-                        return
-            else:
-                highlight_tag(tag, itr)
-                self.set_word_input(word)
-                self.update_completion(word, (word, lang))
+                articleview = current_tab.child
+                article_title = articleview.get_data('title')
+                if not title or title == article_title:
+                    word_input = '#'.join((article_title, section))
+                    self.set_word_input(word_input)
+                    self.add_to_history(word_input,
+                                        self.word_completion.current_lang())
+                    self.go_to_section(articleview, section)
+                    return
+            highlight_tag(tag, itr)
+            self.set_word_input(word)
+            self.update_completion(word, (word, lang))
 
 
     def external_link_callback(self, tag, widget, event, itr, url):
@@ -886,24 +884,32 @@ class DictViewer(object):
             tableview = table.makeview(self.create_article_view)
             topview.add_child_at_anchor(tableview,
                                         table.anchor)
+        topview.set_data('title', article.title)
+        section_tags = [tag for tag in article.tags
+                        if tag.name in ('h1', 'h2', 'h3',
+                                        'h4', 'h5', 'h6')]
+        topview.set_data('section_tags', section_tags)
         topview.show_all()
-        self.go_to_section(topview, article)
+        self.go_to_section(topview, article.section)
 
-    def go_to_section(self, articleview, article):
-        if article.section:
-            logging.debug('Looking for section "%s"', article.section.encode('utf8'))
-            section_tags = [tag for tag in article.tags
-                            if tag.name in ('h1', 'h2', 'h3',
-                                            'h4', 'h5', 'h6')]
-            section = article.section.strip()
+    def go_to_section(self, articleview, section):
+        if section:
+            logging.debug('Looking for section "%s"', section.encode('utf8'))
+            section_tags = articleview.get_data('section_tags')
+            section = section.strip()
             try:
+                buff = articleview.get_buffer()
+                text = buff.get_text(*buff.get_bounds()).decode('utf8')
                 for strength in (TERTIARY, SECONDARY, PRIMARY):
                     for tag in section_tags:
-                        if dictionary.cmp_words(article.text[tag.start:tag.end],
-                                                section, strength=strength) == 0:
+                        start = buff.get_iter_at_offset(tag.start)
+                        end = buff.get_iter_at_offset(tag.end)
+                        candidate = buff.get_text(start, end)
+                        if dictionary.cmp_words(candidate.decode('utf8'), section,
+                                                strength=strength) == 0:
                             logging.debug('Found section "%s"',
-                                          article.text[tag.start:tag.end].encode('utf8'))
-                            i = articleview.get_buffer().get_iter_at_offset(tag.start)
+                                          candidate)
+                            i = buff.get_iter_at_offset(tag.start)
                             gobject.idle_add(articleview.scroll_to_iter,
                                              i, 0, True, 0.0, 0.0)
                             raise StopIteration()
@@ -1105,6 +1111,8 @@ class DictViewer(object):
         self.schedule(self.update_completion, 0, word, (word, lang))
 
     def select_word(self, word, lang):
+        if word is None:
+            return False
         if isinstance(word, str):
             word = word.decode('utf8')
         elif isinstance(word, WordLookup):
