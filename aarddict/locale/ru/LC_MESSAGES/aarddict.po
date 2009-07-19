@@ -6,10 +6,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Aard Dictionary 0.7.4\n"
+"Project-Id-Version: Aard Dictionary 0.7.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-07-19 10:27-0400\n"
-"PO-Revision-Date: 2009-07-19 10:28-0500\n"
+"POT-Creation-Date: 2009-07-19 16:10-0400\n"
+"PO-Revision-Date: 2009-07-19 16:13-0500\n"
 "Last-Translator: Igor Tkach <itkach@aarddict.org>\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -56,356 +56,362 @@ msgid "Dictionary"
 msgstr "Словарь"
 
 #: ../hildonui.py:77
-#: ../ui.py:1345
+#: ../ui.py:1342
 msgid "_Navigate"
 msgstr "_Навигация"
 
 #: ../hildonui.py:88
-#: ../ui.py:1361
+#: ../ui.py:1358
 msgid "_View"
 msgstr "_Вид"
 
-#: ../ui.py:351
+#: ../ui.py:348
 #, python-format
 msgid "Redirect to %s not found"
 msgstr "Перенаправление %s не найдено"
 
-#: ../ui.py:554
+#: ../ui.py:551
 msgid "Saving application state..."
 msgstr "Сохраняется состояние приложения..."
 
-#: ../ui.py:555
+#: ../ui.py:552
 msgid "Exiting"
 msgstr "Приложение завершает работу"
 
-#: ../ui.py:633
+#: ../ui.py:630
 msgid "Failed to Save State"
 msgstr "Не удалось сохранить состояние"
 
-#: ../ui.py:821
+#: ../ui.py:818
 msgid "Loading..."
 msgstr "Идёт загрузка..."
 
-#: ../ui.py:1151
+#: ../ui.py:1148
 msgid "_Word List"
 msgstr "_Список слов"
 
-#: ../ui.py:1152
+#: ../ui.py:1149
 msgid "Toggles word list"
 msgstr "Переключает показ списка слов"
 
-#: ../ui.py:1154
+#: ../ui.py:1151
 msgid "Drag _Selects"
 msgstr "_Перетаскивание выделяет"
 
-#: ../ui.py:1155
+#: ../ui.py:1152
 msgid "Toggles drag gesture between select text and article scroll"
 msgstr "Переключает действие, выполняемое перетаскиванием мыши между выделением текста и прокруткой статьи"
 
-#: ../ui.py:1158
+#: ../ui.py:1155
 msgid "_Full Screen"
 msgstr "На весь _экран"
 
-#: ../ui.py:1159
+#: ../ui.py:1156
 msgid "Toggle full screen mode"
 msgstr "Переключает полноэкранный режим"
 
-#: ../ui.py:1163
+#: ../ui.py:1160
 msgid "_Base Characters"
 msgstr "Базовые символы"
 
-#: ../ui.py:1164
+#: ../ui.py:1161
 msgid "Consider only base characters when looking up words"
 msgstr "При сравнение слов рассматривать только базовые символы"
 
-#: ../ui.py:1167
+#: ../ui.py:1164
 msgid "_Diacritics"
 msgstr "Диакритические знаки"
 
-#: ../ui.py:1168
+#: ../ui.py:1165
 msgid "Consider base characters and accents when looking up words"
 msgstr "При сравнение слов рассматривать базовые символы и диакритические знаки"
 
-#: ../ui.py:1171
+#: ../ui.py:1168
 msgid "Diacritics and _Case"
 msgstr "Диакритические знаки и регистр"
 
-#: ../ui.py:1172
+#: ../ui.py:1169
 msgid "Consider base characters, accents and case when looking up words"
 msgstr "При сравнение слов рассматривать базовые символы, диакритические знаки и регистр букв"
 
-#: ../ui.py:1178
+#: ../ui.py:1175
 msgid "_Open..."
 msgstr "_Открыть..."
 
-#: ../ui.py:1179
+#: ../ui.py:1176
 msgid "Open a dictionary"
 msgstr "Открыть словарь"
 
-#: ../ui.py:1182
+#: ../ui.py:1179
 msgid "_Info..."
 msgstr "_Информация..."
 
-#: ../ui.py:1183
+#: ../ui.py:1180
 msgid "Information about dictionaries"
 msgstr "Информация о словарях"
 
-#: ../ui.py:1186
+#: ../ui.py:1183
 msgid "_Quit"
 msgstr "_Выйти"
 
-#: ../ui.py:1187
+#: ../ui.py:1184
 msgid "Close application"
 msgstr "Закрыть приложение"
 
-#: ../ui.py:1190
+#: ../ui.py:1187
 msgid "_Lookup Box"
 msgstr "П_оле ввода"
 
-#: ../ui.py:1192
+#: ../ui.py:1189
 msgid "Move focus to word input and select its content"
 msgstr "Переместить фокус в поле ввода и выделить текст в нём"
 
-#: ../ui.py:1195
+#: ../ui.py:1192
 msgid "_Back"
 msgstr "_Назад"
 
-#: ../ui.py:1196
+#: ../ui.py:1193
 msgid "Go back to previous word in history"
 msgstr "Вернуться к предыдущему слову"
 
-#: ../ui.py:1199
+#: ../ui.py:1196
 msgid "_Forward"
 msgstr "_Вперёд"
 
-#: ../ui.py:1200
+#: ../ui.py:1197
 msgid "Go forward to next word in history"
 msgstr "Перейти к следующему слову"
 
-#: ../ui.py:1203
+#: ../ui.py:1200
 msgid "_Next Article"
 msgstr "_Следующая статья"
 
-#: ../ui.py:1204
+#: ../ui.py:1201
 msgid "Show next article"
 msgstr "Показать следующую статью"
 
-#: ../ui.py:1207
+#: ../ui.py:1204
 msgid "_Previous Article"
 msgstr "_Предыдущая статья"
 
-#: ../ui.py:1208
+#: ../ui.py:1205
 msgid "Show previous article"
 msgstr "Показать предыдущую статью"
 
-#: ../ui.py:1211
+#: ../ui.py:1208
 msgid "N_ext Language"
 msgstr "С_ледующий язык"
 
-#: ../ui.py:1212
+#: ../ui.py:1209
 msgid "Show next language word list"
 msgstr "Показывать список слов для следующего языка"
 
-#: ../ui.py:1215
+#: ../ui.py:1212
 msgid "P_revious Language"
 msgstr "П_редыдущий язык"
 
-#: ../ui.py:1216
+#: ../ui.py:1213
 msgid "Show previous language word list"
 msgstr "Показывать список слов для предыдущего языка"
 
-#: ../ui.py:1219
+#: ../ui.py:1216
 msgid "_Article"
 msgstr "Стать_ю"
 
-#: ../ui.py:1220
+#: ../ui.py:1217
 msgid "Copy article text to clipboard"
 msgstr "Скопировать текст статьи в буфер обмена"
 
-#: ../ui.py:1223
+#: ../ui.py:1220
 msgid "_Selected Text"
 msgstr "_Выделенный текст"
 
-#: ../ui.py:1224
+#: ../ui.py:1221
 msgid "Copy selected text to clipboard"
 msgstr "Скопировать выделенный текст в буфер обмена"
 
-#: ../ui.py:1227
+#: ../ui.py:1224
 msgid "_Paste"
 msgstr "Вс_тавить"
 
-#: ../ui.py:1228
+#: ../ui.py:1225
 msgid "Paste text from clipboard as word to look up"
 msgstr "Вставить текст из буфера обмена в поле ввода слова"
 
-#: ../ui.py:1231
+#: ../ui.py:1228
 msgid "_New Lookup"
 msgstr "_Новый поиск"
 
-#: ../ui.py:1232
+#: ../ui.py:1229
 msgid "Move focus to word input and clear it"
 msgstr "Переместить фокус в поле ввода и очистить его"
 
-#: ../ui.py:1235
+#: ../ui.py:1232
 msgid "_Phonetic Font..."
 msgstr "_Фонетический шрифт..."
 
-#: ../ui.py:1236
+#: ../ui.py:1233
 msgid "Select font for displaying phonetic transcription"
 msgstr "Выберите шрифт для показа фонетической транскрипции"
 
-#: ../ui.py:1239
+#: ../ui.py:1236
 msgid "_Colors..."
 msgstr "_Цвета..."
 
-#: ../ui.py:1240
+#: ../ui.py:1237
 msgid "Customize colors of some article formatting elements"
 msgstr "Изменить цвета некоторых элементов форматирования статей"
 
-#: ../ui.py:1243
+#: ../ui.py:1240
 msgid "_Increase Text Size"
 msgstr "_Увеличить размер текста"
 
-#: ../ui.py:1244
+#: ../ui.py:1241
 msgid "Increase size of article text"
 msgstr "Увеличивает размера текста статьи"
 
-#: ../ui.py:1247
+#: ../ui.py:1244
 msgid "_Decrease Text Size"
 msgstr "У_меньшить размер текста"
 
-#: ../ui.py:1248
+#: ../ui.py:1245
 msgid "Decrease size of article text"
 msgstr "Уменьшает размер текста статьи"
 
-#: ../ui.py:1251
+#: ../ui.py:1248
 msgid "_Reset Text Size"
 msgstr "_Нормальный размер текста"
 
-#: ../ui.py:1252
+#: ../ui.py:1249
 msgid "Reset size of article text to default"
 msgstr "Возращает размер текста к размеру по умолчанию"
 
-#: ../ui.py:1255
+#: ../ui.py:1252
 msgid "_About"
 msgstr "_О программе"
 
-#: ../ui.py:1256
+#: ../ui.py:1253
 #, python-format
 msgid "About %s"
 msgstr "О программе %s"
 
-#: ../ui.py:1267
+#: ../ui.py:1264
 msgid "_Match"
 msgstr "_Сравнивать"
 
-#: ../ui.py:1279
+#: ../ui.py:1276
 msgid "_Remove"
 msgstr "_Закрыть"
 
-#: ../ui.py:1284
+#: ../ui.py:1281
 msgid "_Verify"
 msgstr "Проверить"
 
-#: ../ui.py:1309
+#: ../ui.py:1306
 msgid "_Copy"
 msgstr "С_копировать"
 
-#: ../ui.py:1331
+#: ../ui.py:1328
 msgid "_Dictionary"
 msgstr "_Словарь"
 
-#: ../ui.py:1356
+#: ../ui.py:1353
 msgid "_Help"
 msgstr "Спр_авка"
 
-#: ../ui.py:1474
+#: ../ui.py:1471
 msgid "No dictionaries"
 msgstr "Словарей нет"
 
-#: ../ui.py:1475
+#: ../ui.py:1472
 #, python-format
 msgid "%d volume"
-msgstr "%d том"
+msgid_plural "%d volumes"
+msgstr[0] "%d том"
+msgstr[1] "%d тома"
+msgstr[2] "%d томов"
 
-#: ../ui.py:1477
+#: ../ui.py:1474
 #, python-format
 msgid "%d dictionary"
-msgstr "%d словарь"
+msgid_plural "%d dictionaries"
+msgstr[0] "%d словарь"
+msgstr[1] "%d словаря"
+msgstr[2] "%d словарей"
 
-#: ../ui.py:1548
+#: ../ui.py:1545
 msgid "Open Dictionary"
 msgstr "Открыть словарь"
 
-#: ../ui.py:1588
+#: ../ui.py:1585
 msgid "Open Failed"
 msgstr "Не удалось открыть"
 
-#: ../ui.py:1619
+#: ../ui.py:1616
 msgid "Please wait..."
 msgstr "Пожалуйста подождите..."
 
-#: ../ui.py:1619
+#: ../ui.py:1616
 msgid "Loading"
 msgstr "Идёт загрузка"
 
-#: ../ui.py:1696
+#: ../ui.py:1693
 msgid "Verifying"
 msgstr "Проверка"
 
-#: ../ui.py:1741
+#: ../ui.py:1738
 msgid "(C) 2006-2009 Igor Tkach, Jeremy Mortis"
 msgstr "(C) 2006-2009 Игорь Ткач, Джереми Мортис"
 
-#: ../ui.py:1743
+#: ../ui.py:1740
 msgid "Distributed under terms and conditions of GNU Public License Version 3"
 msgstr "Распространяется на условиях GNU Public License версии 3"
 
-#: ../ui.py:1749
+#: ../ui.py:1746
 msgid "Select Phonetic Font"
 msgstr "Выбрать фонетический шрифт"
 
-#: ../ui.py:1757
+#: ../ui.py:1754
 msgid "Customize Colors"
 msgstr "Цвета"
 
-#: ../ui.py:1773
+#: ../ui.py:1770
 msgid "Internal Link"
 msgstr "Внутренняя ссылка"
 
-#: ../ui.py:1774
+#: ../ui.py:1771
 msgid "Internal Link Color"
 msgstr "Цвет внутренней ссылки"
 
-#: ../ui.py:1776
+#: ../ui.py:1773
 msgid "External Link"
 msgstr "Внешняя ссылка"
 
-#: ../ui.py:1777
+#: ../ui.py:1774
 msgid "External Link Color"
 msgstr "Цвет внешней ссылки"
 
-#: ../ui.py:1779
+#: ../ui.py:1776
 msgid "Footnote Link"
 msgstr "Сноска"
 
-#: ../ui.py:1780
+#: ../ui.py:1777
 msgid "Footnote Link Color"
 msgstr "Цвет сноски"
 
-#: ../ui.py:1782
+#: ../ui.py:1779
 msgid "Activated Link"
 msgstr "Активированная ссылка"
 
-#: ../ui.py:1783
+#: ../ui.py:1780
 msgid "Activated Link Color"
 msgstr "Цвет активированной ссылки"
 
-#: ../ui.py:1785
+#: ../ui.py:1782
 msgid "Table Background"
 msgstr "Фон таблицы"
 
-#: ../ui.py:1786
+#: ../ui.py:1783
 msgid "Table Background Color"
 msgstr "Цвет фона таблицы"
 

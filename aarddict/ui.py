@@ -56,10 +56,7 @@ locale_dir = os.path.join(aarddict.package_dir, 'locale')
 
 gettext.bindtextdomain(aarddict.__name__, locale_dir)
 gettext.textdomain(aarddict.__name__)
-
 gettext.install(aarddict.__name__, locale_dir)
-
-N_ = gettext.ngettext
 
 gobject.threads_init()
 
@@ -1472,9 +1469,9 @@ class DictViewer(object):
         vcount = len(self.dictionaries)
         if vcount == 0:
             return _('No dictionaries')
-        volumestr_template =  N_('%d volume', '%d volumes', vcount)
+        volumestr_template =  gettext.ngettext('%d volume', '%d volumes', vcount)
         volumestr = volumestr_template % vcount
-        dictstr_template = N_('%d dictionary', '%d dictionaries', dcount)
+        dictstr_template = gettext.ngettext('%d dictionary', '%d dictionaries', dcount)
         dictstr =  dictstr_template % dcount
         return '%s (%s)' % (dictstr, volumestr)
 
