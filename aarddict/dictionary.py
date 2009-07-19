@@ -134,7 +134,7 @@ def split_word(word):
     """
     if word.strip() == u'#':
         return (u'#', u'')
-    parts = word.split('#', 1)    
+    parts = word.split('#', 1)
     section = u'' if len(parts) == 1 else parts[1]
     lookupword = parts[0] if (parts[0] or section) else word
     return lookupword, section
@@ -465,8 +465,11 @@ class Dictionary(object):
         try:
             while True:
                 matched_word = self.words[pos]
-                if cmp_words(matched_word, lookupword, strength) != 0:
+                if cmp_words(matched_word, lookupword, PRIMARY) != 0:
                     break
+                elif strength != PRIMARY and cmp_words(matched_word, lookupword, strength) != 0:
+                    pos += 1
+                    continue
                 article_func = self.articles[pos]
                 article_func.section = section
                 yield article_func
