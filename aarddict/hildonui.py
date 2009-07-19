@@ -98,7 +98,9 @@ class HildonDictViewer(ui.DictViewer):
         mn_view.append(self.mi_full_screen)
         
         return (self.mi_open, 
+                self.mn_match_item,
                 self.mn_remove_item, 
+                self.mn_verify_item,
                 self.mi_info, 
                 self.mn_copy_item,
                 self.mi_paste,
