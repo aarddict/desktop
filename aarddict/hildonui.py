@@ -29,6 +29,11 @@ osso_c = osso.Context(aarddict.__name__, aarddict.__version__, False)
 oldstrwidth = articleformat.strwidth
 articleformat.strwidth = lambda s: (5.0/3)*oldstrwidth(s)
 
+ui.link_min_dt = 50
+ui.link_max_dt = 250
+ui.link_max_dx = 3
+ui.link_max_dy = 3
+
 class HildonDictViewer(ui.DictViewer):
             
     def create_top_level_widget(self):

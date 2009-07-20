@@ -257,6 +257,11 @@ def pointer_over_ref(textview):
     tags = textview.get_iter_at_location(x, y).get_tags()
     return any(tag.get_property("name") in ref_tag_names for tag in tags)
 
+link_min_dt = 5
+link_max_dt = 200
+link_max_dx = 2
+link_max_dy = 2
+
 def is_link_click(tag, event, reference):
     if event.type == BUTTON_PRESS:
         tag.set_data('armed', (event.get_coords(), event.get_time()))
@@ -268,9 +273,9 @@ def is_link_click(tag, event, reference):
             x0, y0 = armed_coords
             tag.set_data('armed', None)
             dt = event.get_time() - t0
-            result = (10 < dt < 200 and
-                      fabs(x - x0) < 3 and
-                      fabs(y - y0) < 3)
+            result = (link_min_dt < dt < link_max_dt and
+                      fabs(x - x0) < link_max_dx and
+                      fabs(y - y0) < link_max_dy)
             return result
 
 
