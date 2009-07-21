@@ -1,6 +1,6 @@
-=====================
-Using Aard Dictionary
-=====================
+===============
+Aard Dictionary
+===============
 
 Installation Notes
 ==================
@@ -36,6 +36,118 @@ Ubuntu 9.04 the following command will fix the error::
   $ sudo locale-gen ru
 
 
+Fonts
+=====
+
+Aard Dictionary's JSON article format supports special tag for marking
+up phonetic transcription. Font for the article text marked as
+phonetic transcription can be assigned through :menuselection:`View
+--> Phonetic Font...` menu.  Often phonetic transcription is written
+with characters from `International Phonetic Alphabet`_
+(IPA). Phonetic transcription in IPA can also be found in many
+Wikipedia articles. To have IPA symbols displayed properly you may
+want to install one of the excellent IPA fonts available at
+http://scripts.sil.org.
+
+You also may need to install additional fonts if you use dictionaries
+that use script not available on your system. `WAZU JAPAN's Gallery of
+Unicode Fonts`_ is an excellent resource for various unicode fonts.
+
+To install fonts on Maemo simply create ``/home/user/.fonts``
+directory and copy font files there. New fonts should now appear in
+font selection dialog.
+
+If you don't like or know how to copy font files into
+``/home/user/.fonts`` you may install `Doulos SIL Font package`_ with
+Maemo Application Manager.
+
+.. _`Doulos SIL Font package`: http://aarddict.org/dists/diablo/user/binary-armel/ttf-sil-doulos_4.104-1maemo_all.deb
+.. _International Phonetic Alphabet: http://en.wikipedia.org/wiki/International_Phonetic_Alphabet
+.. _`WAZU JAPAN's Gallery of Unicode Fonts`: http://www.wazu.jp/
 
 
+Release Notes
+=============
 
+0.7.4
+-----
+
+- Customizable table rows background
+
+- Added Russian translation
+
+0.7.3
+-----
+
+- Customizable link colors (`issue #2`_)
+
+- Updated default link colors (`issue #2`_)
+
+- +/- keys on N800/N810 change article text size (`issue #3`_)
+
+- Article finger scrolling and link sensitivity tweaks
+
+.. _issue #2: http://bitbucket.org/itkach/aarddict/issue/2
+.. _issue #3: http://bitbucket.org/itkach/aarddict/issue/3
+
+0.7.2
+-----
+
+- Much faster word navigation (`issue #4`_)
+
+- Fixed memory leak (`issue #4`_)
+
+- Visual feedback when link clicked
+
+.. _issue #4: http://bitbucket.org/itkach/aarddict/issue/4
+
+0.7.1
+-----
+
+- Better redirects. 
+
+- Better dictionary information display in info dialog and window
+  title. 
+
+- Added `Lookup Box` action - move focus to word input field and
+  select it's content (bound to :kbd:`Ctrl+L`).
+
+- Place cursor at the beginning of article text buffer - helps make
+  `Maemo bug 2469`_ less annoying (scrolling to cursor on every text
+  view size change).
+
+- Fixed glitch in articles tabs display (event box for articles tab
+  labels wasn't invisible, looked bad on Maemo and Windows). 
+
+.. _Maemo bug 2469: https://bugs.maemo.org/show_bug.cgi?id=2469
+
+0.7.0
+-----
+
+Initial release. Changes compared to `SDict Viewer`_:
+
+- New binary dictionary format
+
+- New article format 
+
+- Use `PyICU`_/`ICU`_ for Unicode collation
+
+- Updated UI
+
+.. _PyICU: http://pyicu.osafoundation.org
+.. _ICU: http://www.icu-project.org
+.. _SDict Viewer: http://sdictviewer.sourceforge.net
+
+Major user visible differences:
+
+- Lenient search (case-insensitive, ignores secondary differences like
+  accented characters)
+
+- Faster startup, faster word lookup
+
+- Better link representation in articles, footnote navigation inside
+  article
+
+- Better word lookup history navigation
+
+- Updated UI
