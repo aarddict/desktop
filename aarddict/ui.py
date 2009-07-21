@@ -492,6 +492,13 @@ class DictViewer(object):
             if self.config.has_option('ui', 'input-word'):
                 self.set_word_input(self.config.get('ui', 'input-word'))
 
+            if self.config.has_option('ui', 'article-font-scale'):
+                articleformat.font_scale = self.config.getfloat('ui', 'article-font-scale')
+            self.lookup_delay = self.config.getint('ui', 'lookup-delay')
+            self.article_delay = self.config.getint('ui', 'article-delay')
+            self.max_words_per_dict = self.config.getint('ui', 'max-words-per-dict')
+
+
             if self.config.has_option('ui', 'lookup-strength'):
                 lookup_strength = self.config.getint('ui', 'lookup-strength')
                 for action in (self.actiongroup.get_action('BaseCharacters'),
@@ -501,11 +508,6 @@ class DictViewer(object):
                         self.lookup_strength = lookup_strength
                         action.set_active(True)
 
-            if self.config.has_option('ui', 'article-font-scale'):
-                articleformat.font_scale = self.config.getfloat('ui', 'article-font-scale')
-            self.lookup_delay = self.config.getint('ui', 'lookup-delay')
-            self.article_delay = self.config.getint('ui', 'article-delay')
-            self.max_words_per_dict = self.config.getint('ui', 'max-words-per-dict')
             dict_files = self.config.getlist('dictionaries')
             self.open_dicts(dict_files)
             history = self.config.getlist('history')
