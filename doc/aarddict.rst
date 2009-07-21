@@ -2,6 +2,17 @@
 Using Aard Dictionary
 =====================
 
+Installation Notes
+==================
+
+Windows
+-------
+On Windows versions earlier than Windows XP SP3 installation of
+`Microsoft Visual C++ 2005 Redistributable Package (x86)`_ may be needed.
+
+.. _Microsoft Visual C++ 2005 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?FamilyId=32BC1BEE-A3F9-4C13-9C99-220B62A191EE&displaylang=en
+
+
 User Interface Language
 =======================
 Currently Aard Dictionary interface is available in English (default) and
