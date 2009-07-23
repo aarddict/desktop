@@ -8,7 +8,7 @@ $PYTHON setup.py bdist
 pushd dist
 mkdir -p deb/DEBIAN
 tar -xvf aarddict-$VERSION*.tar.gz -C deb
-find deb/usr/ -name *.pyc
+
 find deb/usr/ -name *.pyc | xargs rm
 
 echo "Section: user/other
