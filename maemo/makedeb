@@ -32,6 +32,7 @@ Depends: $DEPENDS
 Installed-Size: $SIZE
 Suggests: ttf-sil-doulos
 Maintainer: Igor Tkach <itkach@aarddict.org>
+Homepage: http://aarddict.org
 Description: Aard Dictionary is a multiplatform dictionary and offline Wikipedia reader.
 Maemo-Icon-26:
 	iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAAABGdBTUEAAK/INwWK6QAAABl0

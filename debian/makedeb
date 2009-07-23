@@ -16,6 +16,7 @@ Priority: optional
 Package: aarddict
 Version: $VERSION
 Maintainer: Igor Tkach <itkach@aarddict.org>
+Homepage: http://aarddict.org
 Description: Aard Dictionary is a multiplatform dictionary and offline Wikipedia reader.
 Architecture: all
 Depends: python-pyicu (>= 0.8.1), python-simplejson
