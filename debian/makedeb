@@ -1,8 +1,10 @@
 #!/bin/bash
-VERSION=`python -c "import aarddict; print aarddict.__version__"`
-RELEASE=$1
+PYTHON=$1
+PYTHON_VER=`$PYTHON -c "import sys;print '.'.join(str(v) for v in sys.version_info[:2])"`
+VERSION=`PYTHONPATH=../ $PYTHON -c "import aarddict; print aarddict.__version__"`
+RELEASE=${2:-"1"}
 pushd ..
-python setup.py bdist
+$PYTHON setup.py bdist
 pushd dist
 mkdir -p deb/DEBIAN
 tar -xvf aarddict-$VERSION*.tar.gz -C deb
@@ -22,7 +24,7 @@ Depends: python-pyicu (>= 0.8.1), python-simplejson
 
 echo 2.0 > deb/DEBIAN/debian-binary
  
-dpkg -b deb/ aarddict_$VERSION-${RELEASE}_all.deb
+dpkg -b deb/ aarddict_$VERSION-${RELEASE}_py${PYTHON_VER}.deb
 rm -rf deb/
 popd
 popd
