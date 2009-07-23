@@ -8,6 +8,7 @@ $PYTHON setup.py bdist
 pushd dist
 mkdir -p deb/DEBIAN
 tar -xvf aarddict-$VERSION*.tar.gz -C deb
+find deb/usr/ -name *.pyc
 find deb/usr/ -name *.pyc | xargs rm
 
 echo "Section: user/other
@@ -15,9 +16,7 @@ Priority: optional
 Package: aarddict
 Version: $VERSION
 Maintainer: Igor Tkach <itkach@aarddict.org>
-Description: 
-	Aard Dictionary is a dictionary application providing offline 
-        access to dictionaries, Wikipedia and other reference materials.        
+Description: Aard Dictionary is a multiplatform dictionary and offline Wikipedia reader.
 Architecture: all
 Depends: python-pyicu (>= 0.8.1), python-simplejson
 " > deb/DEBIAN/control
