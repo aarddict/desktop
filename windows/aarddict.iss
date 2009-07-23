@@ -1,6 +1,6 @@
 [Setup]
 AppName=Aard Dictionary
-AppVerName=Aard Dictionary 0.7.4
+AppVerName=Aard Dictionary 0.7.5
 DefaultDirName={pf}\Aard Dictionary
 DefaultGroupName=Accessories
 UninstallDisplayIcon={app}\aarddict.exe
