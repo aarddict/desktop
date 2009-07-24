@@ -88,6 +88,7 @@ setup(
             'skip_archive': True,
             'packages': 'encodings',
             'includes': 'cairo, pango, pangocairo, atk, gobject, gtk, gtk.keysyms',
+            'dll_excludes': ['MSVCR80.dll']
             },
         'sdist': {
             'formats': 'zip',
