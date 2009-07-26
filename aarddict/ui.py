@@ -289,8 +289,8 @@ class ArticleView(gtk.TextView):
         self.set_cursor_visible(False)
         self.last_drag_coords = None
         self.selection_changed_callback = selection_changed_callback
-        self.h1 = self.connect("motion_notify_event", on_mouse_motion)
-        self.h2 = self.connect_after("event", self.drag_handler)
+        self.connect("motion_notify_event", on_mouse_motion)
+        self.connect_after("event", self.drag_handler)
 
     def set_buffer(self, buff):
         gtk.TextView.set_buffer(self, buff)
@@ -322,12 +322,6 @@ class ArticleView(gtk.TextView):
         b = self.get_buffer()
         b.move_mark(b.get_selection_bound(), b.get_iter_at_mark(b.get_insert()))
         self.foreach(lambda child: child.clear_selection())
-
-    def cleanup(self):
-        self.disconnect(self.h1)
-        self.disconnect(self.h2)
-        self.drag_handler = None
-        self.selection_changed_callback = None
 
 
 class WordLookup(object):
@@ -805,14 +799,10 @@ class DictViewer(object):
         if active > 0:
             self.word_input.set_active(active - 1)
 
-    def _kill_tab(self, page):
-        page.child.cleanup()
-        page.destroy()
-
     def clear_tabs(self):
         articleformat.stop()
         self.tabs.handler_block(self.dict_switch_handler)
-        self.tabs.foreach(self._kill_tab)
+        self.tabs.foreach(lambda page: page.destroy())
         self.tabs.handler_unblock(self.dict_switch_handler)
 
     def show_article_for(self, wordlookup, lang=None):
@@ -884,7 +874,8 @@ class DictViewer(object):
 
     def makeview(self, article, buff, tables, topview):
         topview.set_buffer(buff)
-        for table in tables:
+        for table in tables:            
+            logging.debug('Adding table in article "%s"', article.title.encode('utf8'))
             tableview = table.makeview(self.create_article_view)
             topview.add_child_at_anchor(tableview,
                                         table.anchor)
