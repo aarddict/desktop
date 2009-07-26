@@ -58,6 +58,9 @@ def main():
 
     if options.debug:
         logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        import warnings
+        warnings.simplefilter('ignore', Warning)
 
     if options.identify:
         from aarddict import dictionary
