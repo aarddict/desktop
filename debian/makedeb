@@ -1,16 +1,16 @@
 #!/bin/bash
-PYTHON=$1
+PYTHON=$1 
 PYTHON_VER=`$PYTHON -c "import sys;print '.'.join(str(v) for v in sys.version_info[:2])"`
 VERSION=`PYTHONPATH=../ $PYTHON -c "import aarddict; print aarddict.__version__"`
 RELEASE=${2:-"1"}
-pushd ..
-$PYTHON setup.py bdist
-pushd dist
-mkdir -p deb/DEBIAN
-tar -xvf aarddict-$VERSION*.tar.gz -C deb
+pushd .. && \
+$PYTHON setup.py bdist && \
+pushd dist && \
+mkdir -p deb/DEBIAN && \
+tar -xvf aarddict-$VERSION*.tar.gz -C deb && \
 
-find deb/usr/ -name *.pyc | xargs rm
-
+find deb/usr/ -name *.pyc | xargs rm && \
+\
 echo "Section: user/other
 Priority: optional
 Package: aarddict
@@ -19,13 +19,13 @@ Maintainer: Igor Tkach <itkach@aarddict.org>
 Homepage: http://aarddict.org
 Description: Aard Dictionary is a multiplatform dictionary and offline Wikipedia reader.
 Architecture: all
-Depends: python-pyicu (>= 0.8.1), python-simplejson
-" > deb/DEBIAN/control
-
-echo 2.0 > deb/DEBIAN/debian-binary
- 
-dpkg -b deb/ aarddict_$VERSION-${RELEASE}_py${PYTHON_VER}.deb
-rm -rf deb/
-popd
+Depends: python-pyicu (>= 0.8), python-simplejson, python-pkg-resources
+" > deb/DEBIAN/control && \
+\
+echo 2.0 > deb/DEBIAN/debian-binary &&\
+\
+dpkg -b deb/ aarddict_$VERSION-${RELEASE}_py${PYTHON_VER}.deb &&\
+rm -rf deb/ &&\
+popd &&\
 popd
 

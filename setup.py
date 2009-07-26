@@ -55,7 +55,7 @@ setup(
         'gui_scripts': ['aarddict = aarddict:main']
     },
 
-    install_requires = ['PyICU >= 0.8.1', 
+    install_requires = ['PyICU >= 0.8', 
                         'simplejson'],
     package_data = {
              'aarddict': ['*.cfg', 'locale/*/*/*.mo']
