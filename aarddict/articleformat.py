@@ -12,6 +12,8 @@
 #
 # Copyright (C) 2006-2009  Jeremy Mortis, Igor Tkach
 
+import logging
+
 import aarddict.ui
 import aarddict.dictionary
 
@@ -129,6 +131,9 @@ class Table(object):
 
 def _new_table(tabletxt, tabletags, tabletabs, buff, start, end,
                reftable, wordlang, intcallback, extcallback, footcallback, texttagtable):
+    logging.debug('Table: "%s" (%d, %d)', 
+                  tabletxt[:min(30, tabletxt.find('\n'))].encode('utf8'),
+                  start.get_offset(), end.get_offset())
     if interrupted:
         raise FormatStop
     tags = [aarddict.dictionary.to_tag(tagtuple) for tagtuple in tabletags]
@@ -149,9 +154,11 @@ def _new_table(tabletxt, tabletags, tabletabs, buff, start, end,
             tablebuff.apply_tag(t,
                                 tablebuff.get_iter_at_offset(rowtag.start),
                                 tablebuff.get_iter_at_offset(rowtag.end))
-
-    buff.delete(start, end)
-    anchor = buff.create_child_anchor(start)
+    
+    anchor  = start.get_child_anchor()
+    if anchor is None:
+        buff.delete(start, end)
+        anchor = buff.create_child_anchor(start)
 
     return Table(tablebuff, tables, globaltabs, anchor)
 
