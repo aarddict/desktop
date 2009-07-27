@@ -22,7 +22,7 @@ import zlib
 import bz2
 import os
 from bisect import bisect_left
-from itertools import islice
+from itertools import islice, chain
 
 import simplejson
 from PyICU import Locale, Collator
@@ -506,16 +506,23 @@ class VerifyError(Exception): pass
 class DictionaryCollection(list):
 
     def langs(self):
-        return set([d.index_language for d in self])
+        return set((d.index_language for d in self))
+
+    def uuids(self):
+        return set((d.uuid for d in self))
 
     def volumes(self, uuid):
-        return [d for d in self if d.uuid == uuid]
+        return sorted((d for d in self if d.uuid == uuid), key=lambda d: d.volume)
 
     def lookup(self, start_word, max_from_one_dict=50,
                uuid=None, strength=PRIMARY):
-        dicts = self.volumes(uuid) if uuid else self
-        for dictionary in dicts:
-            for article in islice(dictionary.lookup(start_word,
-                                                    strength=strength),
+
+        uuids = self.uuids() if uuid is None else (uuid,)
+
+        for uuid in uuids:
+            vols = self.volumes(uuid)
+            for article in islice(chain(*[islice(vol.lookup(start_word, strength=strength),
+                                                 max_from_one_dict) 
+                                          for vol in vols]), 
                                   max_from_one_dict):
-                yield article
+                yield article            
