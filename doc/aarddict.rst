@@ -69,6 +69,50 @@ Maemo Application Manager.
 Release Notes
 =============
 
+0.7.5
+-----
+
+- Added command line option to print dictionary metadata.
+
+- Language tabs scroll when dictionaries in many languages are open.
+
+- Display Wikipedia language code in article tab title.
+
+- When article found in multiple dictionaries select tab with article
+  from most recently used dictionary.
+
+- Added ability to verify dictionary data integrity:
+  :menuselection:`Dictionary --> Verify`.
+
+- Fixed redirects: some redirects previously were resolving
+  incorrectly because weak string matching (base characters only) was
+  used.
+
+- Added ability to select string matching strength:
+  :menuselection:`Dictionary --> Match`.
+
+- Render previously ignored ``dd`` tag often used in Wikipedia
+  articles in serif italic font.
+
+- Implemented links to article sections.
+
+- Highlight current item in word lookup history dropdown list.
+
+- Better lookup history navigation: previously if link followed was
+  already in history that history item whould be activated resulting
+  in confusing result of subsequent `Back` or `Forward` actions.
+
+- Link sensitivity tweaks to reduce unintended clicks when finger
+  scrolling articles on tablet.
+
+- Fixed handling of articles with multiple tables in same position
+  (resulted in application crash on Windows).
+
+- Properly limit matched word list for multivolume dictionaries.
+
+- Python 2.5 .deb is now installable on Ubuntu 8.04 LTS.   
+
+
 0.7.4
 -----
 
@@ -104,10 +148,10 @@ Release Notes
 0.7.1
 -----
 
-- Better redirects. 
+- Better redirects.
 
 - Better dictionary information display in info dialog and window
-  title. 
+  title.
 
 - Added `Lookup Box` action - move focus to word input field and
   select it's content (bound to :kbd:`Ctrl+L`).
@@ -117,7 +161,7 @@ Release Notes
   view size change).
 
 - Fixed glitch in articles tabs display (event box for articles tab
-  labels wasn't invisible, looked bad on Maemo and Windows). 
+  labels wasn't invisible, looked bad on Maemo and Windows).
 
 .. _Maemo bug 2469: https://bugs.maemo.org/show_bug.cgi?id=2469
 
@@ -128,7 +172,7 @@ Initial release. Changes compared to `SDict Viewer`_:
 
 - New binary dictionary format
 
-- New article format 
+- New article format
 
 - Use `PyICU`_/`ICU`_ for Unicode collation
 
