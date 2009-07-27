@@ -79,7 +79,7 @@ Release Notes
 - Display Wikipedia language code in article tab title.
 
 - When article found in multiple dictionaries select tab with article
-  from most recently used dictionary.
+  from most recently used dictionary (`issue #1`_).
 
 - Added ability to verify dictionary data integrity:
   :menuselection:`Dictionary --> Verify`.
@@ -94,7 +94,7 @@ Release Notes
 - Render previously ignored ``dd`` tag often used in Wikipedia
   articles in serif italic font.
 
-- Implemented links to article sections.
+- Implemented links to article sections (`issue #6`_).
 
 - Highlight current item in word lookup history dropdown list.
 
@@ -112,6 +112,9 @@ Release Notes
 
 - Python 2.5 .deb is now installable on Ubuntu 8.04 LTS.   
 
+
+.. _issue #6: http://bitbucket.org/itkach/aarddict/issue/6
+.. _issue #1: http://bitbucket.org/itkach/aarddict/issue/1
 
 0.7.4
 -----
