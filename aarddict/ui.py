@@ -448,7 +448,6 @@ class DictViewer(object):
         self.tabs.popup_enable()
         self.tabs.connect("page-added", self.update_copy_article_mi)
         self.tabs.connect("page-removed", self.update_copy_article_mi)
-
         self.preferred_dicts = {}
 
         def _switch_page_cb(notebook, page, page_num):
@@ -456,6 +455,15 @@ class DictViewer(object):
             self.preferred_dicts[dict_key] = time.time()
 
         self.dict_switch_handler = self.tabs.connect("switch-page", _switch_page_cb)
+
+        self.tabs.connect("page-added", self.update_copy_article_URL_mi)
+        self.tabs.connect("page-removed", self.update_copy_article_URL_mi)
+
+        self.tabs.connect("page-added", self.update_this_article_online_mi)
+        self.tabs.connect("page-removed", self.update_this_article_online_mi)
+
+        self.tabs.connect("switch-page", self.update_copy_article_URL_mi)
+        self.tabs.connect("switch-page", self.update_this_article_online_mi)
 
         self.split_pane.add(self.tabs)
 
@@ -545,6 +553,14 @@ class DictViewer(object):
     def update_copy_article_mi(self, notebook = None, child = None, page_num = None):
         copy_article_action = self.actiongroup.get_action('CopyArticle')
         copy_article_action.set_sensitive(notebook.get_n_pages() > 0)
+
+    def update_copy_article_URL_mi(self, notebook = None, child = None, page_num = None):
+        copy_article_URL_action = self.actiongroup.get_action('CopyArticleURL')
+        copy_article_URL_action.set_sensitive(self.get_current_article_url() is not None)
+
+    def update_this_article_online_mi(self, notebook = None, child = None, page_num = None):
+        this_article_online_action = self.actiongroup.get_action('ThisArticleOnline')
+        this_article_online_action.set_sensitive(self.get_current_article_url() is not None)        
 
     def destroy(self, widget, data=None):
         self.stop_lookup()
@@ -681,13 +697,52 @@ class DictViewer(object):
         except ValueError:
             return None
 
+    def get_current_article_url(self):
+        if self.tabs.get_n_pages():
+            current_tab = self.tabs.get_nth_page(self.tabs.get_current_page())
+            print 'current_tab', current_tab
+            article_title = current_tab.get_data('title')
+            print 'article_title', article_title
+            if not article_title:
+                return None
+            dictionary_key = current_tab.get_data('dictionary')
+            print 'dictionary_key', dictionary_key
+            dictionary_list = [d for d in self.dictionaries if d.key() == dictionary_key]
+            if len(dictionary_list) == 0:
+                return None
+            dictionary = dictionary_list[0]
+            try:
+                siteinfo = dictionary.metadata['siteinfo']
+            except KeyError:
+                logging.debug('No site info in dictionary %s', dictionary_key)
+                if 'lang' in dictionary.metadata and 'sitelang' in dictionary.metadata:
+                    url = u'http://%s.wikipedia.org/wiki/%s' % (dictionary.metadata['lang'],
+                                                                article_title)
+                    return url
+            else:
+                try:
+                    general = siteinfo['general']
+                    server = general['server']
+                    articlepath = general['articlepath']
+                except KeyError:
+                    logging.debug('Site info for %s is incomplete', dictionary_key)
+                else:
+                    url = ''.join((server, articlepath.replace(u'$1', article_title)))
+                    return url
+
+    def open_this_article_online(self):
+        url = self.get_current_article_url()
+        if url is not None:
+            logging.debug('Opening url %r', url)
+            self.open_external_link(url)
+
     def word_ref_clicked(self, tag, widget, event, itr, word, lang):
         if is_link_click(tag, event, word):
             title, section = dictionary.split_word(word.decode('utf8'))
             if section:
                 current_tab = self.tabs.get_nth_page(self.tabs.get_current_page())
                 articleview = current_tab.child
-                article_title = articleview.get_data('title')
+                article_title = current_tab.get_data('title')
                 if not title or title == article_title:
                     word_input = '#'.join((article_title, section))
                     self.set_word_input(word_input)
@@ -818,6 +873,7 @@ class DictViewer(object):
                                                        with_vol_num=False),
                                tooltips)
             tab.set_data('dictionary', article.dictionary.key())
+            tab.set_data('title', article.title)
             Thread(name='format', target=self.format_article,
                    args=(article, self.makeview, article_view)).start()
 
@@ -826,6 +882,8 @@ class DictViewer(object):
         #enable dictionary switch handler after evertyhing is shown
         #so that it only gets called when user switches tabs
         gobject.idle_add(self.tabs.handler_unblock, self.dict_switch_handler)
+        gobject.idle_add(self.update_this_article_online_mi)
+        gobject.idle_add(self.update_copy_article_URL_mi)
 
     def select_preferred_dict(self):
         preferred_dict_keys = (item[0] for item
@@ -874,12 +932,11 @@ class DictViewer(object):
 
     def makeview(self, article, buff, tables, topview):
         topview.set_buffer(buff)
-        for table in tables:            
+        for table in tables:
             logging.debug('Adding table in article "%s"', article.title.encode('utf8'))
             tableview = table.makeview(self.create_article_view)
             topview.add_child_at_anchor(tableview,
                                         table.anchor)
-        topview.set_data('title', article.title)
         section_tags = [tag for tag in article.tags
                         if tag.name in ('h1', 'h2', 'h3',
                                         'h4', 'h5', 'h6')]
@@ -1211,6 +1268,10 @@ class DictViewer(object):
                                   '<Alt>braceleft', _('Show previous language word list'),
                                   lambda action: self.word_completion.prev_page()),
 
+                                 ('ThisArticleOnline', None, _('This Article Online'),
+                                  '<Control>r', _('Open online version of this article in a web browser'),
+                                  lambda action: self.open_this_article_online()),
+
                                  ('CopyArticle', None, _('_Article'),
                                   None, _('Copy article text to clipboard'),
                                   self.copy_article_to_clipboard),
@@ -1218,6 +1279,10 @@ class DictViewer(object):
                                  ('CopySelected', gtk.STOCK_COPY, _('_Selected Text'),
                                   '<Control>c', _('Copy selected text to clipboard'),
                                   self.copy_selected_to_clipboard),
+
+                                 ('CopyArticleURL', None, _('Article _URL'),
+                                  None, _('Copy current article URL to clipboard'),
+                                  self.copy_current_article_url),
 
                                  ('Paste', gtk.STOCK_PASTE, _('_Paste'),
                                   '<Control>v', _('Paste text from clipboard as word to look up'),
@@ -1300,6 +1365,11 @@ class DictViewer(object):
         self.mi_next_lang = actiongroup.get_action('NextLang').create_menu_item()
         self.mi_prev_lang = actiongroup.get_action('PrevLang').create_menu_item()
 
+        this_article_online_action = actiongroup.get_action('ThisArticleOnline')
+        this_article_online_action.set_sensitive(False)
+        self.mi_this_article_online = this_article_online_action.create_menu_item()
+
+
         self.mn_copy = gtk.Menu()
         self.mn_copy_item =gtk.MenuItem(_('_Copy'))
         self.mn_copy_item.set_submenu(self.mn_copy)
@@ -1312,8 +1382,13 @@ class DictViewer(object):
         copy_selected_action.set_sensitive(False)
         self.mi_copy_to_clipboard = copy_selected_action.create_menu_item()
 
+        copy_article_URL_action = actiongroup.get_action('CopyArticleURL')
+        copy_article_URL_action.set_sensitive(False)
+        self.mi_copy_article_URL = copy_article_URL_action.create_menu_item()        
+
         self.mn_copy.append(self.mi_copy_article_to_clipboard)
         self.mn_copy.append(self.mi_copy_to_clipboard)
+        self.mn_copy.append(self.mi_copy_article_URL)
 
         self.mi_paste = actiongroup.get_action('Paste').create_menu_item()
         self.mi_new_lookup = actiongroup.get_action('NewLookup').create_menu_item()
@@ -1346,6 +1421,7 @@ class DictViewer(object):
         mn_nav.add(self.mi_next_article)
         mn_nav.add(self.mi_prev_lang)
         mn_nav.add(self.mi_next_lang)
+        mn_nav.add(self.mi_this_article_online)
 
         mn_help = gtk.Menu()
         mn_help_item = gtk.MenuItem(_('_Help'))
@@ -1423,6 +1499,12 @@ class DictViewer(object):
         text_buffer = article_view.get_buffer()
         text = text_buffer.get_text(*text_buffer.get_bounds())
         clipboard.set_text(text)
+
+    def copy_current_article_url(self, action):
+        clipboard = gtk.clipboard_get(gtk.gdk.SELECTION_CLIPBOARD)
+        url = self.get_current_article_url()
+        if url is not None:
+            clipboard.set_text(url)
 
     def add_to_menu_remove(self, dict):
         key = dict.key()

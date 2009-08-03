@@ -88,6 +88,7 @@ class HildonDictViewer(ui.DictViewer):
         mn_nav.add(self.mi_next_article)
         mn_nav.add(self.mi_prev_lang)
         mn_nav.add(self.mi_next_lang)
+        mn_nav.add(self.mi_this_article_online)
         
         mn_view = gtk.Menu()
         mn_view_item = gtk.MenuItem(_("_View"))
