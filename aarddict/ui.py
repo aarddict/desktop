@@ -700,13 +700,10 @@ class DictViewer(object):
     def get_current_article_url(self):
         if self.tabs.get_n_pages():
             current_tab = self.tabs.get_nth_page(self.tabs.get_current_page())
-            print 'current_tab', current_tab
             article_title = current_tab.get_data('title')
-            print 'article_title', article_title
             if not article_title:
                 return None
             dictionary_key = current_tab.get_data('dictionary')
-            print 'dictionary_key', dictionary_key
             dictionary_list = [d for d in self.dictionaries if d.key() == dictionary_key]
             if len(dictionary_list) == 0:
                 return None
