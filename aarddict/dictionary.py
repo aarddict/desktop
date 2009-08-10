@@ -43,9 +43,13 @@ decompression = (zlib.decompress,
 
 def format_title(d, with_vol_num=True):
     parts = [d.title]
-    sitelang = d.metadata.get('sitelang')
-    if sitelang:
-        parts.append(' (%s)' % sitelang)
+    lang = d.metadata.get('lang')
+    if lang:
+        parts.append(' (%s)' % lang)
+    else:
+        sitelang = d.metadata.get('sitelang')
+        if sitelang:
+            parts.append(' (%s)' % sitelang)
     if with_vol_num and d.total_volumes > 1:
         parts.append(' Vol. %s' % d.volume)
     return ''.join(parts)
