@@ -1265,7 +1265,7 @@ class DictViewer(object):
                                   '<Alt>braceleft', _('Show previous language word list'),
                                   lambda action: self.word_completion.prev_page()),
 
-                                 ('ThisArticleOnline', None, _('Online Article'),
+                                 ('ThisArticleOnline', None, _('_Online Article'),
                                   '<Control>t', _('Open online version of this article in a web browser'),
                                   lambda action: self.open_this_article_online()),
 
