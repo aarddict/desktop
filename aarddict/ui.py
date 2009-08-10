@@ -25,6 +25,7 @@ from math import fabs
 from collections import defaultdict
 from itertools import groupby
 from ConfigParser import ConfigParser
+from uuid import UUID
 
 from PyICU import Locale, Collator
 
@@ -451,8 +452,8 @@ class DictViewer(object):
         self.preferred_dicts = {}
 
         def _switch_page_cb(notebook, page, page_num):
-            dict_key = notebook.get_nth_page(page_num).get_data('dictionary')
-            self.preferred_dicts[dict_key] = time.time()
+            dict_uuid = notebook.get_nth_page(page_num).get_data('dictionary')
+            self.preferred_dicts[dict_uuid] = time.time()
 
         self.dict_switch_handler = self.tabs.connect("switch-page", _switch_page_cb)
 
@@ -529,7 +530,12 @@ class DictViewer(object):
 
             if self.config.has_section('preferred'):
                 for opt in self.config.options('preferred'):
-                    self.preferred_dicts[opt] = self.config.getfloat('preferred', opt)
+                    try:
+                        uuid_bytes = UUID(hex=opt).bytes
+                    except ValueError:
+                        logging.debug('Failed to construct dictionary uuid from %r', opt)
+                    else:
+                        self.preferred_dicts[uuid_bytes] = self.config.getfloat('preferred', opt)
 
             action = self.actiongroup.get_action('ToggleDragSelects')
             action.set_active(self.config.getboolean('ui', 'drag-selects'))
@@ -622,7 +628,7 @@ class DictViewer(object):
             self.config.remove_section('preferred')
         self.config.add_section('preferred')
         for name, val in self.preferred_dicts.iteritems():
-            self.config.set('preferred', name, val)
+            self.config.set('preferred', str(UUID(bytes=name)), val)
 
         d = os.path.expanduser('~/.aarddict')
         if not os.path.exists(d):
@@ -703,7 +709,7 @@ class DictViewer(object):
             article_title = current_tab.get_data('title')
             if not article_title:
                 return None
-            dictionary_key = current_tab.get_data('dictionary')
+            dictionary_key = current_tab.get_data('volume')
             dictionary_list = [d for d in self.dictionaries if d.key() == dictionary_key]
             if len(dictionary_list) == 0:
                 return None
@@ -869,7 +875,8 @@ class DictViewer(object):
                                dictionary.format_title(article.dictionary,
                                                        with_vol_num=False),
                                tooltips)
-            tab.set_data('dictionary', article.dictionary.key())
+            tab.set_data('dictionary', article.dictionary.uuid)
+            tab.set_data('volume', article.dictionary.key())
             tab.set_data('title', article.title)
             Thread(name='format', target=self.format_article,
                    args=(article, self.makeview, article_view)).start()
