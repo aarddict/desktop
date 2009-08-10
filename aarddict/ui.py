@@ -1637,7 +1637,7 @@ class DictViewer(object):
 
     def open_dict_worker(self):
         while True:
-            file = self.open_q.get()
+            file, auto_open_volumes = self.open_q.get()
             try:
                 dict = Dictionary(file)
             except Exception, e:
@@ -1645,7 +1645,7 @@ class DictViewer(object):
             else:
                 gobject.idle_add(self.update_status_display, dict.title)
                 self.add_dict(dict)
-                if dict.total_volumes > 1:
+                if auto_open_volumes and dict.total_volumes > 1:
                     uuid = dict.uuid
                     key = dict.key()
                     dirname = os.path.dirname(file)
@@ -1672,9 +1672,10 @@ class DictViewer(object):
     def report_open_error(self, error):
         self.open_errors.append(error)
 
-    def open_dicts_thread(self, *files):
+    def open_dicts_thread(self, *files, **kwargs):
+        auto_open_volumes = kwargs.get('auto_open_volumes', False)
         for file in files:
-            self.open_q.put(file)
+            self.open_q.put((file, auto_open_volumes))
         self.open_q.join()
         gobject.idle_add(self.open_dicts_done)
 
@@ -1704,12 +1705,14 @@ class DictViewer(object):
 
         self.update_completion(self.word_input.child.get_text(), (word, lang))
 
-    def open_dict(self, file):
-        self.open_dicts([file])
+    def open_dict(self, file, auto_open_volumes=True):
+        self.open_dicts([file], auto_open_volumes=auto_open_volumes)
 
-    def open_dicts(self, files):
+    def open_dicts(self, files, auto_open_volumes=False):
         self.open_errors = []
-        open_dict_thread = Thread(target = self.open_dicts_thread, args = files)
+        open_dict_thread = Thread(target=self.open_dicts_thread, 
+                                  args=files, 
+                                  kwargs=dict(auto_open_volumes=auto_open_volumes))
         open_dict_thread.start()
         self.show_status_display(_('Please wait...'), _('Loading'))
 
