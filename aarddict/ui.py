@@ -1623,8 +1623,8 @@ class DictViewer(object):
         response = self.file_chooser_dlg.run()
         self.file_chooser_dlg.hide()
         if response == gtk.RESPONSE_OK:
-            fileName = self.file_chooser_dlg.get_filename()
-            self.open_dict(fileName)
+            file_name = self.file_chooser_dlg.get_filename()            
+            self.open_dict(file_name)
 
     def create_file_chooser_dlg(self):
         dlg = gtk.FileChooserDialog(parent = self.window,
@@ -1688,7 +1688,6 @@ class DictViewer(object):
     def open_dicts(self, files):
         self.open_errors = []
         open_dict_thread = Thread(target = self.open_dicts_thread, args = files)
-        open_dict_thread.setDaemon(True)
         open_dict_thread.start()
         self.show_status_display(_('Please wait...'), _('Loading'))
 
