@@ -560,7 +560,7 @@ class DictViewer(object):
 
     def update_this_article_online_mi(self, notebook = None, child = None, page_num = None):
         this_article_online_action = self.actiongroup.get_action('ThisArticleOnline')
-        this_article_online_action.set_sensitive(self.get_current_article_url() is not None)        
+        this_article_online_action.set_sensitive(self.get_current_article_url() is not None)
 
     def destroy(self, widget, data=None):
         self.stop_lookup()
@@ -1265,7 +1265,7 @@ class DictViewer(object):
                                   '<Alt>braceleft', _('Show previous language word list'),
                                   lambda action: self.word_completion.prev_page()),
 
-                                 ('ThisArticleOnline', None, _('This Article Online'),
+                                 ('ThisArticleOnline', None, _('Online Article'),
                                   '<Control>r', _('Open online version of this article in a web browser'),
                                   lambda action: self.open_this_article_online()),
 
@@ -1381,7 +1381,7 @@ class DictViewer(object):
 
         copy_article_URL_action = actiongroup.get_action('CopyArticleURL')
         copy_article_URL_action.set_sensitive(False)
-        self.mi_copy_article_URL = copy_article_URL_action.create_menu_item()        
+        self.mi_copy_article_URL = copy_article_URL_action.create_menu_item()
 
         self.mn_copy.append(self.mi_copy_article_to_clipboard)
         self.mn_copy.append(self.mi_copy_to_clipboard)
