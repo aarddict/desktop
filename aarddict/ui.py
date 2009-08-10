@@ -1623,7 +1623,7 @@ class DictViewer(object):
         response = self.file_chooser_dlg.run()
         self.file_chooser_dlg.hide()
         if response == gtk.RESPONSE_OK:
-            file_name = self.file_chooser_dlg.get_filename()            
+            file_name = self.file_chooser_dlg.get_filename()
             self.open_dict(file_name)
 
     def create_file_chooser_dlg(self):
@@ -1640,10 +1640,32 @@ class DictViewer(object):
             file = self.open_q.get()
             try:
                 dict = Dictionary(file)
-                gobject.idle_add(self.update_status_display, dict.title)
-                self.add_dict(dict)
             except Exception, e:
                 self.report_open_error(e)
+            else:
+                gobject.idle_add(self.update_status_display, dict.title)
+                self.add_dict(dict)
+                if dict.total_volumes > 1:
+                    uuid = dict.uuid
+                    key = dict.key()
+                    dirname = os.path.dirname(file)
+                    dotaar = os.path.extsep+'aar'
+                    candidates = [entry for entry in os.listdir(dirname)
+                                  if entry.lower().endswith(dotaar)]
+                    print candidates
+                    for f in candidates:
+                        fname = os.path.join(dirname, f)
+                        try:
+                            d = Dictionary(fname)
+                        except:
+                            logging.warn('Failed to open .aar file %s', fname, exc_info=1)
+                        else:
+                            if d.uuid == uuid and key != d.key():
+                                logging.debug('Also opening volume %s from %s',
+                                              d.volume, fname)
+                                self.add_dict(d)
+                            else:
+                                d.close()
             finally:
                 self.open_q.task_done()
 
@@ -1696,7 +1718,8 @@ class DictViewer(object):
         self.status_display.set_title(title)
         self.status_display.set_markup(message)
         self.status_display.set_position(gtk.WIN_POS_CENTER_ALWAYS)
-        #for reasons unknown the label used for text is selectable, shows cursor and comes up with text selected
+        #for reasons unknown the label used for text is selectable, 
+        #shows cursor and comes up with text selected
         self.make_labels_unselectable(self.status_display.vbox)
         self.status_display.run()
 
