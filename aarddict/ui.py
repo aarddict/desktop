@@ -1266,7 +1266,7 @@ class DictViewer(object):
                                   lambda action: self.word_completion.prev_page()),
 
                                  ('ThisArticleOnline', None, _('Online Article'),
-                                  '<Control>r', _('Open online version of this article in a web browser'),
+                                  '<Control>t', _('Open online version of this article in a web browser'),
                                   lambda action: self.open_this_article_online()),
 
                                  ('CopyArticle', None, _('_Article'),
