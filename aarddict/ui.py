@@ -829,6 +829,7 @@ class DictViewer(object):
             i = model.iter_next(i)
             for j in xrange(1, self.word_input.previous_active + 1):
                 if i and model.iter_is_valid(i): model.remove(i)
+            self.word_input.set_active(-1)
         self.word_input.previous_active = self.word_input.get_active()
         history_size = model.iter_n_children(None)
         if history_size > 10:
