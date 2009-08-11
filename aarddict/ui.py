@@ -1773,8 +1773,7 @@ class DictViewer(object):
     def remove_dict(self, dict):
         word, lang = self.get_selected_word()
         key = dict.key()
-        if key in self.preferred_dicts:
-            del self.preferred_dicts[key]
+        uuid = dict.uuid
         if key in self.recent_menu_items:
             old_mi = self.recent_menu_items[key]
             self.mn_remove.remove(old_mi)
@@ -1787,6 +1786,10 @@ class DictViewer(object):
 
         self.dictionaries.remove(dict)
         dict.close()
+
+        if uuid not in self.dictionaries.uuids():
+            if uuid in self.preferred_dicts:
+                del self.preferred_dicts[uuid]
 
         current_langs = self.dictionaries.langs()
         view_langs = self.word_completion.langs()
