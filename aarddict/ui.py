@@ -1659,7 +1659,6 @@ class DictViewer(object):
                     dotaar = os.path.extsep+'aar'
                     candidates = [entry for entry in os.listdir(dirname)
                                   if entry.lower().endswith(dotaar)]
-                    print candidates
                     for f in candidates:
                         fname = os.path.join(dirname, f)
                         try:
