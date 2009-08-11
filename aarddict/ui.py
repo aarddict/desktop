@@ -518,7 +518,10 @@ class DictViewer(object):
             [self.add_to_history(w, l) for l, w in history[::-1]]
             if self.config.has_option('ui', 'active-history'):
                 active_history = self.config.getint('ui', 'active-history')
-                self.word_input.set_active(active_history)
+                if active_history > -1:
+                    self.word_input.handler_block(self.word_change_handler)
+                    self.word_input.set_active(active_history)
+                    self.word_input.handler_unblock(self.word_change_handler)
             self.set_phonetic_font(self.config.get('ui', 'phonetic-font'))
 
             self.last_dict_file_location = self.config.get('ui', 'last-dict-file-location')
@@ -1064,7 +1067,7 @@ class DictViewer(object):
                                     for k, g in groupby(articles, key)]
         return lang_word_list
 
-    def update_completion(self, word, to_select = None):
+    def update_completion(self, word, to_select=None):
         self.word_completion.clear()
         self.stop_lookup()
         word = word.lstrip()
@@ -1706,10 +1709,11 @@ class DictViewer(object):
         if self.config.has_section('selection'):
             for lang in self.config.options('selection'):
                 word = self.config.get('selection', lang)
+            self.config.remove_section('selection')
         else:
             word, lang = self.get_selected_word()
-
-        self.update_completion(self.word_input.child.get_text(), (word, lang))
+            
+        self.schedule(self.update_completion, 0, self.word_input.child.get_text(), (word, lang))
 
     def open_dict(self, file, auto_open_volumes=True):
         self.open_dicts([file], auto_open_volumes=auto_open_volumes)
