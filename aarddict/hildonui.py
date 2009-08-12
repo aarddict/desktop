@@ -55,13 +55,11 @@ class HildonDictViewer(ui.DictViewer):
         self.window.set_title(self.create_dict_title())
     
     def on_key_press(self, widget, event, *args):
-        if (event.keyval == gtk.keysyms.Escape 
-            or (event.state & gtk.gdk.CONTROL_MASK 
-                and event.keyval == gtk.keysyms.b)):
-            self.history_back()
-        elif (event.state & gtk.gdk.CONTROL_MASK 
-                and event.keyval == gtk.keysyms.f):
-            self.history_forward()
+        if event.keyval == gtk.keysyms.Escape:
+            if event.state & gtk.gdk.SHIFT_MASK:
+                self.history_forward()
+            else:
+                self.history_back()
         elif event.keyval == gtk.keysyms.F7:
             self.actiongroup.get_action('IncreaseTextSize').activate()            
         elif event.keyval == gtk.keysyms.F8:
