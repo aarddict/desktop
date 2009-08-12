@@ -109,6 +109,12 @@ Release Notes
   :kbd:`Control-b` for history back in Hildon UI, use
   :kbd:`Shift-Back` and :kbd:`Back` instead. 
 
+- Windows version now uses Python 2.6.
+
+- Windows installer updated: by default Aard Dictionary now goes into
+  `Aard Dictionary` group, shortcuts to web site, forum, and
+  uninstaller are created.
+
 0.7.5
 -----
 
