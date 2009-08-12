@@ -105,8 +105,9 @@ Release Notes
   didn't always work with multi volume dictionaries since volume id
   was used instead of dictionary id).
 
-- Remove Ctrl+F key binding for history forward and Ctrl+B for
-  history back in Hildon UI, use Shift+Back and Back instead.
+- Remove :kbd:`Control-f` key binding for history forward and
+  :kbd:`Control-b` for history back in Hildon UI, use
+  :kbd:`Shift-Back` and :kbd:`Back` instead. 
 
 0.7.5
 -----
