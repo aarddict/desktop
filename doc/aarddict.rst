@@ -7,10 +7,29 @@ Installation Notes
 
 Windows
 -------
-On Windows earlier than Windows XP SP3 users may need to install
-`Microsoft Visual C++ 2005 Redistributable Package (x86)`_.
+If starting the application results in error message like this::
+
+  This application has failed to start because the application
+  configuration is incorrect. Reinstalling the application may fix this
+  problem. 
+
+or
+
+::
+
+  The application has failed to start because its side-by-side
+  configuration is incorrect. Please see the application event log for
+  more detail. 
+
+most likely `Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)`_
+needs to be installed.
+
+On Windows earlier than Windows XP SP3 users may also need to install
+`Microsoft Visual C++ 2005 Redistributable Package (x86)`_. 
 
 .. _Microsoft Visual C++ 2005 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?FamilyId=32BC1BEE-A3F9-4C13-9C99-220B62A191EE&displaylang=en
+
+.. _Microsoft Visual C++ 2008 SP1 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&displaylang=en
 
 
 User Interface Language
