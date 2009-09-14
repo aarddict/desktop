@@ -127,6 +127,8 @@ def convert(article):
         if c == '\n':
             #result.append('<br>')
             pass
+        elif c.decode('utf8') == u'\u2022':
+            result.append('<li>')
         else:
             result.append(c)
 
