@@ -1,6 +1,8 @@
 # coding: utf8
 from aarddict.dictionary import Article, Tag
 from collections import defaultdict
+import gobject
+gobject.threads_init()
 
 html_tags=set(['b',
                'strong',
