@@ -1,8 +1,10 @@
 # coding: utf8
-from aarddict.dictionary import Article, Tag
+from aarddict.dictionary import Article, Tag, to_tag
 from collections import defaultdict
 import gobject
 gobject.threads_init()
+
+import re
 
 html_tags=set(['b',
                'strong',
@@ -22,8 +24,13 @@ html_tags=set(['b',
                'div',
                'sup',
                'sub',
-               'a'
+               'a',
+               'row'
                ])
+
+tag_map = {'row':'tr'}
+
+row_pattern = re.compile(r'<tr>(.*?)</tr>', re.DOTALL)
 
 def convert(article):
     """
@@ -34,10 +41,10 @@ def convert(article):
 
     >>> text = '''Ä
     ... Ä or ä is not a letter used in English, but is used in some other languages.
-    ... German 
+    ... German
     ... Germany and Austria
-    ... Ä or ä is one of the 4 extra letters used in German.  It can be replaced by using the letters Ae or ae.  In English language newspapers it is often written as A or a but this is not correct. 
-    ... Internet addresses are written as "ae" because the internet address system can only understand ordinary English letters. 
+    ... Ä or ä is one of the 4 extra letters used in German.  It can be replaced by using the letters Ae or ae.  In English language newspapers it is often written as A or a but this is not correct.
+    ... Internet addresses are written as "ae" because the internet address system can only understand ordinary English letters.
     ... Switzerland
     ... German is one of the official languages of Switzerland, but people from Switzerland who speak German do not use the extra letter, they always use ae.'''.decode('utf8')
     >>> tags = [Tag('h1', 0, 1),
@@ -100,27 +107,41 @@ def convert(article):
     text_len = len(article.text)
 
     i = 0
-
-    while i < text_len:
-
-        c = article.text[i]
+    while i <= text_len:
+        #Tag end may have position after last char
+        c = article.text[i] if i < text_len else ''
 
         for tag_end in tagends[i]:
             if tag_end.name in html_tags:
-                result.append('</'+tag_end.name+'>')
+                result.append('</'+tag_map.get(tag_end.name, tag_end.name)+'>')
+            elif tag_end.name == 'tbl':
+                tbl_tags = [to_tag(tagtuple) for tagtuple in tag_end.attributes['tags']]
+                tbl_article = Article(text=tag_end.attributes['text'],
+                                      tags=tbl_tags)
+                tbl_html = convert(tbl_article)
+                def repl(m):
+                    row_text = m.group(1)
+                    row_text = row_text.replace('\t', '</td><td>')
+                    row_text = '<td>%s</td>'%row_text
+                    return '<tr>%s</tr>' % row_text
+                tbl_html = row_pattern.sub(repl, tbl_html)
+                tbl_html = '<table>%s</table>' % tbl_html
+                result.append(tbl_html)
             else:
                 result.append('</span>')
 
         for tag_start in tagstarts[i]:
             if tag_start.name in html_tags:
                 result.append('<')
-                result.append(tag_start.name)
+                result.append(tag_map.get(tag_start.name, tag_start.name))
                 if tag_start.attributes:
-                    attrs = ' '.join(['%s="%s"' % item 
+                    attrs = ' '.join(['%s="%s"' % item
                                       for item in tag_start.attributes.iteritems()])
                     result.append(' ')
                     result.append(attrs)
                 result.append('>')
+            elif tag_start.name == 'tbl':
+                pass
             else:
                 result.append('<span class="'+tag_start.name+'">')
 
@@ -165,7 +186,7 @@ def create_scrolled_window(widget):
 # """
 
 class View(object):
-    
+
     def __init__(self, html):
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -176,7 +197,7 @@ class View(object):
 
         webview = webkit.WebView()
         webview.connect('navigation-requested', self._navigation_policy_decision_requested_cb)
-        
+
         webview.load_string(html, "text/html", "utf8", base_uri='file://')
         self.window.add(create_scrolled_window(webview))
 
@@ -194,7 +215,7 @@ if __name__=='__main__':
     from optparse import OptionParser
     optparser = OptionParser()
     opts, args = optparser.parse_args()
-    from aarddict.dictionary import Dictionary    
+    from aarddict.dictionary import Dictionary
     d = Dictionary(args[0])
     articles  = list(d[args[1]])
     html = convert(articles[0]())
