@@ -25,10 +25,47 @@ html_tags=set(['b',
                'sup',
                'sub',
                'a',
-               'row'
+               'row',
+               'ref',
+               'note',
+               'blockquote',
+               'cite',
+               'dd'
                ])
 
-tag_map = {'row':'tr'}
+def tag_start(tag):
+    result = ['<', tag.name]
+    if tag.attributes:
+        attrs = ' '.join(['%s="%s"' % item
+                          for item in tag.attributes.iteritems()])
+        result.append(' ')
+        result.append(attrs)
+    result.append('>')
+    return ''.join(result)
+
+def defatult_tag_start():
+    return tag_start
+
+def tag_end(tag):
+    return '</%s>' % tag.name
+
+def default_tag_end():
+    return tag_end
+
+tag_map_start = defaultdict(lambda: tag_start)
+tag_map_start.update({'row': lambda tag: '<tr>',
+                      'ref': lambda tag:  '<a href="#%s">' % '_'.join((tag.attributes['group'], tag.attributes['id'])),
+                      'note': lambda tag: '<div name="%s">' % '_'.join((tag.attributes['group'], tag.attributes['id'])),
+                      'p': lambda tag: '<p>'})
+
+tag_map_end = defaultdict(lambda: tag_end)
+tag_map_end.update({'row': lambda tag: '</tr>',
+               'ref': lambda tag: '</a>',
+               'note': lambda tag: '</div>',
+               'p': lambda tag: ''
+               })
+
+
 
 row_pattern = re.compile(r'<tr>(.*?)</tr>', re.DOTALL)
 
@@ -90,6 +127,18 @@ def convert(article):
 
 
     """
+
+    print article
+
+    notes = [tag for tag in article.tags if tag.name=='note']
+
+    #note end tag is incorrect in many articles for some reason
+    #consider next end of line char to be the end of note
+    for note in notes:
+        note_end = article.text.find('\n', note.start)
+        if note_end != -1 and note_end < note.end:
+            note.end = note_end
+
     tagstarts = defaultdict(list)
     tagends = defaultdict(list)
 
@@ -113,7 +162,7 @@ def convert(article):
 
         for tag_end in tagends[i]:
             if tag_end.name in html_tags:
-                result.append('</'+tag_map.get(tag_end.name, tag_end.name)+'>')
+                result.append(tag_map_end[tag_end.name](tag_end))
             elif tag_end.name == 'tbl':
                 tbl_tags = [to_tag(tagtuple) for tagtuple in tag_end.attributes['tags']]
                 tbl_article = Article(text=tag_end.attributes['text'],
@@ -132,28 +181,46 @@ def convert(article):
 
         for tag_start in tagstarts[i]:
             if tag_start.name in html_tags:
-                result.append('<')
-                result.append(tag_map.get(tag_start.name, tag_start.name))
-                if tag_start.attributes:
-                    attrs = ' '.join(['%s="%s"' % item
-                                      for item in tag_start.attributes.iteritems()])
-                    result.append(' ')
-                    result.append(attrs)
-                result.append('>')
+                result.append(tag_map_start[tag_start.name](tag_start))
             elif tag_start.name == 'tbl':
                 pass
             else:
                 result.append('<span class="'+tag_start.name+'">')
 
-        if c == '\n':
-            #result.append('<br>')
-            pass
-        elif c.decode('utf8') == u'\u2022':
+        if (c.decode('utf8') == u'\u2022'
+            and (not result or result[-1] == '\n')):
             result.append('<li>')
         else:
             result.append(c)
 
         i += 1
+
+    nobr = set(('<li', '<h1', '<h2', '<h3', '<h4',
+                      '<h5', '<h6', '<div', '<p', ))
+
+    nobr_end = set(('</h1>', '</h2>', '</h2>', '</h3>',
+                      '</h4>', '</h5>', '</div>'))
+
+    if result:
+        for j, element in enumerate(result):
+            if element == '\n':
+                try:
+                    next = result[j+1]
+                except IndexError:
+                    pass
+                else:
+                    if any([next.startswith(t) for t in nobr]):
+                        continue
+
+                try:
+                    prev = result[j-1]
+                except IndexError:
+                    pass
+                else:
+                    if any([prev.startswith(t) for t in nobr_end]):
+                        continue
+
+                result[j] = '<br>'
 
     return ''.join(result)
 
