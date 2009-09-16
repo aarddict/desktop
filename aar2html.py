@@ -69,18 +69,22 @@ tag_map_start = defaultdict(lambda: tag_start)
 tag_map_start.update({'row': lambda tag: '<tr>',
                       'ref': make_ref,
                       'note': make_note,
-                      'p': lambda tag: '<p>'})
+                      'p': lambda tag: '<p>',
+                      'div': lambda tag: '',
+                      })
 
 tag_map_end = defaultdict(lambda: tag_end)
 tag_map_end.update({'row': lambda tag: '</tr>',
                'ref': lambda tag: '</a>',
                'note': lambda tag: '</div>',
-               'p': lambda tag: ''
+               'p': lambda tag: '',
+               'div': lambda tag: '',
                })
 
 
 
 row_pattern = re.compile(r'<tr>(.*?)</tr>', re.DOTALL)
+p_after_h_patter = re.compile('(</h[1-6]>\n?)<p>')
 
 def convert(article):
     """
@@ -232,10 +236,12 @@ def convert(article):
                 else:
                     if any([prev.startswith(t) for t in nobr_end]):
                         continue
-
                 result[j] = '<br>'
+            
 
-    return ''.join(result)
+    html = ''.join(result)    
+    html = p_after_h_patter.sub(lambda m: m.group(1), html)
+    return html
 
 
 import gtk
