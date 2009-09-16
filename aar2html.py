@@ -55,7 +55,7 @@ def default_tag_end():
 tag_map_start = defaultdict(lambda: tag_start)
 tag_map_start.update({'row': lambda tag: '<tr>',
                       'ref': lambda tag:  '<a href="#%s">' % '_'.join((tag.attributes['group'], tag.attributes['id'])),
-                      'note': lambda tag: '<div name="%s">' % '_'.join((tag.attributes['group'], tag.attributes['id'])),
+                      'note': lambda tag: '<div id="%s" class="note">' % '_'.join((tag.attributes['group'], tag.attributes['id'])),
                       'p': lambda tag: '<p>'})
 
 tag_map_end = defaultdict(lambda: tag_end)
