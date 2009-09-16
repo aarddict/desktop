@@ -52,10 +52,23 @@ def tag_end(tag):
 def default_tag_end():
     return tag_end
 
+def make_note_id(tag):
+    return '_'.join((tag.attributes['group'], tag.attributes['id']))
+
+def make_ref(tag):
+    target_id = make_note_id(tag)
+    ref_id = 'ref'+target_id
+    return '<a id="%s" class="ref" href="#" onClick="document.getElementById(\'%s\').scrollIntoView(true);return false;">' % (ref_id, target_id)
+
+def make_note(tag):
+    note_id = make_note_id(tag)
+    ref_id = 'ref'+note_id
+    return '<div id="%s" class="note"><a href="#" onClick="document.getElementById(\'%s\').scrollIntoView(true);return false;">^<a/>' % (note_id, ref_id)
+
 tag_map_start = defaultdict(lambda: tag_start)
 tag_map_start.update({'row': lambda tag: '<tr>',
-                      'ref': lambda tag:  '<a href="#%s">' % '_'.join((tag.attributes['group'], tag.attributes['id'])),
-                      'note': lambda tag: '<div id="%s" class="note">' % '_'.join((tag.attributes['group'], tag.attributes['id'])),
+                      'ref': make_ref,
+                      'note': make_note,
                       'p': lambda tag: '<p>'})
 
 tag_map_end = defaultdict(lambda: tag_end)

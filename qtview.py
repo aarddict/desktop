@@ -23,7 +23,9 @@ if __name__=='__main__':
     articles  = list(d[title])
     html = aar2html.convert(articles[0]())
 
-    print html
+    f = open('aar2html.html', 'w') 
+    f.write(html)
+    f.close()
 
     app = QtGui.QApplication(sys.argv)
     view = View()
@@ -31,8 +33,9 @@ if __name__=='__main__':
         title = str(url.toString())
         print title
         if title.startswith('#'):
-            result = view.page().mainFrame().evaluateJavaScript("document.getElementById('%s').scrollIntoView(true);" % title.strip('#'))
-            print result.typeName(), result.toString()
+            # result = view.page().mainFrame().evaluateJavaScript("document.getElementById('%s').scrollIntoView(true);" % title.strip('#'))
+            # print result.typeName(), result.toString()
+            print "pass"
         else:
             articles  = list(d[title])
             if articles:
