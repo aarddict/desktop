@@ -65,12 +65,25 @@ def make_note(tag):
     ref_id = 'ref'+note_id
     return '<div id="%s" class="note"><a href="#" onClick="document.getElementById(\'%s\').scrollIntoView(true);return false;">^<a/>' % (note_id, ref_id)
 
+def make_link(tag):
+    href = tag.attributes['href'].lower()
+    if (href.startswith("http://") or 
+        href.startswith("https://") or 
+        href.startswith("ftp://")
+        ):
+        tag.attributes['class'] = 'ext'
+    else:
+        tag.attributes['class'] = 'int'
+    return tag_start(tag)
+        
+
 tag_map_start = defaultdict(lambda: tag_start)
 tag_map_start.update({'row': lambda tag: '<tr>',
                       'ref': make_ref,
                       'note': make_note,
                       'p': lambda tag: '<p>',
                       'div': lambda tag: '',
+                      'a' : make_link,
                       })
 
 tag_map_end = defaultdict(lambda: tag_end)

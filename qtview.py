@@ -1,5 +1,6 @@
 import aar2html
 import sys
+import os
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 from PyQt4 import QtWebKit
@@ -33,9 +34,7 @@ if __name__=='__main__':
         title = str(url.toString())
         print title
         if title.startswith('#'):
-            # result = view.page().mainFrame().evaluateJavaScript("document.getElementById('%s').scrollIntoView(true);" % title.strip('#'))
-            # print result.typeName(), result.toString()
-            print "pass"
+            pass
         else:
             articles  = list(d[title])
             if articles:
@@ -45,6 +44,11 @@ if __name__=='__main__':
 
     view.linkClicked.connect(link_clicked)
     view.setWindowTitle(title)
+
+    s = view.settings()
+    
+    s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
+
     view.setHtml(html, QtCore.QUrl(title))    
     view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
     view.show()

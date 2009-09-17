@@ -1,0 +1,17 @@
+.ref {
+    color: red;
+    vertical-align: super;
+    font-size: x-small;
+}
+
+.note {
+    font-size: small;
+}
+
+.int {
+    color: forestgreen;
+}
+
+.ext {
+    color: blue;
+}
