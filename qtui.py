@@ -17,8 +17,8 @@ class DictView(QtGui.QMainWindow):
 
         self.word_input = QtGui.QComboBox()
         self.word_input.setEditable(True)
+        self.word_input.setAutoCompletion(False)
         self.word_input.editTextChanged.connect(self.update_word_completion)
-
         self.word_completion = QtGui.QListWidget()
 
         box = QtGui.QVBoxLayout()
@@ -75,9 +75,11 @@ class DictView(QtGui.QMainWindow):
             html = aar2html.convert(article_read_f())
             view.setHtml(html, QtCore.QUrl(title))
             view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
-            s = view.settings()    
+            s = view.settings()
             s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
             self.tabs.addTab(view, title)
+            print self.word_input.currentIndex()
+            self.word_input.addItem(title)
 
     def link_clicked(self, url):
         title = str(url.toString())
@@ -96,9 +98,9 @@ def main():
     from aarddict.dictionary import Dictionary
     d = Dictionary(args[0])
     dv.dictionary = d
-    dv.show()    
+    dv.show()
     sys.exit(app.exec_())
-    
+
 if __name__ == '__main__':
     main()
-    
+
