@@ -59,9 +59,8 @@ def make_ref(tag):
     return '<a id="%s" class="ref" href="#" onClick="document.getElementById(\'%s\').scrollIntoView(true);return false;">' % (ref_id, target_id)
 
 def make_note(tag):
-    note_id = make_note_id(tag)
-    ref_id = 'ref'+note_id
-    return '<div id="%s" class="note"><a href="#" onClick="document.getElementById(\'%s\').scrollIntoView(true);return false;">^<a/>' % (note_id, ref_id)
+    note_id = make_note_id(tag)    
+    return '<div id="%s" class="note">' % note_id
 
 def make_link(tag):
     href = tag.attributes['href'].lower()
@@ -96,6 +95,7 @@ tag_map_end.update({'row': lambda tag: '</tr>',
 
 row_pattern = re.compile(r'<tr>(.*?)</tr>', re.DOTALL)
 p_after_h_patter = re.compile('(</h[1-6]>\n?)<p>')
+note_pattern = re.compile(r'id="(.+)" class="note"><b>\[([0-9]+)\]</b>')
 
 def convert(article):
     """
@@ -209,6 +209,11 @@ def convert(article):
         for tag_start in tagstarts[i]:
             if tag_start.name in html_tags:
                 result.append(tag_map_start[tag_start.name](tag_start))
+                if tag_start.name == 'note':
+                    note_id = make_note_id(tag_start)
+                    ref_id = 'ref'+note_id
+                    onClick = "document.getElementById(\'%s\').scrollIntoView(true);return false;" % ref_id
+                    
             elif tag_start.name == 'tbl':
                 pass
             else:
@@ -250,6 +255,13 @@ def convert(article):
 
     html = ''.join(result)    
     html = p_after_h_patter.sub(lambda m: m.group(1), html)
+    def repl_note(m):
+        ref_id = 'ref'+m.group(1)
+        onClick = "document.getElementById(\'%s\').scrollIntoView(true);return false;" % ref_id
+        return 'id="%s" class="note"><a href="#" onClick="%s" class="notebackref">[%s]</a>' % (m.group(1), onClick, m.group(2))
+        
+
+    html = note_pattern.sub(repl_note, html)
     print 'converted "%s" in %s' % (article.title.encode('utf8'), time.time() - t0)
     return html
 

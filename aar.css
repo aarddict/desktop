@@ -15,3 +15,7 @@
 .ext {
     color: blue;
 }
+
+.notebackref {
+    font-weight: bold;
+}

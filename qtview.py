@@ -25,7 +25,7 @@ if __name__=='__main__':
     html = aar2html.convert(articles[0]())
 
     f = open('aar2html.html', 'w') 
-    f.write(html)
+    f.write(html.encode('utf8'))
     f.close()
 
     app = QtGui.QApplication(sys.argv)
@@ -49,7 +49,7 @@ if __name__=='__main__':
     
     s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
 
-    view.setHtml(html, QtCore.QUrl(title))    
+    view.setHtml(html, QtCore.QUrl(title))
     view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
     view.show()
 
