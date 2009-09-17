@@ -156,8 +156,6 @@ def convert(article):
 
     """
 
-    print article
-
     notes = [tag for tag in article.tags if tag.name=='note']
 
     #note end tag is incorrect in many articles for some reason
@@ -214,7 +212,6 @@ def convert(article):
                 pass
             else:
                 result.append('<span class="'+tag_start.name+'">')
-        print type(c)
         if (c == u'\u2022'
             and (not result or result[-1] == '\n')):
             result.append('<li>')

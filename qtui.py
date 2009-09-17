@@ -19,7 +19,9 @@ class DictView(QtGui.QMainWindow):
         self.word_input = QtGui.QComboBox()
         self.word_input.setEditable(True)
         self.word_input.setAutoCompletion(False)
-        self.word_input.editTextChanged.connect(self.update_word_completion)
+        # self.word_input.editTextChanged.connect(self.update_word_completion)
+        self.connect(self.word_input, QtCore.SIGNAL('editTextChanged (const QString&)'), 
+                     self.update_word_completion)
         self.word_completion = QtGui.QListWidget()
 
         box = QtGui.QVBoxLayout()
@@ -30,7 +32,9 @@ class DictView(QtGui.QMainWindow):
         box.addWidget(self.word_input)
         box.addWidget(self.word_completion)
 
-        self.word_completion.currentItemChanged.connect(self.word_selection_changed)
+        #self.word_completion.currentItemChanged.connect(self.word_selection_changed)
+        self.connect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'), 
+                     self.word_selection_changed)
 
         left_pane = QtGui.QWidget()
         left_pane.setLayout(box)
@@ -51,7 +55,8 @@ class DictView(QtGui.QMainWindow):
         exit = QtGui.QAction(fileIcon, 'Exit', self)
         exit.setShortcut('Ctrl+Q')
         exit.setStatusTip('Exit application')
-        exit.triggered.connect(self.close)
+        #exit.triggered.connect(self.close)
+        self.connect(exit, QtCore.SIGNAL('triggered()'), self.close)
 
         mn_file.addAction(exit)
 
@@ -76,7 +81,9 @@ class DictView(QtGui.QMainWindow):
             title = unicode(selected.text())
             article_read_f = selected.data(QtCore.Qt.UserRole).toPyObject()
             view = QtWebKit.QWebView()
-            view.linkClicked.connect(self.link_clicked)
+            #view.linkClicked.connect(self.link_clicked)
+            self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'), 
+                         self.link_clicked)
             html = aar2html.convert(article_read_f())
             view.setHtml(html, QtCore.QUrl(title))
             view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
@@ -92,9 +99,15 @@ class DictView(QtGui.QMainWindow):
         if scheme in ('http', 'https', 'ftp', 'sftp'):
             webbrowser.open(title)
         else:            
-            self.word_completion.currentItemChanged.disconnect(self.word_selection_changed)
+            self.connect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'), 
+                     self.word_selection_changed)
+
+            # self.word_completion.currentItemChanged.disconnect(self.word_selection_changed)
             self.word_input.setEditText(title)
-            self.word_completion.currentItemChanged.connect(self.word_selection_changed)
+            # self.word_completion.currentItemChanged.connect(self.word_selection_changed)
+            self.disconnect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'), 
+                     self.word_selection_changed)
+
             self.update_word_completion(title, title)
 
 def main():
