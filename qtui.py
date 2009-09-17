@@ -86,7 +86,7 @@ class DictView(QtGui.QMainWindow):
             self.word_input.addItem(title)
 
     def link_clicked(self, url):
-        title = str(url.toString())
+        title = unicode(url.toString())
         self.word_completion.currentItemChanged.disconnect(self.word_selection_changed)
         self.word_input.setEditText(title)
         self.word_completion.currentItemChanged.connect(self.word_selection_changed)
