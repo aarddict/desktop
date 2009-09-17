@@ -1,3 +1,7 @@
+a:active {
+    background-color: yellow;
+}
+
 .ref {
     color: red;
     vertical-align: super;
