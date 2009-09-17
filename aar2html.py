@@ -214,8 +214,8 @@ def convert(article):
                 pass
             else:
                 result.append('<span class="'+tag_start.name+'">')
-
-        if (c.decode('utf8') == u'\u2022'
+        print type(c)
+        if (c == u'\u2022'
             and (not result or result[-1] == '\n')):
             result.append('<li>')
         else:
