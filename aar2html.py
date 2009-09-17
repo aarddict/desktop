@@ -1,7 +1,7 @@
 # coding: utf8
 from aarddict.dictionary import Article, Tag, to_tag
 from collections import defaultdict
-
+import time
 import re
 
 html_tags=set(['b',
@@ -155,7 +155,7 @@ def convert(article):
 
 
     """
-
+    t0 = time.time()
     notes = [tag for tag in article.tags if tag.name=='note']
 
     #note end tag is incorrect in many articles for some reason
@@ -192,7 +192,8 @@ def convert(article):
             elif tag_end.name == 'tbl':
                 tbl_tags = [to_tag(tagtuple) for tagtuple in tag_end.attributes['tags']]
                 tbl_article = Article(text=tag_end.attributes['text'],
-                                      tags=tbl_tags)
+                                      tags=tbl_tags,
+                                      title=u'Table in '+article.title)
                 tbl_html = convert(tbl_article)
                 def repl(m):
                     row_text = m.group(1)
@@ -249,6 +250,7 @@ def convert(article):
 
     html = ''.join(result)    
     html = p_after_h_patter.sub(lambda m: m.group(1), html)
+    print 'converted "%s" in %s' % (article.title.encode('utf8'), time.time() - t0)
     return html
 
 

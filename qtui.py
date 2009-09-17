@@ -67,7 +67,6 @@ class DictView(QtGui.QMainWindow):
         wordstr = unicode(word).encode('utf8')
         self.word_completion.clear()
         for result in islice(self.dictionary.lookup(wordstr), 10):
-            print result.title.encode('utf8')
             item = QtGui.QListWidgetItem()
             item.setText(result.title)
             item.setData(QtCore.Qt.UserRole, QtCore.QVariant(result))
@@ -84,13 +83,14 @@ class DictView(QtGui.QMainWindow):
             #view.linkClicked.connect(self.link_clicked)
             self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'), 
                          self.link_clicked)
-            html = aar2html.convert(article_read_f())
+            article = article_read_f()
+            article.title = title
+            html = aar2html.convert(article)
             view.setHtml(html, QtCore.QUrl(title))
             view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
             s = view.settings()
             s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
             self.tabs.addTab(view, title)
-            print self.word_input.currentIndex()
             self.word_input.addItem(title)
 
     def link_clicked(self, url):
