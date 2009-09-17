@@ -2,6 +2,7 @@
 import sys
 import os
 from itertools import islice
+import webbrowser
 
 from PyQt4 import QtGui, QtCore
 from PyQt4 import QtWebKit
@@ -86,11 +87,15 @@ class DictView(QtGui.QMainWindow):
             self.word_input.addItem(title)
 
     def link_clicked(self, url):
+        scheme = url.scheme()
         title = unicode(url.toString())
-        self.word_completion.currentItemChanged.disconnect(self.word_selection_changed)
-        self.word_input.setEditText(title)
-        self.word_completion.currentItemChanged.connect(self.word_selection_changed)
-        self.update_word_completion(title, title)
+        if scheme in ('http', 'https', 'ftp', 'sftp'):
+            webbrowser.open(title)
+        else:            
+            self.word_completion.currentItemChanged.disconnect(self.word_selection_changed)
+            self.word_input.setEditText(title)
+            self.word_completion.currentItemChanged.connect(self.word_selection_changed)
+            self.update_word_completion(title, title)
 
 def main():
     app = QtGui.QApplication(sys.argv)
