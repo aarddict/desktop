@@ -22,4 +22,6 @@ a:active {
 
 .notebackref {
     font-weight: bold;
+    color: maroon;
+    text-decoration: none;
 }
