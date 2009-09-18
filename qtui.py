@@ -4,12 +4,15 @@ import os
 import time
 import functools
 import webbrowser
+import logging
 
 from PyQt4 import QtGui, QtCore
 from PyQt4 import QtWebKit
 
 import aar2html
-from aarddict.dictionary import Dictionary, format_title, DictionaryCollection
+from aarddict.dictionary import (Dictionary, format_title, 
+                                 DictionaryCollection, 
+                                 RedirectResolveError)
 
 class ToHtmlThread(QtCore.QThread):
 
@@ -21,9 +24,14 @@ class ToHtmlThread(QtCore.QThread):
 
     def run(self):
         t0 = time.time()
-        article = self.article_read_f()
-        title = self.article_read_f.title
-        article.title = title
+        try:
+            article = self.article_read_f()
+        except RedirectResolveError:
+            logging.exception()
+            html="Redirect <em>%s</em> couldn't be resolved" % self.article_read_f.title.encode('utf8')
+            self.emit(QtCore.SIGNAL("html"), self.article_read_f, html, self.add_to_history)            
+            return
+        title = article.title
         print 'read "%s" in %s' % (title.encode('utf8'), time.time() - t0)
         t0 = time.time()
         result = []
