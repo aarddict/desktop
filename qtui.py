@@ -16,14 +16,12 @@ class DictView(QtGui.QMainWindow):
         self.dictionary = None
         self.setWindowTitle('Aard Dictionary')
 
-        self.word_input = QtGui.QComboBox()
-        self.word_input.setEditable(True)
-        self.word_input.setAutoCompletion(False)
+        self.word_input = QtGui.QLineEdit()
         # self.word_input.editTextChanged.connect(self.update_word_completion)
-        self.connect(self.word_input, QtCore.SIGNAL('editTextChanged (const QString&)'), 
+        self.connect(self.word_input, QtCore.SIGNAL('textChanged (const QString&)'), 
                      self.update_word_completion)
         self.word_completion = QtGui.QListWidget()
-
+        
         box = QtGui.QVBoxLayout()
         box.setSpacing(2)
         #we want right margin set to 0 since it borders with splitter
@@ -31,16 +29,23 @@ class DictView(QtGui.QMainWindow):
         box.setContentsMargins(2, 2, 0, 2)
         box.addWidget(self.word_input)
         box.addWidget(self.word_completion)
+        lookup_pane = QtGui.QWidget()
+        lookup_pane.setLayout(box)
+
+        self.sidebar = QtGui.QTabWidget()
+        self.sidebar.setTabPosition(QtGui.QTabWidget.South)
+        self.sidebar.addTab(lookup_pane, 'Lookup')
+
+        self.history_view = QtGui.QListWidget()
+        self.sidebar.addTab(self.history_view, 'History')
 
         #self.word_completion.currentItemChanged.connect(self.word_selection_changed)
         self.connect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'), 
                      self.word_selection_changed)
 
-        left_pane = QtGui.QWidget()
-        left_pane.setLayout(box)
 
         splitter = QtGui.QSplitter()
-        splitter.addWidget(left_pane)
+        splitter.addWidget(self.sidebar)
         self.tabs = QtGui.QTabWidget()
         splitter.addWidget(self.tabs)
         splitter.setChildrenCollapsible(False)
@@ -91,7 +96,8 @@ class DictView(QtGui.QMainWindow):
             s = view.settings()
             s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
             self.tabs.addTab(view, title)
-            self.word_input.addItem(title)
+            item = QtGui.QListWidgetItem(selected)
+            self.history_view.addItem(item)
 
     def link_clicked(self, url):
         scheme = url.scheme()
@@ -103,7 +109,7 @@ class DictView(QtGui.QMainWindow):
                      self.word_selection_changed)
 
             # self.word_completion.currentItemChanged.disconnect(self.word_selection_changed)
-            self.word_input.setEditText(title)
+            self.word_input.setText(title)
             # self.word_completion.currentItemChanged.connect(self.word_selection_changed)
             self.disconnect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'), 
                      self.word_selection_changed)
