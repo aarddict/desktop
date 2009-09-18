@@ -2,7 +2,6 @@
 import sys
 import os
 import time
-from itertools import islice
 import functools
 import webbrowser
 
@@ -10,7 +9,7 @@ from PyQt4 import QtGui, QtCore
 from PyQt4 import QtWebKit
 
 import aar2html
-from aarddict.dictionary import Dictionary, format_title
+from aarddict.dictionary import Dictionary, format_title, DictionaryCollection
 
 class ToHtmlThread(QtCore.QThread):
 
@@ -64,7 +63,7 @@ class DictView(QtGui.QMainWindow):
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        self.dictionary = None
+        
         self.setWindowTitle('Aard Dictionary')
 
         self.word_input = QtGui.QLineEdit()
@@ -127,6 +126,8 @@ class DictView(QtGui.QMainWindow):
         self.timer.setSingleShot(True)
         self.scheduled_func = None
 
+        self.dictionaries = DictionaryCollection()
+
     def schedule(self, func, delay=500):
         if self.scheduled_func:
             self.disconnect(self.timer, QtCore.SIGNAL('timeout()'), self.scheduled_func)
@@ -141,7 +142,7 @@ class DictView(QtGui.QMainWindow):
     def update_word_completion(self, word, to_select=None):
         wordstr = unicode(word).encode('utf8')
         self.word_completion.clear()
-        for result in islice(self.dictionary.lookup(wordstr), 10):
+        for result in self.dictionaries.lookup(wordstr):
             item = QtGui.QListWidgetItem()
             item.setText(result.title)
             item.setData(QtCore.Qt.UserRole, QtCore.QVariant(result))
@@ -176,7 +177,7 @@ class DictView(QtGui.QMainWindow):
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
         s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
-        self.tabs.addTab(view, format_title(self.dictionary))
+        self.tabs.addTab(view, format_title(article_read_f.source))
 
         if add_to_history:
             item = QtGui.QListWidgetItem()
@@ -199,13 +200,10 @@ class DictView(QtGui.QMainWindow):
 def main():
     app = QtGui.QApplication(sys.argv)
     dv = DictView()
-
     from optparse import OptionParser
     optparser = OptionParser()
     opts, args = optparser.parse_args()
-
-    d = Dictionary(args[0])
-    dv.dictionary = d
+    dv.dictionaries += [Dictionary(name) for name in args]
     dv.show()
     sys.exit(app.exec_())
 
