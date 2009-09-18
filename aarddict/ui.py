@@ -343,51 +343,18 @@ class WordLookup(object):
     def __unicode__(self):
         return self.word
 
-    def notfound(self, article):
-        narticle = dictionary.Article(article.title,
-                                      _('Redirect to %s not found' % article.redirect),
-                                      dictionary=article.dictionary)
-        return narticle
-
-    def redirect(self, article, level=0):
-        redirect = article.redirect
-
-        if not redirect:
-            return article
-
-        logging.debug('Redirect "%s" section "%s" ==> "%s" (level %d)',
-                      article.title, article.section, redirect, level)
-
-        if level > 5:
-            logging.warn('Can\'t resolve redirect "%s", too many levels',
-                         redirect)
-            return article
-
-        for strength in (IDENTICAL, QUATERNARY, TERTIARY,
-                         SECONDARY, PRIMARY):
-
-            resulti = self.lookup_func(redirect,
-                                      uuid=article.dictionary.uuid,
-                                      strength=strength)
-            try:
-                result = resulti.next()
-            except StopIteration:
-                pass
-            else:
-                a = result()
-                a.title = result.title
-                a.section = result.section
-                return self.redirect(a, level=level+1)
-
-    def do_redirect(self, read_func):
-        article = read_func()
-        article.title = read_func.title
-        article.section = read_func.section
-        rarticle = self.redirect(article)
-        return rarticle if rarticle else self.notfound(article)
-
     def articles(self):
-        return [self.do_redirect(func) for func in self.read_funcs]
+        result = []
+        for func in self.read_funcs:
+            try:
+                result.append(func())
+            except dictionary.RedirectResolveError:
+                narticle = dictionary.Article(article.title,
+                                              _('Redirect to %s not found' % article.redirect),
+                                              dictionary=article.dictionary)
+                result.append(narticle)
+        return result
+
 
 class LookupCanceled(Exception):
     pass

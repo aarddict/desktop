@@ -41,6 +41,8 @@ compression = (zlib.compress,
 decompression = (zlib.decompress,
                  bz2.decompress)
 
+max_redirect_levels = 5
+
 def format_title(d, with_vol_num=True):
     parts = [d.title]
     lang = d.metadata.get('lang')
@@ -519,7 +521,7 @@ class DictionaryCollection(list):
         return sorted((d for d in self if d.uuid == uuid), key=lambda d: d.volume)
 
     def lookup(self, start_word, max_from_one_dict=50,
-               uuid=None, strength=PRIMARY):
+               uuid=None, strength=PRIMARY, resolve_redirects=True):
 
         uuids = self.uuids() if uuid is None else (uuid,)
 
@@ -529,4 +531,57 @@ class DictionaryCollection(list):
                                                  max_from_one_dict) 
                                           for vol in vols]), 
                                   max_from_one_dict):
-                yield article            
+                if resolve_redirects:
+                    redirect_article =  functools.partial(self.redirect, article)
+                    redirect_article.title = article.title
+                    redirect_article.section = article.section
+                    redirect_article.source = article.source                
+                    yield redirect_article
+                else:
+                    yield article
+
+    def _redirect(self, article, level=0):
+        redirect = article.redirect
+
+        if not redirect:
+            return article
+
+        logging.debug('Redirect "%r" section "%r" ==> "%r" (level %d)',
+                      article.title, article.section, redirect, level)
+
+        if level > max_redirect_levels:
+            raise RedirectTooManyLevels('Can\'t resolve redirect "%s", too many levels', redirect)
+
+        for strength in (IDENTICAL, QUATERNARY, TERTIARY,
+                         SECONDARY, PRIMARY):
+
+            resulti = self.lookup(redirect,
+                                  uuid=article.dictionary.uuid,
+                                  strength=strength)
+            try:
+                result = resulti.next()
+            except StopIteration:
+                pass
+            else:
+                a = result()
+                a.title = result.title
+                a.section = result.section
+                return self._redirect(a, level=level+1)
+
+    def redirect(self, read_func):
+        article = read_func()
+        article.title = read_func.title
+        article.section = read_func.section
+        rarticle = self._redirect(article)    
+        if rarticle:
+            return rarticle
+        else:
+            raise RedirectNotFound
+
+
+class RedirectResolveError(Exception): pass
+
+class RedirectNotFound(RedirectResolveError): pass
+class RedirectTooManyLevels(RedirectResolveError): pass
+
+
