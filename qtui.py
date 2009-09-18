@@ -2,6 +2,7 @@
 import sys
 import os
 from itertools import islice
+import functools
 import webbrowser
 
 from PyQt4 import QtGui, QtCore
@@ -18,10 +19,10 @@ class DictView(QtGui.QMainWindow):
 
         self.word_input = QtGui.QLineEdit()
         # self.word_input.editTextChanged.connect(self.update_word_completion)
-        self.connect(self.word_input, QtCore.SIGNAL('textChanged (const QString&)'), 
-                     self.update_word_completion)
+        self.connect(self.word_input, QtCore.SIGNAL('textEdited (const QString&)'),
+                     self.word_input_text_edited)
         self.word_completion = QtGui.QListWidget()
-        
+
         box = QtGui.QVBoxLayout()
         box.setSpacing(2)
         #we want right margin set to 0 since it borders with splitter
@@ -40,7 +41,7 @@ class DictView(QtGui.QMainWindow):
         self.sidebar.addTab(self.history_view, 'History')
 
         #self.word_completion.currentItemChanged.connect(self.word_selection_changed)
-        self.connect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'), 
+        self.connect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.word_selection_changed)
 
 
@@ -68,6 +69,21 @@ class DictView(QtGui.QMainWindow):
         self.setCentralWidget(splitter)
         self.resize(640, 480)
 
+        self.timer = QtCore.QTimer()
+        self.timer.setSingleShot(True)
+        self.scheduled_func = None
+
+    def schedule(self, func, delay=500):
+        if self.scheduled_func:
+            self.disconnect(self.timer, QtCore.SIGNAL('timeout()'), self.scheduled_func)
+        self.connect(self.timer, QtCore.SIGNAL('timeout()'), func)
+        self.scheduled_func = func
+        self.timer.start(delay)
+
+    def word_input_text_edited(self, word):
+        func = functools.partial(self.update_word_completion, word)
+        self.schedule(func)
+
     def update_word_completion(self, word, to_select=None):
         wordstr = unicode(word).encode('utf8')
         self.word_completion.clear()
@@ -86,7 +102,7 @@ class DictView(QtGui.QMainWindow):
             article_read_f = selected.data(QtCore.Qt.UserRole).toPyObject()
             view = QtWebKit.QWebView()
             #view.linkClicked.connect(self.link_clicked)
-            self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'), 
+            self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
                          self.link_clicked)
             article = article_read_f()
             article.title = title
@@ -104,8 +120,12 @@ class DictView(QtGui.QMainWindow):
         title = unicode(url.toString())
         if scheme in ('http', 'https', 'ftp', 'sftp'):
             webbrowser.open(title)
-        else:            
+        else:
             self.word_input.setText(title)
+            #don't call directly to make sure previous update is unscheduled
+            func = functools.partial(self.update_word_completion, title)            
+            self.schedule(func, 0)
+
 
 def main():
     app = QtGui.QApplication(sys.argv)
