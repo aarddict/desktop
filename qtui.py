@@ -14,10 +14,11 @@ from aarddict.dictionary import Dictionary, format_title
 
 class ToHtmlThread(QtCore.QThread):
 
-    def __init__(self, article_read_f, parent=None):
+    def __init__(self, article_read_f, add_to_history, parent=None):
         QtCore.QThread.__init__(self, parent)
         self.article_read_f = article_read_f
         self.stop_requested = False
+        self.add_to_history = add_to_history
 
     def run(self):
         t0 = time.time()
@@ -53,7 +54,7 @@ class ToHtmlThread(QtCore.QThread):
             return
         else:
             print 'converted "%s" in %s' % (article.title.encode('utf8'), time.time() - t0)
-            self.emit(QtCore.SIGNAL("html"), article, html)
+            self.emit(QtCore.SIGNAL("html"), self.article_read_f, html, self.add_to_history)
 
     def stop(self):
         self.stop_requested = True
@@ -88,6 +89,10 @@ class DictView(QtGui.QMainWindow):
 
         self.history_view = QtGui.QListWidget()
         self.sidebar.addTab(self.history_view, 'History')
+
+
+        self.connect(self.history_view, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
+                     self.history_selection_changed)
 
         #self.word_completion.currentItemChanged.connect(self.word_selection_changed)
         self.connect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
@@ -148,28 +153,36 @@ class DictView(QtGui.QMainWindow):
         func = functools.partial(self.update_shown_article, selected)
         self.schedule(func, 200)
 
-    def update_shown_article(self, selected):
+    def history_selection_changed(self, selected, deselected):
+        func = functools.partial(self.update_shown_article, selected, add_to_history=False)
+        self.schedule(func, 200)
+
+    def update_shown_article(self, selected, add_to_history=True):
         self.tabs.clear()
         if selected:
             article_read_f = selected.data(QtCore.Qt.UserRole).toPyObject()
             self.emit(QtCore.SIGNAL("stop_article_load"))
-            tohtml = ToHtmlThread(article_read_f, self)
-            self.connect(tohtml, QtCore.SIGNAL("html"), self.article_formatted, QtCore.Qt.QueuedConnection)
+            tohtml = ToHtmlThread(article_read_f, add_to_history, self)
+            self.connect(tohtml, QtCore.SIGNAL("html"), self.article_loaded, QtCore.Qt.QueuedConnection)
             self.connect(self, QtCore.SIGNAL("stop_article_load"), tohtml.stop)
             tohtml.start()
 
-    def article_formatted(self, article, html):
+    def article_loaded(self, article_read_f, html, add_to_history=True):
         view = QtWebKit.QWebView()
         #view.linkClicked.connect(self.link_clicked)
         self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
-        view.setHtml(html, QtCore.QUrl(article.title))
+        view.setHtml(html, QtCore.QUrl(article_read_f.title))
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
         s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
         self.tabs.addTab(view, format_title(self.dictionary))
-        # item = QtGui.QListWidgetItem(selected)
-        # self.history_view.addItem(item)
+
+        if add_to_history:
+            item = QtGui.QListWidgetItem()
+            item.setText(article_read_f.title)
+            item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_read_f))
+            self.history_view.addItem(item)
 
     def link_clicked(self, url):
         scheme = url.scheme()
