@@ -59,20 +59,20 @@ def make_ref(tag):
     return '<a id="%s" class="ref" href="#" onClick="document.getElementById(\'%s\').scrollIntoView(true);return false;">' % (ref_id, target_id)
 
 def make_note(tag):
-    note_id = make_note_id(tag)    
+    note_id = make_note_id(tag)
     return '<div id="%s" class="note">' % note_id
 
 def make_link(tag):
     href = tag.attributes['href'].lower()
-    if (href.startswith("http://") or 
-        href.startswith("https://") or 
+    if (href.startswith("http://") or
+        href.startswith("https://") or
         href.startswith("ftp://")
         ):
         tag.attributes['class'] = 'ext'
     else:
         tag.attributes['class'] = 'int'
     return tag_start(tag)
-        
+
 
 tag_map_start = defaultdict(lambda: tag_start)
 tag_map_start.update({'row': lambda tag: '<tr>',
@@ -155,7 +155,7 @@ def convert(article):
 
 
     """
-    t0 = time.time()
+    
     notes = [tag for tag in article.tags if tag.name=='note']
 
     #note end tag is incorrect in many articles for some reason
@@ -178,23 +178,29 @@ def convert(article):
     for value in tagends.itervalues():
         value.sort(key=lambda x: x.end)
 
-    result=[]
     text_len = len(article.text)
 
     i = 0
+    last_result = None
     while i <= text_len:
+
+        for jjj in range(10000):
+            zzzz = jjj*jjj
+            #I wanted to be slow
+
         #Tag end may have position after last char
         c = article.text[i] if i < text_len else ''
 
         for tag_end in tagends[i]:
             if tag_end.name in html_tags:
-                result.append(tag_map_end[tag_end.name](tag_end))
+                yield tag_map_end[tag_end.name](tag_end)
             elif tag_end.name == 'tbl':
                 tbl_tags = [to_tag(tagtuple) for tagtuple in tag_end.attributes['tags']]
                 tbl_article = Article(text=tag_end.attributes['text'],
                                       tags=tbl_tags,
                                       title=u'Table in '+article.title)
-                tbl_html = convert(tbl_article)
+                tbl_html = ''.join(fix_new_lines(list(convert(tbl_article))))
+                tbl_html = add_notebackrefs(remove_p_after_h(tbl_html))
                 def repl(m):
                     row_text = m.group(1)
                     row_text = row_text.replace('\t', '</td><td>')
@@ -202,36 +208,37 @@ def convert(article):
                     return '<tr>%s</tr>' % row_text
                 tbl_html = row_pattern.sub(repl, tbl_html)
                 tbl_html = '<table>%s</table>' % tbl_html
-                result.append(tbl_html)
+                yield tbl_html
             else:
-                result.append('</span>')
+                yield '</span>'
 
         for tag_start in tagstarts[i]:
             if tag_start.name in html_tags:
-                result.append(tag_map_start[tag_start.name](tag_start))
+                yield tag_map_start[tag_start.name](tag_start)
                 if tag_start.name == 'note':
                     note_id = make_note_id(tag_start)
                     ref_id = 'ref'+note_id
                     onClick = "document.getElementById(\'%s\').scrollIntoView(true);return false;" % ref_id
-                    
+
             elif tag_start.name == 'tbl':
                 pass
             else:
-                result.append('<span class="'+tag_start.name+'">')
-        if (c == u'\u2022'
-            and (not result or result[-1] == '\n')):
-            result.append('<li>')
+                yield '<span class="'+tag_start.name+'">'
+        if (c == u'\u2022' and last_result == '\n'):
+            yield '<li>'
         else:
-            result.append(c)
-
+            yield c
+        last_result = c
         i += 1
 
-    nobr = set(('<li', '<h1', '<h2', '<h3', '<h4',
-                      '<h5', '<h6', '<div', '<p', ))
 
-    nobr_end = set(('</h1>', '</h2>', '</h2>', '</h3>',
-                      '</h4>', '</h5>', '</div>'))
+nobr = set(('<li', '<h1', '<h2', '<h3', '<h4',
+            '<h5', '<h6', '<div', '<p', ))
 
+nobr_end = set(('</h1>', '</h2>', '</h2>', '</h3>',
+                '</h4>', '</h5>', '</div>'))
+
+def fix_new_lines(result):
     if result:
         for j, element in enumerate(result):
             if element == '\n':
@@ -251,18 +258,15 @@ def convert(article):
                     if any([prev.startswith(t) for t in nobr_end]):
                         continue
                 result[j] = '<br>'
-            
+    return result
 
-    html = ''.join(result)    
-    html = p_after_h_patter.sub(lambda m: m.group(1), html)
+def remove_p_after_h(htmlstr):
+    return p_after_h_patter.sub(lambda m: m.group(1), htmlstr)
+
+def add_notebackrefs(htmlstr):
     def repl_note(m):
         ref_id = 'ref'+m.group(1)
         onClick = "document.getElementById(\'%s\').scrollIntoView(true);return false;" % ref_id
         return 'id="%s" class="note"><a href="#" onClick="%s" class="notebackref">[%s]</a>' % (m.group(1), onClick, m.group(2))
-        
-
-    html = note_pattern.sub(repl_note, html)
-    print 'converted "%s" in %s' % (article.title.encode('utf8'), time.time() - t0)
-    return html
-
+    return note_pattern.sub(repl_note, htmlstr)
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os
+import time
 from itertools import islice
 import functools
 import webbrowser
@@ -9,11 +10,61 @@ from PyQt4 import QtGui, QtCore
 from PyQt4 import QtWebKit
 
 import aar2html
+from aarddict.dictionary import Dictionary, format_title
+
+class ToHtmlThread(QtCore.QThread):
+
+    def __init__(self, article_read_f, parent=None):
+        QtCore.QThread.__init__(self, parent)
+        self.article_read_f = article_read_f
+        self.stop_requested = False
+
+    def run(self):
+        t0 = time.time()
+        article = self.article_read_f()
+        title = self.article_read_f.title
+        article.title = title
+        print 'read "%s" in %s' % (title.encode('utf8'), time.time() - t0)
+        t0 = time.time()
+        result = []
+        for c in aar2html.convert(article):
+            if self.stop_requested:
+                print 'conversion of "%s" stopped' % title
+                return
+            result.append(c)
+        result = aar2html.fix_new_lines(result)
+        if self.stop_requested:
+            print 'conversion of "%s" stopped' % title
+            return
+
+        html = ''.join(result)
+        if self.stop_requested:
+            print 'conversion of "%s" stopped' % title
+            return
+
+        html = aar2html.remove_p_after_h(html)
+        if self.stop_requested:
+            print 'conversion of "%s" stopped' % title
+            return
+
+        html = aar2html.add_notebackrefs(html)
+        if self.stop_requested:
+            print 'conversion of "%s" stopped' % title
+            return
+        else:
+            print 'converted "%s" in %s' % (article.title.encode('utf8'), time.time() - t0)
+            self.emit(QtCore.SIGNAL("html"), article, html)
+
+    def stop(self):
+        self.stop_requested = True
+
 
 class DictView(QtGui.QMainWindow):
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
+        print "DictView.__init__ thread: ", QtCore.QThread.currentThread()
+        print "Main thread: ", QtGui.QApplication.instance().thread()
         self.dictionary = None
         self.setWindowTitle('Aard Dictionary')
 
@@ -102,22 +153,25 @@ class DictView(QtGui.QMainWindow):
     def update_shown_article(self, selected):
         self.tabs.clear()
         if selected:
-            title = unicode(selected.text())
             article_read_f = selected.data(QtCore.Qt.UserRole).toPyObject()
-            view = QtWebKit.QWebView()
-            #view.linkClicked.connect(self.link_clicked)
-            self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
-                         self.link_clicked)
-            article = article_read_f()
-            article.title = title
-            html = aar2html.convert(article)
-            view.setHtml(html, QtCore.QUrl(title))
-            view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
-            s = view.settings()
-            s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
-            self.tabs.addTab(view, title)
-            item = QtGui.QListWidgetItem(selected)
-            self.history_view.addItem(item)
+            self.emit(QtCore.SIGNAL("stop_article_load"))
+            tohtml = ToHtmlThread(article_read_f, self)
+            self.connect(tohtml, QtCore.SIGNAL("html"), self.article_formatted, QtCore.Qt.QueuedConnection)
+            self.connect(self, QtCore.SIGNAL("stop_article_load"), tohtml.stop)
+            tohtml.start()
+
+    def article_formatted(self, article, html):
+        view = QtWebKit.QWebView()
+        #view.linkClicked.connect(self.link_clicked)
+        self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
+                     self.link_clicked)
+        view.setHtml(html, QtCore.QUrl(article.title))
+        view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
+        s = view.settings()
+        s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
+        self.tabs.addTab(view, format_title(self.dictionary))
+        # item = QtGui.QListWidgetItem(selected)
+        # self.history_view.addItem(item)
 
     def link_clicked(self, url):
         scheme = url.scheme()
@@ -127,7 +181,7 @@ class DictView(QtGui.QMainWindow):
         else:
             self.word_input.setText(title)
             #don't call directly to make sure previous update is unscheduled
-            func = functools.partial(self.update_word_completion, title)            
+            func = functools.partial(self.update_word_completion, title)
             self.schedule(func, 0)
 
 
@@ -138,7 +192,7 @@ def main():
     from optparse import OptionParser
     optparser = OptionParser()
     opts, args = optparser.parse_args()
-    from aarddict.dictionary import Dictionary
+
     d = Dictionary(args[0])
     dv.dictionary = d
     dv.show()
