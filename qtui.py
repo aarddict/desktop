@@ -63,8 +63,6 @@ class DictView(QtGui.QMainWindow):
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        print "DictView.__init__ thread: ", QtCore.QThread.currentThread()
-        print "Main thread: ", QtGui.QApplication.instance().thread()
         self.dictionary = None
         self.setWindowTitle('Aard Dictionary')
 
