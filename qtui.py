@@ -96,6 +96,10 @@ class DictView(QtGui.QMainWindow):
                 self.word_completion.setCurrentItem(item)
 
     def word_selection_changed(self, selected, deselected):
+        func = functools.partial(self.update_shown_article, selected)
+        self.schedule(func, 200)
+
+    def update_shown_article(self, selected):
         self.tabs.clear()
         if selected:
             title = unicode(selected.text())
