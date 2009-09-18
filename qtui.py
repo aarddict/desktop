@@ -105,16 +105,7 @@ class DictView(QtGui.QMainWindow):
         if scheme in ('http', 'https', 'ftp', 'sftp'):
             webbrowser.open(title)
         else:            
-            self.connect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'), 
-                     self.word_selection_changed)
-
-            # self.word_completion.currentItemChanged.disconnect(self.word_selection_changed)
             self.word_input.setText(title)
-            # self.word_completion.currentItemChanged.connect(self.word_selection_changed)
-            self.disconnect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'), 
-                     self.word_selection_changed)
-
-            self.update_word_completion(title, title)
 
 def main():
     app = QtGui.QApplication(sys.argv)
