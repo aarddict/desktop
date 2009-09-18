@@ -184,10 +184,6 @@ def convert(article):
     last_result = None
     while i <= text_len:
 
-        for jjj in range(10000):
-            zzzz = jjj*jjj
-            #I wanted to be slow
-
         #Tag end may have position after last char
         c = article.text[i] if i < text_len else ''
 
