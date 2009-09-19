@@ -15,7 +15,7 @@ import aar2html
 from aarddict.dictionary import (Dictionary, format_title,
                                  DictionaryCollection,
                                  RedirectResolveError,
-                                 collation_key, SECONDARY, 
+                                 collation_key, SECONDARY,
                                  Article)
 
 dict_access_lock = QtCore.QMutex()
@@ -34,8 +34,8 @@ class ToHtmlThread(QtCore.QThread):
             if self.stop_requested:
                 return
             result.append(c)
-        
-        steps = [aar2html.fix_new_lines, 
+
+        steps = [aar2html.fix_new_lines,
                  ''.join,
                  aar2html.remove_p_after_h,
                  aar2html.add_notebackrefs
@@ -58,7 +58,7 @@ class ArticleLoadThread(QtCore.QThread):
         QtCore.QThread.__init__(self, parent)
         self.article_read_funcs = article_read_funcs
         self.stop_requested = False
-        
+
     def run(self):
         dict_access_lock.lock()
         try:
@@ -91,6 +91,7 @@ class DictView(QtGui.QMainWindow):
         self.setWindowTitle('Aard Dictionary')
 
         self.word_input = QtGui.QLineEdit()
+        
         # self.word_input.editTextChanged.connect(self.update_word_completion)
         self.connect(self.word_input, QtCore.SIGNAL('textEdited (const QString&)'),
                      self.word_input_text_edited)
@@ -198,13 +199,12 @@ class DictView(QtGui.QMainWindow):
             self.connect(self, QtCore.SIGNAL("stop_article_load"), load_thread.stop)
             load_thread.start()
 
-
     def article_loaded(self, article_read_func, article):
         tohtml = ToHtmlThread(article, self)
         self.connect(tohtml, QtCore.SIGNAL("html"), self.article_html_ready, QtCore.Qt.QueuedConnection)
         self.connect(self, QtCore.SIGNAL("stop_html"), tohtml.stop)
         tohtml.start()
-        
+
 
     def article_html_ready(self, article, html):
         view = QtWebKit.QWebView()
@@ -241,6 +241,7 @@ def main():
     opts, args = optparser.parse_args()
     dv.dictionaries += [Dictionary(name) for name in args]
     dv.show()
+    dv.word_input.setFocus()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
