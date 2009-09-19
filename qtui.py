@@ -6,62 +6,78 @@ import functools
 import webbrowser
 import logging
 
+from itertools import groupby
+
 from PyQt4 import QtGui, QtCore
 from PyQt4 import QtWebKit
 
 import aar2html
-from aarddict.dictionary import (Dictionary, format_title, 
-                                 DictionaryCollection, 
-                                 RedirectResolveError)
+from aarddict.dictionary import (Dictionary, format_title,
+                                 DictionaryCollection,
+                                 RedirectResolveError,
+                                 collation_key, SECONDARY, 
+                                 Article)
+
+dict_access_lock = QtCore.QMutex()
 
 class ToHtmlThread(QtCore.QThread):
 
-    def __init__(self, article_read_f, add_to_history, parent=None):
+    def __init__(self, article, parent=None):
         QtCore.QThread.__init__(self, parent)
-        self.article_read_f = article_read_f
+        self.article = article
         self.stop_requested = False
-        self.add_to_history = add_to_history
 
     def run(self):
         t0 = time.time()
-        try:
-            article = self.article_read_f()
-        except RedirectResolveError:
-            logging.exception()
-            html="Redirect <em>%s</em> couldn't be resolved" % self.article_read_f.title.encode('utf8')
-            self.emit(QtCore.SIGNAL("html"), self.article_read_f, html, self.add_to_history)            
-            return
-        title = article.title
-        print 'read "%s" in %s' % (title.encode('utf8'), time.time() - t0)
-        t0 = time.time()
         result = []
-        for c in aar2html.convert(article):
+        for c in aar2html.convert(self.article):
             if self.stop_requested:
-                print 'conversion of "%s" stopped' % title
                 return
             result.append(c)
-        result = aar2html.fix_new_lines(result)
-        if self.stop_requested:
-            print 'conversion of "%s" stopped' % title
-            return
+        
+        steps = [aar2html.fix_new_lines, 
+                 ''.join,
+                 aar2html.remove_p_after_h,
+                 aar2html.add_notebackrefs
+                 ]
+        for step in steps:
+            if self.stop_requested:
+                return
+            result = step(result)
 
-        html = ''.join(result)
-        if self.stop_requested:
-            print 'conversion of "%s" stopped' % title
-            return
+        if not self.stop_requested:
+            print 'converted "%s" in %s' % (self.article.title.encode('utf8'), time.time() - t0)
+            self.emit(QtCore.SIGNAL("html"), self.article, result)
 
-        html = aar2html.remove_p_after_h(html)
-        if self.stop_requested:
-            print 'conversion of "%s" stopped' % title
-            return
+    def stop(self):
+        self.stop_requested = True
 
-        html = aar2html.add_notebackrefs(html)
-        if self.stop_requested:
-            print 'conversion of "%s" stopped' % title
-            return
-        else:
-            print 'converted "%s" in %s' % (article.title.encode('utf8'), time.time() - t0)
-            self.emit(QtCore.SIGNAL("html"), self.article_read_f, html, self.add_to_history)
+class ArticleLoadThread(QtCore.QThread):
+
+    def __init__(self, article_read_funcs, parent=None):
+        QtCore.QThread.__init__(self, parent)
+        self.article_read_funcs = article_read_funcs
+        self.stop_requested = False
+        
+    def run(self):
+        dict_access_lock.lock()
+        try:
+            for read_func in self.article_read_funcs:
+                if self.stop_requested:
+                    print 'Stop requested for article load'
+                    break
+                t0 = time.time()
+                try:
+                    article = read_func()
+                except RedirectResolveError, e:
+                    logging.exception()
+                    article = Article(e.article.title,
+                                      'Redirect to %s not found' % e.article.redirect,
+                                      dictionary=e.article.dictionary)
+                print 'read "%s" from %s in %s' % (article.title.encode('utf8'), article.dictionary, time.time() - t0)
+                self.emit(QtCore.SIGNAL("article_loaded"), read_func, article)
+        finally:
+            dict_access_lock.unlock()
 
     def stop(self):
         self.stop_requested = True
@@ -71,7 +87,7 @@ class DictView(QtGui.QMainWindow):
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        
+
         self.setWindowTitle('Aard Dictionary')
 
         self.word_input = QtGui.QLineEdit()
@@ -150,12 +166,17 @@ class DictView(QtGui.QMainWindow):
     def update_word_completion(self, word, to_select=None):
         wordstr = unicode(word).encode('utf8')
         self.word_completion.clear()
-        for result in self.dictionaries.lookup(wordstr):
+        articles = list(self.dictionaries.lookup(wordstr))
+        def key(article):
+            return collation_key(article.title, SECONDARY).getByteArray()
+        articles.sort(key=key)
+        for k, g in groupby(articles, key):
+            article_group = list(g)
             item = QtGui.QListWidgetItem()
-            item.setText(result.title)
-            item.setData(QtCore.Qt.UserRole, QtCore.QVariant(result))
+            item.setText(article_group[0].title)
+            item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_group))
             self.word_completion.addItem(item)
-            if result.title == word:
+            if article_group[0].title == word:
                 self.word_completion.setCurrentItem(item)
 
     def word_selection_changed(self, selected, deselected):
@@ -163,35 +184,42 @@ class DictView(QtGui.QMainWindow):
         self.schedule(func, 200)
 
     def history_selection_changed(self, selected, deselected):
-        func = functools.partial(self.update_shown_article, selected, add_to_history=False)
+        func = functools.partial(self.update_shown_article, selected)
         self.schedule(func, 200)
 
     def update_shown_article(self, selected, add_to_history=True):
+        self.emit(QtCore.SIGNAL("stop_article_load"))
+        self.emit(QtCore.SIGNAL("stop_html"))
         self.tabs.clear()
         if selected:
-            article_read_f = selected.data(QtCore.Qt.UserRole).toPyObject()
-            self.emit(QtCore.SIGNAL("stop_article_load"))
-            tohtml = ToHtmlThread(article_read_f, add_to_history, self)
-            self.connect(tohtml, QtCore.SIGNAL("html"), self.article_loaded, QtCore.Qt.QueuedConnection)
-            self.connect(self, QtCore.SIGNAL("stop_article_load"), tohtml.stop)
-            tohtml.start()
+            article_group = selected.data(QtCore.Qt.UserRole).toPyObject()
+            load_thread = ArticleLoadThread(article_group, self)
+            self.connect(load_thread, QtCore.SIGNAL("article_loaded"), self.article_loaded, QtCore.Qt.QueuedConnection)
+            self.connect(self, QtCore.SIGNAL("stop_article_load"), load_thread.stop)
+            load_thread.start()
 
-    def article_loaded(self, article_read_f, html, add_to_history=True):
+
+    def article_loaded(self, article_read_func, article):
+        tohtml = ToHtmlThread(article, self)
+        self.connect(tohtml, QtCore.SIGNAL("html"), self.article_html_ready, QtCore.Qt.QueuedConnection)
+        self.connect(self, QtCore.SIGNAL("stop_html"), tohtml.stop)
+        tohtml.start()
+        
+
+    def article_html_ready(self, article, html):
         view = QtWebKit.QWebView()
-        #view.linkClicked.connect(self.link_clicked)
         self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
-        view.setHtml(html, QtCore.QUrl(article_read_f.title))
+        view.setHtml(html, QtCore.QUrl(article.title))
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
         s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
-        self.tabs.addTab(view, format_title(article_read_f.source))
+        self.tabs.addTab(view, format_title(article.dictionary))
 
-        if add_to_history:
-            item = QtGui.QListWidgetItem()
-            item.setText(article_read_f.title)
-            item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_read_f))
-            self.history_view.addItem(item)
+        # item = QtGui.QListWidgetItem()
+        # item.setText(article_read_f.title)
+        # item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_read_f))
+        # self.history_view.addItem(item)
 
     def link_clicked(self, url):
         scheme = url.scheme()
