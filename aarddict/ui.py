@@ -348,9 +348,10 @@ class WordLookup(object):
         for func in self.read_funcs:
             try:
                 result.append(func())
-            except dictionary.RedirectResolveError:
-                narticle = dictionary.Article(article.title,
-                                              _('Redirect to %s not found' % article.redirect),
+            except dictionary.RedirectResolveError, e:
+                
+                narticle = dictionary.Article(e.article.title,
+                                              _('Redirect to %s not found' % e.article.redirect),
                                               dictionary=article.dictionary)
                 result.append(narticle)
         return result

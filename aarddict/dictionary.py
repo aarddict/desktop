@@ -550,7 +550,7 @@ class DictionaryCollection(list):
                       article.title, article.section, redirect, level)
 
         if level > max_redirect_levels:
-            raise RedirectTooManyLevels('Can\'t resolve redirect "%s", too many levels', redirect)
+            raise RedirectTooManyLevels(article)
 
         for strength in (IDENTICAL, QUATERNARY, TERTIARY,
                          SECONDARY, PRIMARY):
@@ -576,10 +576,13 @@ class DictionaryCollection(list):
         if rarticle:
             return rarticle
         else:
-            raise RedirectNotFound
+            raise RedirectNotFound(article)
 
 
-class RedirectResolveError(Exception): pass
+class RedirectResolveError(Exception): 
+    
+    def __init__(self, article):
+        self.article = article
 
 class RedirectNotFound(RedirectResolveError): pass
 class RedirectTooManyLevels(RedirectResolveError): pass
