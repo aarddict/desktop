@@ -15,8 +15,13 @@ import aar2html
 from aarddict.dictionary import (Dictionary, format_title,
                                  DictionaryCollection,
                                  RedirectResolveError,
-                                 collation_key, SECONDARY,
-                                 Article)
+                                 collation_key, 
+                                 PRIMARY,
+                                 SECONDARY,
+                                 TERTIARY,
+                                 Article, 
+                                 split_word,
+                                 cmp_words)
 
 dict_access_lock = QtCore.QMutex()
 
@@ -169,7 +174,7 @@ class DictView(QtGui.QMainWindow):
         self.word_completion.clear()
         articles = list(self.dictionaries.lookup(wordstr))
         def key(article):
-            return collation_key(article.title, SECONDARY).getByteArray()
+            return collation_key(article.title, TERTIARY).getByteArray()
         articles.sort(key=key)
         for k, g in groupby(articles, key):
             article_group = list(g)
@@ -177,8 +182,7 @@ class DictView(QtGui.QMainWindow):
             item.setText(article_group[0].title)
             item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_group))
             self.word_completion.addItem(item)
-            if article_group[0].title == word:
-                self.word_completion.setCurrentItem(item)
+        self.select_word(wordstr)
 
     def word_selection_changed(self, selected, deselected):
         func = functools.partial(self.update_shown_article, selected)
@@ -220,6 +224,24 @@ class DictView(QtGui.QMainWindow):
         # item.setText(article_read_f.title)
         # item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_read_f))
         # self.history_view.addItem(item)
+
+    def select_word(self, word):
+        if word is None:
+            return
+        word, section = split_word(word)
+        count = range(self.word_completion.count())
+        for strength in (TERTIARY, SECONDARY, PRIMARY):
+            for i in count:
+                item = self.word_completion.item(i)
+                if cmp_words(unicode(item.text()), word, strength=strength) == 0:
+                    self.word_completion.setCurrentItem(item)
+                    self.word_completion.scrollToItem(item)
+                    return
+        if count:
+            item = self.word_completion.item(0)
+            self.word_completion.setCurrentItem(item)
+            self.word_completion.scrollToItem(item)            
+
 
     def link_clicked(self, url):
         scheme = url.scheme()
