@@ -15,11 +15,11 @@ import aar2html
 from aarddict.dictionary import (Dictionary, format_title,
                                  DictionaryCollection,
                                  RedirectResolveError,
-                                 collation_key, 
+                                 collation_key,
                                  PRIMARY,
                                  SECONDARY,
                                  TERTIARY,
-                                 Article, 
+                                 Article,
                                  split_word,
                                  cmp_words)
 
@@ -87,6 +87,14 @@ class ArticleLoadThread(QtCore.QThread):
     def stop(self):
         self.stop_requested = True
 
+class WordInput(QtGui.QLineEdit):
+
+    def keyPressEvent (self, event):
+        QtGui.QLineEdit.keyPressEvent(self, event)
+        if event.matches(QtGui.QKeySequence.MoveToNextLine):
+            self.emit(QtCore.SIGNAL('word_input_down'))
+        elif event.matches(QtGui.QKeySequence.MoveToPreviousLine):
+            self.emit(QtCore.SIGNAL('word_input_up'))
 
 class DictView(QtGui.QMainWindow):
 
@@ -95,13 +103,15 @@ class DictView(QtGui.QMainWindow):
 
         self.setWindowTitle('Aard Dictionary')
 
-        self.word_input = QtGui.QLineEdit()
-        
+        self.word_input = WordInput()
+
         # self.word_input.editTextChanged.connect(self.update_word_completion)
         self.connect(self.word_input, QtCore.SIGNAL('textEdited (const QString&)'),
                      self.word_input_text_edited)
         self.word_completion = QtGui.QListWidget()
-
+        self.connect(self.word_input, QtCore.SIGNAL('word_input_down'), self.select_next_word)
+        self.connect(self.word_input, QtCore.SIGNAL('word_input_up'), self.select_prev_word)
+        self.connect(self.word_input, QtCore.SIGNAL('returnPressed ()'), self.word_completion.setFocus)        
         box = QtGui.QVBoxLayout()
         box.setSpacing(2)
         #we want right margin set to 0 since it borders with splitter
@@ -184,6 +194,26 @@ class DictView(QtGui.QMainWindow):
             self.word_completion.addItem(item)
         self.select_word(wordstr)
 
+    def select_next_word(self):
+        count = self.word_completion.count()
+        if not count:
+            return
+        row = self.word_completion.currentRow()
+        if row + 1 < count:
+            next_item = self.word_completion.item(row+1)
+            self.word_completion.setCurrentItem(next_item)
+            self.word_completion.scrollToItem(next_item)
+
+    def select_prev_word(self):
+        count = self.word_completion.count()
+        if not count:
+            return
+        row = self.word_completion.currentRow()
+        if row > 0:
+            next_item = self.word_completion.item(row-1)
+            self.word_completion.setCurrentItem(next_item)
+            self.word_completion.scrollToItem(next_item)
+            
     def word_selection_changed(self, selected, deselected):
         func = functools.partial(self.update_shown_article, selected)
         self.schedule(func, 200)
@@ -242,7 +272,7 @@ class DictView(QtGui.QMainWindow):
         if count:
             item = self.word_completion.item(0)
             self.word_completion.setCurrentItem(item)
-            self.word_completion.scrollToItem(item)            
+            self.word_completion.scrollToItem(item)
 
 
     def link_clicked(self, url):
