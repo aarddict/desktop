@@ -218,7 +218,9 @@ class DictView(QtGui.QMainWindow):
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
         s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
-        self.tabs.addTab(view, format_title(article.dictionary))
+        dict_title = format_title(article.dictionary)
+        self.tabs.addTab(view, dict_title)
+        self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, article.title)))
 
         # item = QtGui.QListWidgetItem()
         # item.setText(article_read_f.title)
