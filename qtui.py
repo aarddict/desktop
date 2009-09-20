@@ -149,6 +149,26 @@ class DictView(QtGui.QMainWindow):
         self.sidebar.addTab(self.history_view, 'History')
 
         style = QtGui.QApplication.instance().style()
+        arrow_back = style.standardIcon(QtGui.QStyle.SP_ArrowBack)
+        arrow_fwd = style.standardIcon(QtGui.QStyle.SP_ArrowForward)
+
+        action_history_back = QtGui.QAction(self)
+        action_history_back.setIcon(arrow_back)
+        action_history_fwd = QtGui.QAction(self)
+        action_history_fwd.setIcon(arrow_fwd)
+        btn_history_back = QtGui.QToolButton()
+        btn_history_back.setDefaultAction(action_history_back)
+        btn_history_fwd = QtGui.QToolButton()
+        btn_history_fwd.setDefaultAction(action_history_fwd)
+        history_bar_box = QtGui.QGridLayout()
+        history_bar_box.setSpacing(0)
+        history_bar_box.setContentsMargins(0,0,0,0)
+        history_bar_box.setRowMinimumHeight(0, 16)
+        history_bar_box.addWidget(btn_history_back, 0, 0)
+        history_bar_box.addWidget(btn_history_fwd, 0, 1)
+        history_bar = QtGui.QWidget()
+        history_bar.setLayout(history_bar_box)
+        self.sidebar.setCornerWidget(history_bar)
 
         self.connect(self.history_view, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.history_selection_changed)
