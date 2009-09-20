@@ -89,6 +89,24 @@ class ArticleLoadThread(QtCore.QThread):
 
 class WordInput(QtGui.QLineEdit):
 
+    def __init__(self, parent=None):
+        QtGui.QLineEdit.__init__(self, parent)
+        box = QtGui.QHBoxLayout()
+        action_new_lookup = QtGui.QAction(self)
+        action_new_lookup.setIcon(QtGui.QIcon(QtGui.QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
+        btn_clear = QtGui.QToolButton()
+        btn_clear.setDefaultAction(action_new_lookup)
+        btn_clear.setCursor(QtCore.Qt.ArrowCursor)
+        box.addStretch(1)
+        box.addWidget(btn_clear, 0)
+        box.setSpacing(0)
+        box.setContentsMargins(0,0,0,0)
+        s = btn_clear.sizeHint()
+        self.setLayout(box)
+        self.setTextMargins(0, 0, s.width(), 0)
+
+        self.connect(action_new_lookup, QtCore.SIGNAL('triggered()'), self.selectAll)
+
     def keyPressEvent (self, event):
         QtGui.QLineEdit.keyPressEvent(self, event)
         if event.matches(QtGui.QKeySequence.MoveToNextLine):
@@ -105,13 +123,13 @@ class DictView(QtGui.QMainWindow):
 
         self.word_input = WordInput()
 
-        # self.word_input.editTextChanged.connect(self.update_word_completion)
         self.connect(self.word_input, QtCore.SIGNAL('textEdited (const QString&)'),
                      self.word_input_text_edited)
         self.word_completion = QtGui.QListWidget()
         self.connect(self.word_input, QtCore.SIGNAL('word_input_down'), self.select_next_word)
         self.connect(self.word_input, QtCore.SIGNAL('word_input_up'), self.select_prev_word)
-        self.connect(self.word_input, QtCore.SIGNAL('returnPressed ()'), self.word_completion.setFocus)        
+        self.connect(self.word_input, QtCore.SIGNAL('returnPressed ()'), self.word_completion.setFocus)
+
         box = QtGui.QVBoxLayout()
         box.setSpacing(2)
         #we want right margin set to 0 since it borders with splitter
@@ -124,11 +142,13 @@ class DictView(QtGui.QMainWindow):
 
         self.sidebar = QtGui.QTabWidget()
         self.sidebar.setTabPosition(QtGui.QTabWidget.South)
+        #self.sidebar.addTab(lookup_pane, QtGui.QIcon(QtGui.QPixmap(':/trolltech/styles/commonstyle/images/fileinfo-32.png')), '')
         self.sidebar.addTab(lookup_pane, 'Lookup')
-
         self.history_view = QtGui.QListWidget()
+        #self.sidebar.addTab(self.history_view, QtGui.QIcon(QtGui.QPixmap(':/trolltech/styles/commonstyle/images/viewdetailed-16.png')), '')
         self.sidebar.addTab(self.history_view, 'History')
 
+        style = QtGui.QApplication.instance().style()
 
         self.connect(self.history_view, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.history_selection_changed)
@@ -148,7 +168,6 @@ class DictView(QtGui.QMainWindow):
         menubar = self.menuBar()
         mn_file = menubar.addMenu('&File')
 
-        style = QtGui.QApplication.instance().style()
         fileIcon = style.standardIcon(QtGui.QStyle.SP_FileIcon)
 
         exit = QtGui.QAction(fileIcon, 'Exit', self)
@@ -213,7 +232,7 @@ class DictView(QtGui.QMainWindow):
             next_item = self.word_completion.item(row-1)
             self.word_completion.setCurrentItem(next_item)
             self.word_completion.scrollToItem(next_item)
-            
+
     def word_selection_changed(self, selected, deselected):
         func = functools.partial(self.update_shown_article, selected)
         self.schedule(func, 200)
