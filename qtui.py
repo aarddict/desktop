@@ -94,6 +94,8 @@ class WordInput(QtGui.QLineEdit):
         box = QtGui.QHBoxLayout()
         action_new_lookup = QtGui.QAction(self)
         action_new_lookup.setIcon(QtGui.QIcon(QtGui.QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
+        action_new_lookup.setShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_N))
+        action_new_lookup.setShortcutContext(QtCore.Qt.WindowShortcut)
         btn_clear = QtGui.QToolButton()
         btn_clear.setDefaultAction(action_new_lookup)
         btn_clear.setCursor(QtCore.Qt.ArrowCursor)
@@ -105,7 +107,11 @@ class WordInput(QtGui.QLineEdit):
         self.setLayout(box)
         self.setTextMargins(0, 0, s.width(), 0)
 
-        self.connect(action_new_lookup, QtCore.SIGNAL('triggered()'), self.selectAll)
+        self.connect(action_new_lookup, QtCore.SIGNAL('triggered()'), self.start_new)
+
+    def start_new(self):
+        self.setFocus()
+        self.selectAll()
 
     def keyPressEvent (self, event):
         QtGui.QLineEdit.keyPressEvent(self, event)
