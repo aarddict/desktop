@@ -279,17 +279,7 @@ class DictView(QtGui.QMainWindow):
         self.emit(QtCore.SIGNAL("stop_html"))
         self.tabs.clear()
         if selected:
-            
-            current_hist_item = self.history_view.currentItem()
-            if (not current_hist_item or 
-                unicode(current_hist_item.text()) != unicode(selected.text())):
-                self.history_view.blockSignals(True)
-                item = QtGui.QListWidgetItem()
-                item.setText(unicode(selected.text()))
-                self.history_view.insertItem(0, item)
-                self.history_view.setCurrentItem(item)
-                self.history_view.blockSignals(False)
-
+            self.add_to_history(unicode(selected.text()))
             article_group = selected.data(QtCore.Qt.UserRole).toPyObject()
             load_thread = ArticleLoadThread(article_group, self)
             self.connect(load_thread, QtCore.SIGNAL("article_loaded"), self.article_loaded, QtCore.Qt.QueuedConnection)
@@ -367,6 +357,22 @@ class DictView(QtGui.QMainWindow):
             next_item = self.history_view.item(row-1)
             self.history_view.setCurrentItem(next_item)
             self.history_view.scrollToItem(next_item)
+
+    def add_to_history(self, title):
+        current_hist_item = self.history_view.currentItem()
+        if (not current_hist_item or 
+            unicode(current_hist_item.text()) != title):
+            self.history_view.blockSignals(True)
+            if current_hist_item:
+                while (self.history_view.count() and 
+                       self.history_view.item(0) != current_hist_item): 
+                    self.history_view.takeItem(0)
+
+            item = QtGui.QListWidgetItem()
+            item.setText(title)
+            self.history_view.insertItem(0, item)
+            self.history_view.setCurrentItem(item)
+            self.history_view.blockSignals(False)
 
 
 def main():
