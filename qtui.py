@@ -94,7 +94,7 @@ class WordInput(QtGui.QLineEdit):
         box = QtGui.QHBoxLayout()
         action_new_lookup = QtGui.QAction(self)
         action_new_lookup.setIcon(QtGui.QIcon(QtGui.QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
-        action_new_lookup.setShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_N))
+        action_new_lookup.setShortcut(QtGui.QKeySequence('Ctrl+N'))
         action_new_lookup.setShortcutContext(QtCore.Qt.WindowShortcut)
         btn_clear = QtGui.QToolButton()
         btn_clear.setDefaultAction(action_new_lookup)
@@ -158,10 +158,12 @@ class DictView(QtGui.QMainWindow):
         arrow_back = style.standardIcon(QtGui.QStyle.SP_ArrowBack)
         arrow_fwd = style.standardIcon(QtGui.QStyle.SP_ArrowForward)
 
-        action_history_back = QtGui.QAction(self)
-        action_history_back.setIcon(arrow_back)
-        action_history_fwd = QtGui.QAction(self)
-        action_history_fwd.setIcon(arrow_fwd)
+        action_history_back = QtGui.QAction(arrow_back, 'Back', self)
+        action_history_back.setShortcut('Alt+Left')
+        self.connect(action_history_back, QtCore.SIGNAL('triggered()'), self.history_back)
+        action_history_fwd = QtGui.QAction(arrow_fwd, 'Forward', self)
+        action_history_fwd.setShortcut('Alt+Right')
+        self.connect(action_history_fwd, QtCore.SIGNAL('triggered()'), self.history_fwd)
         btn_history_back = QtGui.QToolButton()
         btn_history_back.setDefaultAction(action_history_back)
         btn_history_fwd = QtGui.QToolButton()
@@ -204,6 +206,10 @@ class DictView(QtGui.QMainWindow):
 
         mn_file.addAction(exit)
 
+        mn_navigate = menubar.addMenu('&Navigate')
+        mn_navigate.addAction(action_history_back)
+        mn_navigate.addAction(action_history_fwd)
+
         self.setCentralWidget(splitter)
         self.resize(640, 480)
 
@@ -224,7 +230,7 @@ class DictView(QtGui.QMainWindow):
         func = functools.partial(self.update_word_completion, word)
         self.schedule(func)
 
-    def update_word_completion(self, word, to_select=None):
+    def update_word_completion(self, word):
         wordstr = unicode(word).encode('utf8')
         self.word_completion.clear()
         articles = list(self.dictionaries.lookup(wordstr))
@@ -237,7 +243,7 @@ class DictView(QtGui.QMainWindow):
             item.setText(article_group[0].title)
             item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_group))
             self.word_completion.addItem(item)
-        self.select_word(wordstr)
+        self.select_word(unicode(word))
 
     def select_next_word(self):
         count = self.word_completion.count()
@@ -263,15 +269,27 @@ class DictView(QtGui.QMainWindow):
         func = functools.partial(self.update_shown_article, selected)
         self.schedule(func, 200)
 
-    def history_selection_changed(self, selected, deselected):
-        func = functools.partial(self.update_shown_article, selected)
+    def history_selection_changed(self, selected, deselected):        
+        title = unicode(selected.text()) if selected else u''
+        func = functools.partial(self.set_word_input, title)
         self.schedule(func, 200)
 
-    def update_shown_article(self, selected, add_to_history=True):
+    def update_shown_article(self, selected):
         self.emit(QtCore.SIGNAL("stop_article_load"))
         self.emit(QtCore.SIGNAL("stop_html"))
         self.tabs.clear()
         if selected:
+            
+            current_hist_item = self.history_view.currentItem()
+            if (not current_hist_item or 
+                unicode(current_hist_item.text()) != unicode(selected.text())):
+                self.history_view.blockSignals(True)
+                item = QtGui.QListWidgetItem()
+                item.setText(unicode(selected.text()))
+                self.history_view.insertItem(0, item)
+                self.history_view.setCurrentItem(item)
+                self.history_view.blockSignals(False)
+
             article_group = selected.data(QtCore.Qt.UserRole).toPyObject()
             load_thread = ArticleLoadThread(article_group, self)
             self.connect(load_thread, QtCore.SIGNAL("article_loaded"), self.article_loaded, QtCore.Qt.QueuedConnection)
@@ -297,10 +315,6 @@ class DictView(QtGui.QMainWindow):
         self.tabs.addTab(view, dict_title)
         self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, article.title)))
 
-        # item = QtGui.QListWidgetItem()
-        # item.setText(article_read_f.title)
-        # item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_read_f))
-        # self.history_view.addItem(item)
 
     def select_word(self, word):
         if word is None:
@@ -326,10 +340,33 @@ class DictView(QtGui.QMainWindow):
         if scheme in ('http', 'https', 'ftp', 'sftp'):
             webbrowser.open(title)
         else:
-            self.word_input.setText(title)
-            #don't call directly to make sure previous update is unscheduled
-            func = functools.partial(self.update_word_completion, title)
-            self.schedule(func, 0)
+            self.set_word_input(title)
+
+    def set_word_input(self, text):
+        self.word_input.setText(text)
+        #don't call directly to make sure previous update is unscheduled
+        func = functools.partial(self.update_word_completion, text)
+        self.schedule(func, 0)        
+
+    def history_back(self):
+        count = self.history_view.count()
+        if not count:
+            return
+        row = self.history_view.currentRow()
+        if row + 1 < count:
+            next_item = self.history_view.item(row+1)
+            self.history_view.setCurrentItem(next_item)
+            self.history_view.scrollToItem(next_item)
+        
+    def history_fwd(self):
+        count = self.history_view.count()
+        if not count:
+            return
+        row = self.history_view.currentRow()
+        if row > 0:
+            next_item = self.history_view.item(row-1)
+            self.history_view.setCurrentItem(next_item)
+            self.history_view.scrollToItem(next_item)
 
 
 def main():
