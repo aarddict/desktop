@@ -31,6 +31,8 @@ html_tags=set(['b',
                'dd'
                ])
 
+find_section_js = open('aar.js').read()
+
 def tag_start(tag):
     result = ['<', tag.name]
     if tag.attributes:

@@ -23,6 +23,39 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  split_word,
                                  cmp_words)
 
+find_section_js = open('aar.js').read()
+
+class WebPage(QtWebKit.QWebPage):
+
+    def javaScriptConsoleMessage (self, message, lineNumber, sourceID):
+        print 'msg: %r line: %r source: %r' % (message, lineNumber, sourceID)
+
+    def javaScriptAlert (self, originatingFrame, msg):
+        print 'alert: [%r] %r' % (originatingFrame, msg)
+
+class Matcher(QtCore.QObject):
+
+    def __init__(self, parent=None):
+        QtCore.QObject.__init__(self, parent)
+        self._result = None
+
+    def _get_result(self):
+        return self._result
+            
+    result = QtCore.pyqtProperty(bool, _get_result)
+
+    @QtCore.pyqtSlot('QString', 'QString', int)
+    def match(self, section, candidate, strength):
+        #print 'Candidate %r, section %r, strength %r' % (candidate, section, strength)
+        if cmp_words(unicode(section),
+                     unicode(candidate),
+                     strength=strength) == 0:
+            self._result = True
+        else:
+            self._result = False
+
+matcher = Matcher()
+
 dict_access_lock = QtCore.QMutex()
 
 class ToHtmlThread(QtCore.QThread):
@@ -34,12 +67,14 @@ class ToHtmlThread(QtCore.QThread):
 
     def run(self):
         t0 = time.time()
-        result = []
+        result = [ '<script>',
+                   find_section_js,
+                   '</script>'
+                   ]
         for c in aar2html.convert(self.article):
             if self.stop_requested:
                 return
             result.append(c)
-
         steps = [aar2html.fix_new_lines,
                  ''.join,
                  aar2html.remove_p_after_h,
@@ -269,7 +304,7 @@ class DictView(QtGui.QMainWindow):
         func = functools.partial(self.update_shown_article, selected)
         self.schedule(func, 200)
 
-    def history_selection_changed(self, selected, deselected):        
+    def history_selection_changed(self, selected, deselected):
         title = unicode(selected.text()) if selected else u''
         func = functools.partial(self.set_word_input, title)
         self.schedule(func, 200)
@@ -292,11 +327,21 @@ class DictView(QtGui.QMainWindow):
         self.connect(self, QtCore.SIGNAL("stop_html"), tohtml.stop)
         tohtml.start()
 
-
     def article_html_ready(self, article, html):
+        print 'HTML ready for title "%s" section "%s"' % (article.title, article.section)
+        print html
         view = QtWebKit.QWebView()
+        view.setPage(WebPage(self))
         self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
+
+        def loadFinished(ok):
+            if ok:
+                self.go_to_section(view, article.section)
+
+        if article.section:
+            self.connect(view, QtCore.SIGNAL('loadFinished (bool)'), loadFinished, QtCore.Qt.QueuedConnection)
+
         view.setHtml(html, QtCore.QUrl(article.title))
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
@@ -305,7 +350,16 @@ class DictView(QtGui.QMainWindow):
         self.tabs.addTab(view, dict_title)
         self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, article.title)))
 
-
+    def go_to_section(self, view, section):
+        mainFrame = view.page().mainFrame()
+        mainFrame.addToJavaScriptWindowObject('matcher', matcher)
+        js_template = 'scrollToMatch("%s", %%s)' % section
+        for strength in (TERTIARY, SECONDARY, PRIMARY):
+            js = js_template % strength
+            result = mainFrame.evaluateJavaScript(js)
+            if result.toBool():
+                break
+        
     def select_word(self, word):
         if word is None:
             return
@@ -336,7 +390,7 @@ class DictView(QtGui.QMainWindow):
         self.word_input.setText(text)
         #don't call directly to make sure previous update is unscheduled
         func = functools.partial(self.update_word_completion, text)
-        self.schedule(func, 0)        
+        self.schedule(func, 0)
 
     def history_back(self):
         count = self.history_view.count()
@@ -347,7 +401,7 @@ class DictView(QtGui.QMainWindow):
             next_item = self.history_view.item(row+1)
             self.history_view.setCurrentItem(next_item)
             self.history_view.scrollToItem(next_item)
-        
+
     def history_fwd(self):
         count = self.history_view.count()
         if not count:
@@ -360,12 +414,12 @@ class DictView(QtGui.QMainWindow):
 
     def add_to_history(self, title):
         current_hist_item = self.history_view.currentItem()
-        if (not current_hist_item or 
+        if (not current_hist_item or
             unicode(current_hist_item.text()) != title):
             self.history_view.blockSignals(True)
             if current_hist_item:
-                while (self.history_view.count() and 
-                       self.history_view.item(0) != current_hist_item): 
+                while (self.history_view.count() and
+                       self.history_view.item(0) != current_hist_item):
                     self.history_view.takeItem(0)
 
             item = QtGui.QListWidgetItem()
