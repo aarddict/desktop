@@ -100,6 +100,8 @@ class ArticleLoadThread(QtCore.QThread):
 
     def _tohtml(self, article):
         t0 = time.time()
+        for i in range(10000000):
+            a = i*i
         if self.stop_requested:
             raise ArticleLoadStopRequested
         result = [ '<script>',
@@ -262,12 +264,9 @@ class DictView(QtGui.QMainWindow):
 
         self.connect(self.tabs, QtCore.SIGNAL('currentChanged (int)'), self.article_tab_switched)
 
-        self.loading_label = QtGui.QLabel('Loading...', self)
-        self.loading_label.hide()
-
 
     def article_tab_switched(self, current_tab_index):
-        if current_tab_index > -1:
+        if current_tab_index > -1:            
             web_view = self.tabs.widget(current_tab_index)
             dict_uuid = str(web_view.property('dictionary').toByteArray())
             print 'Current tab changed, new preferred dict: %s' % unicode(self.tabs.tabText(current_tab_index)).encode('utf8')
@@ -337,22 +336,26 @@ class DictView(QtGui.QMainWindow):
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(QtCore.Qt.UserRole).toPyObject()
             load_thread = ArticleLoadThread(article_group, self)
-            self.connect(load_thread, QtCore.SIGNAL("article_loaded"), 
+            self.connect(load_thread, QtCore.SIGNAL("article_loaded"),
                          self.article_loaded, QtCore.Qt.QueuedConnection)
-            self.connect(load_thread, QtCore.SIGNAL("article_load_started"), 
+            self.connect(load_thread, QtCore.SIGNAL("article_load_started"),
                          self.article_load_started, QtCore.Qt.QueuedConnection)
-            self.connect(load_thread, QtCore.SIGNAL("article_load_finished"), 
+            self.connect(load_thread, QtCore.SIGNAL("article_load_finished"),
                          self.article_load_finished, QtCore.Qt.QueuedConnection)
-            self.connect(load_thread, QtCore.SIGNAL("article_load_stopped"), 
+            self.connect(load_thread, QtCore.SIGNAL("article_load_stopped"),
                          self.article_load_stopped, QtCore.Qt.QueuedConnection)
-            self.connect(self, QtCore.SIGNAL("stop_article_load"), 
-                         load_thread.stop, QtCore.Qt.QueuedConnection)            
+            self.connect(self, QtCore.SIGNAL("stop_article_load"),
+                         load_thread.stop, QtCore.Qt.QueuedConnection)
             load_thread.start()
 
     def article_loaded(self, title, article, html):
         print 'Loaded article "%s" (original title "%s") (section "%s")' % (article.title, title, article.section)
-        view = QtWebKit.QWebView()
-        view.setPage(WebPage(self))
+        for i in range(self.tabs.count()):
+            view = self.tabs.widget(i)
+            print view.property('loading'), view.property('loading').toBool()
+            if view.property('loading').toBool():
+                view.setProperty('loading', QtCore.QVariant(False))
+                break
         self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
 
@@ -362,32 +365,31 @@ class DictView(QtGui.QMainWindow):
 
         if article.section:
             self.connect(view, QtCore.SIGNAL('loadFinished (bool)'), loadFinished, QtCore.Qt.QueuedConnection)
-
-        view.setProperty('dictionary', QtCore.QVariant(article.dictionary.uuid))
+        
         view.setHtml(html, QtCore.QUrl(title))
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
         s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
-        dict_title = format_title(article.dictionary)
-        self.tabs.addTab(view, dict_title)
-        self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, article.title)))
 
-        
+
     def article_load_started(self, read_funcs):
-        print 'Loading %d article(s)' % len(read_funcs)        
+        print 'Loading %d article(s)' % len(read_funcs)
         self.tabs.blockSignals(True)
-        rect = self.rect()
-        x = rect.x() + rect.width() - self.loading_label.width()
-        y = rect.y() 
-        self.loading_label.move(x, y)
-        self.loading_label.show()
-
-    def article_load_finished(self, read_funcs):
-        print 'Loaded %d article(s)' % len(read_funcs)
+        for read_func in read_funcs:
+            view = QtWebKit.QWebView()
+            view.setPage(WebPage(self))
+            view.setHtml('Loading...')
+            view.setProperty('loading', QtCore.QVariant(True))
+            dictionary = read_func.source
+            dict_title = format_title(dictionary)
+            view.setProperty('dictionary', QtCore.QVariant(dictionary.uuid))
+            self.tabs.addTab(view, dict_title)
+            self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, read_func.title)))
         self.select_preferred_dict()
         self.tabs.blockSignals(False)
-        QtGui.QToolTip.hideText()
-        self.loading_label.hide()
+
+    def article_load_finished(self, read_funcs):
+        print 'Loaded %d article(s)' % len(read_funcs)        
 
     def article_load_stopped(self):
         print 'Article load stopped'
