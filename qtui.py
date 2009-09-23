@@ -296,6 +296,10 @@ class DictView(QtGui.QMainWindow):
 
         self.connect(self.tabs, QtCore.SIGNAL('currentChanged (int)'), self.article_tab_switched)
 
+        self.loading_label = QtGui.QLabel('Loading...', self)
+        self.loading_label.hide()
+
+
     def article_tab_switched(self, current_tab_index):
         if current_tab_index > -1:
             web_view = self.tabs.widget(current_tab_index)
@@ -406,15 +410,21 @@ class DictView(QtGui.QMainWindow):
     def article_load_started(self, read_funcs):
         print 'Loading %d article(s)' % len(read_funcs)        
         self.tabs.blockSignals(True)
+        rect = self.rect()
+        x = rect.x() + rect.width() - self.loading_label.width()
+        y = rect.y() 
+        self.loading_label.move(x, y)
+        self.loading_label.show()
 
     def article_load_finished(self, read_funcs):
         print 'Loaded %d article(s)' % len(read_funcs)
         self.select_preferred_dict()
         self.tabs.blockSignals(False)
+        QtGui.QToolTip.hideText()
+        self.loading_label.hide()
 
     def article_load_stopped(self):
         print 'Article load stopped'
-        self.tabs.blockSignals(False)
 
     def select_preferred_dict(self):
         print 'Preferred dicts:', self.preferred_dicts
