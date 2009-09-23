@@ -58,40 +58,6 @@ matcher = Matcher()
 
 dict_access_lock = QtCore.QMutex()
 
-class ToHtmlThread(QtCore.QThread):
-
-    def __init__(self, article, parent=None):
-        QtCore.QThread.__init__(self, parent)
-        self.article = article
-        self.stop_requested = False
-
-    def run(self):
-        t0 = time.time()
-        result = [ '<script>',
-                   find_section_js,
-                   '</script>'
-                   ]
-        for c in aar2html.convert(self.article):
-            if self.stop_requested:
-                return
-            result.append(c)
-        steps = [aar2html.fix_new_lines,
-                 ''.join,
-                 aar2html.remove_p_after_h,
-                 aar2html.add_notebackrefs
-                 ]
-        for step in steps:
-            if self.stop_requested:
-                return
-            result = step(result)
-
-        if not self.stop_requested:
-            print 'converted "%s" in %s' % (self.article.title.encode('utf8'), time.time() - t0)
-            self.emit(QtCore.SIGNAL("html"), self.article, result)
-
-    def stop(self):
-        self.stop_requested = True
-
 class ArticleLoadStopRequested(Exception): pass
 
 class ArticleLoadThread(QtCore.QThread):
