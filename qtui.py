@@ -102,6 +102,7 @@ class ArticleLoadThread(QtCore.QThread):
         self.stop_requested = False
 
     def run(self):
+        self.emit(QtCore.SIGNAL("article_load_started"), self.article_read_funcs)
         dict_access_lock.lock()
         try:
             for read_func in self.article_read_funcs:
@@ -299,6 +300,7 @@ class DictView(QtGui.QMainWindow):
         if current_tab_index > -1:
             web_view = self.tabs.widget(current_tab_index)
             dict_uuid = str(web_view.property('dictionary').toByteArray())
+            print 'Current tab changed, new preferred dict: %s' % unicode(self.tabs.tabText(current_tab_index)).encode('utf8')
             self.preferred_dicts[dict_uuid] = time.time()
 
     def schedule(self, func, delay=500):
@@ -358,21 +360,23 @@ class DictView(QtGui.QMainWindow):
 
     def update_shown_article(self, selected):
         self.emit(QtCore.SIGNAL("stop_article_load"))
-        self.emit(QtCore.SIGNAL("stop_html"))
+        self.tabs.blockSignals(True)
         self.tabs.clear()
+        self.tabs.blockSignals(False)
         if selected:
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(QtCore.Qt.UserRole).toPyObject()
             load_thread = ArticleLoadThread(article_group, self)
             self.connect(load_thread, QtCore.SIGNAL("article_loaded"), 
                          self.article_loaded, QtCore.Qt.QueuedConnection)
+            self.connect(load_thread, QtCore.SIGNAL("article_load_started"), 
+                         self.article_load_started, QtCore.Qt.QueuedConnection)
             self.connect(load_thread, QtCore.SIGNAL("article_load_finished"), 
                          self.article_load_finished, QtCore.Qt.QueuedConnection)
             self.connect(load_thread, QtCore.SIGNAL("article_load_stopped"), 
                          self.article_load_stopped, QtCore.Qt.QueuedConnection)
             self.connect(self, QtCore.SIGNAL("stop_article_load"), 
-                         load_thread.stop, QtCore.Qt.QueuedConnection)
-            self.tabs.blockSignals(True)
+                         load_thread.stop, QtCore.Qt.QueuedConnection)            
             load_thread.start()
 
     def article_loaded(self, title, article, html):
@@ -390,13 +394,18 @@ class DictView(QtGui.QMainWindow):
             self.connect(view, QtCore.SIGNAL('loadFinished (bool)'), loadFinished, QtCore.Qt.QueuedConnection)
 
         view.setProperty('dictionary', QtCore.QVariant(article.dictionary.uuid))
-        view.setHtml(html, QtCore.QUrl(article.title))
+        view.setHtml(html, QtCore.QUrl(title))
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
         s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
         dict_title = format_title(article.dictionary)
         self.tabs.addTab(view, dict_title)
         self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, article.title)))
+
+        
+    def article_load_started(self, read_funcs):
+        print 'Loading %d article(s)' % len(read_funcs)        
+        self.tabs.blockSignals(True)
 
     def article_load_finished(self, read_funcs):
         print 'Loaded %d article(s)' % len(read_funcs)
@@ -408,15 +417,23 @@ class DictView(QtGui.QMainWindow):
         self.tabs.blockSignals(False)
 
     def select_preferred_dict(self):
-        preferred_dict_keys = (item[0] for item
+        print 'Preferred dicts:', self.preferred_dicts
+        preferred_dict_keys = [item[0] for item
                                in sorted(self.preferred_dicts.iteritems(),
-                                         key=lambda x: -x[1]))
+                                         key=lambda x: -x[1])]
+        print 'Preferred dict keys:', preferred_dict_keys
         try:
-            for dict_key in preferred_dict_keys:
+            for i, dict_key in enumerate(preferred_dict_keys):
+                print '********'
+                print '%d Preferred dict key: %r ' % (i, dict_key)
+                print '********'
                 for page_num in range(self.tabs.count()):
+                    print 'Looking at tab %d (%s)' % (page_num, unicode(self.tabs.tabText(page_num)).encode('utf8'))
                     web_view = self.tabs.widget(page_num)
                     dict_uuid = str(web_view.property('dictionary').toByteArray())
+                    print 'dict_uuid: %r' % dict_uuid
                     if dict_uuid == dict_key:
+                        print 'Preferred dictionary: %s' % unicode(self.tabs.tabText(page_num)).encode('utf8')
                         self.tabs.setCurrentIndex(page_num)
                         raise StopIteration()
         except StopIteration:
