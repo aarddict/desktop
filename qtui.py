@@ -41,7 +41,7 @@ class Matcher(QtCore.QObject):
 
     def _get_result(self):
         return self._result
-            
+
     result = QtCore.pyqtProperty(bool, _get_result)
 
     @QtCore.pyqtSlot('QString', 'QString', int)
@@ -92,6 +92,8 @@ class ToHtmlThread(QtCore.QThread):
     def stop(self):
         self.stop_requested = True
 
+class ArticleLoadStopRequested(Exception): pass
+
 class ArticleLoadThread(QtCore.QThread):
 
     def __init__(self, article_read_funcs, parent=None):
@@ -103,21 +105,57 @@ class ArticleLoadThread(QtCore.QThread):
         dict_access_lock.lock()
         try:
             for read_func in self.article_read_funcs:
-                if self.stop_requested:
-                    print 'Stop requested for article load'
-                    break
-                t0 = time.time()
-                try:
-                    article = read_func()
-                except RedirectResolveError, e:
-                    logging.exception()
-                    article = Article(e.article.title,
-                                      'Redirect to %s not found' % e.article.redirect,
-                                      dictionary=e.article.dictionary)
-                print 'read "%s" from %s in %s' % (article.title.encode('utf8'), article.dictionary, time.time() - t0)
-                self.emit(QtCore.SIGNAL("article_loaded"), read_func, article)
+                article = self._load_article(read_func)
+                html = self._tohtml(article)
+                title = read_func.title
+                self.emit(QtCore.SIGNAL("article_loaded"), title, article, html)
+        except ArticleLoadStopRequested:
+            self.emit(QtCore.SIGNAL("article_load_stopped"))
+        else:
+            self.emit(QtCore.SIGNAL("article_load_finished"), self.article_read_funcs)
         finally:
             dict_access_lock.unlock()
+
+    def _load_article(self, read_func):
+        t0 = time.time()
+        if self.stop_requested:
+            raise ArticleLoadStopRequested
+        try:
+            article = read_func()
+        except RedirectResolveError, e:
+            logging.exception()
+            article = Article(e.article.title,
+                              'Redirect to %s not found' % e.article.redirect,
+                              dictionary=e.article.dictionary)
+        print 'read "%s" from %s in %s' % (article.title.encode('utf8'), article.dictionary, time.time() - t0)
+        t0 = time.time()
+        return article
+
+    def _tohtml(self, article):
+        t0 = time.time()
+        if self.stop_requested:
+            raise ArticleLoadStopRequested
+        result = [ '<script>',
+                   find_section_js,
+                   '</script>'
+                   ]
+        for c in aar2html.convert(article):
+            if self.stop_requested:
+                raise ArticleLoadStopRequested
+            result.append(c)
+        steps = [aar2html.fix_new_lines,
+                 ''.join,
+                 aar2html.remove_p_after_h,
+                 aar2html.add_notebackrefs
+                 ]
+        for step in steps:
+            if self.stop_requested:
+                raise ArticleLoadStopRequested
+            result = step(result)
+
+        print 'converted "%s" in %s' % (article.title.encode('utf8'), time.time() - t0)
+        return result
+
 
     def stop(self):
         self.stop_requested = True
@@ -141,7 +179,6 @@ class WordInput(QtGui.QLineEdit):
         s = btn_clear.sizeHint()
         self.setLayout(box)
         self.setTextMargins(0, 0, s.width(), 0)
-
         self.connect(action_new_lookup, QtCore.SIGNAL('triggered()'), self.start_new)
 
     def start_new(self):
@@ -254,6 +291,16 @@ class DictView(QtGui.QMainWindow):
 
         self.dictionaries = DictionaryCollection()
 
+        self.preferred_dicts = {}
+
+        self.connect(self.tabs, QtCore.SIGNAL('currentChanged (int)'), self.article_tab_switched)
+
+    def article_tab_switched(self, current_tab_index):
+        if current_tab_index > -1:
+            web_view = self.tabs.widget(current_tab_index)
+            dict_uuid = str(web_view.property('dictionary').toByteArray())
+            self.preferred_dicts[dict_uuid] = time.time()
+
     def schedule(self, func, delay=500):
         if self.scheduled_func:
             self.disconnect(self.timer, QtCore.SIGNAL('timeout()'), self.scheduled_func)
@@ -317,19 +364,19 @@ class DictView(QtGui.QMainWindow):
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(QtCore.Qt.UserRole).toPyObject()
             load_thread = ArticleLoadThread(article_group, self)
-            self.connect(load_thread, QtCore.SIGNAL("article_loaded"), self.article_loaded, QtCore.Qt.QueuedConnection)
-            self.connect(self, QtCore.SIGNAL("stop_article_load"), load_thread.stop)
+            self.connect(load_thread, QtCore.SIGNAL("article_loaded"), 
+                         self.article_loaded, QtCore.Qt.QueuedConnection)
+            self.connect(load_thread, QtCore.SIGNAL("article_load_finished"), 
+                         self.article_load_finished, QtCore.Qt.QueuedConnection)
+            self.connect(load_thread, QtCore.SIGNAL("article_load_stopped"), 
+                         self.article_load_stopped, QtCore.Qt.QueuedConnection)
+            self.connect(self, QtCore.SIGNAL("stop_article_load"), 
+                         load_thread.stop, QtCore.Qt.QueuedConnection)
+            self.tabs.blockSignals(True)
             load_thread.start()
 
-    def article_loaded(self, article_read_func, article):
-        tohtml = ToHtmlThread(article, self)
-        self.connect(tohtml, QtCore.SIGNAL("html"), self.article_html_ready, QtCore.Qt.QueuedConnection)
-        self.connect(self, QtCore.SIGNAL("stop_html"), tohtml.stop)
-        tohtml.start()
-
-    def article_html_ready(self, article, html):
-        print 'HTML ready for title "%s" section "%s"' % (article.title, article.section)
-        print html
+    def article_loaded(self, title, article, html):
+        print 'Loaded article "%s" (original title "%s") (section "%s")' % (article.title, title, article.section)
         view = QtWebKit.QWebView()
         view.setPage(WebPage(self))
         self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
@@ -342,6 +389,7 @@ class DictView(QtGui.QMainWindow):
         if article.section:
             self.connect(view, QtCore.SIGNAL('loadFinished (bool)'), loadFinished, QtCore.Qt.QueuedConnection)
 
+        view.setProperty('dictionary', QtCore.QVariant(article.dictionary.uuid))
         view.setHtml(html, QtCore.QUrl(article.title))
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
@@ -349,6 +397,30 @@ class DictView(QtGui.QMainWindow):
         dict_title = format_title(article.dictionary)
         self.tabs.addTab(view, dict_title)
         self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, article.title)))
+
+    def article_load_finished(self, read_funcs):
+        print 'Loaded %d article(s)' % len(read_funcs)
+        self.select_preferred_dict()
+        self.tabs.blockSignals(False)
+
+    def article_load_stopped(self):
+        print 'Article load stopped'
+        self.tabs.blockSignals(False)
+
+    def select_preferred_dict(self):
+        preferred_dict_keys = (item[0] for item
+                               in sorted(self.preferred_dicts.iteritems(),
+                                         key=lambda x: -x[1]))
+        try:
+            for dict_key in preferred_dict_keys:
+                for page_num in range(self.tabs.count()):
+                    web_view = self.tabs.widget(page_num)
+                    dict_uuid = str(web_view.property('dictionary').toByteArray())
+                    if dict_uuid == dict_key:
+                        self.tabs.setCurrentIndex(page_num)
+                        raise StopIteration()
+        except StopIteration:
+            pass
 
     def go_to_section(self, view, section):
         mainFrame = view.page().mainFrame()
@@ -359,7 +431,7 @@ class DictView(QtGui.QMainWindow):
             result = mainFrame.evaluateJavaScript(js)
             if result.toBool():
                 break
-        
+
     def select_word(self, word):
         if word is None:
             return
