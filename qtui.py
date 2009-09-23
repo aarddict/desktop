@@ -100,8 +100,6 @@ class ArticleLoadThread(QtCore.QThread):
 
     def _tohtml(self, article):
         t0 = time.time()
-        for i in range(10000000):
-            a = i*i
         if self.stop_requested:
             raise ArticleLoadStopRequested
         result = [ '<script>',
