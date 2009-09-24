@@ -77,11 +77,12 @@ class ArticleLoadThread(QtCore.QThread):
                 title = read_func.title
                 self.emit(QtCore.SIGNAL("article_loaded"), title, article, html)
         except ArticleLoadStopRequested:
-            self.emit(QtCore.SIGNAL("article_load_stopped"))
+            self.emit(QtCore.SIGNAL("article_load_stopped"), self)
         else:
-            self.emit(QtCore.SIGNAL("article_load_finished"), self.article_read_funcs)
+            self.emit(QtCore.SIGNAL("article_load_finished"), self, self.article_read_funcs)
         finally:
             dict_access_lock.unlock()
+            del self.article_read_funcs
 
     def _load_article(self, read_func):
         t0 = time.time()
@@ -262,9 +263,11 @@ class DictView(QtGui.QMainWindow):
 
         self.connect(self.tabs, QtCore.SIGNAL('currentChanged (int)'), self.article_tab_switched)
 
+        self.type_stats = {}
+
 
     def article_tab_switched(self, current_tab_index):
-        if current_tab_index > -1:            
+        if current_tab_index > -1:
             web_view = self.tabs.widget(current_tab_index)
             dict_uuid = str(web_view.property('dictionary').toByteArray())
             print 'Current tab changed, new preferred dict: %s' % unicode(self.tabs.tabText(current_tab_index)).encode('utf8')
@@ -327,9 +330,7 @@ class DictView(QtGui.QMainWindow):
 
     def update_shown_article(self, selected):
         self.emit(QtCore.SIGNAL("stop_article_load"))
-        self.tabs.blockSignals(True)
-        self.tabs.clear()
-        self.tabs.blockSignals(False)
+        self.clear_current_articles()
         if selected:
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(QtCore.Qt.UserRole).toPyObject()
@@ -346,11 +347,21 @@ class DictView(QtGui.QMainWindow):
                          load_thread.stop, QtCore.Qt.QueuedConnection)
             load_thread.start()
 
+    def clear_current_articles(self):
+        self.tabs.blockSignals(True)
+        for i in reversed(range(self.tabs.count())):
+            w = self.tabs.widget(i)
+            self.tabs.removeTab(i)
+            p = w.page()
+            w.setPage(None)
+            w.deleteLater()
+            p.deleteLater()
+        self.tabs.blockSignals(False)        
+
     def article_loaded(self, title, article, html):
         print 'Loaded article "%s" (original title "%s") (section "%s")' % (article.title, title, article.section)
         for i in range(self.tabs.count()):
             view = self.tabs.widget(i)
-            print view.property('loading'), view.property('loading').toBool()
             if view.property('loading').toBool():
                 view.setProperty('loading', QtCore.QVariant(False))
                 break
@@ -363,7 +374,7 @@ class DictView(QtGui.QMainWindow):
 
         if article.section:
             self.connect(view, QtCore.SIGNAL('loadFinished (bool)'), loadFinished, QtCore.Qt.QueuedConnection)
-        
+
         view.setHtml(html, QtCore.QUrl(title))
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
@@ -386,11 +397,35 @@ class DictView(QtGui.QMainWindow):
         self.select_preferred_dict()
         self.tabs.blockSignals(False)
 
-    def article_load_finished(self, read_funcs):
-        print 'Loaded %d article(s)' % len(read_funcs)        
+    def article_load_finished(self, load_thread, read_funcs):
+        print 'Loaded %d article(s)' % len(read_funcs)
+        load_thread.setParent(None)
+        self.dump_type_count_diff()
 
-    def article_load_stopped(self):
+    def dump_type_count_diff(self):        
+        try:
+            import objgraph
+        except:
+            pass
+        else:
+            import gc
+            from operator import itemgetter
+            print 'gc', gc.collect()
+            typestats = objgraph.typestats()
+            diff = {}
+            for key, val in typestats.iteritems():
+                countdiff = val - self.type_stats.get(key, 0)
+                if countdiff:
+                    diff[key] = countdiff
+            print '='*40, '\n',\
+                   '\n'.join(('%s: %d' % item) for item in 
+                             sorted(diff.iteritems(), key=itemgetter(1))), \
+                   '\n', '='*40
+            self.type_stats = typestats
+        
+    def article_load_stopped(self, load_thread):
         print 'Article load stopped'
+        load_thread.setParent(None)
 
     def select_preferred_dict(self):
         print 'Preferred dicts:', self.preferred_dicts
