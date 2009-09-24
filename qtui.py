@@ -68,6 +68,7 @@ class ArticleLoadThread(QtCore.QThread):
         self.stop_requested = False
 
     def run(self):
+        self.setPriority(QtCore.QThread.LowestPriority)
         self.emit(QtCore.SIGNAL("article_load_started"), self.article_read_funcs)
         dict_access_lock.lock()
         try:
@@ -159,6 +160,35 @@ class WordInput(QtGui.QLineEdit):
             self.emit(QtCore.SIGNAL('word_input_down'))
         elif event.matches(QtGui.QKeySequence.MoveToPreviousLine):
             self.emit(QtCore.SIGNAL('word_input_up'))
+
+class WordLookupThread(QtCore.QThread):
+
+    def run(self):
+        self.setPriority(QtCore.QThread.LowestPriority)
+        self.exec_()
+
+class WordLookupWorker(QtCore.QObject):
+
+    def __init__(self, parent=None):
+        QtCore.QObject.__init__(self, parent)
+        self.stop_requested = False
+
+    def lookup(self, dictionaries, word):
+        self.stop_requested = False
+        print "Looking up %r" % word
+        wordstr = unicode(word).encode('utf8')
+        articles = []
+        for article in dictionaries.lookup(wordstr):
+            if self.stop_requested:
+                self.emit(QtCore.SIGNAL('stopped'), word)
+                return
+            else:
+                articles.append(article)
+                self.emit(QtCore.SIGNAL('match_found'), word, article)
+        self.emit(QtCore.SIGNAL('finished'), word, articles)
+
+    def stop(self):
+        self.stop_requested = True
 
 class DictView(QtGui.QMainWindow):
 
@@ -265,6 +295,26 @@ class DictView(QtGui.QMainWindow):
 
         self.type_stats = {}
 
+        self.word_lookup_thread = WordLookupThread()
+
+        self.word_lookup_worker = WordLookupWorker()
+
+        def init_lookup_worker():
+            self.connect(self.word_lookup_worker, QtCore.SIGNAL("finished"),
+                          self.word_lookup_finished, QtCore.Qt.QueuedConnection)
+            self.connect(self.word_lookup_worker, QtCore.SIGNAL("match_found"),
+                         self.word_lookup_match_found, QtCore.Qt.QueuedConnection)
+            self.connect(self.word_lookup_worker, QtCore.SIGNAL("stopped"),
+                         self.word_lookup_stopped, QtCore.Qt.QueuedConnection)
+            self.word_lookup_worker.moveToThread(self.word_lookup_thread)
+            self.connect(self, QtCore.SIGNAL('lookup_word'),
+                         self.word_lookup_worker.lookup, QtCore.Qt.QueuedConnection)
+            self.connect(self, QtCore.SIGNAL("stop_word_lookup"),
+                         self.word_lookup_worker.stop, QtCore.Qt.DirectConnection)
+
+        self.connect(self.word_lookup_thread, QtCore.SIGNAL('started()'), init_lookup_worker)
+        self.word_lookup_thread.start()
+
 
     def article_tab_switched(self, current_tab_index):
         if current_tab_index > -1:
@@ -285,9 +335,18 @@ class DictView(QtGui.QMainWindow):
         self.schedule(func)
 
     def update_word_completion(self, word):
-        wordstr = unicode(word).encode('utf8')
+        print 'update_word_completion ', QtCore.QThread.currentThread()
+        self.sidebar.setTabText(0, 'Loading...')
         self.word_completion.clear()
-        articles = list(self.dictionaries.lookup(wordstr))
+        self.emit(QtCore.SIGNAL("stop_word_lookup"))
+        self.emit(QtCore.SIGNAL("lookup_word"), self.dictionaries, word)
+
+    def word_lookup_match_found(self, word, article):
+        #print 'Lookup match found for %r' % word
+        pass
+
+    def word_lookup_finished(self, word, articles):
+        print 'Lookup for %r finished, got %d article(s)' % (word, len(articles))
         def key(article):
             return collation_key(article.title, TERTIARY).getByteArray()
         articles.sort(key=key)
@@ -298,6 +357,10 @@ class DictView(QtGui.QMainWindow):
             item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_group))
             self.word_completion.addItem(item)
         self.select_word(unicode(word))
+        self.sidebar.setTabText(0, 'Lookup')
+
+    def word_lookup_stopped(self, word):
+        print 'word_lookup_stopped for %r' % word
 
     def select_next_word(self):
         count = self.word_completion.count()
@@ -356,7 +419,7 @@ class DictView(QtGui.QMainWindow):
             w.setPage(None)
             w.deleteLater()
             p.deleteLater()
-        self.tabs.blockSignals(False)        
+        self.tabs.blockSignals(False)
 
     def article_loaded(self, title, article, html):
         print 'Loaded article "%s" (original title "%s") (section "%s")' % (article.title, title, article.section)
@@ -400,9 +463,9 @@ class DictView(QtGui.QMainWindow):
     def article_load_finished(self, load_thread, read_funcs):
         print 'Loaded %d article(s)' % len(read_funcs)
         load_thread.setParent(None)
-        self.dump_type_count_diff()
+        #self.dump_type_count_diff()
 
-    def dump_type_count_diff(self):        
+    def dump_type_count_diff(self):
         try:
             import objgraph
         except:
@@ -418,11 +481,11 @@ class DictView(QtGui.QMainWindow):
                 if countdiff:
                     diff[key] = countdiff
             print '='*40, '\n',\
-                   '\n'.join(('%s: %d' % item) for item in 
+                   '\n'.join(('%s: %d' % item) for item in
                              sorted(diff.iteritems(), key=itemgetter(1))), \
                    '\n', '='*40
             self.type_stats = typestats
-        
+
     def article_load_stopped(self, load_thread):
         print 'Article load stopped'
         load_thread.setParent(None)
