@@ -173,9 +173,10 @@ class WordLookupWorker(QtCore.QObject):
         QtCore.QObject.__init__(self, parent)
         self.stop_requested = False
 
-    def lookup(self, dictionaries, word):
-        self.stop_requested = False
-        print "Looking up %r" % word
+    def _lookup(self, dictionaries, word):
+        if self.stop_requested:
+            self.emit(QtCore.SIGNAL('stopped'), word)
+            return
         wordstr = unicode(word).encode('utf8')
         articles = []
         for article in dictionaries.lookup(wordstr):
@@ -185,7 +186,16 @@ class WordLookupWorker(QtCore.QObject):
             else:
                 articles.append(article)
                 self.emit(QtCore.SIGNAL('match_found'), word, article)
-        self.emit(QtCore.SIGNAL('finished'), word, articles)
+        self.emit(QtCore.SIGNAL('done'), word, articles)
+
+    def lookup(self, dictionaries, word):
+        self.stop_requested = False
+        print "Looking up %r" % word
+        dict_access_lock.lock()
+        try:
+            self._lookup(dictionaries, word)
+        finally:
+            dict_access_lock.unlock()
 
     def stop(self):
         self.stop_requested = True
@@ -300,7 +310,7 @@ class DictView(QtGui.QMainWindow):
         self.word_lookup_worker = WordLookupWorker()
 
         def init_lookup_worker():
-            self.connect(self.word_lookup_worker, QtCore.SIGNAL("finished"),
+            self.connect(self.word_lookup_worker, QtCore.SIGNAL("done"),
                           self.word_lookup_finished, QtCore.Qt.QueuedConnection)
             self.connect(self.word_lookup_worker, QtCore.SIGNAL("match_found"),
                          self.word_lookup_match_found, QtCore.Qt.QueuedConnection)
@@ -400,6 +410,8 @@ class DictView(QtGui.QMainWindow):
             load_thread = ArticleLoadThread(article_group, self)
             self.connect(load_thread, QtCore.SIGNAL("article_loaded"),
                          self.article_loaded, QtCore.Qt.QueuedConnection)
+            self.connect(load_thread, QtCore.SIGNAL("finished ()"),
+                         functools.partial(load_thread.setParent, None), QtCore.Qt.QueuedConnection)
             self.connect(load_thread, QtCore.SIGNAL("article_load_started"),
                          self.article_load_started, QtCore.Qt.QueuedConnection)
             self.connect(load_thread, QtCore.SIGNAL("article_load_finished"),
@@ -407,9 +419,9 @@ class DictView(QtGui.QMainWindow):
             self.connect(load_thread, QtCore.SIGNAL("article_load_stopped"),
                          self.article_load_stopped, QtCore.Qt.QueuedConnection)
             self.connect(self, QtCore.SIGNAL("stop_article_load"),
-                         load_thread.stop, QtCore.Qt.QueuedConnection)
+                         load_thread.stop, QtCore.Qt.QueuedConnection)            
             load_thread.start()
-
+    
     def clear_current_articles(self):
         self.tabs.blockSignals(True)
         for i in reversed(range(self.tabs.count())):
@@ -462,8 +474,8 @@ class DictView(QtGui.QMainWindow):
 
     def article_load_finished(self, load_thread, read_funcs):
         print 'Loaded %d article(s)' % len(read_funcs)
-        load_thread.setParent(None)
-        #self.dump_type_count_diff()
+        #load_thread.setParent(None)
+        self.dump_type_count_diff()
 
     def dump_type_count_diff(self):
         try:
@@ -488,7 +500,7 @@ class DictView(QtGui.QMainWindow):
 
     def article_load_stopped(self, load_thread):
         print 'Article load stopped'
-        load_thread.setParent(None)
+        #load_thread.setParent(None)
 
     def select_preferred_dict(self):
         print 'Preferred dicts:', self.preferred_dicts
