@@ -58,6 +58,44 @@ matcher = Matcher()
 
 dict_access_lock = QtCore.QMutex()
 
+
+class WordLookupStopRequested(Exception): pass
+
+class WordLookupThread(QtCore.QThread):
+
+    def __init__(self, dictionaries, word, parent=None):
+        QtCore.QThread.__init__(self, parent)
+        self.dictionaries = dictionaries
+        self.word = word
+        self.stop_requested = False
+
+    def run(self):
+        self.setPriority(QtCore.QThread.LowestPriority)
+        wordstr = unicode(self.word).encode('utf8')
+        print "Looking up %r" % wordstr
+        articles = []
+        dict_access_lock.lock()
+        try:
+            for article in self.dictionaries.lookup(wordstr):
+                for z in range(100000): a=z*z
+                if self.stop_requested: 
+                    raise WordLookupStopRequested
+                else:
+                    articles.append(article)
+                    self.emit(QtCore.SIGNAL('match_found'), self.word, article)
+            if self.stop_requested: 
+                raise WordLookupStopRequested
+            else:
+                self.emit(QtCore.SIGNAL('done'), self.word, articles)
+        except WordLookupStopRequested:
+            self.emit(QtCore.SIGNAL('stopped'), self.word)
+        finally:
+            dict_access_lock.unlock()
+
+    def stop(self):
+        self.stop_requested = True
+
+
 class ArticleLoadStopRequested(Exception): pass
 
 class ArticleLoadThread(QtCore.QThread):
@@ -129,6 +167,7 @@ class ArticleLoadThread(QtCore.QThread):
     def stop(self):
         self.stop_requested = True
 
+
 class WordInput(QtGui.QLineEdit):
 
     def __init__(self, parent=None):
@@ -161,44 +200,6 @@ class WordInput(QtGui.QLineEdit):
         elif event.matches(QtGui.QKeySequence.MoveToPreviousLine):
             self.emit(QtCore.SIGNAL('word_input_up'))
 
-class WordLookupThread(QtCore.QThread):
-
-    def run(self):
-        self.setPriority(QtCore.QThread.LowestPriority)
-        self.exec_()
-
-class WordLookupWorker(QtCore.QObject):
-
-    def __init__(self, parent=None):
-        QtCore.QObject.__init__(self, parent)
-        self.stop_requested = False
-
-    def _lookup(self, dictionaries, word):
-        if self.stop_requested:
-            self.emit(QtCore.SIGNAL('stopped'), word)
-            return
-        wordstr = unicode(word).encode('utf8')
-        articles = []
-        for article in dictionaries.lookup(wordstr):
-            if self.stop_requested:
-                self.emit(QtCore.SIGNAL('stopped'), word)
-                return
-            else:
-                articles.append(article)
-                self.emit(QtCore.SIGNAL('match_found'), word, article)
-        self.emit(QtCore.SIGNAL('done'), word, articles)
-
-    def lookup(self, dictionaries, word):
-        self.stop_requested = False
-        print "Looking up %r" % word
-        dict_access_lock.lock()
-        try:
-            self._lookup(dictionaries, word)
-        finally:
-            dict_access_lock.unlock()
-
-    def stop(self):
-        self.stop_requested = True
 
 class DictView(QtGui.QMainWindow):
 
@@ -305,26 +306,6 @@ class DictView(QtGui.QMainWindow):
 
         self.type_stats = {}
 
-        self.word_lookup_thread = WordLookupThread()
-
-        self.word_lookup_worker = WordLookupWorker()
-
-        def init_lookup_worker():
-            self.connect(self.word_lookup_worker, QtCore.SIGNAL("done"),
-                          self.word_lookup_finished, QtCore.Qt.QueuedConnection)
-            self.connect(self.word_lookup_worker, QtCore.SIGNAL("match_found"),
-                         self.word_lookup_match_found, QtCore.Qt.QueuedConnection)
-            self.connect(self.word_lookup_worker, QtCore.SIGNAL("stopped"),
-                         self.word_lookup_stopped, QtCore.Qt.QueuedConnection)
-            self.word_lookup_worker.moveToThread(self.word_lookup_thread)
-            self.connect(self, QtCore.SIGNAL('lookup_word'),
-                         self.word_lookup_worker.lookup, QtCore.Qt.QueuedConnection)
-            self.connect(self, QtCore.SIGNAL("stop_word_lookup"),
-                         self.word_lookup_worker.stop, QtCore.Qt.DirectConnection)
-
-        self.connect(self.word_lookup_thread, QtCore.SIGNAL('started()'), init_lookup_worker)
-        self.word_lookup_thread.start()
-
 
     def article_tab_switched(self, current_tab_index):
         if current_tab_index > -1:
@@ -349,7 +330,21 @@ class DictView(QtGui.QMainWindow):
         self.sidebar.setTabText(0, 'Loading...')
         self.word_completion.clear()
         self.emit(QtCore.SIGNAL("stop_word_lookup"))
-        self.emit(QtCore.SIGNAL("lookup_word"), self.dictionaries, word)
+
+
+        word_lookup_thread = WordLookupThread(self.dictionaries, word, self)
+        self.connect(word_lookup_thread, QtCore.SIGNAL("done"),
+                     self.word_lookup_finished, QtCore.Qt.QueuedConnection)
+        self.connect(word_lookup_thread, QtCore.SIGNAL("match_found"),
+                     self.word_lookup_match_found, QtCore.Qt.QueuedConnection)
+        self.connect(word_lookup_thread, QtCore.SIGNAL("stopped"),
+                     self.word_lookup_stopped, QtCore.Qt.QueuedConnection)
+        self.connect(word_lookup_thread, QtCore.SIGNAL("finished ()"),
+                     functools.partial(word_lookup_thread.setParent, None), QtCore.Qt.QueuedConnection)
+        self.connect(self, QtCore.SIGNAL("stop_word_lookup"),
+                     word_lookup_thread.stop, QtCore.Qt.QueuedConnection)
+        word_lookup_thread.start()
+
 
     def word_lookup_match_found(self, word, article):
         #print 'Lookup match found for %r' % word
@@ -419,9 +414,9 @@ class DictView(QtGui.QMainWindow):
             self.connect(load_thread, QtCore.SIGNAL("article_load_stopped"),
                          self.article_load_stopped, QtCore.Qt.QueuedConnection)
             self.connect(self, QtCore.SIGNAL("stop_article_load"),
-                         load_thread.stop, QtCore.Qt.QueuedConnection)            
+                         load_thread.stop, QtCore.Qt.QueuedConnection)
             load_thread.start()
-    
+
     def clear_current_articles(self):
         self.tabs.blockSignals(True)
         for i in reversed(range(self.tabs.count())):
