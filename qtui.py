@@ -77,7 +77,6 @@ class WordLookupThread(QtCore.QThread):
         dict_access_lock.lock()
         try:
             for article in self.dictionaries.lookup(wordstr):
-                for z in range(100000): a=z*z
                 if self.stop_requested: 
                     raise WordLookupStopRequested
                 else:
