@@ -84,10 +84,10 @@ class WordLookupThread(QtCore.QThread):
                     self.emit(QtCore.SIGNAL('match_found'), self.word, article)
             if self.stop_requested: 
                 raise WordLookupStopRequested
-            else:
-                self.emit(QtCore.SIGNAL('done'), self.word, articles)
         except WordLookupStopRequested:
             self.emit(QtCore.SIGNAL('stopped'), self.word)
+        else:
+            self.emit(QtCore.SIGNAL('done'), self.word, articles)
         finally:
             dict_access_lock.unlock()
 
@@ -305,6 +305,8 @@ class DictView(QtGui.QMainWindow):
 
         self.type_stats = {}
 
+        self.current_lookup_thread = None
+
 
     def article_tab_switched(self, current_tab_index):
         if current_tab_index > -1:
@@ -328,8 +330,9 @@ class DictView(QtGui.QMainWindow):
         print 'update_word_completion ', QtCore.QThread.currentThread()
         self.sidebar.setTabText(0, 'Loading...')
         self.word_completion.clear()
-        self.emit(QtCore.SIGNAL("stop_word_lookup"))
-
+        if self.current_lookup_thread:
+            self.current_lookup_thread.stop()
+            self.current_lookup_thread = None
 
         word_lookup_thread = WordLookupThread(self.dictionaries, word, self)
         self.connect(word_lookup_thread, QtCore.SIGNAL("done"),
@@ -340,8 +343,7 @@ class DictView(QtGui.QMainWindow):
                      self.word_lookup_stopped, QtCore.Qt.QueuedConnection)
         self.connect(word_lookup_thread, QtCore.SIGNAL("finished ()"),
                      functools.partial(word_lookup_thread.setParent, None), QtCore.Qt.QueuedConnection)
-        self.connect(self, QtCore.SIGNAL("stop_word_lookup"),
-                     word_lookup_thread.stop, QtCore.Qt.QueuedConnection)
+        self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start()
 
 
@@ -362,6 +364,7 @@ class DictView(QtGui.QMainWindow):
             self.word_completion.addItem(item)
         self.select_word(unicode(word))
         self.sidebar.setTabText(0, 'Lookup')
+        self.current_lookup_thread = None
 
     def word_lookup_stopped(self, word):
         print 'word_lookup_stopped for %r' % word
