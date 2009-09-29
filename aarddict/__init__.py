@@ -54,6 +54,9 @@ def main():
         default=False,
         help='Print metadata for dictionary files specified'
         )
+    parser.add_option('--ui',
+        help='Choose ui version to run, gtk or qt'
+        )
     options, args = parser.parse_args()
 
     if options.debug:
@@ -114,15 +117,19 @@ def main():
     if options.identify or options.verify or options.metadata:
         raise SystemExit
 
-    try:
-        import hildon
-    except:
-        import ui
-        viewer = ui.DictViewer()
+    if options.ui and options.ui.lower() == 'qt':
+        import qtui
+        qtui.main(args)
     else:
-        import hildonui
-        viewer = hildonui.HildonDictViewer()
-    viewer.main()
+        try:
+            import hildon
+        except:
+            import ui
+            viewer = ui.DictViewer()
+        else:
+            import hildonui
+            viewer = hildonui.HildonDictViewer()
+        viewer.main()
 
 if __name__ == '__main__':
     main()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import with_statement
 import sys
 import os
 import time
@@ -12,6 +13,7 @@ from PyQt4 import QtGui, QtCore
 from PyQt4 import QtWebKit
 
 import aar2html
+import aarddict
 from aarddict.dictionary import (Dictionary, format_title,
                                  DictionaryCollection,
                                  RedirectResolveError,
@@ -23,7 +25,13 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  split_word,
                                  cmp_words)
 
-find_section_js = open('aar.js').read()
+
+def load_file(name):
+    path = os.path.join(aarddict.package_dir, name)
+    with open(path) as f:
+        return f.read()
+
+find_section_js = load_file('aar.js')    
 
 class WebPage(QtWebKit.QWebPage):
 
@@ -450,7 +458,7 @@ class DictView(QtGui.QMainWindow):
         view.setHtml(html, QtCore.QUrl(title))
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
         s = view.settings()
-        s.setUserStyleSheetUrl(QtCore.QUrl(os.path.abspath('aar.css')))
+        s.setUserStyleSheetUrl(QtCore.QUrl(os.path.join(aarddict.package_dir, 'aar.css')))
 
 
     def article_load_started(self, read_funcs):
@@ -601,12 +609,9 @@ class DictView(QtGui.QMainWindow):
             self.history_view.blockSignals(False)
 
 
-def main():
+def main(args):
     app = QtGui.QApplication(sys.argv)
     dv = DictView()
-    from optparse import OptionParser
-    optparser = OptionParser()
-    opts, args = optparser.parse_args()
     dv.dictionaries += [Dictionary(name) for name in args]
     dv.show()
     dv.word_input.setFocus()

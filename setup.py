@@ -18,6 +18,8 @@ else:
             # Also add the copied file to the list of compiled
             # files so it will be included in zipfile.
             all_files = ([f for f in glob.glob('aarddict/*.cfg')] + 
+                         [f for f in glob.glob('aarddict/*.css')] + 
+                         [f for f in glob.glob('aarddict/*.js')] + 
                          [f for f in glob.glob('aarddict/locale/*/*/*.mo')])
             for f in all_files:
                 
@@ -58,7 +60,7 @@ setup(
     install_requires = ['PyICU >= 0.8', 
                         'simplejson'],
     package_data = {
-             'aarddict': ['*.cfg', 'locale/*/*/*.mo']
+             'aarddict': ['*.cfg', 'locale/*/*/*.mo', '*.css', '*.js']
     },
     data_files   =     
     [

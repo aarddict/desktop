@@ -1,7 +1,6 @@
 # coding: utf8
-from aarddict.dictionary import Article, Tag, to_tag
+from aarddict.dictionary import Article, to_tag
 from collections import defaultdict
-import time
 import re
 
 html_tags=set(['b',
@@ -30,8 +29,6 @@ html_tags=set(['b',
                'cite',
                'dd'
                ])
-
-find_section_js = open('aar.js').read()
 
 def tag_start(tag):
     result = ['<', tag.name]
