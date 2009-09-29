@@ -1,0 +1,27 @@
+a:active {
+    background-color: yellow;
+}
+
+.ref {
+    color: red;
+    vertical-align: super;
+    font-size: x-small;
+}
+
+.note {
+    font-size: small;
+}
+
+.int {
+    color: forestgreen;
+}
+
+.ext {
+    color: blue;
+}
+
+.notebackref {
+    font-weight: bold;
+    color: maroon;
+    text-decoration: none;
+}
