@@ -75,6 +75,17 @@ def make_link(tag):
         tag.attributes['class'] = 'int'
     return tag_start(tag)
 
+def dedup_tags(tags):
+    seen_tags = set()
+    article_tags = []
+    for t in tags:
+        tpl = (t.name, t.start, t.end)
+        if tpl in seen_tags:
+            continue
+        else:
+            seen_tags.add(tpl)
+            article_tags.append(t)
+    return article_tags
 
 tag_map_start = defaultdict(lambda: tag_start)
 tag_map_start.update({'row': lambda tag: '<tr>',
@@ -157,8 +168,10 @@ def convert(article):
 
 
     """
-    
-    notes = [tag for tag in article.tags if tag.name=='note']
+    #some articles have big number of duplicate tags that cause problems in html
+    article_tags = dedup_tags(article.tags)
+            
+    notes = [tag for tag in article_tags if tag.name=='note']
 
     #note end tag is incorrect in many articles for some reason
     #consider next end of line char to be the end of note
@@ -170,7 +183,7 @@ def convert(article):
     tagstarts = defaultdict(list)
     tagends = defaultdict(list)
 
-    for t in article.tags:
+    for t in article_tags:
         tagstarts[t.start].append(t)
         tagends[t.end].append(t)
 
