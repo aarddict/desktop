@@ -1,0 +1,439 @@
+# translation of aarddict.po to Greek
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Jennie Petoumenou <epetoumenou@gmail.com>, 2009.
+msgid ""
+msgstr ""
+"Project-Id-Version: aarddict\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-08-09 23:25-0400\n"
+"PO-Revision-Date: 2009-09-27 07:02+0200\n"
+"Last-Translator: Jennie Petoumenou <epetoumenou@gmail.com>\n"
+"Language-Team: Greek <<team AT BLOCKSPAM gnome DOT gr>>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: KBabel 1.11.4\n"
+
+#: ../dictinfo.py:46
+msgid "Info"
+msgstr "Πληροφορίες"
+
+#: ../dictinfo.py:51
+msgid "License"
+msgstr "Άδεια χρήσης"
+
+#: ../dictinfo.py:78
+#, python-format
+msgid "Volumes: %s"
+msgstr "Τόμοι: %s"
+
+#: ../dictinfo.py:86
+#, python-format
+msgid "Volume %s: "
+msgstr "Τόμος %s:"
+
+#: ../dictinfo.py:94
+msgid "Number of articles: "
+msgstr "Αριθμός άρθρων:"
+
+#: ../dictinfo.py:109
+msgid "Source\n"
+msgstr "Πηγή\n"
+
+#: ../dictinfo.py:118
+msgid "Copyright Notice\n"
+msgstr "Πνευματικά δικαιώματα\n"
+
+#: ../dictinfo.py:139
+msgid "Dictionary Info"
+msgstr "Πληροφορίες λεξικών"
+
+#: ../dictinfo.py:151
+msgid "Dictionary"
+msgstr "Λεξικό"
+
+#: ../hildonui.py:82 ../ui.py:1412
+msgid "_Navigate"
+msgstr "Πλ_οήγηση"
+
+#: ../hildonui.py:94 ../ui.py:1429
+msgid "_View"
+msgstr "_Προβολή"
+
+#: ../ui.py:347
+#, python-format
+msgid "Redirect to %s not found"
+msgstr "Ζητήθηκε ανακατεύθυνση στο %s, αλλά το άρθρο δε βρέθηκε"
+
+#: ../ui.py:568
+msgid "Saving application state..."
+msgstr "Αποθήκευση κατάστασης εφαρμογής..."
+
+#: ../ui.py:569
+msgid "Exiting"
+msgstr "Έξοδος"
+
+#: ../ui.py:647
+msgid "Failed to Save State"
+msgstr "Απέτυχε η αποθήκευση της κατάστασης"
+
+#: ../ui.py:867
+msgid "Loading..."
+msgstr "Φόρτωση..."
+
+#: ../ui.py:1200
+msgid "_Word List"
+msgstr "_Λίστα λημμάτων"
+
+#: ../ui.py:1201
+msgid "Toggles word list"
+msgstr "Εμφανίζει τη λίστα λημμάτων"
+
+#: ../ui.py:1203
+msgid "Drag _Selects"
+msgstr "_Σύρσιμο για επιλογή"
+
+#: ../ui.py:1204
+msgid "Toggles drag gesture between select text and article scroll"
+msgstr ""
+"Επιλέγει αν το σύρσιμο θα χρησιμοποιείται για την επιλογή κειμένου ή για την "
+"κύλιση των άρθρων"
+
+#: ../ui.py:1207
+msgid "_Full Screen"
+msgstr "Πλήρης _οθόνη"
+
+#: ../ui.py:1208
+msgid "Toggle full screen mode"
+msgstr "Προβολή σε πλήρη οθόνη"
+
+#: ../ui.py:1212
+msgid "_Base Characters"
+msgstr "_Αγνόηση διακριτικών σημείων και κεφαλαίων"
+
+#: ../ui.py:1213
+msgid "Consider only base characters when looking up words"
+msgstr ""
+"Η αλφαβητική ταξινόμηση δε διακρίνει μεταξύ απλών χαρακτήρων και κεφαλαίων ή "
+"τονισμένων χαρακτήρων"
+
+#: ../ui.py:1216
+msgid "_Diacritics"
+msgstr "Διάκριση _διακριτικών σημείων"
+
+#: ../ui.py:1217
+msgid "Consider base characters and accents when looking up words"
+msgstr ""
+"Η αλφαβητική ταξινόμηση διακρίνει μεταξύ απλών και τονισμένων χαρακτήρων"
+
+#: ../ui.py:1220
+msgid "Diacritics and _Case"
+msgstr "Διάκριση διακριτικών σημείων και _κεφαλαίων"
+
+#: ../ui.py:1221
+msgid "Consider base characters, accents and case when looking up words"
+msgstr ""
+"Η αλφαβητική ταξινόμηση διακρίνει μεταξύ απλών, κεφαλαίων και τονισμένων "
+"χαρακτήρων"
+
+#: ../ui.py:1227
+msgid "_Open..."
+msgstr "Άν_οιγμα..."
+
+#: ../ui.py:1228
+msgid "Open a dictionary"
+msgstr "Άνοιγμα λεξικού"
+
+#: ../ui.py:1231
+msgid "_Info..."
+msgstr "_Πληροφορίες..."
+
+#: ../ui.py:1232
+msgid "Information about dictionaries"
+msgstr "Πληροφορίες για τα λεξικά"
+
+#: ../ui.py:1235
+msgid "_Quit"
+msgstr "Έ_ξοδος"
+
+#: ../ui.py:1236
+msgid "Close application"
+msgstr "Κλείσιμο εφαρμογής"
+
+#: ../ui.py:1239
+msgid "_Lookup Box"
+msgstr "Πεδίο ανα_ζήτησης"
+
+#: ../ui.py:1241
+msgid "Move focus to word input and select its content"
+msgstr "Εστίαση στο πεδίο αναζήτησης και επιλογή των περιεχομένων του"
+
+#: ../ui.py:1244
+msgid "_Back"
+msgstr "_Πίσω"
+
+#: ../ui.py:1245
+msgid "Go back to previous word in history"
+msgstr "Μετάβαση στο προηγούμενο λήμμα του ιστορικού"
+
+#: ../ui.py:1248
+msgid "_Forward"
+msgstr "_Μπροστά"
+
+#: ../ui.py:1249
+msgid "Go forward to next word in history"
+msgstr "Μετάβαση στο επόμενο λήμμα του ιστορικού"
+
+#: ../ui.py:1252
+msgid "_Next Article"
+msgstr "_Επόμενο άρθρο"
+
+#: ../ui.py:1253
+msgid "Show next article"
+msgstr "Εμφάνιση επόμενου άρθρου"
+
+#: ../ui.py:1256
+msgid "_Previous Article"
+msgstr "Προη_γούμενο άρθρο"
+
+#: ../ui.py:1257
+msgid "Show previous article"
+msgstr "Εμφάνιση προηγούμενου άρθρου"
+
+#: ../ui.py:1260
+msgid "N_ext Language"
+msgstr "Επόμενη γ_λώσσα"
+
+#: ../ui.py:1261
+msgid "Show next language word list"
+msgstr "Εμφάνιση αποτελεσμάτων για την επόμενη γλώσσα"
+
+#: ../ui.py:1264
+msgid "P_revious Language"
+msgstr "Προηγούμενη γλώ_σσα"
+
+#: ../ui.py:1265
+msgid "Show previous language word list"
+msgstr "Εμφάνιση αποτελεσμάτων για την προηγούμενη γλώσσα"
+
+#: ../ui.py:1268
+msgid "_Online Article"
+msgstr "Άρθρο στο _διαδίκτυο"
+
+#: ../ui.py:1269
+msgid "Open online version of this article in a web browser"
+msgstr "Άνοιγμα σε περιηγητή της διαδικτυακής εκδοχής του άρθρου"
+
+#: ../ui.py:1272
+msgid "_Article"
+msgstr "Ά_ρθρου"
+
+#: ../ui.py:1273
+msgid "Copy article text to clipboard"
+msgstr "Αντιγραφή του κειμένου του άρθρου στο πρόχειρο"
+
+#: ../ui.py:1276
+msgid "_Selected Text"
+msgstr "Επιλε_γμένου κειμένου"
+
+#: ../ui.py:1277
+msgid "Copy selected text to clipboard"
+msgstr "Αντιγραφή του επιλεγμένου κειμένου στο πρόχειρο"
+
+#: ../ui.py:1280
+msgid "Article _URL"
+msgstr "Διεύθυνσης _URL άρθρου"
+
+#: ../ui.py:1281
+msgid "Copy current article URL to clipboard"
+msgstr "Αντιγραφή της διεύθυνσης URL του τρέχοντος άρθρου στο πρόχειρο"
+
+#: ../ui.py:1284
+msgid "_Paste"
+msgstr "_Επικόλληση"
+
+#: ../ui.py:1285
+msgid "Paste text from clipboard as word to look up"
+msgstr "Επικόλληση του κειμένου του προχείρου στο πεδίο αναζήτησης"
+
+#: ../ui.py:1288
+msgid "_New Lookup"
+msgstr "_Νέα αναζήτηση"
+
+#: ../ui.py:1289
+msgid "Move focus to word input and clear it"
+msgstr "Εστίαση στο πεδίο αναζήτησης και εκκαθάριση των περιεχομένων του"
+
+#: ../ui.py:1292
+msgid "_Phonetic Font..."
+msgstr "_Φωνητική γραμματοσειρά..."
+
+#: ../ui.py:1293
+msgid "Select font for displaying phonetic transcription"
+msgstr "Επιλογή γραμματοσειράς για την εμφάνιση των φωνητικών μεταγραφών"
+
+#: ../ui.py:1296
+msgid "_Colors..."
+msgstr "_Χρώματα..."
+
+#: ../ui.py:1297
+msgid "Customize colors of some article formatting elements"
+msgstr "Προσαρμογή των χρωμάτων ορισμένων στοιχείων μορφοποίησης των άρθρων"
+
+#: ../ui.py:1300
+msgid "_Increase Text Size"
+msgstr "Αύ_ξηση μεγέθους κειμένου"
+
+#: ../ui.py:1301
+msgid "Increase size of article text"
+msgstr "Αύξηση του μεγέθους της γραμματοσειράς στα κείμενα των άρθρων"
+
+#: ../ui.py:1304
+msgid "_Decrease Text Size"
+msgstr "_Μείωση μεγέθους κειμένου"
+
+#: ../ui.py:1305
+msgid "Decrease size of article text"
+msgstr "Μείωση του μεγέθους της γραμματοσειράς στα κείμενα των άρθρων"
+
+#: ../ui.py:1308
+msgid "_Reset Text Size"
+msgstr "_Επαναφορά μεγέθους κειμένου"
+
+#: ../ui.py:1309
+msgid "Reset size of article text to default"
+msgstr ""
+"Επαναφορά του προεπιλεγμένου μεγέθους γραμματοσειράς για τα κείμενα των "
+"άρθρων"
+
+#: ../ui.py:1312
+msgid "_About"
+msgstr "Π_ερί"
+
+#: ../ui.py:1313
+#, python-format
+msgid "About %s"
+msgstr "Περί %s"
+
+#: ../ui.py:1324
+msgid "_Match"
+msgstr "_Ταξινόμηση"
+
+#: ../ui.py:1336
+msgid "_Remove"
+msgstr "Α_φαίρεση"
+
+#: ../ui.py:1341
+msgid "_Verify"
+msgstr "Επα_λήθευση"
+
+#: ../ui.py:1371
+msgid "_Copy"
+msgstr "_Αντιγραφή"
+
+#: ../ui.py:1398
+msgid "_Dictionary"
+msgstr "_Λεξικό"
+
+#: ../ui.py:1424
+msgid "_Help"
+msgstr "_Βοήθεια"
+
+#: ../ui.py:1548
+msgid "No dictionaries"
+msgstr "Δεν υπάρχουν λεξικά"
+
+#: ../ui.py:1549
+#, python-format
+msgid "%d volume"
+msgid_plural "%d volumes"
+msgstr[0] "%d τόμος"
+msgstr[1] "%d τόμοι"
+
+#: ../ui.py:1551
+#, python-format
+msgid "%d dictionary"
+msgid_plural "%d dictionaries"
+msgstr[0] "%d λεξικό"
+msgstr[1] "%d λεξικά"
+
+#: ../ui.py:1622
+msgid "Open Dictionary"
+msgstr "Άνοιγμα λεξικού"
+
+#: ../ui.py:1662
+msgid "Open Failed"
+msgstr "Αποτυχία ανοίγματος"
+
+#: ../ui.py:1693
+msgid "Please wait..."
+msgstr "Παρακαλώ περιμένετε..."
+
+#: ../ui.py:1693
+msgid "Loading"
+msgstr "Φόρτωση"
+
+#: ../ui.py:1770
+msgid "Verifying"
+msgstr "Επαλήθευση"
+
+#: ../ui.py:1815
+msgid "(C) 2006-2009 Igor Tkach, Jeremy Mortis"
+msgstr "(C) 2006-2009 Igor Tkach, Jeremy Mortis"
+
+#: ../ui.py:1817
+msgid "Distributed under terms and conditions of GNU Public License Version 3"
+msgstr ""
+"Διανέμεται υπό τους όρους και τις προϋποθέσεις της Γενικής Άδειας Δημόσιας "
+"Χρήσης GNU (GPL), έκδοσης 3"
+
+#: ../ui.py:1823
+msgid "Select Phonetic Font"
+msgstr "Επιλογή φωνητικής γραμματοσειράς"
+
+#: ../ui.py:1831
+msgid "Customize Colors"
+msgstr "Προσαρμογή χρωμάτων"
+
+#: ../ui.py:1847
+msgid "Internal Link"
+msgstr "Εσωτερικοί σύνδεσμοι"
+
+#: ../ui.py:1848
+msgid "Internal Link Color"
+msgstr "Χρώμα εσωτερικών συνδέσμων"
+
+#: ../ui.py:1850
+msgid "External Link"
+msgstr "Εξωτερικοί σύνδεσμοι"
+
+#: ../ui.py:1851
+msgid "External Link Color"
+msgstr "Χρώμα εξωτερικών συνδέσμων"
+
+#: ../ui.py:1853
+msgid "Footnote Link"
+msgstr "Σύνδεσμοι υποσημειώσεων"
+
+#: ../ui.py:1854
+msgid "Footnote Link Color"
+msgstr "Χρώμα συνδέσμων υποσημειώσεων"
+
+#: ../ui.py:1856
+msgid "Activated Link"
+msgstr "Ενεργοποιημένοι σύνδεσμοι"
+
+#: ../ui.py:1857
+msgid "Activated Link Color"
+msgstr "Χρώμα ενεργοποιημένων συνδέσμων"
+
+#: ../ui.py:1859
+msgid "Table Background"
+msgstr "Παρασκήνιο πινάκων"
+
+#: ../ui.py:1860
+msgid "Table Background Color"
+msgstr "Χρώμα παρασκηνίου πινάκων"
