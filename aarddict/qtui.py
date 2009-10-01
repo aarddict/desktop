@@ -12,6 +12,9 @@ from itertools import groupby
 from PyQt4 import QtGui, QtCore
 from PyQt4 import QtWebKit
 
+from PyQt4.QtCore import QObject, Qt
+from PyQt4.QtGui import QIcon, QPixmap, QFileDialog
+
 import aar2html
 import aarddict
 from aarddict.dictionary import (Dictionary, format_title,
@@ -31,7 +34,7 @@ def load_file(name):
     with open(path) as f:
         return f.read()
 
-find_section_js = load_file('aar.js')    
+find_section_js = load_file('aar.js')
 
 class WebPage(QtWebKit.QWebPage):
 
@@ -85,12 +88,12 @@ class WordLookupThread(QtCore.QThread):
         dict_access_lock.lock()
         try:
             for article in self.dictionaries.lookup(wordstr):
-                if self.stop_requested: 
+                if self.stop_requested:
                     raise WordLookupStopRequested
                 else:
                     articles.append(article)
                     self.emit(QtCore.SIGNAL('match_found'), self.word, article)
-            if self.stop_requested: 
+            if self.stop_requested:
                 raise WordLookupStopRequested
         except WordLookupStopRequested:
             self.emit(QtCore.SIGNAL('stopped'), self.word)
@@ -174,6 +177,37 @@ class ArticleLoadThread(QtCore.QThread):
     def stop(self):
         self.stop_requested = True
 
+
+class DictOpenThread(QtCore.QThread):
+
+    def __init__(self, sources, parent=None):
+        QtCore.QThread.__init__(self, parent)
+        self.sources = sources
+        self.stop_requested = False
+
+    def run(self):
+        ext = os.path.extsep + 'aar'
+        files = []
+
+        for source in self.sources:
+            if os.path.isfile(source):
+                files.append(source)
+            if os.path.isdir(source):
+                files += [f for f in os.listdir(source)
+                          if os.path.isfile(f) and f.lower().endswith(ext)]
+        self.emit(QtCore.SIGNAL("dict_open_started"), len(files))
+        for candidate in files:
+            if self.stop_requested:
+                return
+            try:
+                d = Dictionary(candidate)
+            except Exception, e:
+                self.emit(QtCore.SIGNAL("dict_open_failed"), source, str(e))
+            else:
+                self.emit(QtCore.SIGNAL("dict_open_succeded"), d)
+
+    def stop(self):
+        self.stop_requested = True
 
 class WordInput(QtGui.QLineEdit):
 
@@ -314,6 +348,65 @@ class DictView(QtGui.QMainWindow):
         self.type_stats = {}
 
         self.current_lookup_thread = None
+
+        # self.schedule(functools.partial(self.open_dicts2, ['/home/itkach/env-aard/aar']))
+
+        openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
+        add_dict_source = QtGui.QAction(openIcon, 'Add...', self)
+        add_dict_source.setShortcut('Ctrl+O')
+        add_dict_source.setStatusTip('Add dictionary or dictionary directory')
+        self.connect(add_dict_source, QtCore.SIGNAL('triggered()'), self.action_add_dict)
+
+        mn_file.addAction(add_dict_source)
+        mn_file.addAction(exit)
+
+    def action_add_dict(self):
+        self.open_dicts(self.select_files())
+
+    def open_dicts(self, sources):
+        dict_open_thread = DictOpenThread(sources, self)
+
+        progress = QtGui.QProgressDialog(self);
+        progress.setLabelText("Opening dictionaries...")
+        progress.setCancelButtonText("Stop")
+        progress.setMinimum(0)
+        progress.setMinimumDuration(800)
+
+        def show_loading_dicts_dialog(num):
+            progress.setMaximum(num)
+            progress.setValue(0)
+
+        QObject.connect(dict_open_thread, QtCore.SIGNAL('dict_open_started'), show_loading_dicts_dialog)
+
+        def dict_opened(d):
+            progress.setValue(progress.value() + 1)
+            print 'Opened %s' % format_title(d)
+            self.dictionaries.append(d)
+
+        def dict_failed(source, error):
+            progress.setValue(progress.value() + 1)
+            print 'Failed to open %s: %s' % (source, error)
+
+        def canceled():
+            dict_open_thread.stop()
+
+        QObject.connect(progress, QtCore.SIGNAL('canceled ()'),
+                       canceled)
+
+        QObject.connect(dict_open_thread, QtCore.SIGNAL('dict_open_succeded'),
+                       dict_opened, QtCore.Qt.QueuedConnection)
+        QObject.connect(dict_open_thread, QtCore.SIGNAL('dict_open_failed'),
+                        dict_failed, QtCore.Qt.QueuedConnection)
+        QObject.connect(dict_open_thread, QtCore.SIGNAL('finished()'),
+                        lambda: dict_open_thread.setParent(None), QtCore.Qt.QueuedConnection)
+        dict_open_thread.start()
+
+    def select_files(self):
+        file_names = QFileDialog.getOpenFileNames(self, 'Add Dictionary', 
+                                                  os.path.expanduser('~'), 
+                                                  'Aard Dictionary Files (*.aar)')        
+        return [unicode(name).encode('utf8') for name in file_names]
+                                            
 
 
     def article_tab_switched(self, current_tab_index):
