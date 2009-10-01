@@ -463,7 +463,8 @@ class Dictionary(object):
         return self.key().__hash__()
 
     def lookup(self, word, strength=PRIMARY):
-
+        if not word: 
+            return
         lookupword, section = split_word(word.decode('utf8'))
 
         pos = bisect_left(CollationKeyList(self.words, strength),
