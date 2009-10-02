@@ -34,6 +34,8 @@ def load_file(name):
     with open(path) as f:
         return f.read()
 
+app_dir = os.path.expanduser('~/.aarddict')
+sources_file = os.path.join(app_dir, 'sources')
 find_section_js = load_file('aar.js')
 
 class WebPage(QtWebKit.QWebPage):
@@ -245,6 +247,24 @@ class WordInput(QtGui.QLineEdit):
             self.emit(QtCore.SIGNAL('word_input_up'))
 
 
+def write_sources(sources):
+    with open(sources_file, 'w') as f:
+        seen = set()
+        for source in sources:
+            if source not in seen:
+                print 'writing', source
+                f.write(source)
+                f.write('\n')
+                seen.add(source)
+            else:
+                print 'seen', source
+
+def read_sources():
+    if os.path.exists(sources_file):
+        return load_file(sources_file).splitlines()
+    else:
+        return []
+
 class DictView(QtGui.QMainWindow):
 
     def __init__(self):
@@ -368,6 +388,8 @@ class DictView(QtGui.QMainWindow):
         mn_file.addAction(add_dict_dir)
         mn_file.addAction(exit)
 
+        self.sources = []
+
     def action_add_dict(self):
         self.open_dicts(self.select_files())
 
@@ -375,6 +397,10 @@ class DictView(QtGui.QMainWindow):
         self.open_dicts(self.select_dir())
 
     def open_dicts(self, sources):
+
+        self.sources += sources
+        write_sources(self.sources)
+
         dict_open_thread = DictOpenThread(sources, self)
 
         progress = QtGui.QProgressDialog(self);
@@ -720,11 +746,13 @@ class DictView(QtGui.QMainWindow):
 
 
 def main(args):
+    if not os.path.exists(app_dir):
+        os.makedirs(app_dir)
     app = QtGui.QApplication(sys.argv)
     dv = DictView()
     dv.show()
     dv.word_input.setFocus()
-    dv.open_dicts(args)
+    dv.open_dicts(read_sources()+args)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
