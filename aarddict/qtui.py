@@ -190,11 +190,14 @@ class DictOpenThread(QtCore.QThread):
         files = []
 
         for source in self.sources:
-            if os.path.isfile(source):
+            print source
+            if os.path.isfile(source):                
                 files.append(source)
             if os.path.isdir(source):
-                files += [f for f in os.listdir(source)
-                          if os.path.isfile(f) and f.lower().endswith(ext)]
+                for f in os.listdir(source):
+                    s = os.path.join(source, f)
+                    if os.path.isfile(s) and f.lower().endswith(ext):
+                        files.append(s)
         self.emit(QtCore.SIGNAL("dict_open_started"), len(files))
         for candidate in files:
             if self.stop_requested:
@@ -371,7 +374,7 @@ class DictView(QtGui.QMainWindow):
         progress.setCancelButtonText("Stop")
         progress.setMinimum(0)
         progress.setMinimumDuration(800)
-
+        
         def show_loading_dicts_dialog(num):
             progress.setMaximum(num)
             progress.setValue(0)
@@ -400,6 +403,7 @@ class DictView(QtGui.QMainWindow):
         QObject.connect(dict_open_thread, QtCore.SIGNAL('finished()'),
                         lambda: dict_open_thread.setParent(None), QtCore.Qt.QueuedConnection)
         dict_open_thread.start()
+
 
     def select_files(self):
         file_names = QFileDialog.getOpenFileNames(self, 'Add Dictionary', 
@@ -705,9 +709,9 @@ class DictView(QtGui.QMainWindow):
 def main(args):
     app = QtGui.QApplication(sys.argv)
     dv = DictView()
-    dv.dictionaries += [Dictionary(name) for name in args]
     dv.show()
     dv.word_input.setFocus()
+    dv.open_dicts(args)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
