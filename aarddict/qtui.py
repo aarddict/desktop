@@ -418,7 +418,8 @@ class DictView(QtGui.QMainWindow):
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
             print 'Opened %s' % format_title(d)
-            self.dictionaries.append(d)
+            if d not in self.dictionaries:
+                self.dictionaries.append(d)
 
         def dict_failed(source, error):
             progress.setValue(progress.value() + 1)
