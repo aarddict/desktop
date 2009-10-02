@@ -191,7 +191,7 @@ class DictOpenThread(QtCore.QThread):
 
         for source in self.sources:
             print source
-            if os.path.isfile(source):                
+            if os.path.isfile(source):
                 files.append(source)
             if os.path.isdir(source):
                 for f in os.listdir(source):
@@ -319,7 +319,7 @@ class DictView(QtGui.QMainWindow):
         splitter.setSizes([100, 300])
 
         menubar = self.menuBar()
-        mn_file = menubar.addMenu('&File')
+        mn_file = menubar.addMenu('&Dictionary')
 
         fileIcon = style.standardIcon(QtGui.QStyle.SP_FileIcon)
 
@@ -355,16 +355,24 @@ class DictView(QtGui.QMainWindow):
         # self.schedule(functools.partial(self.open_dicts2, ['/home/itkach/env-aard/aar']))
 
         openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
-        add_dict_source = QtGui.QAction(openIcon, 'Add...', self)
-        add_dict_source.setShortcut('Ctrl+O')
-        add_dict_source.setStatusTip('Add dictionary or dictionary directory')
-        self.connect(add_dict_source, QtCore.SIGNAL('triggered()'), self.action_add_dict)
+        add_dicts = QtGui.QAction(openIcon, 'Add Dictionaries...', self)
+        add_dicts.setShortcut('Ctrl+O')
+        add_dicts.setStatusTip('Add dictionaries')
+        self.connect(add_dicts, QtCore.SIGNAL('triggered()'), self.action_add_dict)
 
-        mn_file.addAction(add_dict_source)
+        add_dict_dir = QtGui.QAction('Add Directory...', self)
+        add_dict_dir.setStatusTip('Add dictionary directory')
+        self.connect(add_dict_dir, QtCore.SIGNAL('triggered()'), self.action_add_dict_dir)
+
+        mn_file.addAction(add_dicts)
+        mn_file.addAction(add_dict_dir)
         mn_file.addAction(exit)
 
     def action_add_dict(self):
         self.open_dicts(self.select_files())
+
+    def action_add_dict_dir(self):
+        self.open_dicts(self.select_dir())
 
     def open_dicts(self, sources):
         dict_open_thread = DictOpenThread(sources, self)
@@ -374,7 +382,7 @@ class DictView(QtGui.QMainWindow):
         progress.setCancelButtonText("Stop")
         progress.setMinimum(0)
         progress.setMinimumDuration(800)
-        
+
         def show_loading_dicts_dialog(num):
             progress.setMaximum(num)
             progress.setValue(0)
@@ -395,7 +403,6 @@ class DictView(QtGui.QMainWindow):
 
         QObject.connect(progress, QtCore.SIGNAL('canceled ()'),
                        canceled)
-
         QObject.connect(dict_open_thread, QtCore.SIGNAL('dict_open_succeded'),
                        dict_opened, QtCore.Qt.QueuedConnection)
         QObject.connect(dict_open_thread, QtCore.SIGNAL('dict_open_failed'),
@@ -406,11 +413,17 @@ class DictView(QtGui.QMainWindow):
 
 
     def select_files(self):
-        file_names = QFileDialog.getOpenFileNames(self, 'Add Dictionary', 
-                                                  os.path.expanduser('~'), 
-                                                  'Aard Dictionary Files (*.aar)')        
+        file_names = QFileDialog.getOpenFileNames(self, 'Add Dictionary',
+                                                  os.path.expanduser('~'),
+                                                  'Aard Dictionary Files (*.aar)')
         return [unicode(name).encode('utf8') for name in file_names]
-                                            
+
+
+    def select_dir(self):
+        name = QFileDialog.getExistingDirectory (self, 'Add Dictionary Directory',
+                                                      os.path.expanduser('~'),
+                                                      QFileDialog.ShowDirsOnly)
+        return [unicode(name).encode('utf8')]
 
 
     def article_tab_switched(self, current_tab_index):
