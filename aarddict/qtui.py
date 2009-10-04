@@ -355,7 +355,6 @@ class DictView(QMainWindow):
         exit = QAction(fileIcon, 'Exit', self)
         exit.setShortcut('Ctrl+Q')
         exit.setStatusTip('Exit application')
-        #exit.triggered.connect(self.close)
         connect(exit, SIGNAL('triggered()'), self.close)
 
         mn_file.addAction(exit)
@@ -487,19 +486,11 @@ class DictView(QMainWindow):
         word_lookup_thread = WordLookupThread(self.dictionaries, word, self)
         connect(word_lookup_thread, SIGNAL("done"),
                 self.word_lookup_finished, Qt.QueuedConnection)
-        connect(word_lookup_thread, SIGNAL("match_found"),
-                self.word_lookup_match_found, Qt.QueuedConnection)
-        connect(word_lookup_thread, SIGNAL("stopped"),
-                self.word_lookup_stopped, Qt.QueuedConnection)
         connect(word_lookup_thread, SIGNAL("finished ()"),
                 functools.partial(word_lookup_thread.setParent, None),
                 Qt.QueuedConnection)
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start()
-
-
-    def word_lookup_match_found(self, word, article):
-        pass
 
     def word_lookup_finished(self, word, articles):
         log.debug('Lookup for %r finished, got %d article(s)', word, len(articles))
@@ -515,9 +506,6 @@ class DictView(QMainWindow):
         self.select_word(unicode(word))
         self.sidebar.setTabText(0, 'Lookup')
         self.current_lookup_thread = None
-
-    def word_lookup_stopped(self, word):
-        log.debug('word_lookup_stopped for %r', word)
 
     def select_next_word(self):
         count = self.word_completion.count()
@@ -562,10 +550,6 @@ class DictView(QMainWindow):
                     Qt.QueuedConnection)
             connect(load_thread, SIGNAL("article_load_started"),
                     self.article_load_started, Qt.QueuedConnection)
-            connect(load_thread, SIGNAL("article_load_finished"),
-                    self.article_load_finished, Qt.QueuedConnection)
-            connect(load_thread, SIGNAL("article_load_stopped"),
-                    self.article_load_stopped, Qt.QueuedConnection)
             connect(self, SIGNAL("stop_article_load"),
                     load_thread.stop, Qt.QueuedConnection)
             load_thread.start()
@@ -623,12 +607,6 @@ class DictView(QMainWindow):
                                     u'\n'.join((dict_title, read_func.title)))
         self.select_preferred_dict()
         self.tabs.blockSignals(False)
-
-    def article_load_finished(self, load_thread, read_funcs):
-        log.debug('Loaded %d article(s)', len(read_funcs))        
-
-    def article_load_stopped(self, load_thread):
-        log.debug('Article load stopped')
 
     def select_preferred_dict(self):
         preferred_dict_keys = [item[0] for item
