@@ -35,6 +35,8 @@ from aarddict.dictionary import (Dictionary, format_title,
 
 connect = QObject.connect
 
+log = logging.getLogger(__name__)
+
 def load_file(name):
     path = os.path.join(aarddict.package_dir, name)
     with open(path) as f:
@@ -47,11 +49,10 @@ find_section_js = load_file('aar.js')
 class WebPage(QWebPage):
 
     def javaScriptConsoleMessage (self, message, lineNumber, sourceID):
-        print 'msg: %r line: %r source: %r' % (message, lineNumber, sourceID)
+        log.debug('[js] %s (line %d): %s', sourceID, lineNumber, message)
 
     def javaScriptAlert (self, originatingFrame, msg):
-        print 'alert: [%r] %r' % (originatingFrame, msg)
-
+        log.debug('[js] %s: %s', originatingFrame, msg)
 
 class Matcher(QObject):
 
@@ -66,7 +67,6 @@ class Matcher(QObject):
 
     @pyqtSlot('QString', 'QString', int)
     def match(self, section, candidate, strength):
-        #print 'Candidate %r, section %r, strength %r' % (candidate, section, strength)
         if cmp_words(unicode(section),
                      unicode(candidate),
                      strength=strength) == 0:
@@ -93,7 +93,7 @@ class WordLookupThread(QThread):
     def run(self):
         self.setPriority(QThread.LowestPriority)
         wordstr = unicode(self.word).encode('utf8')
-        print "Looking up %r" % wordstr
+        log.debug("Looking up %s", wordstr)
         articles = []
         dict_access_lock.lock()
         try:
@@ -155,8 +155,9 @@ class ArticleLoadThread(QThread):
             article = Article(e.article.title,
                               'Redirect to %s not found' % e.article.redirect,
                               dictionary=e.article.dictionary)
-        print 'read "%s" from %s in %s' % (article.title.encode('utf8'), article.dictionary, time.time() - t0)
-        t0 = time.time()
+        log.debug('Read "%s" from %s in %ss',
+                  article.title.encode('utf8'),
+                  article.dictionary, time.time() - t0)
         return article
 
     def _tohtml(self, article):
@@ -181,7 +182,8 @@ class ArticleLoadThread(QThread):
                 raise ArticleLoadStopRequested
             result = step(result)
 
-        print 'converted "%s" in %s' % (article.title.encode('utf8'), time.time() - t0)
+        log.debug('Converted "%s" in %ss',
+                  article.title.encode('utf8'), time.time() - t0)
         return result
 
 
@@ -201,7 +203,6 @@ class DictOpenThread(QThread):
         files = []
 
         for source in self.sources:
-            print source
             if os.path.isfile(source):
                 files.append(source)
             if os.path.isdir(source):
@@ -262,12 +263,11 @@ def write_sources(sources):
         seen = set()
         for source in sources:
             if source not in seen:
-                print 'writing', source
                 f.write(source)
                 f.write('\n')
                 seen.add(source)
             else:
-                print 'seen', source
+                log.debug('Source %s is already written, ignoring', source)
 
 def read_sources():
     if os.path.exists(sources_file):
@@ -375,7 +375,7 @@ class DictView(QMainWindow):
 
         self.preferred_dicts = {}
 
-        connect(self.tabs, SIGNAL('currentChanged (int)'), 
+        connect(self.tabs, SIGNAL('currentChanged (int)'),
                 self.article_tab_switched)
 
         self.type_stats = {}
@@ -426,13 +426,13 @@ class DictView(QMainWindow):
 
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
-            print 'Opened %s' % format_title(d)
+            log.debug('Opened %s' % d.file_name)
             if d not in self.dictionaries:
                 self.dictionaries.append(d)
 
         def dict_failed(source, error):
             progress.setValue(progress.value() + 1)
-            print 'Failed to open %s: %s' % (source, error)
+            log.error('Failed to open %s: %s', source, error)
 
         def canceled():
             dict_open_thread.stop()
@@ -466,7 +466,6 @@ class DictView(QMainWindow):
         if current_tab_index > -1:
             web_view = self.tabs.widget(current_tab_index)
             dict_uuid = str(web_view.property('dictionary').toByteArray())
-            print 'Current tab changed, new preferred dict: %s' % unicode(self.tabs.tabText(current_tab_index)).encode('utf8')
             self.preferred_dicts[dict_uuid] = time.time()
 
     def schedule(self, func, delay=500):
@@ -481,7 +480,6 @@ class DictView(QMainWindow):
         self.schedule(func)
 
     def update_word_completion(self, word):
-        print 'update_word_completion ', QThread.currentThread()
         self.sidebar.setTabText(0, 'Loading...')
         self.word_completion.clear()
         if self.current_lookup_thread:
@@ -503,11 +501,10 @@ class DictView(QMainWindow):
 
 
     def word_lookup_match_found(self, word, article):
-        #print 'Lookup match found for %r' % word
         pass
 
     def word_lookup_finished(self, word, articles):
-        print 'Lookup for %r finished, got %d article(s)' % (word, len(articles))
+        log.debug('Lookup for %r finished, got %d article(s)', word, len(articles))
         def key(article):
             return collation_key(article.title, TERTIARY).getByteArray()
         articles.sort(key=key)
@@ -522,7 +519,7 @@ class DictView(QMainWindow):
         self.current_lookup_thread = None
 
     def word_lookup_stopped(self, word):
-        print 'word_lookup_stopped for %r' % word
+        log.debug('word_lookup_stopped for %r', word)
 
     def select_next_word(self):
         count = self.word_completion.count()
@@ -587,7 +584,8 @@ class DictView(QMainWindow):
         self.tabs.blockSignals(False)
 
     def article_loaded(self, title, article, html):
-        print 'Loaded article "%s" (original title "%s") (section "%s")' % (article.title, title, article.section)
+        log.debug('Loaded article "%s" (original title "%s") (section "%s")',
+                  article.title, title, article.section)
         for i in range(self.tabs.count()):
             view = self.tabs.widget(i)
             if view.property('loading').toBool():
@@ -601,18 +599,18 @@ class DictView(QMainWindow):
                 self.go_to_section(view, article.section)
 
         if article.section:
-            connect(view, SIGNAL('loadFinished (bool)'), 
+            connect(view, SIGNAL('loadFinished (bool)'),
                     loadFinished, Qt.QueuedConnection)
 
         view.setHtml(html, QUrl(title))
         view.page().setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
         s = view.settings()
-        s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir, 
+        s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir,
                                                  'aar.css')))
 
 
     def article_load_started(self, read_funcs):
-        print 'Loading %d article(s)' % len(read_funcs)
+        log.debug('Loading %d article(s)', len(read_funcs))
         self.tabs.blockSignals(True)
         for read_func in read_funcs:
             view = QWebView()
@@ -623,14 +621,13 @@ class DictView(QMainWindow):
             dict_title = format_title(dictionary)
             view.setProperty('dictionary', QVariant(dictionary.uuid))
             self.tabs.addTab(view, dict_title)
-            self.tabs.setTabToolTip(self.tabs.count() - 1, 
+            self.tabs.setTabToolTip(self.tabs.count() - 1,
                                     u'\n'.join((dict_title, read_func.title)))
         self.select_preferred_dict()
         self.tabs.blockSignals(False)
 
     def article_load_finished(self, load_thread, read_funcs):
-        print 'Loaded %d article(s)' % len(read_funcs)
-        #load_thread.setParent(None)
+        log.debug('Loaded %d article(s)', len(read_funcs))
         self.dump_type_count_diff()
 
     def dump_type_count_diff(self):
@@ -655,27 +652,18 @@ class DictView(QMainWindow):
             self.type_stats = typestats
 
     def article_load_stopped(self, load_thread):
-        print 'Article load stopped'
-        #load_thread.setParent(None)
+        log.debug('Article load stopped')
 
     def select_preferred_dict(self):
-        print 'Preferred dicts:', self.preferred_dicts
         preferred_dict_keys = [item[0] for item
                                in sorted(self.preferred_dicts.iteritems(),
                                          key=lambda x: -x[1])]
-        print 'Preferred dict keys:', preferred_dict_keys
         try:
             for i, dict_key in enumerate(preferred_dict_keys):
-                print '********'
-                print '%d Preferred dict key: %r ' % (i, dict_key)
-                print '********'
                 for page_num in range(self.tabs.count()):
-                    print 'Looking at tab %d (%s)' % (page_num, unicode(self.tabs.tabText(page_num)).encode('utf8'))
                     web_view = self.tabs.widget(page_num)
                     dict_uuid = str(web_view.property('dictionary').toByteArray())
-                    print 'dict_uuid: %r' % dict_uuid
                     if dict_uuid == dict_key:
-                        print 'Preferred dictionary: %s' % unicode(self.tabs.tabText(page_num)).encode('utf8')
                         self.tabs.setCurrentIndex(page_num)
                         raise StopIteration()
         except StopIteration:
