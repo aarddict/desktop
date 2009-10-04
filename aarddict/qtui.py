@@ -33,6 +33,7 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  split_word,
                                  cmp_words)
 
+connect = QObject.connect
 
 def load_file(name):
     path = os.path.join(aarddict.package_dir, name)
@@ -50,6 +51,7 @@ class WebPage(QWebPage):
 
     def javaScriptAlert (self, originatingFrame, msg):
         print 'alert: [%r] %r' % (originatingFrame, msg)
+
 
 class Matcher(QObject):
 
@@ -78,6 +80,7 @@ dict_access_lock = QMutex()
 
 
 class WordLookupStopRequested(Exception): pass
+
 
 class WordLookupThread(QThread):
 
@@ -114,6 +117,7 @@ class WordLookupThread(QThread):
 
 
 class ArticleLoadStopRequested(Exception): pass
+
 
 class ArticleLoadThread(QThread):
 
@@ -219,6 +223,7 @@ class DictOpenThread(QThread):
     def stop(self):
         self.stop_requested = True
 
+
 class WordInput(QLineEdit):
 
     def __init__(self, parent=None):
@@ -238,7 +243,7 @@ class WordInput(QLineEdit):
         s = btn_clear.sizeHint()
         self.setLayout(box)
         self.setTextMargins(0, 0, s.width(), 0)
-        self.connect(action_new_lookup, SIGNAL('triggered()'), self.start_new)
+        connect(action_new_lookup, SIGNAL('triggered()'), self.start_new)
 
     def start_new(self):
         self.setFocus()
@@ -279,12 +284,12 @@ class DictView(QMainWindow):
 
         self.word_input = WordInput()
 
-        self.connect(self.word_input, SIGNAL('textEdited (const QString&)'),
+        connect(self.word_input, SIGNAL('textEdited (const QString&)'),
                      self.word_input_text_edited)
         self.word_completion = QListWidget()
-        self.connect(self.word_input, SIGNAL('word_input_down'), self.select_next_word)
-        self.connect(self.word_input, SIGNAL('word_input_up'), self.select_prev_word)
-        self.connect(self.word_input, SIGNAL('returnPressed ()'),
+        connect(self.word_input, SIGNAL('word_input_down'), self.select_next_word)
+        connect(self.word_input, SIGNAL('word_input_up'), self.select_prev_word)
+        connect(self.word_input, SIGNAL('returnPressed ()'),
                      self.word_completion.setFocus)
 
         box = QVBoxLayout()
@@ -309,10 +314,10 @@ class DictView(QMainWindow):
 
         action_history_back = QAction(arrow_back, 'Back', self)
         action_history_back.setShortcut('Alt+Left')
-        self.connect(action_history_back, SIGNAL('triggered()'), self.history_back)
+        connect(action_history_back, SIGNAL('triggered()'), self.history_back)
         action_history_fwd = QAction(arrow_fwd, 'Forward', self)
         action_history_fwd.setShortcut('Alt+Right')
-        self.connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
+        connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
         btn_history_back = QToolButton()
         btn_history_back.setDefaultAction(action_history_back)
         btn_history_fwd = QToolButton()
@@ -327,11 +332,11 @@ class DictView(QMainWindow):
         history_bar.setLayout(history_bar_box)
         self.sidebar.setCornerWidget(history_bar)
 
-        self.connect(self.history_view,
+        connect(self.history_view,
                      SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.history_selection_changed)
 
-        self.connect(self.word_completion,
+        connect(self.word_completion,
                      SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.word_selection_changed)
 
@@ -351,7 +356,7 @@ class DictView(QMainWindow):
         exit.setShortcut('Ctrl+Q')
         exit.setStatusTip('Exit application')
         #exit.triggered.connect(self.close)
-        self.connect(exit, SIGNAL('triggered()'), self.close)
+        connect(exit, SIGNAL('triggered()'), self.close)
 
         mn_file.addAction(exit)
 
@@ -370,8 +375,8 @@ class DictView(QMainWindow):
 
         self.preferred_dicts = {}
 
-        self.connect(self.tabs, SIGNAL('currentChanged (int)'),
-                     self.article_tab_switched)
+        connect(self.tabs, SIGNAL('currentChanged (int)'), 
+                self.article_tab_switched)
 
         self.type_stats = {}
 
@@ -381,11 +386,11 @@ class DictView(QMainWindow):
         add_dicts = QAction(openIcon, 'Add Dictionaries...', self)
         add_dicts.setShortcut('Ctrl+O')
         add_dicts.setStatusTip('Add dictionaries')
-        self.connect(add_dicts, SIGNAL('triggered()'), self.action_add_dict)
+        connect(add_dicts, SIGNAL('triggered()'), self.action_add_dict)
 
         add_dict_dir = QAction('Add Directory...', self)
         add_dict_dir.setStatusTip('Add dictionary directory')
-        self.connect(add_dict_dir, SIGNAL('triggered()'), self.action_add_dict_dir)
+        connect(add_dict_dir, SIGNAL('triggered()'), self.action_add_dict_dir)
 
         mn_file.addAction(add_dicts)
         mn_file.addAction(add_dict_dir)
@@ -416,7 +421,8 @@ class DictView(QMainWindow):
             progress.setMaximum(num)
             progress.setValue(0)
 
-        QObject.connect(dict_open_thread, SIGNAL('dict_open_started'), show_loading_dicts_dialog)
+        connect(dict_open_thread, SIGNAL('dict_open_started'),
+                show_loading_dicts_dialog)
 
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
@@ -431,14 +437,14 @@ class DictView(QMainWindow):
         def canceled():
             dict_open_thread.stop()
 
-        QObject.connect(progress, SIGNAL('canceled ()'),
-                       canceled)
-        QObject.connect(dict_open_thread, SIGNAL('dict_open_succeded'),
-                       dict_opened, Qt.QueuedConnection)
-        QObject.connect(dict_open_thread, SIGNAL('dict_open_failed'),
-                        dict_failed, Qt.QueuedConnection)
-        QObject.connect(dict_open_thread, SIGNAL('finished()'),
-                        lambda: dict_open_thread.setParent(None), Qt.QueuedConnection)
+        connect(progress, SIGNAL('canceled ()'), canceled)
+        connect(dict_open_thread, SIGNAL('dict_open_succeded'), dict_opened,
+                Qt.QueuedConnection)
+        connect(dict_open_thread, SIGNAL('dict_open_failed'), dict_failed,
+                Qt.QueuedConnection)
+        connect(dict_open_thread, SIGNAL('finished()'),
+                lambda: dict_open_thread.setParent(None),
+                Qt.QueuedConnection)
         dict_open_thread.start()
 
 
@@ -466,7 +472,7 @@ class DictView(QMainWindow):
     def schedule(self, func, delay=500):
         if self.scheduled_func:
             self.disconnect(self.timer, SIGNAL('timeout()'), self.scheduled_func)
-        self.connect(self.timer, SIGNAL('timeout()'), func)
+        connect(self.timer, SIGNAL('timeout()'), func)
         self.scheduled_func = func
         self.timer.start(delay)
 
@@ -483,14 +489,15 @@ class DictView(QMainWindow):
             self.current_lookup_thread = None
 
         word_lookup_thread = WordLookupThread(self.dictionaries, word, self)
-        self.connect(word_lookup_thread, SIGNAL("done"),
-                     self.word_lookup_finished, Qt.QueuedConnection)
-        self.connect(word_lookup_thread, SIGNAL("match_found"),
-                     self.word_lookup_match_found, Qt.QueuedConnection)
-        self.connect(word_lookup_thread, SIGNAL("stopped"),
-                     self.word_lookup_stopped, Qt.QueuedConnection)
-        self.connect(word_lookup_thread, SIGNAL("finished ()"),
-                     functools.partial(word_lookup_thread.setParent, None), Qt.QueuedConnection)
+        connect(word_lookup_thread, SIGNAL("done"),
+                self.word_lookup_finished, Qt.QueuedConnection)
+        connect(word_lookup_thread, SIGNAL("match_found"),
+                self.word_lookup_match_found, Qt.QueuedConnection)
+        connect(word_lookup_thread, SIGNAL("stopped"),
+                self.word_lookup_stopped, Qt.QueuedConnection)
+        connect(word_lookup_thread, SIGNAL("finished ()"),
+                functools.partial(word_lookup_thread.setParent, None),
+                Qt.QueuedConnection)
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start()
 
@@ -553,18 +560,19 @@ class DictView(QMainWindow):
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(Qt.UserRole).toPyObject()
             load_thread = ArticleLoadThread(article_group, self)
-            self.connect(load_thread, SIGNAL("article_loaded"),
-                         self.article_loaded, Qt.QueuedConnection)
-            self.connect(load_thread, SIGNAL("finished ()"),
-                         functools.partial(load_thread.setParent, None), Qt.QueuedConnection)
-            self.connect(load_thread, SIGNAL("article_load_started"),
-                         self.article_load_started, Qt.QueuedConnection)
-            self.connect(load_thread, SIGNAL("article_load_finished"),
-                         self.article_load_finished, Qt.QueuedConnection)
-            self.connect(load_thread, SIGNAL("article_load_stopped"),
-                         self.article_load_stopped, Qt.QueuedConnection)
-            self.connect(self, SIGNAL("stop_article_load"),
-                         load_thread.stop, Qt.QueuedConnection)
+            connect(load_thread, SIGNAL("article_loaded"),
+                    self.article_loaded, Qt.QueuedConnection)
+            connect(load_thread, SIGNAL("finished ()"),
+                    functools.partial(load_thread.setParent, None),
+                    Qt.QueuedConnection)
+            connect(load_thread, SIGNAL("article_load_started"),
+                    self.article_load_started, Qt.QueuedConnection)
+            connect(load_thread, SIGNAL("article_load_finished"),
+                    self.article_load_finished, Qt.QueuedConnection)
+            connect(load_thread, SIGNAL("article_load_stopped"),
+                    self.article_load_stopped, Qt.QueuedConnection)
+            connect(self, SIGNAL("stop_article_load"),
+                    load_thread.stop, Qt.QueuedConnection)
             load_thread.start()
 
     def clear_current_articles(self):
@@ -585,7 +593,7 @@ class DictView(QMainWindow):
             if view.property('loading').toBool():
                 view.setProperty('loading', QVariant(False))
                 break
-        self.connect(view, SIGNAL('linkClicked (const QUrl&)'),
+        connect(view, SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
 
         def loadFinished(ok):
@@ -593,12 +601,14 @@ class DictView(QMainWindow):
                 self.go_to_section(view, article.section)
 
         if article.section:
-            self.connect(view, SIGNAL('loadFinished (bool)'), loadFinished, Qt.QueuedConnection)
+            connect(view, SIGNAL('loadFinished (bool)'), 
+                    loadFinished, Qt.QueuedConnection)
 
         view.setHtml(html, QUrl(title))
         view.page().setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
         s = view.settings()
-        s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir, 'aar.css')))
+        s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir, 
+                                                 'aar.css')))
 
 
     def article_load_started(self, read_funcs):
@@ -613,7 +623,8 @@ class DictView(QMainWindow):
             dict_title = format_title(dictionary)
             view.setProperty('dictionary', QVariant(dictionary.uuid))
             self.tabs.addTab(view, dict_title)
-            self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, read_func.title)))
+            self.tabs.setTabToolTip(self.tabs.count() - 1, 
+                                    u'\n'.join((dict_title, read_func.title)))
         self.select_preferred_dict()
         self.tabs.blockSignals(False)
 
