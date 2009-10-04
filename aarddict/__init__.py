@@ -131,5 +131,31 @@ def main():
             viewer = hildonui.HildonDictViewer()
         viewer.main()
 
+
+type_stats = {}
+
+def _dump_type_count_diff():
+    try:
+        import objgraph
+    except:
+        pass
+    else:
+        import gc
+        from operator import itemgetter
+        print 'gc', gc.collect()
+        typestats = objgraph.typestats()
+        diff = {}
+        for key, val in typestats.iteritems():
+            countdiff = val - type_stats.get(key, 0)
+            if countdiff:
+                diff[key] = countdiff
+        print '='*40, '\n',\
+               '\n'.join(('%s: %d' % item) for item in
+                         sorted(diff.iteritems(), key=itemgetter(1))), \
+               '\n', '='*40
+        global type_stats
+        type_stats = typestats
+
+
 if __name__ == '__main__':
     main()

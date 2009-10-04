@@ -378,8 +378,6 @@ class DictView(QMainWindow):
         connect(self.tabs, SIGNAL('currentChanged (int)'),
                 self.article_tab_switched)
 
-        self.type_stats = {}
-
         self.current_lookup_thread = None
 
         openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
@@ -627,29 +625,7 @@ class DictView(QMainWindow):
         self.tabs.blockSignals(False)
 
     def article_load_finished(self, load_thread, read_funcs):
-        log.debug('Loaded %d article(s)', len(read_funcs))
-        self.dump_type_count_diff()
-
-    def dump_type_count_diff(self):
-        try:
-            import objgraph
-        except:
-            pass
-        else:
-            import gc
-            from operator import itemgetter
-            print 'gc', gc.collect()
-            typestats = objgraph.typestats()
-            diff = {}
-            for key, val in typestats.iteritems():
-                countdiff = val - self.type_stats.get(key, 0)
-                if countdiff:
-                    diff[key] = countdiff
-            print '='*40, '\n',\
-                   '\n'.join(('%s: %d' % item) for item in
-                             sorted(diff.iteritems(), key=itemgetter(1))), \
-                   '\n', '='*40
-            self.type_stats = typestats
+        log.debug('Loaded %d article(s)', len(read_funcs))        
 
     def article_load_stopped(self, load_thread):
         log.debug('Article load stopped')
