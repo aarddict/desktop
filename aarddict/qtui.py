@@ -9,11 +9,16 @@ import logging
 
 from itertools import groupby
 
-from PyQt4 import QtGui, QtCore
-from PyQt4 import QtWebKit
+from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
+                          QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot)
+from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
+                         QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
+                         QKeySequence, QToolButton,
+                         QMainWindow, QListWidget, QListWidgetItem,
+                         QTabWidget, QApplication, QStyle,
+                         QGridLayout, QSplitter, QProgressDialog)
 
-from PyQt4.QtCore import QObject, Qt
-from PyQt4.QtGui import QIcon, QPixmap, QFileDialog
+from PyQt4.QtWebKit import QWebView, QWebPage
 
 import aar2html
 import aarddict
@@ -38,7 +43,7 @@ app_dir = os.path.expanduser('~/.aarddict')
 sources_file = os.path.join(app_dir, 'sources')
 find_section_js = load_file('aar.js')
 
-class WebPage(QtWebKit.QWebPage):
+class WebPage(QWebPage):
 
     def javaScriptConsoleMessage (self, message, lineNumber, sourceID):
         print 'msg: %r line: %r source: %r' % (message, lineNumber, sourceID)
@@ -46,18 +51,18 @@ class WebPage(QtWebKit.QWebPage):
     def javaScriptAlert (self, originatingFrame, msg):
         print 'alert: [%r] %r' % (originatingFrame, msg)
 
-class Matcher(QtCore.QObject):
+class Matcher(QObject):
 
     def __init__(self, parent=None):
-        QtCore.QObject.__init__(self, parent)
+        QObject.__init__(self, parent)
         self._result = None
 
     def _get_result(self):
         return self._result
 
-    result = QtCore.pyqtProperty(bool, _get_result)
+    result = pyqtProperty(bool, _get_result)
 
-    @QtCore.pyqtSlot('QString', 'QString', int)
+    @pyqtSlot('QString', 'QString', int)
     def match(self, section, candidate, strength):
         #print 'Candidate %r, section %r, strength %r' % (candidate, section, strength)
         if cmp_words(unicode(section),
@@ -69,21 +74,21 @@ class Matcher(QtCore.QObject):
 
 matcher = Matcher()
 
-dict_access_lock = QtCore.QMutex()
+dict_access_lock = QMutex()
 
 
 class WordLookupStopRequested(Exception): pass
 
-class WordLookupThread(QtCore.QThread):
+class WordLookupThread(QThread):
 
     def __init__(self, dictionaries, word, parent=None):
-        QtCore.QThread.__init__(self, parent)
+        QThread.__init__(self, parent)
         self.dictionaries = dictionaries
         self.word = word
         self.stop_requested = False
 
     def run(self):
-        self.setPriority(QtCore.QThread.LowestPriority)
+        self.setPriority(QThread.LowestPriority)
         wordstr = unicode(self.word).encode('utf8')
         print "Looking up %r" % wordstr
         articles = []
@@ -94,13 +99,13 @@ class WordLookupThread(QtCore.QThread):
                     raise WordLookupStopRequested
                 else:
                     articles.append(article)
-                    self.emit(QtCore.SIGNAL('match_found'), self.word, article)
+                    self.emit(SIGNAL('match_found'), self.word, article)
             if self.stop_requested:
                 raise WordLookupStopRequested
         except WordLookupStopRequested:
-            self.emit(QtCore.SIGNAL('stopped'), self.word)
+            self.emit(SIGNAL('stopped'), self.word)
         else:
-            self.emit(QtCore.SIGNAL('done'), self.word, articles)
+            self.emit(SIGNAL('done'), self.word, articles)
         finally:
             dict_access_lock.unlock()
 
@@ -110,27 +115,27 @@ class WordLookupThread(QtCore.QThread):
 
 class ArticleLoadStopRequested(Exception): pass
 
-class ArticleLoadThread(QtCore.QThread):
+class ArticleLoadThread(QThread):
 
     def __init__(self, article_read_funcs, parent=None):
-        QtCore.QThread.__init__(self, parent)
+        QThread.__init__(self, parent)
         self.article_read_funcs = article_read_funcs
         self.stop_requested = False
 
     def run(self):
-        self.setPriority(QtCore.QThread.LowestPriority)
-        self.emit(QtCore.SIGNAL("article_load_started"), self.article_read_funcs)
+        self.setPriority(QThread.LowestPriority)
+        self.emit(SIGNAL("article_load_started"), self.article_read_funcs)
         dict_access_lock.lock()
         try:
             for read_func in self.article_read_funcs:
                 article = self._load_article(read_func)
                 html = self._tohtml(article)
                 title = read_func.title
-                self.emit(QtCore.SIGNAL("article_loaded"), title, article, html)
+                self.emit(SIGNAL("article_loaded"), title, article, html)
         except ArticleLoadStopRequested:
-            self.emit(QtCore.SIGNAL("article_load_stopped"), self)
+            self.emit(SIGNAL("article_load_stopped"), self)
         else:
-            self.emit(QtCore.SIGNAL("article_load_finished"), self, self.article_read_funcs)
+            self.emit(SIGNAL("article_load_finished"), self, self.article_read_funcs)
         finally:
             dict_access_lock.unlock()
             del self.article_read_funcs
@@ -180,10 +185,10 @@ class ArticleLoadThread(QtCore.QThread):
         self.stop_requested = True
 
 
-class DictOpenThread(QtCore.QThread):
+class DictOpenThread(QThread):
 
     def __init__(self, sources, parent=None):
-        QtCore.QThread.__init__(self, parent)
+        QThread.__init__(self, parent)
         self.sources = sources
         self.stop_requested = False
 
@@ -200,32 +205,32 @@ class DictOpenThread(QtCore.QThread):
                     s = os.path.join(source, f)
                     if os.path.isfile(s) and f.lower().endswith(ext):
                         files.append(s)
-        self.emit(QtCore.SIGNAL("dict_open_started"), len(files))
+        self.emit(SIGNAL("dict_open_started"), len(files))
         for candidate in files:
             if self.stop_requested:
                 return
             try:
                 d = Dictionary(candidate)
             except Exception, e:
-                self.emit(QtCore.SIGNAL("dict_open_failed"), source, str(e))
+                self.emit(SIGNAL("dict_open_failed"), source, str(e))
             else:
-                self.emit(QtCore.SIGNAL("dict_open_succeded"), d)
+                self.emit(SIGNAL("dict_open_succeded"), d)
 
     def stop(self):
         self.stop_requested = True
 
-class WordInput(QtGui.QLineEdit):
+class WordInput(QLineEdit):
 
     def __init__(self, parent=None):
-        QtGui.QLineEdit.__init__(self, parent)
-        box = QtGui.QHBoxLayout()
-        action_new_lookup = QtGui.QAction(self)
-        action_new_lookup.setIcon(QtGui.QIcon(QtGui.QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
-        action_new_lookup.setShortcut(QtGui.QKeySequence('Ctrl+N'))
-        action_new_lookup.setShortcutContext(QtCore.Qt.WindowShortcut)
-        btn_clear = QtGui.QToolButton()
+        QLineEdit.__init__(self, parent)
+        box = QHBoxLayout()
+        action_new_lookup = QAction(self)
+        action_new_lookup.setIcon(QIcon(QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
+        action_new_lookup.setShortcut(QKeySequence('Ctrl+N'))
+        action_new_lookup.setShortcutContext(Qt.WindowShortcut)
+        btn_clear = QToolButton()
         btn_clear.setDefaultAction(action_new_lookup)
-        btn_clear.setCursor(QtCore.Qt.ArrowCursor)
+        btn_clear.setCursor(Qt.ArrowCursor)
         box.addStretch(1)
         box.addWidget(btn_clear, 0)
         box.setSpacing(0)
@@ -233,18 +238,18 @@ class WordInput(QtGui.QLineEdit):
         s = btn_clear.sizeHint()
         self.setLayout(box)
         self.setTextMargins(0, 0, s.width(), 0)
-        self.connect(action_new_lookup, QtCore.SIGNAL('triggered()'), self.start_new)
+        self.connect(action_new_lookup, SIGNAL('triggered()'), self.start_new)
 
     def start_new(self):
         self.setFocus()
         self.selectAll()
 
     def keyPressEvent (self, event):
-        QtGui.QLineEdit.keyPressEvent(self, event)
-        if event.matches(QtGui.QKeySequence.MoveToNextLine):
-            self.emit(QtCore.SIGNAL('word_input_down'))
-        elif event.matches(QtGui.QKeySequence.MoveToPreviousLine):
-            self.emit(QtCore.SIGNAL('word_input_up'))
+        QLineEdit.keyPressEvent(self, event)
+        if event.matches(QKeySequence.MoveToNextLine):
+            self.emit(SIGNAL('word_input_down'))
+        elif event.matches(QKeySequence.MoveToPreviousLine):
+            self.emit(SIGNAL('word_input_up'))
 
 
 def write_sources(sources):
@@ -265,75 +270,74 @@ def read_sources():
     else:
         return []
 
-class DictView(QtGui.QMainWindow):
+class DictView(QMainWindow):
 
     def __init__(self):
-        QtGui.QMainWindow.__init__(self)
+        QMainWindow.__init__(self)
 
         self.setWindowTitle('Aard Dictionary')
 
         self.word_input = WordInput()
 
-        self.connect(self.word_input, QtCore.SIGNAL('textEdited (const QString&)'),
+        self.connect(self.word_input, SIGNAL('textEdited (const QString&)'),
                      self.word_input_text_edited)
-        self.word_completion = QtGui.QListWidget()
-        self.connect(self.word_input, QtCore.SIGNAL('word_input_down'), self.select_next_word)
-        self.connect(self.word_input, QtCore.SIGNAL('word_input_up'), self.select_prev_word)
-        self.connect(self.word_input, QtCore.SIGNAL('returnPressed ()'), self.word_completion.setFocus)
+        self.word_completion = QListWidget()
+        self.connect(self.word_input, SIGNAL('word_input_down'), self.select_next_word)
+        self.connect(self.word_input, SIGNAL('word_input_up'), self.select_prev_word)
+        self.connect(self.word_input, SIGNAL('returnPressed ()'),
+                     self.word_completion.setFocus)
 
-        box = QtGui.QVBoxLayout()
+        box = QVBoxLayout()
         box.setSpacing(2)
         #we want right margin set to 0 since it borders with splitter
         #(left widget)
         box.setContentsMargins(2, 2, 0, 2)
         box.addWidget(self.word_input)
         box.addWidget(self.word_completion)
-        lookup_pane = QtGui.QWidget()
+        lookup_pane = QWidget()
         lookup_pane.setLayout(box)
 
-        self.sidebar = QtGui.QTabWidget()
-        self.sidebar.setTabPosition(QtGui.QTabWidget.South)
-        #self.sidebar.addTab(lookup_pane, QtGui.QIcon(QtGui.QPixmap(':/trolltech/styles/commonstyle/images/fileinfo-32.png')), '')
+        self.sidebar = QTabWidget()
+        self.sidebar.setTabPosition(QTabWidget.South)
         self.sidebar.addTab(lookup_pane, 'Lookup')
-        self.history_view = QtGui.QListWidget()
-        #self.sidebar.addTab(self.history_view, QtGui.QIcon(QtGui.QPixmap(':/trolltech/styles/commonstyle/images/viewdetailed-16.png')), '')
+        self.history_view = QListWidget()
         self.sidebar.addTab(self.history_view, 'History')
 
-        style = QtGui.QApplication.instance().style()
-        arrow_back = style.standardIcon(QtGui.QStyle.SP_ArrowBack)
-        arrow_fwd = style.standardIcon(QtGui.QStyle.SP_ArrowForward)
+        style = QApplication.instance().style()
+        arrow_back = style.standardIcon(QStyle.SP_ArrowBack)
+        arrow_fwd = style.standardIcon(QStyle.SP_ArrowForward)
 
-        action_history_back = QtGui.QAction(arrow_back, 'Back', self)
+        action_history_back = QAction(arrow_back, 'Back', self)
         action_history_back.setShortcut('Alt+Left')
-        self.connect(action_history_back, QtCore.SIGNAL('triggered()'), self.history_back)
-        action_history_fwd = QtGui.QAction(arrow_fwd, 'Forward', self)
+        self.connect(action_history_back, SIGNAL('triggered()'), self.history_back)
+        action_history_fwd = QAction(arrow_fwd, 'Forward', self)
         action_history_fwd.setShortcut('Alt+Right')
-        self.connect(action_history_fwd, QtCore.SIGNAL('triggered()'), self.history_fwd)
-        btn_history_back = QtGui.QToolButton()
+        self.connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
+        btn_history_back = QToolButton()
         btn_history_back.setDefaultAction(action_history_back)
-        btn_history_fwd = QtGui.QToolButton()
+        btn_history_fwd = QToolButton()
         btn_history_fwd.setDefaultAction(action_history_fwd)
-        history_bar_box = QtGui.QGridLayout()
+        history_bar_box = QGridLayout()
         history_bar_box.setSpacing(0)
         history_bar_box.setContentsMargins(0,0,0,0)
         history_bar_box.setRowMinimumHeight(0, 16)
         history_bar_box.addWidget(btn_history_back, 0, 0)
         history_bar_box.addWidget(btn_history_fwd, 0, 1)
-        history_bar = QtGui.QWidget()
+        history_bar = QWidget()
         history_bar.setLayout(history_bar_box)
         self.sidebar.setCornerWidget(history_bar)
 
-        self.connect(self.history_view, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
+        self.connect(self.history_view,
+                     SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.history_selection_changed)
 
-        #self.word_completion.currentItemChanged.connect(self.word_selection_changed)
-        self.connect(self.word_completion, QtCore.SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
+        self.connect(self.word_completion,
+                     SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.word_selection_changed)
 
-
-        splitter = QtGui.QSplitter()
+        splitter = QSplitter()
         splitter.addWidget(self.sidebar)
-        self.tabs = QtGui.QTabWidget()
+        self.tabs = QTabWidget()
         splitter.addWidget(self.tabs)
         splitter.setChildrenCollapsible(False)
         splitter.setSizes([100, 300])
@@ -341,13 +345,13 @@ class DictView(QtGui.QMainWindow):
         menubar = self.menuBar()
         mn_file = menubar.addMenu('&Dictionary')
 
-        fileIcon = style.standardIcon(QtGui.QStyle.SP_FileIcon)
+        fileIcon = style.standardIcon(QStyle.SP_FileIcon)
 
-        exit = QtGui.QAction(fileIcon, 'Exit', self)
+        exit = QAction(fileIcon, 'Exit', self)
         exit.setShortcut('Ctrl+Q')
         exit.setStatusTip('Exit application')
         #exit.triggered.connect(self.close)
-        self.connect(exit, QtCore.SIGNAL('triggered()'), self.close)
+        self.connect(exit, SIGNAL('triggered()'), self.close)
 
         mn_file.addAction(exit)
 
@@ -358,7 +362,7 @@ class DictView(QtGui.QMainWindow):
         self.setCentralWidget(splitter)
         self.resize(640, 480)
 
-        self.timer = QtCore.QTimer()
+        self.timer = QTimer()
         self.timer.setSingleShot(True)
         self.scheduled_func = None
 
@@ -366,23 +370,22 @@ class DictView(QtGui.QMainWindow):
 
         self.preferred_dicts = {}
 
-        self.connect(self.tabs, QtCore.SIGNAL('currentChanged (int)'), self.article_tab_switched)
+        self.connect(self.tabs, SIGNAL('currentChanged (int)'),
+                     self.article_tab_switched)
 
         self.type_stats = {}
 
         self.current_lookup_thread = None
 
-        # self.schedule(functools.partial(self.open_dicts2, ['/home/itkach/env-aard/aar']))
-
         openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
-        add_dicts = QtGui.QAction(openIcon, 'Add Dictionaries...', self)
+        add_dicts = QAction(openIcon, 'Add Dictionaries...', self)
         add_dicts.setShortcut('Ctrl+O')
         add_dicts.setStatusTip('Add dictionaries')
-        self.connect(add_dicts, QtCore.SIGNAL('triggered()'), self.action_add_dict)
+        self.connect(add_dicts, SIGNAL('triggered()'), self.action_add_dict)
 
-        add_dict_dir = QtGui.QAction('Add Directory...', self)
+        add_dict_dir = QAction('Add Directory...', self)
         add_dict_dir.setStatusTip('Add dictionary directory')
-        self.connect(add_dict_dir, QtCore.SIGNAL('triggered()'), self.action_add_dict_dir)
+        self.connect(add_dict_dir, SIGNAL('triggered()'), self.action_add_dict_dir)
 
         mn_file.addAction(add_dicts)
         mn_file.addAction(add_dict_dir)
@@ -403,7 +406,7 @@ class DictView(QtGui.QMainWindow):
 
         dict_open_thread = DictOpenThread(sources, self)
 
-        progress = QtGui.QProgressDialog(self);
+        progress = QProgressDialog(self)
         progress.setLabelText("Opening dictionaries...")
         progress.setCancelButtonText("Stop")
         progress.setMinimum(0)
@@ -413,7 +416,7 @@ class DictView(QtGui.QMainWindow):
             progress.setMaximum(num)
             progress.setValue(0)
 
-        QObject.connect(dict_open_thread, QtCore.SIGNAL('dict_open_started'), show_loading_dicts_dialog)
+        QObject.connect(dict_open_thread, SIGNAL('dict_open_started'), show_loading_dicts_dialog)
 
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
@@ -428,14 +431,14 @@ class DictView(QtGui.QMainWindow):
         def canceled():
             dict_open_thread.stop()
 
-        QObject.connect(progress, QtCore.SIGNAL('canceled ()'),
+        QObject.connect(progress, SIGNAL('canceled ()'),
                        canceled)
-        QObject.connect(dict_open_thread, QtCore.SIGNAL('dict_open_succeded'),
-                       dict_opened, QtCore.Qt.QueuedConnection)
-        QObject.connect(dict_open_thread, QtCore.SIGNAL('dict_open_failed'),
-                        dict_failed, QtCore.Qt.QueuedConnection)
-        QObject.connect(dict_open_thread, QtCore.SIGNAL('finished()'),
-                        lambda: dict_open_thread.setParent(None), QtCore.Qt.QueuedConnection)
+        QObject.connect(dict_open_thread, SIGNAL('dict_open_succeded'),
+                       dict_opened, Qt.QueuedConnection)
+        QObject.connect(dict_open_thread, SIGNAL('dict_open_failed'),
+                        dict_failed, Qt.QueuedConnection)
+        QObject.connect(dict_open_thread, SIGNAL('finished()'),
+                        lambda: dict_open_thread.setParent(None), Qt.QueuedConnection)
         dict_open_thread.start()
 
 
@@ -462,8 +465,8 @@ class DictView(QtGui.QMainWindow):
 
     def schedule(self, func, delay=500):
         if self.scheduled_func:
-            self.disconnect(self.timer, QtCore.SIGNAL('timeout()'), self.scheduled_func)
-        self.connect(self.timer, QtCore.SIGNAL('timeout()'), func)
+            self.disconnect(self.timer, SIGNAL('timeout()'), self.scheduled_func)
+        self.connect(self.timer, SIGNAL('timeout()'), func)
         self.scheduled_func = func
         self.timer.start(delay)
 
@@ -472,7 +475,7 @@ class DictView(QtGui.QMainWindow):
         self.schedule(func)
 
     def update_word_completion(self, word):
-        print 'update_word_completion ', QtCore.QThread.currentThread()
+        print 'update_word_completion ', QThread.currentThread()
         self.sidebar.setTabText(0, 'Loading...')
         self.word_completion.clear()
         if self.current_lookup_thread:
@@ -480,14 +483,14 @@ class DictView(QtGui.QMainWindow):
             self.current_lookup_thread = None
 
         word_lookup_thread = WordLookupThread(self.dictionaries, word, self)
-        self.connect(word_lookup_thread, QtCore.SIGNAL("done"),
-                     self.word_lookup_finished, QtCore.Qt.QueuedConnection)
-        self.connect(word_lookup_thread, QtCore.SIGNAL("match_found"),
-                     self.word_lookup_match_found, QtCore.Qt.QueuedConnection)
-        self.connect(word_lookup_thread, QtCore.SIGNAL("stopped"),
-                     self.word_lookup_stopped, QtCore.Qt.QueuedConnection)
-        self.connect(word_lookup_thread, QtCore.SIGNAL("finished ()"),
-                     functools.partial(word_lookup_thread.setParent, None), QtCore.Qt.QueuedConnection)
+        self.connect(word_lookup_thread, SIGNAL("done"),
+                     self.word_lookup_finished, Qt.QueuedConnection)
+        self.connect(word_lookup_thread, SIGNAL("match_found"),
+                     self.word_lookup_match_found, Qt.QueuedConnection)
+        self.connect(word_lookup_thread, SIGNAL("stopped"),
+                     self.word_lookup_stopped, Qt.QueuedConnection)
+        self.connect(word_lookup_thread, SIGNAL("finished ()"),
+                     functools.partial(word_lookup_thread.setParent, None), Qt.QueuedConnection)
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start()
 
@@ -503,9 +506,9 @@ class DictView(QtGui.QMainWindow):
         articles.sort(key=key)
         for k, g in groupby(articles, key):
             article_group = list(g)
-            item = QtGui.QListWidgetItem()
+            item = QListWidgetItem()
             item.setText(article_group[0].title)
-            item.setData(QtCore.Qt.UserRole, QtCore.QVariant(article_group))
+            item.setData(Qt.UserRole, QVariant(article_group))
             self.word_completion.addItem(item)
         self.select_word(unicode(word))
         self.sidebar.setTabText(0, 'Lookup')
@@ -544,24 +547,24 @@ class DictView(QtGui.QMainWindow):
         self.schedule(func, 200)
 
     def update_shown_article(self, selected):
-        self.emit(QtCore.SIGNAL("stop_article_load"))
+        self.emit(SIGNAL("stop_article_load"))
         self.clear_current_articles()
         if selected:
             self.add_to_history(unicode(selected.text()))
-            article_group = selected.data(QtCore.Qt.UserRole).toPyObject()
+            article_group = selected.data(Qt.UserRole).toPyObject()
             load_thread = ArticleLoadThread(article_group, self)
-            self.connect(load_thread, QtCore.SIGNAL("article_loaded"),
-                         self.article_loaded, QtCore.Qt.QueuedConnection)
-            self.connect(load_thread, QtCore.SIGNAL("finished ()"),
-                         functools.partial(load_thread.setParent, None), QtCore.Qt.QueuedConnection)
-            self.connect(load_thread, QtCore.SIGNAL("article_load_started"),
-                         self.article_load_started, QtCore.Qt.QueuedConnection)
-            self.connect(load_thread, QtCore.SIGNAL("article_load_finished"),
-                         self.article_load_finished, QtCore.Qt.QueuedConnection)
-            self.connect(load_thread, QtCore.SIGNAL("article_load_stopped"),
-                         self.article_load_stopped, QtCore.Qt.QueuedConnection)
-            self.connect(self, QtCore.SIGNAL("stop_article_load"),
-                         load_thread.stop, QtCore.Qt.QueuedConnection)
+            self.connect(load_thread, SIGNAL("article_loaded"),
+                         self.article_loaded, Qt.QueuedConnection)
+            self.connect(load_thread, SIGNAL("finished ()"),
+                         functools.partial(load_thread.setParent, None), Qt.QueuedConnection)
+            self.connect(load_thread, SIGNAL("article_load_started"),
+                         self.article_load_started, Qt.QueuedConnection)
+            self.connect(load_thread, SIGNAL("article_load_finished"),
+                         self.article_load_finished, Qt.QueuedConnection)
+            self.connect(load_thread, SIGNAL("article_load_stopped"),
+                         self.article_load_stopped, Qt.QueuedConnection)
+            self.connect(self, SIGNAL("stop_article_load"),
+                         load_thread.stop, Qt.QueuedConnection)
             load_thread.start()
 
     def clear_current_articles(self):
@@ -580,9 +583,9 @@ class DictView(QtGui.QMainWindow):
         for i in range(self.tabs.count()):
             view = self.tabs.widget(i)
             if view.property('loading').toBool():
-                view.setProperty('loading', QtCore.QVariant(False))
+                view.setProperty('loading', QVariant(False))
                 break
-        self.connect(view, QtCore.SIGNAL('linkClicked (const QUrl&)'),
+        self.connect(view, SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
 
         def loadFinished(ok):
@@ -590,25 +593,25 @@ class DictView(QtGui.QMainWindow):
                 self.go_to_section(view, article.section)
 
         if article.section:
-            self.connect(view, QtCore.SIGNAL('loadFinished (bool)'), loadFinished, QtCore.Qt.QueuedConnection)
+            self.connect(view, SIGNAL('loadFinished (bool)'), loadFinished, Qt.QueuedConnection)
 
-        view.setHtml(html, QtCore.QUrl(title))
-        view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
+        view.setHtml(html, QUrl(title))
+        view.page().setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
         s = view.settings()
-        s.setUserStyleSheetUrl(QtCore.QUrl(os.path.join(aarddict.package_dir, 'aar.css')))
+        s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir, 'aar.css')))
 
 
     def article_load_started(self, read_funcs):
         print 'Loading %d article(s)' % len(read_funcs)
         self.tabs.blockSignals(True)
         for read_func in read_funcs:
-            view = QtWebKit.QWebView()
+            view = QWebView()
             view.setPage(WebPage(self))
             view.setHtml('Loading...')
-            view.setProperty('loading', QtCore.QVariant(True))
+            view.setProperty('loading', QVariant(True))
             dictionary = read_func.source
             dict_title = format_title(dictionary)
-            view.setProperty('dictionary', QtCore.QVariant(dictionary.uuid))
+            view.setProperty('dictionary', QVariant(dictionary.uuid))
             self.tabs.addTab(view, dict_title)
             self.tabs.setTabToolTip(self.tabs.count() - 1, u'\n'.join((dict_title, read_func.title)))
         self.select_preferred_dict()
@@ -739,7 +742,7 @@ class DictView(QtGui.QMainWindow):
                        self.history_view.item(0) != current_hist_item):
                     self.history_view.takeItem(0)
 
-            item = QtGui.QListWidgetItem()
+            item = QListWidgetItem()
             item.setText(title)
             self.history_view.insertItem(0, item)
             self.history_view.setCurrentItem(item)
@@ -749,7 +752,7 @@ class DictView(QtGui.QMainWindow):
 def main(args):
     if not os.path.exists(app_dir):
         os.makedirs(app_dir)
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     dv = DictView()
     dv.show()
     dv.word_input.setFocus()
