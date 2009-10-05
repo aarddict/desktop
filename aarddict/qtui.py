@@ -401,13 +401,31 @@ class DictView(QMainWindow):
 
         mn_view = menubar.addMenu('&View')
 
+        mn_text_size = mn_view.addMenu('Text &Size')
+        
+        action_increase_text = QAction('&Increase', self)
+        action_increase_text.setShortcut('Ctrl+=')
+        connect(action_increase_text, SIGNAL('triggered()'), self.increase_text_size)
+        mn_text_size.addAction(action_increase_text)
+
+        action_decrease_text = QAction('&Decrease', self)
+        action_decrease_text.setShortcut('Ctrl+-')
+        connect(action_decrease_text, SIGNAL('triggered()'), self.decrease_text_size)
+        mn_text_size.addAction(action_decrease_text)
+
+        action_reset_text = QAction('&Reset', self)
+        action_reset_text.setShortcut('Ctrl+0')
+        connect(action_reset_text, SIGNAL('triggered()'), self.reset_text_size)
+        mn_text_size.addAction(action_reset_text)
+
         action_full_screen = QAction('&Full Screen', self)
         action_full_screen.setShortcut('F11')
         action_full_screen.setStatusTip('Toggle full screen mode')
         action_full_screen.setCheckable(True)
         connect(action_full_screen, SIGNAL('triggered(bool)'), self.toggle_full_screen)
         mn_view.addAction(action_full_screen)
-
+        
+        
         self.setCentralWidget(splitter)
         self.resize(640, 480)
 
@@ -425,6 +443,7 @@ class DictView(QMainWindow):
         self.current_lookup_thread = None
 
         self.sources = []
+        self.zoom_factor = 1.0
 
     def action_add_dict(self):
         self.open_dicts(self.select_files())
@@ -630,6 +649,7 @@ class DictView(QMainWindow):
                     loadFinished, Qt.QueuedConnection)
 
         view.setHtml(html, QUrl(title))
+        view.setZoomFactor(self.zoom_factor)
         view.page().setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
         s = view.settings()
         s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir,
@@ -643,6 +663,7 @@ class DictView(QMainWindow):
             view = QWebView()
             view.setPage(WebPage(self))
             view.setHtml('Loading...')
+            view.setZoomFactor(self.zoom_factor)
             view.setProperty('loading', QVariant(True))
             dictionary = read_func.source
             dict_title = format_title(dictionary)
@@ -767,6 +788,21 @@ class DictView(QMainWindow):
             self.showFullScreen()
         else:
              self.showNormal()
+
+    def increase_text_size(self):
+        self.set_zoom_factor(self.zoom_factor*1.1)
+        
+    def decrease_text_size(self):
+        self.set_zoom_factor(self.zoom_factor*0.9)
+
+    def reset_text_size(self):
+        self.set_zoom_factor(1.0)
+
+    def set_zoom_factor(self, zoom_factor):
+        self.zoom_factor = zoom_factor
+        for i in range(self.tabs.count()):
+            web_view = self.tabs.widget(i)
+            web_view.setZoomFactor(self.zoom_factor)
 
     def close(self):
         history = []
