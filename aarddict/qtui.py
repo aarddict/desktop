@@ -363,20 +363,43 @@ class DictView(QMainWindow):
         splitter.setSizes([100, 300])
 
         menubar = self.menuBar()
-        mn_file = menubar.addMenu('&Dictionary')
+        mn_dictionary = menubar.addMenu('&Dictionary')
 
-        fileIcon = style.standardIcon(QStyle.SP_FileIcon)
+        action_quit = QAction('Quit', self)
+        action_quit.setShortcut('Ctrl+Q')
+        action_quit.setStatusTip('Exit application')
+        connect(action_quit, SIGNAL('triggered()'), self.close)
+        mn_dictionary.addAction(action_quit)
 
-        exit = QAction(fileIcon, 'Exit', self)
-        exit.setShortcut('Ctrl+Q')
-        exit.setStatusTip('Exit application')
-        connect(exit, SIGNAL('triggered()'), self.close)
+        openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
+        add_dicts = QAction(openIcon, 'Add Dictionaries...', self)
+        add_dicts.setShortcut('Ctrl+O')
+        add_dicts.setStatusTip('Add dictionaries')
+        connect(add_dicts, SIGNAL('triggered()'), self.action_add_dict)
+        mn_dictionary.addAction(add_dicts)
 
-        mn_file.addAction(exit)
+        add_dict_dir = QAction('Add Directory...', self)
+        add_dict_dir.setStatusTip('Add dictionary directory')
+        connect(add_dict_dir, SIGNAL('triggered()'), self.action_add_dict_dir)
+        mn_dictionary.addAction(add_dict_dir)
+
+
 
         mn_navigate = menubar.addMenu('&Navigate')
         mn_navigate.addAction(action_history_back)
         mn_navigate.addAction(action_history_fwd)
+
+        action_next_article = QAction('&Next Article', self)
+        action_next_article.setShortcut('Ctrl+.')
+        action_next_article.setStatusTip('Show next article')
+        connect(action_next_article, SIGNAL('triggered()'), self.show_next_article)
+        mn_navigate.addAction(action_next_article)
+
+        action_prev_article = QAction('&Previous Article', self)
+        action_prev_article.setShortcut('Ctrl+,')
+        action_prev_article.setStatusTip('Show previous article')
+        connect(action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
+        mn_navigate.addAction(action_prev_article)
 
         self.setCentralWidget(splitter)
         self.resize(640, 480)
@@ -393,20 +416,6 @@ class DictView(QMainWindow):
                 self.article_tab_switched)
 
         self.current_lookup_thread = None
-
-        openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
-        add_dicts = QAction(openIcon, 'Add Dictionaries...', self)
-        add_dicts.setShortcut('Ctrl+O')
-        add_dicts.setStatusTip('Add dictionaries')
-        connect(add_dicts, SIGNAL('triggered()'), self.action_add_dict)
-
-        add_dict_dir = QAction('Add Directory...', self)
-        add_dict_dir.setStatusTip('Add dictionary directory')
-        connect(add_dict_dir, SIGNAL('triggered()'), self.action_add_dict_dir)
-
-        mn_file.addAction(add_dicts)
-        mn_file.addAction(add_dict_dir)
-        mn_file.addAction(exit)
 
         self.sources = []
 
@@ -635,7 +644,21 @@ class DictView(QMainWindow):
             self.tabs.setTabToolTip(self.tabs.count() - 1,
                                     u'\n'.join((dict_title, read_func.title)))
         self.select_preferred_dict()
-        self.tabs.blockSignals(False)
+        self.tabs.blockSignals(False)                
+
+    def show_next_article(self):
+        current = self.tabs.currentIndex()
+        count = self.tabs.count()
+        new_current = current + 1
+        if new_current < count:
+            self.tabs.setCurrentIndex(new_current)
+
+    def show_prev_article(self):
+        current = self.tabs.currentIndex()
+        count = self.tabs.count()
+        new_current = current - 1
+        if new_current > -1:
+            self.tabs.setCurrentIndex(new_current)
 
     def select_preferred_dict(self):
         preferred_dict_keys = [item[0] for item
