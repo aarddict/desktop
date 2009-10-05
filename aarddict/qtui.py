@@ -48,6 +48,8 @@ sources_file = os.path.join(app_dir, 'sources')
 history_file = os.path.join(app_dir, 'history')
 find_section_js = load_file('aar.js')
 
+max_history = 100
+
 class WebPage(QWebPage):
 
     def javaScriptConsoleMessage (self, message, lineNumber, sourceID):
@@ -726,6 +728,8 @@ class DictView(QMainWindow):
             item.setText(title)
             self.history_view.insertItem(0, item)
             self.history_view.setCurrentItem(item)
+            while self.history_view.count() > max_history:
+                self.history_view.takeItem(self.history_view.count() - 1)
             self.history_view.blockSignals(False)
 
     def close(self):
