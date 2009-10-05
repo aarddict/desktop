@@ -383,8 +383,6 @@ class DictView(QMainWindow):
         connect(add_dict_dir, SIGNAL('triggered()'), self.action_add_dict_dir)
         mn_dictionary.addAction(add_dict_dir)
 
-
-
         mn_navigate = menubar.addMenu('&Navigate')
         mn_navigate.addAction(action_history_back)
         mn_navigate.addAction(action_history_fwd)
@@ -400,6 +398,15 @@ class DictView(QMainWindow):
         action_prev_article.setStatusTip('Show previous article')
         connect(action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(action_prev_article)
+
+        mn_view = menubar.addMenu('&View')
+
+        action_full_screen = QAction('&Full Screen', self)
+        action_full_screen.setShortcut('F11')
+        action_full_screen.setStatusTip('Toggle full screen mode')
+        action_full_screen.setCheckable(True)
+        connect(action_full_screen, SIGNAL('triggered(bool)'), self.toggle_full_screen)
+        mn_view.addAction(action_full_screen)
 
         self.setCentralWidget(splitter)
         self.resize(640, 480)
@@ -754,6 +761,12 @@ class DictView(QMainWindow):
             while self.history_view.count() > max_history:
                 self.history_view.takeItem(self.history_view.count() - 1)
             self.history_view.blockSignals(False)
+
+    def toggle_full_screen(self, full_screen):
+        if full_screen:
+            self.showFullScreen()
+        else:
+             self.showNormal()
 
     def close(self):
         history = []
