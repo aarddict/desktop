@@ -359,7 +359,6 @@ class DictView(QMainWindow):
         splitter.addWidget(self.sidebar)
         self.tabs = QTabWidget()
         splitter.addWidget(self.tabs)
-        splitter.setChildrenCollapsible(False)
         splitter.setSizes([100, 300])
 
         menubar = self.menuBar()
