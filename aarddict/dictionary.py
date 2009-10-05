@@ -375,18 +375,25 @@ class Dictionary(object):
             self.file_name = file_or_filename
             close_on_error = True
             self.file = open(file_or_filename, "rb")
-
-        header = Header(self.file)
+        
+        try:
+            header = Header(self.file)
+        except:
+            logging.exception('Failed to read dictionary header from %s', self.file_name)
+            raise DictFormatError(self.file_name, 
+                                  "Not a recognized aarddict dictionary file")
 
         if header.signature != 'aard':
             if close_on_error and self.file:
                 self.file.close()
-            raise DictFormatError("%s is not a recognized aarddict dictionary file" % self.file_name)
+            raise DictFormatError(self.file_name, 
+                                  "Not a recognized aarddict dictionary file")
 
         if header.version != 1:
             if close_on_error and self.file:
                 self.file.close()
-            raise DictFormatError("%s is not compatible with this viewer" % self.file_name)
+            raise DictFormatError(self.file_name, 
+                                  "File format version is not compatible with this viewer")
 
         self.index_count = header.index_count
         self.sha1sum = header.sha1sum
@@ -502,11 +509,12 @@ class Dictionary(object):
 
 class DictFormatError(Exception):
 
-    def __init__(self, value):
-        self.value = value
+    def __init__(self, file_name, reason):
+        self.file_name = file_name
+        self.reason = reason
 
     def __str__(self):
-        return repr(self.value)
+        return '%s: %s' % (self.file_name, self.reason)
 
 class VerifyError(Exception): pass
 
