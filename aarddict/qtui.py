@@ -16,7 +16,8 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QKeySequence, QToolButton,
                          QMainWindow, QListWidget, QListWidgetItem,
                          QTabWidget, QApplication, QStyle,
-                         QGridLayout, QSplitter, QProgressDialog)
+                         QGridLayout, QSplitter, QProgressDialog, 
+                         QMessageBox)
 
 from PyQt4.QtWebKit import QWebView, QWebPage
 
@@ -414,6 +415,8 @@ class DictView(QMainWindow):
         progress.setMinimum(0)
         progress.setMinimumDuration(800)
 
+        errors = []
+
         def show_loading_dicts_dialog(num):
             progress.setMaximum(num)
             progress.setValue(0)
@@ -428,11 +431,23 @@ class DictView(QMainWindow):
                 self.dictionaries.append(d)
 
         def dict_failed(source, error):
+            errors.append((source, error))
             progress.setValue(progress.value() + 1)
             log.error('Failed to open %s: %s', source, error)
 
         def canceled():
             dict_open_thread.stop()
+
+        def finished():
+            dict_open_thread.setParent(None)
+            if errors:
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle('Open Failed')
+                msg_box.setIcon(QMessageBox.Warning)
+                msg_box.setInformativeText('Failed to open some dictionaries')
+                msg_box.setDetailedText('\n'.join('%s: %s' % error for error in errors))
+                msg_box.setStandardButtons(QMessageBox.Ok)
+                msg_box.open()
 
         connect(progress, SIGNAL('canceled ()'), canceled)
         connect(dict_open_thread, SIGNAL('dict_open_succeded'), dict_opened,
@@ -440,7 +455,7 @@ class DictView(QMainWindow):
         connect(dict_open_thread, SIGNAL('dict_open_failed'), dict_failed,
                 Qt.QueuedConnection)
         connect(dict_open_thread, SIGNAL('finished()'),
-                lambda: dict_open_thread.setParent(None),
+                finished,
                 Qt.QueuedConnection)
         dict_open_thread.start()
 
