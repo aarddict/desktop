@@ -364,23 +364,23 @@ class DictView(QMainWindow):
         menubar = self.menuBar()
         mn_dictionary = menubar.addMenu('&Dictionary')
 
+        openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
+        action_add_dicts = QAction(openIcon, 'Add Dictionaries...', self)
+        action_add_dicts.setShortcut('Ctrl+O')
+        action_add_dicts.setStatusTip('Add dictionaries')
+        connect(action_add_dicts, SIGNAL('triggered()'), self.add_dicts)
+        mn_dictionary.addAction(action_add_dicts)
+
+        action_add_dict_dir = QAction('Add Directory...', self)
+        action_add_dict_dir.setStatusTip('Add dictionary directory')
+        connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
+        mn_dictionary.addAction(action_add_dict_dir)
+
         action_quit = QAction('Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit application')
         connect(action_quit, SIGNAL('triggered()'), self.close)
         mn_dictionary.addAction(action_quit)
-
-        openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
-        add_dicts = QAction(openIcon, 'Add Dictionaries...', self)
-        add_dicts.setShortcut('Ctrl+O')
-        add_dicts.setStatusTip('Add dictionaries')
-        connect(add_dicts, SIGNAL('triggered()'), self.action_add_dict)
-        mn_dictionary.addAction(add_dicts)
-
-        add_dict_dir = QAction('Add Directory...', self)
-        add_dict_dir.setStatusTip('Add dictionary directory')
-        connect(add_dict_dir, SIGNAL('triggered()'), self.action_add_dict_dir)
-        mn_dictionary.addAction(add_dict_dir)
 
         mn_navigate = menubar.addMenu('&Navigate')
         mn_navigate.addAction(action_history_back)
@@ -444,10 +444,10 @@ class DictView(QMainWindow):
         self.sources = []
         self.zoom_factor = 1.0
 
-    def action_add_dict(self):
+    def add_dicts(self):
         self.open_dicts(self.select_files())
 
-    def action_add_dict_dir(self):
+    def add_dict_dir(self):
         self.open_dicts(self.select_dir())
 
     def open_dicts(self, sources):
