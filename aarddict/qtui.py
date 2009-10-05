@@ -359,7 +359,7 @@ class DictView(QMainWindow):
         splitter.addWidget(self.sidebar)
         self.tabs = QTabWidget()
         splitter.addWidget(self.tabs)
-        splitter.setSizes([100, 300])
+        splitter.setSizes([100, 500])
 
         menubar = self.menuBar()
         mn_dictionary = menubar.addMenu('&Dictionary')
