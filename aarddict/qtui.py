@@ -16,7 +16,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QKeySequence, QToolButton,
                          QMainWindow, QListWidget, QListWidgetItem,
                          QTabWidget, QApplication, QStyle,
-                         QGridLayout, QSplitter, QProgressDialog, 
+                         QGridLayout, QSplitter, QProgressDialog,
                          QMessageBox)
 
 from PyQt4.QtWebKit import QWebView, QWebPage
@@ -45,6 +45,7 @@ def load_file(name):
 
 app_dir = os.path.expanduser('~/.aarddict')
 sources_file = os.path.join(app_dir, 'sources')
+history_file = os.path.join(app_dir, 'history')
 find_section_js = load_file('aar.js')
 
 class WebPage(QWebPage):
@@ -273,6 +274,17 @@ def write_sources(sources):
 def read_sources():
     if os.path.exists(sources_file):
         return load_file(sources_file).splitlines()
+    else:
+        return []
+
+def write_history(history):
+    with open(history_file, 'w') as f:
+        f.write('\n'.join(item.encode('utf8') for item in history))
+
+def read_history():
+    if os.path.exists(history_file):
+        with open(history_file) as f:
+            return (line.decode('utf8') for line in f.read().splitlines())
     else:
         return []
 
@@ -716,6 +728,13 @@ class DictView(QMainWindow):
             self.history_view.setCurrentItem(item)
             self.history_view.blockSignals(False)
 
+    def close(self):
+        history = []
+        for i in reversed(range(self.history_view.count())):
+            item = self.history_view.item(i)
+            history.append(unicode(item.text()))
+        write_history(history)
+        QMainWindow.close(self)
 
 def main(args):
     if not os.path.exists(app_dir):
@@ -725,6 +744,8 @@ def main(args):
     dv.show()
     dv.word_input.setFocus()
     dv.open_dicts(read_sources()+args)
+    for title in read_history():
+        dv.add_to_history(title)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
