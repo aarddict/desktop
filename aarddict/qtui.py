@@ -660,7 +660,6 @@ class DictView(QMainWindow):
         view.setHtml(html, QUrl(title))
         view.setZoomFactor(self.zoom_factor)
         view.page().setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
-        print type(article.title), article.title
         view.setProperty('aard:title', QVariant(article.title))
         s = view.settings()
         s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir,
@@ -708,11 +707,9 @@ class DictView(QMainWindow):
 
     def get_current_article_url(self):
         count = self.tabs.count()
-        print count
         if count:
             current_tab = self.tabs.currentWidget()
             article_title = unicode(current_tab.property('aard:title').toString())
-            print article_title
             if not article_title:
                 return None
             dictionary_key = unicode(current_tab.property('aard:volume').toString())
