@@ -231,15 +231,11 @@ class DictOpenThread(QThread):
 
 class WordInput(QLineEdit):
 
-    def __init__(self, parent=None):
+    def __init__(self, action, parent=None):
         QLineEdit.__init__(self, parent)
         box = QHBoxLayout()
-        action_new_lookup = QAction(self)
-        action_new_lookup.setIcon(QIcon(QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
-        action_new_lookup.setShortcut(QKeySequence('Ctrl+N'))
-        action_new_lookup.setShortcutContext(Qt.WindowShortcut)
         btn_clear = QToolButton()
-        btn_clear.setDefaultAction(action_new_lookup)
+        btn_clear.setDefaultAction(action)
         btn_clear.setCursor(Qt.ArrowCursor)
         box.addStretch(1)
         box.addWidget(btn_clear, 0)
@@ -248,11 +244,6 @@ class WordInput(QLineEdit):
         s = btn_clear.sizeHint()
         self.setLayout(box)
         self.setTextMargins(0, 0, s.width(), 0)
-        connect(action_new_lookup, SIGNAL('triggered()'), self.start_new)
-
-    def start_new(self):
-        self.setFocus()
-        self.selectAll()
 
     def keyPressEvent (self, event):
         QLineEdit.keyPressEvent(self, event)
@@ -297,7 +288,16 @@ class DictView(QMainWindow):
 
         self.setWindowTitle('Aard Dictionary')
 
-        self.word_input = WordInput()
+
+        action_lookup_box = QAction('&Lookup Box', self)
+        action_lookup_box.setIcon(QIcon(QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
+
+
+        action_lookup_box.setShortcut('Ctrl+L')
+        action_lookup_box.setStatusTip('Move focus to word input and select its content')
+        connect(action_lookup_box, SIGNAL('triggered()'), self.go_to_lookup_box)
+
+        self.word_input = WordInput(action_lookup_box)
 
         connect(self.word_input, SIGNAL('textEdited (const QString&)'),
                      self.word_input_text_edited)
@@ -383,6 +383,9 @@ class DictView(QMainWindow):
         mn_dictionary.addAction(action_quit)
 
         mn_navigate = menubar.addMenu('&Navigate')
+
+        mn_navigate.addAction(action_lookup_box)
+
         mn_navigate.addAction(action_history_back)
         mn_navigate.addAction(action_history_fwd)
 
@@ -802,6 +805,10 @@ class DictView(QMainWindow):
         for i in range(self.tabs.count()):
             web_view = self.tabs.widget(i)
             web_view.setZoomFactor(self.zoom_factor)
+
+    def go_to_lookup_box(self):
+        self.word_input.setFocus()
+        self.word_input.selectAll()    
 
     def close(self):
         history = []
