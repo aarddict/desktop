@@ -669,7 +669,7 @@ class DictView(QMainWindow):
     def article_load_started(self, read_funcs):
         log.debug('Loading %d article(s)', len(read_funcs))
         self.tabs.blockSignals(True)
-        for read_func in read_funcs:
+        for i, read_func in enumerate(read_funcs):
             view = QWebView()
             view.setPage(WebPage(self))
             view.setHtml('Loading...')
@@ -679,7 +679,11 @@ class DictView(QMainWindow):
             dict_title = format_title(dictionary)
             view.setProperty('aard:dictionary', QVariant(dictionary.uuid))
             view.setProperty('aard:volume', QVariant(dictionary.key()))
-            self.tabs.addTab(view, dict_title)
+            if i < 9:
+                tab_label = ('&%d ' % (i+1))+dict_title
+            else:
+                tab_label = dict_title
+            self.tabs.addTab(view, tab_label)
             self.tabs.setTabToolTip(self.tabs.count() - 1,
                                     u'\n'.join((dict_title, read_func.title)))
         self.select_preferred_dict()
