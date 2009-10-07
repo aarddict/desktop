@@ -319,18 +319,18 @@ class DictView(QMainWindow):
 
         self.sidebar = QTabWidget()
         self.sidebar.setTabPosition(QTabWidget.South)
-        self.sidebar.addTab(lookup_pane, 'Lookup')
+        self.sidebar.addTab(lookup_pane, '&Lookup')
         self.history_view = QListWidget()
-        self.sidebar.addTab(self.history_view, 'History')
+        self.sidebar.addTab(self.history_view, '&History')
 
         style = QApplication.instance().style()
         arrow_back = style.standardIcon(QStyle.SP_ArrowBack)
         arrow_fwd = style.standardIcon(QStyle.SP_ArrowForward)
 
-        action_history_back = QAction(arrow_back, 'Back', self)
+        action_history_back = QAction(arrow_back, '&Back', self)
         action_history_back.setShortcut('Alt+Left')
         connect(action_history_back, SIGNAL('triggered()'), self.history_back)
-        action_history_fwd = QAction(arrow_fwd, 'Forward', self)
+        action_history_fwd = QAction(arrow_fwd, '&Forward', self)
         action_history_fwd.setShortcut('Alt+Right')
         connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
         btn_history_back = QToolButton()
@@ -365,18 +365,18 @@ class DictView(QMainWindow):
         mn_dictionary = menubar.addMenu('&Dictionary')
 
         openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
-        action_add_dicts = QAction(openIcon, 'Add Dictionaries...', self)
+        action_add_dicts = QAction(openIcon, '&Add Dictionaries...', self)
         action_add_dicts.setShortcut('Ctrl+O')
         action_add_dicts.setStatusTip('Add dictionaries')
         connect(action_add_dicts, SIGNAL('triggered()'), self.add_dicts)
         mn_dictionary.addAction(action_add_dicts)
 
-        action_add_dict_dir = QAction('Add Directory...', self)
+        action_add_dict_dir = QAction('Add &Directory...', self)
         action_add_dict_dir.setStatusTip('Add dictionary directory')
         connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
         mn_dictionary.addAction(action_add_dict_dir)
 
-        action_quit = QAction('Quit', self)
+        action_quit = QAction('&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit application')
         connect(action_quit, SIGNAL('triggered()'), self.close)
@@ -577,7 +577,7 @@ class DictView(QMainWindow):
             item.setData(Qt.UserRole, QVariant(article_group))
             self.word_completion.addItem(item)
         self.select_word(unicode(word))
-        self.sidebar.setTabText(0, 'Lookup')
+        self.sidebar.setTabText(0, '&Lookup')
         self.current_lookup_thread = None
 
     def select_next_word(self):
