@@ -401,6 +401,13 @@ class DictView(QMainWindow):
         connect(action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(action_prev_article)
 
+
+        action_online_article = QAction('&Online Article', self)
+        action_online_article.setShortcut('Ctrl+T')
+        action_online_article.setStatusTip('Open online version of this article in a web browser')
+        connect(action_online_article, SIGNAL('triggered()'), self.show_article_online)
+        mn_navigate.addAction(action_online_article)
+
         mn_view = menubar.addMenu('&View')
 
         mn_text_size = mn_view.addMenu('Text &Size')
@@ -528,7 +535,7 @@ class DictView(QMainWindow):
     def article_tab_switched(self, current_tab_index):
         if current_tab_index > -1:
             web_view = self.tabs.widget(current_tab_index)
-            dict_uuid = str(web_view.property('dictionary').toByteArray())
+            dict_uuid = str(web_view.property('aard:dictionary').toByteArray())
             self.preferred_dicts[dict_uuid] = time.time()
 
     def schedule(self, func, delay=500):
@@ -636,8 +643,8 @@ class DictView(QMainWindow):
                   article.title, title, article.section)
         for i in range(self.tabs.count()):
             view = self.tabs.widget(i)
-            if view.property('loading').toBool():
-                view.setProperty('loading', QVariant(False))
+            if view.property('aard:loading').toBool():
+                view.setProperty('aard:loading', QVariant(False))
                 break
         connect(view, SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
@@ -653,6 +660,8 @@ class DictView(QMainWindow):
         view.setHtml(html, QUrl(title))
         view.setZoomFactor(self.zoom_factor)
         view.page().setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
+        print type(article.title), article.title
+        view.setProperty('aard:title', QVariant(article.title))
         s = view.settings()
         s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir,
                                                  'aar.css')))
@@ -666,10 +675,11 @@ class DictView(QMainWindow):
             view.setPage(WebPage(self))
             view.setHtml('Loading...')
             view.setZoomFactor(self.zoom_factor)
-            view.setProperty('loading', QVariant(True))
+            view.setProperty('aard:loading', QVariant(True))
             dictionary = read_func.source
             dict_title = format_title(dictionary)
-            view.setProperty('dictionary', QVariant(dictionary.uuid))
+            view.setProperty('aard:dictionary', QVariant(dictionary.uuid))
+            view.setProperty('aard:volume', QVariant(dictionary.key()))
             self.tabs.addTab(view, dict_title)
             self.tabs.setTabToolTip(self.tabs.count() - 1,
                                     u'\n'.join((dict_title, read_func.title)))
@@ -690,6 +700,45 @@ class DictView(QMainWindow):
         if new_current > -1:
             self.tabs.setCurrentIndex(new_current)
 
+    def show_article_online(self):
+        url = self.get_current_article_url()
+        if url is not None:
+            logging.debug('Opening url %r', url)
+            webbrowser.open(url)
+
+    def get_current_article_url(self):
+        count = self.tabs.count()
+        print count
+        if count:
+            current_tab = self.tabs.currentWidget()
+            article_title = unicode(current_tab.property('aard:title').toString())
+            print article_title
+            if not article_title:
+                return None
+            dictionary_key = unicode(current_tab.property('aard:volume').toString())
+            dictionary_list = [d for d in self.dictionaries if d.key() == dictionary_key]
+            if len(dictionary_list) == 0:
+                return None
+            dictionary = dictionary_list[0]
+            try:
+                siteinfo = dictionary.metadata['siteinfo']
+            except KeyError:
+                logging.debug('No site info in dictionary %s', dictionary_key)
+                if 'lang' in dictionary.metadata and 'sitelang' in dictionary.metadata:
+                    url = u'http://%s.wikipedia.org/wiki/%s' % (dictionary.metadata['lang'],
+                                                                article_title)
+                    return url
+            else:
+                try:
+                    general = siteinfo['general']
+                    server = general['server']
+                    articlepath = general['articlepath']
+                except KeyError:
+                    logging.debug('Site info for %s is incomplete', dictionary_key)
+                else:
+                    url = ''.join((server, articlepath.replace(u'$1', article_title)))
+                    return url
+
     def select_preferred_dict(self):
         preferred_dict_keys = [item[0] for item
                                in sorted(self.preferred_dicts.iteritems(),
@@ -698,7 +747,7 @@ class DictView(QMainWindow):
             for i, dict_key in enumerate(preferred_dict_keys):
                 for page_num in range(self.tabs.count()):
                     web_view = self.tabs.widget(page_num)
-                    dict_uuid = str(web_view.property('dictionary').toByteArray())
+                    dict_uuid = str(web_view.property('aard:dictionary').toByteArray())
                     if dict_uuid == dict_key:
                         self.tabs.setCurrentIndex(page_num)
                         raise StopIteration()
