@@ -493,8 +493,14 @@ class DictView(QMainWindow):
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
             log.debug('Opened %s' % d.file_name)
+            count = 0
             if d not in self.dictionaries:
                 self.dictionaries.append(d)
+                count += 1
+            if count:
+                func = functools.partial(self.update_word_completion,
+                                         self.word_input.text())
+                self.schedule(func, 0)
 
         def dict_failed(source, error):
             errors.append((source, error))
@@ -595,9 +601,9 @@ class DictView(QMainWindow):
         for dictionary in to_be_removed:
             self.dictionaries.remove(dictionary)
             dictionary.close()
-        
+
         self.sources = write_sources(remaining)
-        
+
         if to_be_removed:
             func = functools.partial(self.update_word_completion, self.word_input.text())
             self.schedule(func, 0)
