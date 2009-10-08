@@ -11,13 +11,14 @@ from itertools import groupby
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot)
+
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
                          QKeySequence, QToolButton,
                          QMainWindow, QListWidget, QListWidgetItem,
                          QTabWidget, QApplication, QStyle,
                          QGridLayout, QSplitter, QProgressDialog,
-                         QMessageBox)
+                         QMessageBox, QDialog, QDialogButtonBox, QPushButton)
 
 from PyQt4.QtWebKit import QWebView, QWebPage
 
@@ -255,18 +256,20 @@ class WordInput(QLineEdit):
 
 def write_sources(sources):
     with open(sources_file, 'w') as f:
-        seen = set()
+        written = list()
         for source in sources:
-            if source not in seen:
+            if source not in written:
                 f.write(source)
                 f.write('\n')
-                seen.add(source)
+                written.append(source)
             else:
                 log.debug('Source %s is already written, ignoring', source)
+    return written
 
 def read_sources():
     if os.path.exists(sources_file):
-        return load_file(sources_file).splitlines()
+        return [source for source
+                in load_file(sources_file).splitlines() if source]
     else:
         return []
 
@@ -376,6 +379,12 @@ class DictView(QMainWindow):
         connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
         mn_dictionary.addAction(action_add_dict_dir)
 
+        action_remove_dict_source = QAction('&Remove...', self)
+        action_remove_dict_source.setShortcut('Ctrl+R')
+        action_remove_dict_source.setStatusTip('Remove dictionary or dictionary directory')
+        connect(action_remove_dict_source, SIGNAL('triggered()'), self.remove_dict_source)
+        mn_dictionary.addAction(action_remove_dict_source)
+
         action_quit = QAction('&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit application')
@@ -411,7 +420,7 @@ class DictView(QMainWindow):
         mn_view = menubar.addMenu('&View')
 
         mn_text_size = mn_view.addMenu('Text &Size')
-        
+
         action_increase_text = QAction('&Increase', self)
         action_increase_text.setShortcut('Ctrl+=')
         connect(action_increase_text, SIGNAL('triggered()'), self.increase_text_size)
@@ -433,8 +442,8 @@ class DictView(QMainWindow):
         action_full_screen.setCheckable(True)
         connect(action_full_screen, SIGNAL('triggered(bool)'), self.toggle_full_screen)
         mn_view.addAction(action_full_screen)
-        
-        
+
+
         self.setCentralWidget(splitter)
         self.resize(640, 480)
 
@@ -462,8 +471,7 @@ class DictView(QMainWindow):
 
     def open_dicts(self, sources):
 
-        self.sources += sources
-        write_sources(self.sources)
+        self.sources = write_sources(self.sources + sources)
 
         dict_open_thread = DictOpenThread(sources, self)
 
@@ -531,6 +539,68 @@ class DictView(QMainWindow):
                                                       QFileDialog.ShowDirsOnly)
         return [unicode(name).encode('utf8')]
 
+    def remove_dict_source(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Remove Dictionaries')
+        content = QVBoxLayout()
+
+        item_list = QListWidget()
+        item_list.setSelectionMode(QListWidget.MultiSelection)
+
+        for source in self.sources:
+            item_list.addItem(QListWidgetItem(source))
+
+        content.addWidget(item_list)
+
+        dialog.setLayout(content)
+        button_box = QDialogButtonBox()
+
+        btn_select_all = QPushButton('Select &All')
+        button_box.addButton(btn_select_all, QDialogButtonBox.ApplyRole)
+
+        connect(btn_select_all, SIGNAL('clicked()'), item_list.selectAll)
+
+        btn_remove = QPushButton('&Remove')
+
+        def remove():
+            rows = [index.row() for index in item_list.selectedIndexes()]
+            for row in reversed(sorted(rows)):
+                item_list.takeItem(row)
+            if rows:
+                remaining = [unicode(item_list.item(i).text()).encode('utf8')
+                             for i in range(item_list.count())]
+                self.cleanup_sources(remaining)
+
+        connect(btn_remove, SIGNAL('clicked()'), remove)
+
+        button_box.addButton(btn_remove, QDialogButtonBox.ApplyRole)
+        button_box.setStandardButtons(QDialogButtonBox.Close)
+
+        content.addWidget(button_box)
+
+        connect(button_box, SIGNAL('rejected()'), dialog.reject)
+
+        dialog.exec_()
+
+    def cleanup_sources(self, remaining):
+        to_be_removed = []
+
+        for dictionary in self.dictionaries:
+            f = dictionary.file_name
+            if f in remaining or os.path.dirname(f) in remaining:
+                continue
+            else:
+                to_be_removed.append(dictionary)
+
+        for dictionary in to_be_removed:
+            self.dictionaries.remove(dictionary)
+            dictionary.close()
+        
+        self.sources = write_sources(remaining)
+        
+        if to_be_removed:
+            func = functools.partial(self.update_word_completion, self.word_input.text())
+            self.schedule(func, 0)
 
     def article_tab_switched(self, current_tab_index):
         if current_tab_index > -1:
@@ -687,7 +757,7 @@ class DictView(QMainWindow):
             self.tabs.setTabToolTip(self.tabs.count() - 1,
                                     u'\n'.join((dict_title, read_func.title)))
         self.select_preferred_dict()
-        self.tabs.blockSignals(False)                
+        self.tabs.blockSignals(False)
 
     def show_next_article(self):
         current = self.tabs.currentIndex()
@@ -843,7 +913,7 @@ class DictView(QMainWindow):
 
     def increase_text_size(self):
         self.set_zoom_factor(self.zoom_factor*1.1)
-        
+
     def decrease_text_size(self):
         self.set_zoom_factor(self.zoom_factor*0.9)
 
@@ -858,7 +928,7 @@ class DictView(QMainWindow):
 
     def go_to_lookup_box(self):
         self.word_input.setFocus()
-        self.word_input.selectAll()    
+        self.word_input.selectAll()
 
     def close(self):
         history = []
