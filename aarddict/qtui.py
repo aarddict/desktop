@@ -6,8 +6,14 @@ import time
 import functools
 import webbrowser
 import logging
+import string
+import locale
+import re
+
+from uuid import UUID
 
 from itertools import groupby
+from collections import defaultdict
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot)
@@ -51,7 +57,34 @@ find_section_js = load_file('aar.js')
 
 max_history = 100
 
+dict_detail_tmpl= string.Template("""
+<html>
+<body>
+<h1>$title $version</h1>
+<div style="margin-left:20px;marging-right:20px;">
+<p><strong>Volumes: $total_volumes</strong></p>
+$volumes
+<p><strong>Number of articles:</strong> <em>$num_of_articles</em></p>
+</div>
+$description
+$source
+$copyright
+$license
+</body>
+</html>
+""")
+
+http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
+
+def linkify(text):
+    return http_link_re.sub(lambda m: '<a href="%(target)s">%(target)s</a>' 
+                            % dict(target=m.group(0)), text)
+
 class WebPage(QWebPage):
+
+    def __init__(self, parent=None):
+        QWebPage.__init__(self, parent)
+        self.setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
 
     def javaScriptConsoleMessage (self, message, lineNumber, sourceID):
         log.debug('[js] %s (line %d): %s', sourceID, lineNumber, message)
@@ -384,6 +417,12 @@ class DictView(QMainWindow):
         action_remove_dict_source.setStatusTip('Remove dictionary or dictionary directory')
         connect(action_remove_dict_source, SIGNAL('triggered()'), self.remove_dict_source)
         mn_dictionary.addAction(action_remove_dict_source)
+
+        action_info = QAction('&Info...', self)
+        action_info.setShortcut('Ctrl+I')
+        action_info.setStatusTip('Information about open dictionaries')
+        connect(action_info, SIGNAL('triggered()'), self.show_info)
+        mn_dictionary.addAction(action_info)
 
         action_quit = QAction('&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
@@ -734,8 +773,7 @@ class DictView(QMainWindow):
                     loadFinished, Qt.QueuedConnection)
 
         view.setHtml(html, QUrl(title))
-        view.setZoomFactor(self.zoom_factor)
-        view.page().setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
+        view.setZoomFactor(self.zoom_factor)        
         view.setProperty('aard:title', QVariant(article.title))
         s = view.settings()
         s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir,
@@ -935,6 +973,85 @@ class DictView(QMainWindow):
     def go_to_lookup_box(self):
         self.word_input.setFocus()
         self.word_input.selectAll()
+
+    def show_info(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Dictionary Info')
+        content = QVBoxLayout()
+
+        item_list = QListWidget()
+
+        dictmap = defaultdict(list)
+
+        for dictionary in self.dictionaries:
+            dictmap[UUID(bytes=dictionary.uuid).hex].append(dictionary)
+
+        for uuid_hex, dicts in dictmap.iteritems():
+            text = format_title(dicts[0], with_vol_num=False)
+            item = QListWidgetItem(text)
+            item.setData(Qt.UserRole, QVariant(uuid_hex))
+            item_list.addItem(item)
+
+        splitter = QSplitter()
+        splitter.addWidget(item_list)
+        detail_view = QWebView()
+        detail_view.setPage(WebPage(self))
+
+        connect(detail_view, SIGNAL('linkClicked (const QUrl&)'),
+                     self.link_clicked)
+
+        splitter.addWidget(detail_view)
+        splitter.setSizes([100, 300])
+
+        content.addWidget(splitter)
+
+        dialog.setLayout(content)
+        button_box = QDialogButtonBox()
+
+        button_box.setStandardButtons(QDialogButtonBox.Close)
+
+        content.addWidget(button_box)
+
+        def current_changed(current, old_current):
+            uuid_hex = str(current.data(Qt.UserRole).toString())
+            volumes = dictmap[uuid_hex]
+
+            if volumes:
+                volumes = sorted(volumes, key=lambda v: v.volume)
+                d = volumes[0]
+                volumes_str = '<br>'.join(('<strong>Volume %s:</strong> <em>%s</em>' % 
+                                           (v.volume, v.file_name)) 
+                                          for v in volumes)
+                
+                params = dict(title=d.title, version=d.version,
+                              total_volumes=d.total_volumes,
+                              volumes=volumes_str, 
+                              num_of_articles=locale.format("%u", d.article_count, True)
+                              )
+
+                if d.description:                    
+                    params['description'] = '<p>%s</p>' % linkify(d.description)
+                if d.source:
+                    params['source'] = '<h2>Source</h2>%s' % linkify(d.source)
+                if d.copyright:
+                    params['copyright'] = '<h2>Copyright Notice</h2>%s' % linkify(d.copyright)
+                if d.license:
+                    params['license'] = '<h2>License</h2><pre>%s</pre>' % d.license
+                
+                html = dict_detail_tmpl.safe_substitute(params)
+            else:
+                html = ''
+            detail_view.setHtml(html)
+
+        connect(item_list,
+                SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
+                current_changed)
+
+
+        connect(button_box, SIGNAL('rejected()'), dialog.reject)
+
+        dialog.setSizeGripEnabled(True)
+        dialog.exec_()    
 
     def close(self):
         history = []
