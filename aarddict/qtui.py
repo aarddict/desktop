@@ -601,7 +601,7 @@ class DictView(QMainWindow):
         button_box = QDialogButtonBox()
 
         btn_select_all = QPushButton('Select &All')
-        button_box.addButton(btn_select_all, QDialogButtonBox.ApplyRole)
+        button_box.addButton(btn_select_all, QDialogButtonBox.ActionRole)
 
         connect(btn_select_all, SIGNAL('clicked()'), item_list.selectAll)
 
