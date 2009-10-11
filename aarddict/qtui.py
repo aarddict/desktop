@@ -16,7 +16,8 @@ from itertools import groupby
 from collections import defaultdict
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
-                          QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot)
+                          QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
+                          QModelIndex)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -24,7 +25,8 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QMainWindow, QListWidget, QListWidgetItem,
                          QTabWidget, QApplication, QStyle,
                          QGridLayout, QSplitter, QProgressDialog,
-                         QMessageBox, QDialog, QDialogButtonBox, QPushButton)
+                         QMessageBox, QDialog, QDialogButtonBox, QPushButton,
+                         QTableWidget, QTableWidgetItem, QItemSelectionModel)
 
 from PyQt4.QtWebKit import QWebView, QWebPage
 
@@ -39,7 +41,8 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  TERTIARY,
                                  Article,
                                  split_word,
-                                 cmp_words)
+                                 cmp_words,
+                                 VerifyError)
 
 connect = QObject.connect
 
@@ -77,7 +80,7 @@ $license
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
 def linkify(text):
-    return http_link_re.sub(lambda m: '<a href="%(target)s">%(target)s</a>' 
+    return http_link_re.sub(lambda m: '<a href="%(target)s">%(target)s</a>'
                             % dict(target=m.group(0)), text)
 
 class WebPage(QWebPage):
@@ -262,6 +265,29 @@ class DictOpenThread(QThread):
     def stop(self):
         self.stop_requested = True
 
+class VolumeVerifyThread(QThread):
+
+    def __init__(self, volume, parent=None):
+        QThread.__init__(self, parent)
+        self.volume = volume
+        self.stop_requested = False
+
+    def run(self):
+        try:
+            for progress in self.volume.verify():
+                if self.stop_requested:
+                    return
+                if progress > 1.0:
+                    progress = 1.0
+                self.emit(SIGNAL("progress"), progress)
+        except VerifyError:
+            self.emit(SIGNAL("verified"), False)
+        else:
+            self.emit(SIGNAL("verified"),  True)
+
+    def stop(self):
+        self.stop_requested = True
+
 
 class WordInput(QLineEdit):
 
@@ -285,6 +311,15 @@ class WordInput(QLineEdit):
             self.emit(SIGNAL('word_input_down'))
         elif event.matches(QKeySequence.MoveToPreviousLine):
             self.emit(SIGNAL('word_input_up'))
+
+
+class SingleRowItemSelectionModel(QItemSelectionModel):
+
+    def select(self, arg1, arg2):
+        super(SingleRowItemSelectionModel, self).select(arg1, 
+                                                        QItemSelectionModel.Rows | 
+                                                        QItemSelectionModel.Select | 
+                                                        QItemSelectionModel.Clear)
 
 
 def write_sources(sources):
@@ -411,6 +446,12 @@ class DictView(QMainWindow):
         action_add_dict_dir.setStatusTip('Add dictionary directory')
         connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
         mn_dictionary.addAction(action_add_dict_dir)
+
+        action_verify = QAction('&Verify...', self)
+        action_verify.setShortcut('Ctrl+Y')
+        action_verify.setStatusTip('Verify volume data integrity')
+        connect(action_verify, SIGNAL('triggered()'), self.verify)
+        mn_dictionary.addAction(action_verify)
 
         action_remove_dict_source = QAction('&Remove...', self)
         action_remove_dict_source.setShortcut('Ctrl+R')
@@ -773,7 +814,7 @@ class DictView(QMainWindow):
                     loadFinished, Qt.QueuedConnection)
 
         view.setHtml(html, QUrl(title))
-        view.setZoomFactor(self.zoom_factor)        
+        view.setZoomFactor(self.zoom_factor)
         view.setProperty('aard:title', QVariant(article.title))
         s = view.settings()
         s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir,
@@ -974,6 +1015,86 @@ class DictView(QMainWindow):
         self.word_input.setFocus()
         self.word_input.selectAll()
 
+    def verify(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Verify')
+        content = QVBoxLayout()
+
+        item_list = QTableWidget()
+        item_list.setRowCount(len(self.dictionaries))
+        item_list.setColumnCount(2)
+        item_list.setHorizontalHeaderLabels(['Status', 'Volume'])
+        item_list.setSelectionMode(QTableWidget.SingleSelection)
+        item_list.setEditTriggers(QTableWidget.NoEditTriggers)
+        item_list.verticalHeader().setVisible(False)
+        item_list.setSelectionModel(SingleRowItemSelectionModel(item_list.model()))
+
+        for i, dictionary in enumerate(self.dictionaries):
+            text = format_title(dictionary)
+            item = QTableWidgetItem(text)
+            item.setData(Qt.UserRole, QVariant(dictionary.key()))
+            item_list.setItem(i, 1, item)
+            item = QTableWidgetItem('Unverified')
+            item_list.setItem(i, 0, item)
+
+        item_list.horizontalHeader().setStretchLastSection(True)
+        item_list.resizeColumnToContents(0)
+
+        content.addWidget(item_list)
+
+        dialog.setLayout(content)
+        button_box = QDialogButtonBox()
+
+        btn_verify = QPushButton('&Verify')
+
+        def verify():
+            current_row = item_list.currentRow()
+            item = item_list.item(current_row, 1)
+            dict_key = str(item.data(Qt.UserRole).toString())
+            volume = [d for d in self.dictionaries if d.key() == dict_key][0]
+            verify_thread = VolumeVerifyThread(volume)
+            progress = QProgressDialog(dialog)
+            progress.setWindowTitle('Verifying...')
+            progress.setLabelText(format_title(volume))
+            progress.setValue(0)
+            progress.forceShow()
+
+            def update_progress(num):
+                progress.setValue(100*num)
+
+            def verified(isvalid):
+                status_item = item_list.item(current_row, 0)
+                #status_item.setData(Qt.DecorationRole, icon)
+                if isvalid:
+                    status_item.setText('Ok')
+                else:
+                    status_item.setText('Corrupt')
+
+            def finished():
+                verify_thread.volume = None
+                verify_thread.setParent(None)
+
+            connect(progress, SIGNAL('canceled ()'), verify_thread.stop, Qt.QueuedConnection)
+            connect(verify_thread, SIGNAL('progress'), update_progress,
+                    Qt.QueuedConnection)
+            connect(verify_thread, SIGNAL('verified'), verified,
+                    Qt.QueuedConnection)
+            connect(verify_thread, SIGNAL('finished()'), finished,
+                    Qt.QueuedConnection)
+            verify_thread.start()
+
+
+        connect(btn_verify, SIGNAL('clicked()'), verify)
+
+        button_box.addButton(btn_verify, QDialogButtonBox.ApplyRole)
+        button_box.setStandardButtons(QDialogButtonBox.Close)
+
+        content.addWidget(button_box)
+
+        connect(button_box, SIGNAL('rejected()'), dialog.reject)
+
+        dialog.exec_()
+
     def show_info(self):
         dialog = QDialog(self)
         dialog.setWindowTitle('Dictionary Info')
@@ -1019,17 +1140,17 @@ class DictView(QMainWindow):
             if volumes:
                 volumes = sorted(volumes, key=lambda v: v.volume)
                 d = volumes[0]
-                volumes_str = '<br>'.join(('<strong>Volume %s:</strong> <em>%s</em>' % 
-                                           (v.volume, v.file_name)) 
+                volumes_str = '<br>'.join(('<strong>Volume %s:</strong> <em>%s</em>' %
+                                           (v.volume, v.file_name))
                                           for v in volumes)
-                
+
                 params = dict(title=d.title, version=d.version,
                               total_volumes=d.total_volumes,
-                              volumes=volumes_str, 
+                              volumes=volumes_str,
                               num_of_articles=locale.format("%u", d.article_count, True)
                               )
 
-                if d.description:                    
+                if d.description:
                     params['description'] = '<p>%s</p>' % linkify(d.description)
                 if d.source:
                     params['source'] = '<h2>Source</h2>%s' % linkify(d.source)
@@ -1037,7 +1158,7 @@ class DictView(QMainWindow):
                     params['copyright'] = '<h2>Copyright Notice</h2>%s' % linkify(d.copyright)
                 if d.license:
                     params['license'] = '<h2>License</h2><pre>%s</pre>' % d.license
-                
+
                 html = dict_detail_tmpl.safe_substitute(params)
             else:
                 html = ''
@@ -1051,7 +1172,7 @@ class DictView(QMainWindow):
         connect(button_box, SIGNAL('rejected()'), dialog.reject)
 
         dialog.setSizeGripEnabled(True)
-        dialog.exec_()    
+        dialog.exec_()
 
     def close(self):
         history = []
