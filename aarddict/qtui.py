@@ -95,6 +95,47 @@ about_html = about_tmpl.substitute(dict(appname=aarddict.__appname__,
 
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
+iconset = 'gnome'
+
+icon_dir = os.path.join(aarddict.package_dir, 'icons/%s/%%s' % iconset)
+print icon_dir
+
+def mkicon(name):
+    icon = QIcon()
+    for size in ('16x16', '32x32'):
+        icon.addFile(os.path.join(icon_dir%size, name+'.png'))
+    icon.addFile(os.path.join(icon_dir%'scalable', name+'.svg'))
+    return icon
+
+icons = {}
+
+def load_icons():
+    icons['edit-find'] = mkicon('actions/edit-find')
+    icons['system-search'] = mkicon('actions/system-search')
+    icons['list-add'] = mkicon('actions/list-add')
+    icons['list-remove'] = mkicon('actions/list-remove')
+    icons['go-next'] = mkicon('actions/go-next')
+    icons['go-previous'] = mkicon('actions/go-previous')
+    icons['view-fullscreen'] = mkicon('actions/view-fullscreen')
+    icons['system-log-out'] = mkicon('actions/system-log-out')
+    icons['zoom-in'] = mkicon('actions/zoom-in')
+    icons['zoom-out'] = mkicon('actions/zoom-out')
+    icons['zoom-original'] = mkicon('actions/zoom-original')
+    icons['help-about'] = mkicon('actions/help-about')
+    icons['system-run'] = mkicon('actions/system-run')
+    icons['document-open-recent'] = mkicon('actions/document-open-recent')
+
+    icons['folder'] = mkicon('places/folder')
+    icons['file'] = mkicon('mimetypes/gtk-file')
+
+    icons['emblem-web'] = mkicon('emblems/emblem-web')
+    icons['emblem-default'] = mkicon('emblems/emblem-default')
+    icons['emblem-unreadable'] = mkicon('emblems/emblem-unreadable')
+
+    icons['info'] = mkicon('status/info')
+    icons['question'] = mkicon('status/dialog-question')
+    icons['warning'] = mkicon('status/dialog-warning')
+
 
 def linkify(text):
     return http_link_re.sub(lambda m: '<a href="%(target)s">%(target)s</a>'
@@ -333,9 +374,9 @@ class WordInput(QLineEdit):
 class SingleRowItemSelectionModel(QItemSelectionModel):
 
     def select(self, arg1, arg2):
-        super(SingleRowItemSelectionModel, self).select(arg1, 
-                                                        QItemSelectionModel.Rows | 
-                                                        QItemSelectionModel.Select | 
+        super(SingleRowItemSelectionModel, self).select(arg1,
+                                                        QItemSelectionModel.Rows |
+                                                        QItemSelectionModel.Select |
                                                         QItemSelectionModel.Clear)
 
 
@@ -378,7 +419,8 @@ class DictView(QMainWindow):
 
 
         action_lookup_box = QAction('&Lookup Box', self)
-        action_lookup_box.setIcon(QIcon(QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
+        action_lookup_box.setIcon(icons['edit-find'])
+        # action_lookup_box.setIcon(QIcon(QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
 
 
         action_lookup_box.setShortcut('Ctrl+L')
@@ -407,18 +449,14 @@ class DictView(QMainWindow):
 
         self.sidebar = QTabWidget()
         self.sidebar.setTabPosition(QTabWidget.South)
-        self.sidebar.addTab(lookup_pane, '&Lookup')
+        self.sidebar.addTab(lookup_pane, icons['system-search'], '&Lookup')
         self.history_view = QListWidget()
-        self.sidebar.addTab(self.history_view, '&History')
+        self.sidebar.addTab(self.history_view, icons['document-open-recent'], '&History')
 
-        style = QApplication.instance().style()
-        arrow_back = style.standardIcon(QStyle.SP_ArrowBack)
-        arrow_fwd = style.standardIcon(QStyle.SP_ArrowForward)
-
-        action_history_back = QAction(arrow_back, '&Back', self)
+        action_history_back = QAction(icons['go-previous'], '&Back', self)
         action_history_back.setShortcut('Alt+Left')
         connect(action_history_back, SIGNAL('triggered()'), self.history_back)
-        action_history_fwd = QAction(arrow_fwd, '&Forward', self)
+        action_history_fwd = QAction(icons['go-next'], '&Forward', self)
         action_history_fwd.setShortcut('Alt+Right')
         connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
         btn_history_back = QToolButton()
@@ -452,37 +490,36 @@ class DictView(QMainWindow):
         menubar = self.menuBar()
         mn_dictionary = menubar.addMenu('&Dictionary')
 
-        openIcon = QIcon(QPixmap(":/trolltech/styles/commonstyle/images/standardbutton-open-16.png"))
-        action_add_dicts = QAction(openIcon, '&Add Dictionaries...', self)
+        action_add_dicts = QAction(icons['list-add'], '&Add Dictionaries...', self)
         action_add_dicts.setShortcut('Ctrl+O')
         action_add_dicts.setStatusTip('Add dictionaries')
         connect(action_add_dicts, SIGNAL('triggered()'), self.add_dicts)
         mn_dictionary.addAction(action_add_dicts)
 
-        action_add_dict_dir = QAction('Add &Directory...', self)
+        action_add_dict_dir = QAction(icons['folder'], 'Add &Directory...', self)
         action_add_dict_dir.setStatusTip('Add dictionary directory')
         connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
         mn_dictionary.addAction(action_add_dict_dir)
 
-        action_verify = QAction('&Verify...', self)
+        action_verify = QAction(icons['system-run'], '&Verify...', self)
         action_verify.setShortcut('Ctrl+Y')
         action_verify.setStatusTip('Verify volume data integrity')
         connect(action_verify, SIGNAL('triggered()'), self.verify)
         mn_dictionary.addAction(action_verify)
 
-        action_remove_dict_source = QAction('&Remove...', self)
+        action_remove_dict_source = QAction(icons['list-remove'], '&Remove...', self)
         action_remove_dict_source.setShortcut('Ctrl+R')
         action_remove_dict_source.setStatusTip('Remove dictionary or dictionary directory')
         connect(action_remove_dict_source, SIGNAL('triggered()'), self.remove_dict_source)
         mn_dictionary.addAction(action_remove_dict_source)
 
-        action_info = QAction('&Info...', self)
+        action_info = QAction(icons['info'], '&Info...', self)
         action_info.setShortcut('Ctrl+I')
         action_info.setStatusTip('Information about open dictionaries')
         connect(action_info, SIGNAL('triggered()'), self.show_info)
         mn_dictionary.addAction(action_info)
 
-        action_quit = QAction('&Quit', self)
+        action_quit = QAction(icons['system-log-out'], '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit application')
         connect(action_quit, SIGNAL('triggered()'), self.close)
@@ -508,7 +545,7 @@ class DictView(QMainWindow):
         mn_navigate.addAction(action_prev_article)
 
 
-        action_online_article = QAction('&Online Article', self)
+        action_online_article = QAction(icons['emblem-web'], '&Online Article', self)
         action_online_article.setShortcut('Ctrl+T')
         action_online_article.setStatusTip('Open online version of this article in a web browser')
         connect(action_online_article, SIGNAL('triggered()'), self.show_article_online)
@@ -518,22 +555,22 @@ class DictView(QMainWindow):
 
         mn_text_size = mn_view.addMenu('Text &Size')
 
-        action_increase_text = QAction('&Increase', self)
+        action_increase_text = QAction(icons['zoom-in'], '&Increase', self)
         action_increase_text.setShortcut('Ctrl+=')
         connect(action_increase_text, SIGNAL('triggered()'), self.increase_text_size)
         mn_text_size.addAction(action_increase_text)
 
-        action_decrease_text = QAction('&Decrease', self)
+        action_decrease_text = QAction(icons['zoom-out'], '&Decrease', self)
         action_decrease_text.setShortcut('Ctrl+-')
         connect(action_decrease_text, SIGNAL('triggered()'), self.decrease_text_size)
         mn_text_size.addAction(action_decrease_text)
 
-        action_reset_text = QAction('&Reset', self)
+        action_reset_text = QAction(icons['zoom-original'], '&Reset', self)
         action_reset_text.setShortcut('Ctrl+0')
         connect(action_reset_text, SIGNAL('triggered()'), self.reset_text_size)
         mn_text_size.addAction(action_reset_text)
 
-        action_full_screen = QAction('&Full Screen', self)
+        action_full_screen = QAction(icons['view-fullscreen'], '&Full Screen', self)
         action_full_screen.setShortcut('F11')
         action_full_screen.setStatusTip('Toggle full screen mode')
         action_full_screen.setCheckable(True)
@@ -542,10 +579,10 @@ class DictView(QMainWindow):
 
         mn_help = menubar.addMenu('H&elp')
 
-        action_about = QAction('&About...', self)
+        action_about = QAction(icons['help-about'], '&About...', self)
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
-        
+
 
         self.setCentralWidget(splitter)
         self.resize(640, 480)
@@ -657,7 +694,17 @@ class DictView(QMainWindow):
         item_list.setSelectionMode(QListWidget.MultiSelection)
 
         for source in self.sources:
-            item_list.addItem(QListWidgetItem(source))
+            item = QListWidgetItem(source)
+            if os.path.exists(source):
+                if os.path.isfile(source):
+                    item.setData(Qt.DecorationRole, icons['file'])
+                elif os.path.isdir(source):
+                    item.setData(Qt.DecorationRole, icons['folder'])
+                else:
+                    item.setData(Qt.DecorationRole, icons['question'])
+            else:
+                item.setData(Qt.DecorationRole, icons['warning'])
+            item_list.addItem(item)
 
         content.addWidget(item_list)
 
@@ -1058,6 +1105,7 @@ class DictView(QMainWindow):
             item.setData(Qt.UserRole, QVariant(dictionary.key()))
             item_list.setItem(i, 1, item)
             item = QTableWidgetItem('Unverified')
+            item.setData(Qt.DecorationRole, icons['question'])
             item_list.setItem(i, 0, item)
 
         item_list.horizontalHeader().setStretchLastSection(True)
@@ -1087,11 +1135,12 @@ class DictView(QMainWindow):
 
             def verified(isvalid):
                 status_item = item_list.item(current_row, 0)
-                #status_item.setData(Qt.DecorationRole, icon)
                 if isvalid:
                     status_item.setText('Ok')
+                    status_item.setData(Qt.DecorationRole, icons['emblem-default'])
                 else:
                     status_item.setText('Corrupt')
+                    status_item.setData(Qt.DecorationRole, icons['emblem-unreadable'])
 
             def finished():
                 verify_thread.volume = None
@@ -1203,7 +1252,7 @@ class DictView(QMainWindow):
         content = QVBoxLayout()
 
         class WebView(QWebView):
-            
+
             def sizeHint(self):
                 return QSize(300, 200)
 
@@ -1241,6 +1290,7 @@ def main(args):
     if not os.path.exists(app_dir):
         os.makedirs(app_dir)
     app = QApplication(sys.argv)
+    load_icons()
     dv = DictView()
     dv.show()
     dv.word_input.setFocus()
@@ -1251,4 +1301,6 @@ def main(args):
 
 if __name__ == '__main__':
     main()
+
+
 
