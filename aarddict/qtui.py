@@ -17,7 +17,7 @@ from collections import defaultdict
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QModelIndex)
+                          QModelIndex, QSize)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -77,7 +77,24 @@ $license
 </html>
 """)
 
+about_tmpl = string.Template("""
+<div align="center">
+<h1>$appname $version</h1>
+<p>$copyright</p>
+<p><a href="$website">$website</a></p>
+</div>
+<p style="font-size: small;">Distributed under terms and conditions
+of <a href="http://www.gnu.org/licenses/gpl-3.0.html">GNU Public License Version 3</a>
+</p>
+""")
+
+about_html = about_tmpl.substitute(dict(appname=aarddict.__appname__,
+                                        version=aarddict.__version__,
+                                        website='http://aarddict.org',
+                                        copyright='(C) 2006-2009 Igor Tkach, Jeremy Mortis'))
+
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
+
 
 def linkify(text):
     return http_link_re.sub(lambda m: '<a href="%(target)s">%(target)s</a>'
@@ -523,6 +540,12 @@ class DictView(QMainWindow):
         connect(action_full_screen, SIGNAL('triggered(bool)'), self.toggle_full_screen)
         mn_view.addAction(action_full_screen)
 
+        mn_help = menubar.addMenu('H&elp')
+
+        action_about = QAction('&About...', self)
+        connect(action_about, SIGNAL('triggered(bool)'), self.about)
+        mn_help.addAction(action_about)
+        
 
         self.setCentralWidget(splitter)
         self.resize(640, 480)
@@ -1168,6 +1191,38 @@ class DictView(QMainWindow):
                 SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                 current_changed)
 
+
+        connect(button_box, SIGNAL('rejected()'), dialog.reject)
+
+        dialog.setSizeGripEnabled(True)
+        dialog.exec_()
+
+    def about(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('About')
+        content = QVBoxLayout()
+
+        class WebView(QWebView):
+            
+            def sizeHint(self):
+                return QSize(300, 200)
+
+        detail_view = WebView()
+        detail_view.setPage(WebPage(self))
+
+        detail_view.setHtml(about_html)
+
+        connect(detail_view, SIGNAL('linkClicked (const QUrl&)'),
+                     self.link_clicked)
+
+        content.addWidget(detail_view)
+
+        dialog.setLayout(content)
+        button_box = QDialogButtonBox()
+
+        button_box.setStandardButtons(QDialogButtonBox.Close)
+
+        content.addWidget(button_box)
 
         connect(button_box, SIGNAL('rejected()'), dialog.reject)
 
