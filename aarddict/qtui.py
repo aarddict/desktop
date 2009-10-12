@@ -95,28 +95,32 @@ about_html = about_tmpl.substitute(dict(appname=aarddict.__appname__,
 
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
-iconset = 'gnome'
-
+iconset = 'Human-O2'
 icon_dir = os.path.join(aarddict.package_dir, 'icons/%s/%%s' % iconset)
-print icon_dir
 
-def mkicon(name):
+def mkicon(name, toggle_name=None):
     icon = QIcon()
-    for size in ('16x16', '32x32'):
+    for size in ('16x16', '22x22', '24x24', '32x32'):
         icon.addFile(os.path.join(icon_dir%size, name+'.png'))
-    icon.addFile(os.path.join(icon_dir%'scalable', name+'.svg'))
+        if toggle_name:
+            icon.addFile(os.path.join(icon_dir%size, toggle_name+'.png'), 
+                         QSize(), QIcon.Active, QIcon.On)
     return icon
 
 icons = {}
 
 def load_icons():
     icons['edit-find'] = mkicon('actions/edit-find')
-    icons['system-search'] = mkicon('actions/system-search')
-    icons['list-add'] = mkicon('actions/list-add')
+    icons['system-search'] = mkicon('actions/system-search')    
+    icons['add-file'] = mkicon('actions/add-files-to-archive')
+    icons['add-folder'] = mkicon('actions/add-folder-to-archive')
     icons['list-remove'] = mkicon('actions/list-remove')
     icons['go-next'] = mkicon('actions/go-next')
     icons['go-previous'] = mkicon('actions/go-previous')
-    icons['view-fullscreen'] = mkicon('actions/view-fullscreen')
+    icons['go-next-page'] = mkicon('actions/go-next-page')
+    icons['go-previous-page'] = mkicon('actions/go-previous-page')
+    icons['view-fullscreen'] = mkicon('actions/view-fullscreen', 
+                                      toggle_name='actions/view-restore')
     icons['application-exit'] = mkicon('actions/application-exit')
     icons['zoom-in'] = mkicon('actions/zoom-in')
     icons['zoom-out'] = mkicon('actions/zoom-out')
@@ -130,7 +134,7 @@ def load_icons():
     icons['file'] = mkicon('mimetypes/gtk-file')
 
     icons['emblem-web'] = mkicon('emblems/emblem-web')
-    icons['emblem-default'] = mkicon('emblems/emblem-default')
+    icons['emblem-ok'] = mkicon('emblems/emblem-ok')
     icons['emblem-unreadable'] = mkicon('emblems/emblem-unreadable')
 
     icons['info'] = mkicon('status/info')
@@ -418,12 +422,8 @@ class DictView(QMainWindow):
 
         self.setWindowTitle('Aard Dictionary')
 
-
         action_lookup_box = QAction('&Lookup Box', self)
         action_lookup_box.setIcon(icons['edit-find'])
-        # action_lookup_box.setIcon(QIcon(QPixmap(':/trolltech/styles/commonstyle/images/standardbutton-clear-16.png')))
-
-
         action_lookup_box.setShortcut('Ctrl+L')
         action_lookup_box.setStatusTip('Move focus to word input and select its content')
         connect(action_lookup_box, SIGNAL('triggered()'), self.go_to_lookup_box)
@@ -491,13 +491,13 @@ class DictView(QMainWindow):
         menubar = self.menuBar()
         mn_dictionary = menubar.addMenu('&Dictionary')
 
-        action_add_dicts = QAction(icons['list-add'], '&Add Dictionaries...', self)
+        action_add_dicts = QAction(icons['add-file'], '&Add Dictionaries...', self)
         action_add_dicts.setShortcut('Ctrl+O')
         action_add_dicts.setStatusTip('Add dictionaries')
         connect(action_add_dicts, SIGNAL('triggered()'), self.add_dicts)
         mn_dictionary.addAction(action_add_dicts)
 
-        action_add_dict_dir = QAction(icons['folder'], 'Add &Directory...', self)
+        action_add_dict_dir = QAction(icons['add-folder'], 'Add &Directory...', self)
         action_add_dict_dir.setStatusTip('Add dictionary directory')
         connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
         mn_dictionary.addAction(action_add_dict_dir)
@@ -533,13 +533,13 @@ class DictView(QMainWindow):
         mn_navigate.addAction(action_history_back)
         mn_navigate.addAction(action_history_fwd)
 
-        action_next_article = QAction('&Next Article', self)
+        action_next_article = QAction(icons['go-next-page'], '&Next Article', self)
         action_next_article.setShortcut('Ctrl+.')
         action_next_article.setStatusTip('Show next article')
         connect(action_next_article, SIGNAL('triggered()'), self.show_next_article)
         mn_navigate.addAction(action_next_article)
 
-        action_prev_article = QAction('&Previous Article', self)
+        action_prev_article = QAction(icons['go-previous-page'], '&Previous Article', self)
         action_prev_article.setShortcut('Ctrl+,')
         action_prev_article.setStatusTip('Show previous article')
         connect(action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
@@ -717,7 +717,7 @@ class DictView(QMainWindow):
 
         connect(btn_select_all, SIGNAL('clicked()'), item_list.selectAll)
 
-        btn_remove = QPushButton('&Remove')
+        btn_remove = QPushButton(icons['list-remove'], '&Remove')
 
         def remove():
             rows = [index.row() for index in item_list.selectedIndexes()]
@@ -1117,7 +1117,7 @@ class DictView(QMainWindow):
         dialog.setLayout(content)
         button_box = QDialogButtonBox()
 
-        btn_verify = QPushButton('&Verify')
+        btn_verify = QPushButton(icons['system-run'], '&Verify')
 
         def verify():
             current_row = item_list.currentRow()
@@ -1138,7 +1138,7 @@ class DictView(QMainWindow):
                 status_item = item_list.item(current_row, 0)
                 if isvalid:
                     status_item.setText('Ok')
-                    status_item.setData(Qt.DecorationRole, icons['emblem-default'])
+                    status_item.setData(Qt.DecorationRole, icons['emblem-ok'])
                 else:
                     status_item.setText('Corrupt')
                     status_item.setData(Qt.DecorationRole, icons['emblem-unreadable'])
