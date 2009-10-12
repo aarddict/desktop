@@ -17,7 +17,7 @@ from collections import defaultdict
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QModelIndex, QSize)
+                          QModelIndex, QSize, QByteArray)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -57,6 +57,7 @@ def load_file(name):
 app_dir = os.path.expanduser('~/.aarddict')
 sources_file = os.path.join(app_dir, 'sources')
 history_file = os.path.join(app_dir, 'history')
+layout_file = os.path.join(app_dir, 'layout')
 find_section_js = load_file('aar.js')
 
 max_history = 100
@@ -470,10 +471,12 @@ class DictView(QMainWindow):
         self.setDockNestingEnabled(True)
 
         dock_lookup_pane = QDockWidget('&Lookup', self)
+        dock_lookup_pane.setObjectName('dock_lookup_pane')
         dock_lookup_pane.setWidget(lookup_pane)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock_lookup_pane)
 
         dock_history = QDockWidget('&History', self)
+        dock_history.setObjectName('dock_history')
         dock_history.setWidget(self.history_view)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock_history)
 
@@ -550,8 +553,9 @@ class DictView(QMainWindow):
         mn_view.addAction(dock_lookup_pane.toggleViewAction())
         mn_view.addAction(dock_history.toggleViewAction())
 
-        tool_bar = QToolBar('&Toolbar', self)
-        mn_view.addAction(tool_bar.toggleViewAction())
+        toolbar = QToolBar('&Toolbar', self)
+        toolbar.setObjectName('toolbar')
+        mn_view.addAction(toolbar.toggleViewAction())
 
         mn_text_size = mn_view.addMenu('Text &Size')
 
@@ -583,17 +587,17 @@ class DictView(QMainWindow):
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
 
-        tool_bar.addAction(action_add_dicts)
-        tool_bar.addAction(action_info)
-        tool_bar.addAction(action_quit)
-        tool_bar.addAction(action_history_back)
-        tool_bar.addAction(action_history_fwd)
-        tool_bar.addAction(action_online_article)
-        tool_bar.addAction(action_increase_text)
-        tool_bar.addAction(action_decrease_text)
-        tool_bar.addAction(action_reset_text)
-        tool_bar.addAction(action_full_screen)
-        self.addToolBar(tool_bar)
+        toolbar.addAction(action_add_dicts)
+        toolbar.addAction(action_info)
+        toolbar.addAction(action_quit)
+        toolbar.addAction(action_history_back)
+        toolbar.addAction(action_history_fwd)
+        toolbar.addAction(action_online_article)
+        toolbar.addAction(action_increase_text)
+        toolbar.addAction(action_decrease_text)
+        toolbar.addAction(action_reset_text)
+        toolbar.addAction(action_full_screen)
+        self.addToolBar(toolbar)
 
 
         #self.setCentralWidget(splitter)
@@ -1297,6 +1301,9 @@ class DictView(QMainWindow):
             item = self.history_view.item(i)
             history.append(unicode(item.text()))
         write_history(history)
+        layout = self.saveState()
+        with open(layout_file, 'w') as f:
+            f.write(str(layout))
         QMainWindow.close(self)
 
 def main(args):
@@ -1305,6 +1312,7 @@ def main(args):
     app = QApplication(sys.argv)
     load_icons()
     dv = DictView()
+    dv.restoreState(QByteArray(load_file(layout_file)))
     dv.show()
     dv.word_input.setFocus()
     dv.open_dicts(read_sources()+args)
