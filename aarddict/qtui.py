@@ -117,7 +117,7 @@ def load_icons():
     icons['go-next'] = mkicon('actions/go-next')
     icons['go-previous'] = mkicon('actions/go-previous')
     icons['view-fullscreen'] = mkicon('actions/view-fullscreen')
-    icons['system-log-out'] = mkicon('actions/system-log-out')
+    icons['application-exit'] = mkicon('actions/application-exit')
     icons['zoom-in'] = mkicon('actions/zoom-in')
     icons['zoom-out'] = mkicon('actions/zoom-out')
     icons['zoom-original'] = mkicon('actions/zoom-original')
@@ -519,7 +519,7 @@ class DictView(QMainWindow):
         connect(action_info, SIGNAL('triggered()'), self.show_info)
         mn_dictionary.addAction(action_info)
 
-        action_quit = QAction(icons['system-log-out'], '&Quit', self)
+        action_quit = QAction(icons['application-exit'], '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit application')
         connect(action_quit, SIGNAL('triggered()'), self.close)
