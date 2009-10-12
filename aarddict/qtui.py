@@ -131,13 +131,13 @@ def load_icons():
     icons['document-properties'] = mkicon('actions/document-properties')
 
     icons['folder'] = mkicon('places/folder')
-    icons['file'] = mkicon('mimetypes/gtk-file')
+    icons['file'] = mkicon('mimetypes/text-x-preview')
 
     icons['emblem-web'] = mkicon('emblems/emblem-web')
     icons['emblem-ok'] = mkicon('emblems/emblem-ok')
     icons['emblem-unreadable'] = mkicon('emblems/emblem-unreadable')
 
-    icons['info'] = mkicon('status/info')
+    icons['info'] = mkicon('status/dialog-information')
     icons['question'] = mkicon('status/dialog-question')
     icons['warning'] = mkicon('status/dialog-warning')
 
