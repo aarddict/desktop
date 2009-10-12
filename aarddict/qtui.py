@@ -26,7 +26,8 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QTabWidget, QApplication, QStyle,
                          QGridLayout, QSplitter, QProgressDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
-                         QTableWidget, QTableWidgetItem, QItemSelectionModel)
+                         QTableWidget, QTableWidgetItem, QItemSelectionModel,
+                         QDockWidget)
 
 from PyQt4.QtWebKit import QWebView, QWebPage
 
@@ -448,11 +449,7 @@ class DictView(QMainWindow):
         lookup_pane = QWidget()
         lookup_pane.setLayout(box)
 
-        self.sidebar = QTabWidget()
-        self.sidebar.setTabPosition(QTabWidget.South)
-        self.sidebar.addTab(lookup_pane, icons['system-search'], '&Lookup')
         self.history_view = QListWidget()
-        self.sidebar.addTab(self.history_view, icons['document-open-recent'], '&History')
 
         action_history_back = QAction(icons['go-previous'], '&Back', self)
         action_history_back.setShortcut('Alt+Left')
@@ -460,19 +457,6 @@ class DictView(QMainWindow):
         action_history_fwd = QAction(icons['go-next'], '&Forward', self)
         action_history_fwd.setShortcut('Alt+Right')
         connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
-        btn_history_back = QToolButton()
-        btn_history_back.setDefaultAction(action_history_back)
-        btn_history_fwd = QToolButton()
-        btn_history_fwd.setDefaultAction(action_history_fwd)
-        history_bar_box = QGridLayout()
-        history_bar_box.setSpacing(0)
-        history_bar_box.setContentsMargins(0,0,0,0)
-        history_bar_box.setRowMinimumHeight(0, 16)
-        history_bar_box.addWidget(btn_history_back, 0, 0)
-        history_bar_box.addWidget(btn_history_fwd, 0, 1)
-        history_bar = QWidget()
-        history_bar.setLayout(history_bar_box)
-        self.sidebar.setCornerWidget(history_bar)
 
         connect(self.history_view,
                      SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
@@ -482,11 +466,20 @@ class DictView(QMainWindow):
                      SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.word_selection_changed)
 
-        splitter = QSplitter()
-        splitter.addWidget(self.sidebar)
         self.tabs = QTabWidget()
-        splitter.addWidget(self.tabs)
-        splitter.setSizes([100, 500])
+        self.setDockNestingEnabled(True)
+
+        dock_lookup_pane = QDockWidget('&Lookup', self)
+        dock_lookup_pane.setWidget(lookup_pane)
+        self.addDockWidget(Qt.LeftDockWidgetArea, dock_lookup_pane)
+
+        dock_history = QDockWidget('&History', self)
+        dock_history.setWidget(self.history_view)
+        self.addDockWidget(Qt.LeftDockWidgetArea, dock_history)
+
+        self.tabifyDockWidget(dock_lookup_pane, dock_history)
+        dock_lookup_pane.raise_()
+        
 
         menubar = self.menuBar()
         mn_dictionary = menubar.addMenu('&Dictionary')
@@ -554,6 +547,9 @@ class DictView(QMainWindow):
 
         mn_view = menubar.addMenu('&View')
 
+        mn_view.addAction(dock_lookup_pane.toggleViewAction())
+        mn_view.addAction(dock_history.toggleViewAction())
+
         mn_text_size = mn_view.addMenu('Text &Size')
 
         action_increase_text = QAction(icons['zoom-in'], '&Increase', self)
@@ -585,7 +581,8 @@ class DictView(QMainWindow):
         mn_help.addAction(action_about)
 
 
-        self.setCentralWidget(splitter)
+        #self.setCentralWidget(splitter)
+        self.setCentralWidget(self.tabs)
         self.resize(640, 480)
 
         self.timer = QTimer()
@@ -777,7 +774,7 @@ class DictView(QMainWindow):
         self.schedule(func)
 
     def update_word_completion(self, word):
-        self.sidebar.setTabText(0, 'Loading...')
+        #self.sidebar.setTabText(0, 'Loading...')
         self.word_completion.clear()
         if self.current_lookup_thread:
             self.current_lookup_thread.stop()
@@ -804,7 +801,7 @@ class DictView(QMainWindow):
             item.setData(Qt.UserRole, QVariant(article_group))
             self.word_completion.addItem(item)
         self.select_word(unicode(word))
-        self.sidebar.setTabText(0, '&Lookup')
+        #self.sidebar.setTabText(0, '&Lookup')
         self.current_lookup_thread = None
 
     def select_next_word(self):
