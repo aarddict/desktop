@@ -1312,7 +1312,12 @@ def main(args):
     app = QApplication(sys.argv)
     load_icons()
     dv = DictView()
-    dv.restoreState(QByteArray(load_file(layout_file)))
+    if os.path.exists(layout_file):
+        try:
+            dv.restoreState(QByteArray(load_file(layout_file)))
+        except:
+            log.exception('Failed to restore layout from %s', layout_file)
+        
     dv.show()
     dv.word_input.setFocus()
     dv.open_dicts(read_sources()+args)
