@@ -470,18 +470,18 @@ class DictView(QMainWindow):
         self.tabs = QTabWidget()
         self.setDockNestingEnabled(True)
 
-        dock_lookup_pane = QDockWidget('&Lookup', self)
-        dock_lookup_pane.setObjectName('dock_lookup_pane')
-        dock_lookup_pane.setWidget(lookup_pane)
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock_lookup_pane)
+        self.dock_lookup_pane = QDockWidget('&Lookup', self)
+        self.dock_lookup_pane.setObjectName('dock_lookup_pane')
+        self.dock_lookup_pane.setWidget(lookup_pane)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_lookup_pane)
 
         dock_history = QDockWidget('&History', self)
         dock_history.setObjectName('dock_history')
         dock_history.setWidget(self.history_view)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock_history)
 
-        self.tabifyDockWidget(dock_lookup_pane, dock_history)
-        dock_lookup_pane.raise_()
+        self.tabifyDockWidget(self.dock_lookup_pane, dock_history)
+        self.dock_lookup_pane.raise_()
 
 
         menubar = self.menuBar()
@@ -550,7 +550,7 @@ class DictView(QMainWindow):
 
         mn_view = menubar.addMenu('&View')
 
-        mn_view.addAction(dock_lookup_pane.toggleViewAction())
+        mn_view.addAction(self.dock_lookup_pane.toggleViewAction())
         mn_view.addAction(dock_history.toggleViewAction())
 
         toolbar = QToolBar('&Toolbar', self)
@@ -1099,8 +1099,14 @@ class DictView(QMainWindow):
             web_view.setZoomFactor(self.zoom_factor)
 
     def go_to_lookup_box(self):
-        self.word_input.setFocus()
-        self.word_input.selectAll()
+        if self.dock_lookup_pane.isHidden():
+            self.dock_lookup_pane.show()
+            QTimer.singleShot(20, self.go_to_lookup_box)
+        else:
+            self.dock_lookup_pane.raise_()
+            self.dock_lookup_pane.activateWindow()
+            self.word_input.setFocus()
+            self.word_input.selectAll()
 
     def verify(self):
         dialog = QDialog(self)
@@ -1317,7 +1323,7 @@ def main(args):
             dv.restoreState(QByteArray(load_file(layout_file)))
         except:
             log.exception('Failed to restore layout from %s', layout_file)
-        
+
     dv.show()
     dv.word_input.setFocus()
     dv.open_dicts(read_sources()+args)
