@@ -27,7 +27,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QGridLayout, QSplitter, QProgressDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
-                         QDockWidget)
+                         QDockWidget, QToolBar)
 
 from PyQt4.QtWebKit import QWebView, QWebPage
 
@@ -104,7 +104,7 @@ def mkicon(name, toggle_name=None):
     for size in ('16x16', '22x22', '24x24', '32x32'):
         icon.addFile(os.path.join(icon_dir%size, name+'.png'))
         if toggle_name:
-            icon.addFile(os.path.join(icon_dir%size, toggle_name+'.png'), 
+            icon.addFile(os.path.join(icon_dir%size, toggle_name+'.png'),
                          QSize(), QIcon.Active, QIcon.On)
     return icon
 
@@ -112,7 +112,7 @@ icons = {}
 
 def load_icons():
     icons['edit-find'] = mkicon('actions/edit-find')
-    icons['system-search'] = mkicon('actions/system-search')    
+    icons['system-search'] = mkicon('actions/system-search')
     icons['add-file'] = mkicon('actions/add-files-to-archive')
     icons['add-folder'] = mkicon('actions/add-folder-to-archive')
     icons['list-remove'] = mkicon('actions/list-remove')
@@ -120,7 +120,7 @@ def load_icons():
     icons['go-previous'] = mkicon('actions/go-previous')
     icons['go-next-page'] = mkicon('actions/go-next-page')
     icons['go-previous-page'] = mkicon('actions/go-previous-page')
-    icons['view-fullscreen'] = mkicon('actions/view-fullscreen', 
+    icons['view-fullscreen'] = mkicon('actions/view-fullscreen',
                                       toggle_name='actions/view-restore')
     icons['application-exit'] = mkicon('actions/application-exit')
     icons['zoom-in'] = mkicon('actions/zoom-in')
@@ -479,7 +479,7 @@ class DictView(QMainWindow):
 
         self.tabifyDockWidget(dock_lookup_pane, dock_history)
         dock_lookup_pane.raise_()
-        
+
 
         menubar = self.menuBar()
         mn_dictionary = menubar.addMenu('&Dictionary')
@@ -550,6 +550,9 @@ class DictView(QMainWindow):
         mn_view.addAction(dock_lookup_pane.toggleViewAction())
         mn_view.addAction(dock_history.toggleViewAction())
 
+        tool_bar = QToolBar('&Toolbar', self)
+        mn_view.addAction(tool_bar.toggleViewAction())
+
         mn_text_size = mn_view.addMenu('Text &Size')
 
         action_increase_text = QAction(icons['zoom-in'], '&Increase', self)
@@ -579,6 +582,18 @@ class DictView(QMainWindow):
         action_about = QAction(icons['help-about'], '&About...', self)
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
+
+        tool_bar.addAction(action_add_dicts)
+        tool_bar.addAction(action_info)
+        tool_bar.addAction(action_quit)
+        tool_bar.addAction(action_history_back)
+        tool_bar.addAction(action_history_fwd)
+        tool_bar.addAction(action_online_article)
+        tool_bar.addAction(action_increase_text)
+        tool_bar.addAction(action_decrease_text)
+        tool_bar.addAction(action_reset_text)
+        tool_bar.addAction(action_full_screen)
+        self.addToolBar(tool_bar)
 
 
         #self.setCentralWidget(splitter)
