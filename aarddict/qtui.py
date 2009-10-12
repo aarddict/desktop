@@ -124,6 +124,7 @@ def load_icons():
     icons['help-about'] = mkicon('actions/help-about')
     icons['system-run'] = mkicon('actions/system-run')
     icons['document-open-recent'] = mkicon('actions/document-open-recent')
+    icons['document-properties'] = mkicon('actions/document-properties')
 
     icons['folder'] = mkicon('places/folder')
     icons['file'] = mkicon('mimetypes/gtk-file')
@@ -513,7 +514,7 @@ class DictView(QMainWindow):
         connect(action_remove_dict_source, SIGNAL('triggered()'), self.remove_dict_source)
         mn_dictionary.addAction(action_remove_dict_source)
 
-        action_info = QAction(icons['info'], '&Info...', self)
+        action_info = QAction(icons['document-properties'], '&Info...', self)
         action_info.setShortcut('Ctrl+I')
         action_info.setStatusTip('Information about open dictionaries')
         connect(action_info, SIGNAL('triggered()'), self.show_info)
