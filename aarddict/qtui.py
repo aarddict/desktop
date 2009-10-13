@@ -9,9 +9,10 @@ import logging
 import string
 import locale
 import re
+import tempfile
 
+from ConfigParser import ConfigParser
 from uuid import UUID
-
 from itertools import groupby
 from collections import defaultdict
 
@@ -27,9 +28,9 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QGridLayout, QSplitter, QProgressDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
-                         QDockWidget, QToolBar)
+                         QDockWidget, QToolBar, QFormLayout, QColor, QLabel, QColorDialog)
 
-from PyQt4.QtWebKit import QWebView, QWebPage
+from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
 import aar2html
 import aarddict
@@ -58,7 +59,11 @@ app_dir = os.path.expanduser('~/.aarddict')
 sources_file = os.path.join(app_dir, 'sources')
 history_file = os.path.join(app_dir, 'history')
 layout_file = os.path.join(app_dir, 'layout')
+appearance_file = os.path.join(app_dir, 'appearance.ini')
 find_section_js = load_file('aar.js')
+css_file = None
+
+appearance_conf = ConfigParser()
 
 max_history = 100
 
@@ -138,6 +143,7 @@ def load_icons():
     icons['emblem-web'] = mkicon('emblems/emblem-web')
     icons['emblem-ok'] = mkicon('emblems/emblem-ok')
     icons['emblem-unreadable'] = mkicon('emblems/emblem-unreadable')
+    icons['emblem-art2'] = mkicon('emblems/emblem-art2')    
 
     icons['info'] = mkicon('status/dialog-information')
     icons['question'] = mkicon('status/dialog-question')
@@ -159,6 +165,16 @@ class WebPage(QWebPage):
 
     def javaScriptAlert (self, originatingFrame, msg):
         log.debug('[js] %s: %s', originatingFrame, msg)
+
+class SizedWebView(QWebView):
+
+    def __init__(self, size_hint, parent=None):
+        QWebView.__init__(self, parent)
+        self.size_hint = size_hint
+
+    def sizeHint(self):
+        return self.size_hint
+
 
 class Matcher(QObject):
 
@@ -417,6 +433,45 @@ def read_history():
     else:
         return []
 
+def mkcss(values):
+    css_tmpl = load_file(os.path.join(aarddict.package_dir, 'aar.css.tmpl'))
+    css = string.Template(css_tmpl).substitute(values)
+    return css
+
+
+def update_css(css):
+    global css_file
+    if css_file:
+        css_file.close()
+    css_file = tempfile.NamedTemporaryFile(dir=app_dir, suffix='.css')
+    css_file.write(css)
+    css_file.flush()
+    QWebSettings.globalSettings().setUserStyleSheetUrl(QUrl(css_file.name))
+
+
+default_colors = dict(active_link_bg='#e0e8e8',
+                      footnote_fg='#00557f',
+                      internal_link_fg='maroon',
+                      external_link_fg='#0000cc',
+                      footnote_backref_fg='#00557f',
+                      table_bg='')
+
+def read_colors():
+    colors = dict(default_colors)
+    appearance_conf.read(appearance_file)
+    if appearance_conf.has_section('colors'):
+        for opt in appearance_conf.options('colors'):
+            colors[opt] = appearance_conf.get('colors', opt)
+    return colors
+
+def write_colors(colors):
+    if not appearance_conf.has_section('colors'):
+        appearance_conf.add_section('colors')
+    for key, val in colors.iteritems():
+        appearance_conf.set('colors', key, val)
+    with open(appearance_file, 'w') as f:
+        appearance_conf.write(f)
+
 class DictView(QMainWindow):
 
     def __init__(self):
@@ -541,7 +596,6 @@ class DictView(QMainWindow):
         connect(action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(action_prev_article)
 
-
         action_online_article = QAction(icons['emblem-web'], '&Online Article', self)
         action_online_article.setShortcut('Ctrl+T')
         action_online_article.setStatusTip('Open online version of this article in a web browser')
@@ -556,6 +610,10 @@ class DictView(QMainWindow):
         toolbar = QToolBar('&Toolbar', self)
         toolbar.setObjectName('toolbar')
         mn_view.addAction(toolbar.toggleViewAction())
+
+        action_article_appearance = QAction(icons['emblem-art2'], '&Article Appearance...', self)
+        connect(action_article_appearance, SIGNAL('triggered()'), self.article_appearance)
+        mn_view.addAction(action_article_appearance)
 
         mn_text_size = mn_view.addMenu('Text &Size')
 
@@ -900,13 +958,9 @@ class DictView(QMainWindow):
             connect(view, SIGNAL('loadFinished (bool)'),
                     loadFinished, Qt.QueuedConnection)
 
-        view.setHtml(html, QUrl(title))
+        view.page().currentFrame().setHtml(html, QUrl(title))
         view.setZoomFactor(self.zoom_factor)
         view.setProperty('aard:title', QVariant(article.title))
-        s = view.settings()
-        s.setUserStyleSheetUrl(QUrl(os.path.join(aarddict.package_dir,
-                                                 'aar.css')))
-
 
     def article_load_started(self, read_funcs):
         log.debug('Loading %d article(s)', len(read_funcs))
@@ -914,7 +968,7 @@ class DictView(QMainWindow):
         for i, read_func in enumerate(read_funcs):
             view = QWebView()
             view.setPage(WebPage(self))
-            view.setHtml('Loading...')
+            view.page().currentFrame().setHtml('Loading...')
             view.setZoomFactor(self.zoom_factor)
             view.setProperty('aard:loading', QVariant(True))
             dictionary = read_func.source
@@ -1274,12 +1328,7 @@ class DictView(QMainWindow):
         dialog.setWindowTitle('About')
         content = QVBoxLayout()
 
-        class WebView(QWebView):
-
-            def sizeHint(self):
-                return QSize(300, 200)
-
-        detail_view = WebView()
+        detail_view = SizedWebView(QSize(300, 200))
         detail_view.setPage(WebPage(self))
 
         detail_view.setHtml(about_html)
@@ -1299,6 +1348,115 @@ class DictView(QMainWindow):
         connect(button_box, SIGNAL('rejected()'), dialog.reject)
 
         dialog.setSizeGripEnabled(True)
+        dialog.exec_()
+
+    def article_appearance(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Article Appearance')
+        content = QVBoxLayout()
+
+        preview_pane = SizedWebView(QSize(300, 300))
+
+
+        preview_pane.setPage(WebPage(self))
+
+        html = """
+This is an <a class='int' href="#">internal link</a>. <br>
+This is an <a class='ext' href="#">external link</a>. <br>
+This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
+<p>Click on any link to see active link color.</p>
+
+<div class='note'><a class='notebackref' href="#">[1]</a> This is a footnote.</div>
+"""
+
+        preview_pane.page().currentFrame().setHtml(html)
+
+        colors = read_colors()
+
+        color_pane = QGridLayout()
+        color_pane.setColumnStretch(1, 2)
+
+        def set_color(btn, color_name):
+            c = QColorDialog.getColor(QColor(colors[color_name]))
+            if c.isValid():
+                pixmap = QPixmap(24, 16)
+                pixmap.fill(c)
+                btn.setIcon(QIcon(pixmap))
+                colors[color_name] = str(c.name())
+                style_str = '<style>%s</style>' % mkcss(colors)
+                preview_pane.page().currentFrame().setHtml(style_str + html)
+
+
+        pixmap = QPixmap(24, 16)
+        pixmap.fill(QColor(colors['internal_link_fg']))
+        btn_internal_link = QPushButton()
+        btn_internal_link.setIcon(QIcon(pixmap))
+        color_pane.addWidget(btn_internal_link, 0, 0)
+        color_pane.addWidget(QLabel('Internal Link'), 0, 1)
+
+        connect(btn_internal_link, SIGNAL('clicked()'),
+                functools.partial(set_color, btn_internal_link, 'internal_link_fg'))
+
+        pixmap = QPixmap(24, 16)
+        pixmap.fill(QColor(colors['external_link_fg']))
+        btn_external_link = QPushButton()
+        btn_external_link.setIcon(QIcon(pixmap))
+        color_pane.addWidget(btn_external_link, 1, 0)
+        color_pane.addWidget(QLabel('External Link'), 1, 1)
+
+        connect(btn_external_link, SIGNAL('clicked()'),
+                functools.partial(set_color, btn_external_link, 'external_link_fg'))
+
+        pixmap = QPixmap(24, 16)
+        pixmap.fill(QColor(colors['footnote_fg']))
+        btn_footnote = QPushButton()
+        btn_footnote.setIcon(QIcon(pixmap))
+        color_pane.addWidget(btn_footnote, 2, 0)
+        color_pane.addWidget(QLabel('Footnote Link'), 2, 1)
+
+        connect(btn_footnote, SIGNAL('clicked()'),
+                functools.partial(set_color, btn_footnote, 'footnote_fg'))
+
+        pixmap = QPixmap(24, 16)
+        pixmap.fill(QColor(colors['footnote_backref_fg']))
+        btn_footnote_back = QPushButton()
+        btn_footnote_back.setIcon(QIcon(pixmap))
+        color_pane.addWidget(btn_footnote_back, 3, 0)
+        color_pane.addWidget(QLabel('Footnote Back Link'), 3, 1)
+
+        connect(btn_footnote_back, SIGNAL('clicked()'),
+                functools.partial(set_color, btn_footnote_back, 'footnote_backref_fg'))
+
+        pixmap = QPixmap(24, 16)
+        pixmap.fill(QColor(colors['active_link_bg']))
+        btn_active_link = QPushButton()
+        btn_active_link.setIcon(QIcon(pixmap))
+        color_pane.addWidget(btn_active_link, 4, 0)
+        color_pane.addWidget(QLabel('Active Link'), 4, 1)
+
+        connect(btn_active_link, SIGNAL('clicked()'),
+                functools.partial(set_color, btn_active_link, 'active_link_bg'))
+
+
+        color_pane.addWidget(preview_pane, 0, 2, 5, 1)
+
+        content.addLayout(color_pane)
+
+        button_box = QDialogButtonBox()
+
+        button_box.setStandardButtons(QDialogButtonBox.Close)
+
+        content.addWidget(button_box)
+
+        def close():
+            dialog.reject()
+            write_colors(colors)
+            update_css(mkcss(colors))
+
+        connect(button_box, SIGNAL('rejected()'), close)
+
+        dialog.setLayout(content)
+
         dialog.exec_()
 
     def close(self):
@@ -1329,10 +1487,10 @@ def main(args):
     dv.open_dicts(read_sources()+args)
     for title in read_history():
         dv.add_to_history(title)
+
+    update_css(mkcss(read_colors()))
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()
-
-
 
