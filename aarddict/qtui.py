@@ -61,6 +61,7 @@ history_file = os.path.join(app_dir, 'history')
 history_current_file = os.path.join(app_dir, 'history_current')
 layout_file = os.path.join(app_dir, 'layout')
 appearance_file = os.path.join(app_dir, 'appearance.ini')
+preferred_dicts_file = os.path.join(app_dir, 'preferred')
 find_section_js = load_file('aar.js')
 css_file = None
 
@@ -433,6 +434,23 @@ def read_history():
             return (line.decode('utf8') for line in f.read().splitlines())
     else:
         return []
+
+def read_preferred_dicts():
+    if os.path.exists(preferred_dicts_file):        
+        def parse(line):
+            key, val = line.split()
+            return (UUID(hex=key).bytes, float(val))
+        return dict(parse(line) for line
+                    in load_file(preferred_dicts_file).splitlines() 
+                    if line)
+    else:
+        return {}
+
+def write_preferred_dicts(preferred_dicts):
+    with open(preferred_dicts_file, 'w') as f:
+        f.write('\n'.join( '%s %s' % (UUID(bytes=key).hex, val)
+                           for key, val in preferred_dicts.iteritems()))
+
 
 def mkcss(values):
     css_tmpl = load_file(os.path.join(aarddict.package_dir, 'aar.css.tmpl'))
@@ -1468,11 +1486,12 @@ This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
             item = self.history_view.item(i)
             history.append(unicode(item.text()))
         write_history(history)
+        write_preferred_dicts(self.preferred_dicts)
         layout = self.saveState()
         with open(layout_file, 'w') as f:
             f.write(str(layout))
         with open(history_current_file, 'w') as f:
-            f.write(str(self.history_view.currentRow()))
+            f.write(str(self.history_view.currentRow()))        
         QMainWindow.close(self)
 
 def main(args):
@@ -1488,7 +1507,7 @@ def main(args):
             log.exception('Failed to restore layout from %s', layout_file)
 
     dv.show()
-    
+
     for title in read_history():
         dv.add_to_history(title)
 
@@ -1504,7 +1523,9 @@ def main(args):
             word = unicode(dv.history_view.currentItem().text())
             dv.word_input.setText(word)
 
-    dv.word_input.setFocus()    
+
+    dv.preferred_dicts = read_preferred_dicts()
+    dv.word_input.setFocus()
     update_css(mkcss(read_colors()))
     dv.open_dicts(read_sources()+args)
     sys.exit(app.exec_())
