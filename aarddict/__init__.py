@@ -142,6 +142,7 @@ def _dump_type_count_diff():
     else:
         import gc
         from operator import itemgetter
+        global type_stats
         print 'gc', gc.collect()
         typestats = objgraph.typestats()
         diff = {}
@@ -153,7 +154,6 @@ def _dump_type_count_diff():
                '\n'.join(('%s: %d' % item) for item in
                          sorted(diff.iteritems(), key=itemgetter(1))), \
                '\n', '='*40
-        global type_stats
         type_stats = typestats
 
 
