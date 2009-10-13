@@ -60,6 +60,7 @@ sources_file = os.path.join(app_dir, 'sources')
 history_file = os.path.join(app_dir, 'history')
 layout_file = os.path.join(app_dir, 'layout')
 appearance_file = os.path.join(app_dir, 'appearance.ini')
+word_file = os.path.join(app_dir, 'word')
 find_section_js = load_file('aar.js')
 css_file = None
 
@@ -878,7 +879,6 @@ class DictView(QMainWindow):
             item.setData(Qt.UserRole, QVariant(article_group))
             self.word_completion.addItem(item)
         self.select_word(unicode(word))
-        #self.sidebar.setTabText(0, '&Lookup')
         self.current_lookup_thread = None
 
     def select_next_word(self):
@@ -1468,6 +1468,9 @@ This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
         layout = self.saveState()
         with open(layout_file, 'w') as f:
             f.write(str(layout))
+        with open(word_file, 'w') as f:
+            word = unicode(self.word_input.text()).encode('utf8')
+            f.write(word)
         QMainWindow.close(self)
 
 def main(args):
@@ -1483,6 +1486,9 @@ def main(args):
             log.exception('Failed to restore layout from %s', layout_file)
 
     dv.show()
+    if os.path.exists(word_file):
+        word = load_file(word_file)
+        dv.word_input.setText(word.decode('utf8'))
     dv.word_input.setFocus()
     dv.open_dicts(read_sources()+args)
     for title in read_history():
