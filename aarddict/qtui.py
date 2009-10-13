@@ -58,9 +58,9 @@ def load_file(name):
 app_dir = os.path.expanduser('~/.aarddict')
 sources_file = os.path.join(app_dir, 'sources')
 history_file = os.path.join(app_dir, 'history')
+history_current_file = os.path.join(app_dir, 'history_current')
 layout_file = os.path.join(app_dir, 'layout')
 appearance_file = os.path.join(app_dir, 'appearance.ini')
-word_file = os.path.join(app_dir, 'word')
 find_section_js = load_file('aar.js')
 css_file = None
 
@@ -144,7 +144,7 @@ def load_icons():
     icons['emblem-web'] = mkicon('emblems/emblem-web')
     icons['emblem-ok'] = mkicon('emblems/emblem-ok')
     icons['emblem-unreadable'] = mkicon('emblems/emblem-unreadable')
-    icons['emblem-art2'] = mkicon('emblems/emblem-art2')    
+    icons['emblem-art2'] = mkicon('emblems/emblem-art2')
 
     icons['info'] = mkicon('status/dialog-information')
     icons['question'] = mkicon('status/dialog-question')
@@ -1471,9 +1471,8 @@ This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
         layout = self.saveState()
         with open(layout_file, 'w') as f:
             f.write(str(layout))
-        with open(word_file, 'w') as f:
-            word = unicode(self.word_input.text()).encode('utf8')
-            f.write(word)
+        with open(history_current_file, 'w') as f:
+            f.write(str(self.history_view.currentRow()))
         QMainWindow.close(self)
 
 def main(args):
@@ -1489,15 +1488,25 @@ def main(args):
             log.exception('Failed to restore layout from %s', layout_file)
 
     dv.show()
-    if os.path.exists(word_file):
-        word = load_file(word_file)
-        dv.word_input.setText(word.decode('utf8'))
-    dv.word_input.setFocus()
-    dv.open_dicts(read_sources()+args)
+    
     for title in read_history():
         dv.add_to_history(title)
 
+    if os.path.exists(history_current_file):
+        try:
+            history_current = int(load_file(history_current_file))
+        except:
+            log.exception('Failed to load data from %s', history_current_file)
+        else:
+            dv.history_view.blockSignals(True)
+            dv.history_view.setCurrentRow(history_current)
+            dv.history_view.blockSignals(False)
+            word = unicode(dv.history_view.currentItem().text())
+            dv.word_input.setText(word)
+
+    dv.word_input.setFocus()    
     update_css(mkcss(read_colors()))
+    dv.open_dicts(read_sources()+args)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
