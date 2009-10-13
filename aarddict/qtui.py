@@ -880,6 +880,9 @@ class DictView(QMainWindow):
             self.word_completion.addItem(item)
         self.select_word(unicode(word))
         self.current_lookup_thread = None
+        if len(articles) == 0:
+            #add to history if nothing found so that back button works
+            self.add_to_history(unicode(word))
 
     def select_next_word(self):
         count = self.word_completion.count()
