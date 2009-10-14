@@ -1488,7 +1488,13 @@ This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
 
         dialog.exec_()
 
-    def close(self):
+    def closeEvent(self, event):
+        self.write_settings()
+        for d in self.dictionaries:
+            d.close()
+        event.accept()
+
+    def write_settings(self):
         history = []
         for i in reversed(range(self.history_view.count())):
             item = self.history_view.item(i)
@@ -1503,9 +1509,7 @@ This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
             f.write(str(layout))
         with open(history_current_file, 'w') as f:
             f.write(str(self.history_view.currentRow()))
-        for d in self.dictionaries:
-            d.close()
-        QMainWindow.close(self)
+
 
 def main(args):
     if not os.path.exists(app_dir):
