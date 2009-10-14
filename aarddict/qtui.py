@@ -18,7 +18,7 @@ from collections import defaultdict
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QModelIndex, QSize, QByteArray)
+                          QModelIndex, QSize, QByteArray, QPoint)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -52,7 +52,7 @@ log = logging.getLogger(__name__)
 
 def load_file(name):
     path = os.path.join(aarddict.package_dir, name)
-    with open(path) as f:
+    with open(path, 'rb') as f:
         return f.read()
 
 app_dir = os.path.expanduser('~/.aarddict')
@@ -60,6 +60,7 @@ sources_file = os.path.join(app_dir, 'sources')
 history_file = os.path.join(app_dir, 'history')
 history_current_file = os.path.join(app_dir, 'history_current')
 layout_file = os.path.join(app_dir, 'layout')
+geometry_file = os.path.join(app_dir, 'geometry')
 appearance_file = os.path.join(app_dir, 'appearance.ini')
 preferred_dicts_file = os.path.join(app_dir, 'preferred')
 find_section_js = load_file('aar.js')
@@ -436,12 +437,12 @@ def read_history():
         return []
 
 def read_preferred_dicts():
-    if os.path.exists(preferred_dicts_file):        
+    if os.path.exists(preferred_dicts_file):
         def parse(line):
             key, val = line.split()
             return (UUID(hex=key).bytes, float(val))
         return dict(parse(line) for line
-                    in load_file(preferred_dicts_file).splitlines() 
+                    in load_file(preferred_dicts_file).splitlines()
                     if line)
     else:
         return {}
@@ -450,6 +451,16 @@ def write_preferred_dicts(preferred_dicts):
     with open(preferred_dicts_file, 'w') as f:
         f.write('\n'.join( '%s %s' % (UUID(bytes=key).hex, val)
                            for key, val in preferred_dicts.iteritems()))
+
+def read_geometry():
+    if os.path.exists(geometry_file):
+        return tuple(int(item) for item in load_file(geometry_file).split())
+    else:
+        return (0, 0, 640, 480)
+
+def write_geometry(rect_tuple):
+    with open(geometry_file, 'w') as f:
+        f.write(' '.join(str(item) for item in rect_tuple))
 
 
 def mkcss(values):
@@ -676,10 +687,7 @@ class DictView(QMainWindow):
         toolbar.addAction(action_full_screen)
         self.addToolBar(toolbar)
 
-
-        #self.setCentralWidget(splitter)
         self.setCentralWidget(self.tabs)
-        self.resize(640, 480)
 
         self.timer = QTimer()
         self.timer.setSingleShot(True)
@@ -1487,11 +1495,14 @@ This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
             history.append(unicode(item.text()))
         write_history(history)
         write_preferred_dicts(self.preferred_dicts)
+        pos = self.pos()
+        size = self.size()
+        write_geometry((pos.x(), pos.y(), size.width(), size.height()))
         layout = self.saveState()
-        with open(layout_file, 'w') as f:
+        with open(layout_file, 'wb') as f:
             f.write(str(layout))
         with open(history_current_file, 'w') as f:
-            f.write(str(self.history_view.currentRow()))        
+            f.write(str(self.history_view.currentRow()))
         QMainWindow.close(self)
 
 def main(args):
@@ -1500,6 +1511,11 @@ def main(args):
     app = QApplication(sys.argv)
     load_icons()
     dv = DictView()
+
+    x, y, w, h = read_geometry()
+    dv.move(QPoint(x, y))
+    dv.resize(QSize(w, h))
+
     if os.path.exists(layout_file):
         try:
             dv.restoreState(QByteArray(load_file(layout_file)))
