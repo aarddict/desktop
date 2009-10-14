@@ -17,10 +17,11 @@ else:
             # Copy the files to the collection dir.
             # Also add the copied file to the list of compiled
             # files so it will be included in zipfile.
-            all_files = ([f for f in glob.glob('aarddict/*.cfg')] + 
-                         [f for f in glob.glob('aarddict/*.css')] + 
+            all_files = ([f for f in glob.glob('aarddict/*.tmpl')] + 
                          [f for f in glob.glob('aarddict/*.js')] + 
-                         [f for f in glob.glob('aarddict/locale/*/*/*.mo')])
+                         [f for f in glob.glob('aarddict/locale/*/*/*.mo')] +
+                         [f for f in glob.glob('aarddict/icons/*/*/*/*.png')]
+                         )
             for f in all_files:
                 
                 dirname = os.path.dirname(f)
@@ -60,7 +61,10 @@ setup(
     install_requires = ['PyICU >= 0.8', 
                         'simplejson'],
     package_data = {
-             'aarddict': ['*.cfg', 'locale/*/*/*.mo', '*.css', '*.js']
+             'aarddict': ['locale/*/*/*.mo', 
+                          'aar.css.tmpl', 
+                          '*.js', 
+                          'icons/*/*/*/*.png']
     },
     data_files   =     
     [
@@ -89,8 +93,10 @@ setup(
         'py2exe' : {
             'skip_archive': True,
             'packages': 'encodings',
-            'includes': 'cairo, pango, pangocairo, atk, gobject, gtk, gtk.keysyms',
-            'dll_excludes': ['MSVCR80.dll']
+            'excludes': ['aarddict.ui', 'aarddict.hildonui', 'aarddict.dictinfo', 
+                         'multiprocessing', 'xml', 'email'],
+            'includes': ['PyQt4', 'sip', 'PyQt4.QtNetwork'],
+            'dll_excludes': ['MSVCR80.dll', 'MSVCP90.dll']
             },
         'sdist': {
             'formats': 'zip',
