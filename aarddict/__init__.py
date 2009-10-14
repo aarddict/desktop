@@ -55,8 +55,9 @@ def main():
         help='Print metadata for dictionary files specified'
         )
     parser.add_option('--ui',
-        help='Choose ui version to run, gtk or qt'
-        )
+                      default='qt',
+                      help='Choose ui version to run, gtk or qt. Default: %default.'
+                      )
     options, args = parser.parse_args()
 
     if options.debug:
