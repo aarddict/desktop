@@ -1503,6 +1503,8 @@ This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
             f.write(str(layout))
         with open(history_current_file, 'w') as f:
             f.write(str(self.history_view.currentRow()))
+        for d in self.dictionaries:
+            d.close()
         QMainWindow.close(self)
 
 def main(args):
