@@ -64,7 +64,6 @@ geometry_file = os.path.join(app_dir, 'geometry')
 appearance_file = os.path.join(app_dir, 'appearance.ini')
 preferred_dicts_file = os.path.join(app_dir, 'preferred')
 find_section_js = load_file('aar.js')
-css_file = None
 
 appearance_conf = ConfigParser()
 
@@ -470,13 +469,21 @@ def mkcss(values):
 
 
 def update_css(css):
-    global css_file
-    if css_file:
-        css_file.close()
-    css_file = tempfile.NamedTemporaryFile(dir=app_dir, suffix='.css')
-    css_file.write(css)
-    css_file.flush()
-    QWebSettings.globalSettings().setUserStyleSheetUrl(QUrl(css_file.name))
+    remove_tmp_css_file()
+    handle, name = tempfile.mkstemp(dir=app_dir, suffix='.css')  
+    log.debug('Created new css temp file: %s', name)
+    css_file = os.fdopen(handle, 'w')
+    with css_file:
+        css_file.write(css)
+    QWebSettings.globalSettings().setUserStyleSheetUrl(QUrl(name))
+
+def remove_tmp_css_file():
+    url = QWebSettings.globalSettings().userStyleSheetUrl()
+    current_file = str(url.toString())
+    if current_file:
+        log.debug('Removing current css temp file: %s', current_file)
+        os.remove(current_file)
+
 
 
 default_colors = dict(active_link_bg='#e0e8e8',
@@ -1490,6 +1497,7 @@ This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
 
     def closeEvent(self, event):
         self.write_settings()
+        remove_tmp_css_file()
         for d in self.dictionaries:
             d.close()
         event.accept()
