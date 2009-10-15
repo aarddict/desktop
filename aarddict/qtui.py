@@ -18,7 +18,7 @@ from collections import defaultdict
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QModelIndex, QSize, QByteArray, QPoint)
+                          QModelIndex, QSize, QByteArray, QPoint, QRect)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -455,7 +455,9 @@ def read_geometry():
     if os.path.exists(geometry_file):
         return tuple(int(item) for item in load_file(geometry_file).split())
     else:
-        return (0, 0, 640, 480)
+        r = QRect(0, 0, 640, 480)
+        r.moveCenter(QApplication.desktop().availableGeometry().center())
+    return (r.x(), r.y(), r.width(), r.height())
 
 def write_geometry(rect_tuple):
     with open(geometry_file, 'w') as f:
@@ -470,7 +472,7 @@ def mkcss(values):
 
 def update_css(css):
     remove_tmp_css_file()
-    handle, name = tempfile.mkstemp(dir=app_dir, suffix='.css')  
+    handle, name = tempfile.mkstemp(dir=app_dir, suffix='.css')
     log.debug('Created new css temp file: %s', name)
     css_file = os.fdopen(handle, 'w')
     with css_file:
