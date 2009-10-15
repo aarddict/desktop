@@ -69,6 +69,10 @@ appearance_conf = ConfigParser()
 
 max_history = 100
 
+iconset = 'Human-O2'
+icondir = os.path.join(aarddict.package_dir, 'icons/%s/' % iconset)
+logodir = os.path.join(aarddict.package_dir, 'icons/%s/' % 'hicolor')
+
 dict_detail_tmpl= string.Template("""
 <html>
 <body>
@@ -88,7 +92,15 @@ $license
 
 about_tmpl = string.Template("""
 <div align="center">
-<h1>$appname $version</h1>
+<table cellspacing='5'>
+<tr style="vertical-align: middle;" >
+  <td><img src="$logodir/64x64/apps/aarddict.png"></td>
+  <td style="text-align: center; font-weight: bold;">
+      <span style="font-size: large;">$appname</span><br>
+      $version
+  </td>
+</tr>
+</table>
 <p>$copyright</p>
 <p><a href="$website">$website</a></p>
 </div>
@@ -99,14 +111,12 @@ of <a href="http://www.gnu.org/licenses/gpl-3.0.html">GNU Public License Version
 
 about_html = about_tmpl.substitute(dict(appname=aarddict.__appname__,
                                         version=aarddict.__version__,
+                                        logodir=logodir,
                                         website='http://aarddict.org',
                                         copyright='(C) 2006-2009 Igor Tkach, Jeremy Mortis'))
 
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
-iconset = 'Human-O2'
-icondir = os.path.join(aarddict.package_dir, 'icons/%s/' % iconset)
-logodir = os.path.join(aarddict.package_dir, 'icons/%s/' % 'hicolor')
 
 def mkicon(name, toggle_name=None, icondir=icondir):
     icon = QIcon()
