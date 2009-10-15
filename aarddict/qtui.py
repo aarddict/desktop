@@ -105,14 +105,16 @@ about_html = about_tmpl.substitute(dict(appname=aarddict.__appname__,
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
 iconset = 'Human-O2'
-icon_dir = os.path.join(aarddict.package_dir, 'icons/%s/%%s' % iconset)
+icondir = os.path.join(aarddict.package_dir, 'icons/%s/' % iconset)
+logodir = os.path.join(aarddict.package_dir, 'icons/%s/' % 'hicolor')
 
-def mkicon(name, toggle_name=None):
+def mkicon(name, toggle_name=None, icondir=icondir):
     icon = QIcon()
-    for size in ('16x16', '22x22', '24x24', '32x32'):
-        icon.addFile(os.path.join(icon_dir%size, name+'.png'))
+    for size in os.listdir(icondir):
+        current_dir = os.path.join(icondir, size)
+        icon.addFile(os.path.join(current_dir, name+'.png'))
         if toggle_name:
-            icon.addFile(os.path.join(icon_dir%size, toggle_name+'.png'),
+            icon.addFile(os.path.join(current_dir, toggle_name+'.png'),
                          QSize(), QIcon.Active, QIcon.On)
     return icon
 
@@ -150,6 +152,7 @@ def load_icons():
     icons['info'] = mkicon('status/dialog-information')
     icons['question'] = mkicon('status/dialog-question')
     icons['warning'] = mkicon('status/dialog-warning')
+    icons['aarddict'] = mkicon('apps/aarddict', icondir=logodir)
 
 
 def linkify(text):
@@ -517,6 +520,7 @@ class DictView(QMainWindow):
         QMainWindow.__init__(self)
 
         self.setWindowTitle('Aard Dictionary')
+        self.setWindowIcon(icons['aarddict'])
 
         action_lookup_box = QAction('&Lookup Box', self)
         action_lookup_box.setIcon(icons['edit-find'])
