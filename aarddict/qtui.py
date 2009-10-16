@@ -375,7 +375,8 @@ class VolumeVerifyThread(QThread):
                     return
                 if progress > 1.0:
                     progress = 1.0
-                self.emit(SIGNAL("progress"), progress)
+                if not self.stop_requested:
+                    self.emit(SIGNAL("progress"), progress)
         except VerifyError:
             self.emit(SIGNAL("verified"), False)
         else:
@@ -1264,7 +1265,8 @@ class DictView(QMainWindow):
             progress.forceShow()
 
             def update_progress(num):
-                progress.setValue(100*num)
+                if not verify_thread.stop_requested:
+                    progress.setValue(100*num)                    
 
             def verified(isvalid):
                 status_item = item_list.item(current_row, 0)
@@ -1279,7 +1281,7 @@ class DictView(QMainWindow):
                 verify_thread.volume = None
                 verify_thread.setParent(None)
 
-            connect(progress, SIGNAL('canceled ()'), verify_thread.stop, Qt.QueuedConnection)
+            connect(progress, SIGNAL('canceled ()'), verify_thread.stop, Qt.DirectConnection)
             connect(verify_thread, SIGNAL('progress'), update_progress,
                     Qt.QueuedConnection)
             connect(verify_thread, SIGNAL('verified'), verified,
