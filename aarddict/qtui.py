@@ -528,7 +528,7 @@ class DictView(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-
+        self.setUnifiedTitleAndToolBarOnMac(False)
         self.setWindowTitle('Aard Dictionary')
         self.setWindowIcon(icons['aarddict'])
 
@@ -698,16 +698,20 @@ class DictView(QMainWindow):
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
 
-        toolbar.addAction(action_add_dicts)
-        toolbar.addAction(action_info)
-        toolbar.addAction(action_quit)
         toolbar.addAction(action_history_back)
         toolbar.addAction(action_history_fwd)
         toolbar.addAction(action_online_article)
+        toolbar.addSeparator()
         toolbar.addAction(action_increase_text)
         toolbar.addAction(action_decrease_text)
         toolbar.addAction(action_reset_text)
         toolbar.addAction(action_full_screen)
+        toolbar.addSeparator()
+        toolbar.addAction(action_add_dicts)
+        toolbar.addAction(action_add_dict_dir)
+        toolbar.addAction(action_info)
+        toolbar.addSeparator()
+        toolbar.addAction(action_quit)
         self.addToolBar(toolbar)
 
         self.setCentralWidget(self.tabs)
