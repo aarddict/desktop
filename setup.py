@@ -45,7 +45,7 @@ inst_desktop    = [ 'desktop/aarddict.desktop']
 import aarddict
 
 setup(
-    name = aarddict.__name__,
+    name = aarddict.__appname__,
     version = aarddict.__version__,
     packages = find_packages(),
     windows=[{
@@ -53,7 +53,7 @@ setup(
         'icon_resources': [(0, 'windows/aarddict.ico')],
         }
     ], 
-       
+    app = ["run.py"],   
     entry_points = {
         'gui_scripts': ['aarddict = aarddict:main']
     },
@@ -66,14 +66,14 @@ setup(
                           '*.js', 
                           'icons/*/*/*/*.png']
     },
-    data_files   =     
-    [
-       (os.path.join(sys.prefix,'share/icons/hicolor/26x26/apps'), inst_icons_26),
-       (os.path.join(sys.prefix,'share/icons/hicolor/40x40/apps'), inst_icons_40),
-       (os.path.join(sys.prefix,'share/pixmaps'), inst_icons_64),
-       (os.path.join(sys.prefix,'share/icons/hicolor/64x64/apps'), inst_icons_64),
-       (os.path.join(sys.prefix,'share/applications'), inst_desktop)
-    ],      
+#     data_files   =     
+#     [
+#        (os.path.join(sys.prefix,'share/icons/hicolor/26x26/apps'), inst_icons_26),
+#        (os.path.join(sys.prefix,'share/icons/hicolor/40x40/apps'), inst_icons_40),
+#        (os.path.join(sys.prefix,'share/pixmaps'), inst_icons_64),
+#        (os.path.join(sys.prefix,'share/icons/hicolor/64x64/apps'), inst_icons_64),
+#        (os.path.join(sys.prefix,'share/applications'), inst_desktop)
+#     ],      
     author = "Igor Tkach",
     author_email = "itkach@aarddict.org",
     description = 'Aard Dictionary is a multiplatform dictionary '
@@ -100,7 +100,16 @@ setup(
             },
         'sdist': {
             'formats': 'zip',
-            }
+            },
+      'py2app' : {
+            'argv_emulation': True,
+            'optimize': 2,
+            'iconfile': 'macosx/aarddict.icns',
+            'packages': 'encodings',
+            'excludes': ['aarddict.ui', 'aarddict.hildonui', 'aarddict.dictinfo', 
+                         'multiprocessing', 'xml', 'email'],
+            'includes': ['PyQt4', 'PyQt4._qt', 'sip', 'PyQt4.QtNetwork'],
+            },
         },
     **py2exe_options    
 )

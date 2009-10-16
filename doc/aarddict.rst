@@ -84,6 +84,61 @@ Maemo Application Manager.
 .. _International Phonetic Alphabet: http://en.wikipedia.org/wiki/International_Phonetic_Alphabet
 .. _`WAZU JAPAN's Gallery of Unicode Fonts`: http://www.wazu.jp/
 
+Building Mac OS X App
+=====================
+
+Mac OS X application bundle can be built with py2app_ for Aard
+Dictionary 0.8.0 and newer. 
+
+- Install MacPorts_
+
+- Install Python 2.6::
+
+    sudo port install python26 +no_tkinter +ucs4
+
+  Change environment to make this Python version default::
+
+    sudo port install python_select
+    sudo python_select python26
+ 
+  Make sure Python 2.6 you just installed runs indeed when you type
+  ``python`` (you mae need to open a new terminal for
+  ``python_select`` to take effect).
+ 
+
+- Install PyQT4::
+
+    sudo port install py26-pyqt4
+   
+  This should bring in py26-sip and qt4-mac as dependencies. Qt4
+  compilation takes several hours and requires a lot of disc space
+  (around 6-8 Gb).
+  
+- Install py2app::
+
+    sudo port install py26-py2app
+
+- Install PyICU. This is a bit tricky because MacPorts 1.8.1 includes
+  ICU 4.3.1 and PyICU doesn't seem to build with that. It looks like 
+  ``py26-pyicu @0.8.1`` port was added when ICU was at 4.2.0 and it
+  probably worked then. In any case, PyICU 0.8.1 only claims to work
+  with ICU 3.6 and 3.8, so it is best to install and activate older
+  ICU port - 3.8.1.
+
+- Copy :file:`aarddict.py` recipe (and :file:`__init__.py`) for py2app
+  from ``macosx`` to installed py2app package directory::
+
+    cp macosx/py2app/recipes/*.py /opt/local/Library/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/py2app/recipes/ 
+  
+  This recipe is same as for `numpy` and other libraries that have
+  package data and won't work if put in zip archive. 
+
+- Finally, run py2app_::
+
+    python setup.py py2app
+
+.. _py2app: http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html
+.. _MacPorts: http://www.macports.org/
 
 Release Notes
 =============
