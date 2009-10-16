@@ -1569,11 +1569,12 @@ def main(args):
         except:
             log.exception('Failed to load data from %s', history_current_file)
         else:
-            dv.history_view.blockSignals(True)
-            dv.history_view.setCurrentRow(history_current)
-            dv.history_view.blockSignals(False)
-            word = unicode(dv.history_view.currentItem().text())
-            dv.word_input.setText(word)
+            if history_current > -1:
+                dv.history_view.blockSignals(True)
+                dv.history_view.setCurrentRow(history_current)
+                dv.history_view.blockSignals(False)
+                word = unicode(dv.history_view.currentItem().text())
+                dv.word_input.setText(word)
 
 
     dv.preferred_dicts = read_preferred_dicts()
