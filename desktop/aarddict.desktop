@@ -5,4 +5,4 @@ Exec=aarddict
 Icon=aarddict.png
 Terminal=false
 Categories=Utility;
-StartupNotify=true
+StartupNotify=false
