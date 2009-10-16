@@ -1384,7 +1384,7 @@ class DictView(QMainWindow):
         dialog.setWindowTitle('About')
         content = QVBoxLayout()
 
-        detail_view = SizedWebView(QSize(300, 200))
+        detail_view = SizedWebView(QSize(320, 240))
         detail_view.setPage(WebPage(self))
 
         detail_view.setHtml(about_html)
