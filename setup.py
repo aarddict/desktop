@@ -100,9 +100,9 @@ def options_darwin():
     return dict(py2app={'argv_emulation': True,
                         'optimize': 2,
                         'iconfile': 'macosx/aarddict.icns',
-                        'packages': 'encodings',
-                        'excludes': ['aarddict.ui', 'aarddict.hildonui', 'aarddict.dictinfo',
-                                     'multiprocessing', 'xml', 'email'],
+                        'excludes': ['aarddict.ui', 'aarddict.hildonui', 'aarddict.dictinfo', 'aarddict.articleformat',
+                                     'multiprocessing', 'xml', 'email', 
+                                     ],
                         'includes': ['PyQt4', 'PyQt4._qt', 'sip', 'PyQt4.QtNetwork'],
                         })
 
