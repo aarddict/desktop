@@ -137,6 +137,14 @@ Dictionary 0.8.0 and newer.
 
     python setup.py py2app
 
+- Remove unused debug binaries::
+  
+    find dist/ -name "*_debug*" -print0 | xargs -0 rm
+  
+  A number of unused Qt frameworks gets included in final app (QtDesigner,
+  QtSql etc.) but they can't be removed since they are linked in
+  :file:`_qt.so`.
+
 .. _py2app: http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html
 .. _MacPorts: http://www.macports.org/
 
