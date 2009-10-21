@@ -352,7 +352,7 @@ class WordLookup(object):
                 
                 narticle = dictionary.Article(e.article.title,
                                               _('Redirect to %s not found' % e.article.redirect),
-                                              dictionary=article.dictionary)
+                                              dictionary=e.article.dictionary)
                 result.append(narticle)
         return result
 

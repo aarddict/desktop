@@ -253,12 +253,12 @@ class Article(object):
         self.dictionary = dictionary
         self.section = None
 
-    def _redirect(self):
+    def _redirect(self):        
         redirect = self.meta.get(u'r',
                                  self.meta.get('redirect', u''))
         if redirect and self.section:
-            redirect = '#'.join((redirect, self.section))
-        return redirect.encode('utf8')
+            redirect = u'#'.join((redirect, self.section))
+        return redirect
 
     redirect = property(_redirect)
 
@@ -472,7 +472,9 @@ class Dictionary(object):
     def lookup(self, word, strength=PRIMARY):
         if not word: 
             return
-        lookupword, section = split_word(word.decode('utf8'))
+        if not isinstance(word, unicode):
+            word = word.decode('utf8')
+        lookupword, section = split_word(word)
 
         pos = bisect_left(CollationKeyList(self.words, strength),
                           collation_key(lookupword, strength).getByteArray())
@@ -550,13 +552,13 @@ class DictionaryCollection(list):
                     yield article
 
     def _redirect(self, article, level=0):
-        redirect = article.redirect
+        redir = article.redirect
 
-        if not redirect:
+        if not redir:
             return article
-
-        logging.debug('Redirect "%r" section "%r" ==> "%r" (level %d)',
-                      article.title, article.section, redirect, level)
+        
+        logging.debug('Redirect "%s" section "%s" ==> "%s" (level %d)',
+                      article.title, article.section, redir, level)
 
         if level > max_redirect_levels:
             raise RedirectTooManyLevels(article)
@@ -564,9 +566,10 @@ class DictionaryCollection(list):
         for strength in (IDENTICAL, QUATERNARY, TERTIARY,
                          SECONDARY, PRIMARY):
 
-            resulti = self.lookup(redirect,
+            resulti = self.lookup(redir,
                                   uuid=article.dictionary.uuid,
-                                  strength=strength)
+                                  strength=strength,
+                                  resolve_redirects=False)
             try:
                 result = resulti.next()
             except StopIteration:
