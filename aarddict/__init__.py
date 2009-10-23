@@ -120,6 +120,9 @@ def main():
 
     if options.ui and options.ui.lower() == 'qt':
         import qtui
+        if options.debug:
+            from PyQt4.QtWebKit import QWebSettings
+            QWebSettings.globalSettings().setAttribute(QWebSettings.DeveloperExtrasEnabled, True)
         qtui.main(args)
     else:
         try:
