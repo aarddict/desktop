@@ -55,7 +55,7 @@ def make_note_id(tag):
 def make_ref(tag):
     target_id = make_note_id(tag)
     ref_id = 'ref'+target_id
-    return '<a id="%s" class="ref" href="#" onClick="document.getElementById(\'%s\').scrollIntoView(true);return false;">' % (ref_id, target_id)
+    return '<a id="%s" class="ref" href="#" onClick="return s(\'%s\')">' % (ref_id, target_id)
 
 def make_note(tag):
     note_id = make_note_id(tag)
@@ -223,10 +223,6 @@ def convert(article):
         for tag_start in tagstarts[i]:
             if tag_start.name in html_tags:
                 yield tag_map_start[tag_start.name](tag_start)
-                if tag_start.name == 'note':
-                    note_id = make_note_id(tag_start)
-                    ref_id = 'ref'+note_id
-                    onClick = "document.getElementById(\'%s\').scrollIntoView(true);return false;" % ref_id
 
             elif tag_start.name == 'tbl':
                 pass
@@ -274,7 +270,7 @@ def remove_p_after_h(htmlstr):
 def add_notebackrefs(htmlstr):
     def repl_note(m):
         ref_id = 'ref'+m.group(1)
-        onClick = "document.getElementById(\'%s\').scrollIntoView(true);return false;" % ref_id
+        onClick = "return s(\'%s\')" % ref_id
         return 'id="%s" class="note"><a href="#" onClick="%s" class="notebackref">[%s]</a>' % (m.group(1), onClick, m.group(2))
     return note_pattern.sub(repl_note, htmlstr)
 
