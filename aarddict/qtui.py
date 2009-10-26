@@ -63,7 +63,7 @@ layout_file = os.path.join(app_dir, 'layout')
 geometry_file = os.path.join(app_dir, 'geometry')
 appearance_file = os.path.join(app_dir, 'appearance.ini')
 preferred_dicts_file = os.path.join(app_dir, 'preferred')
-find_section_js = load_file('aar.js')
+js = load_file('aar.js')
 
 appearance_conf = ConfigParser()
 
@@ -301,24 +301,33 @@ class ArticleLoadThread(QThread):
         t0 = time.time()
         if self.stop_requested:
             raise ArticleLoadStopRequested
-        result = [ '<script>',
-                   find_section_js,
-                   '</script>'
-                   ]
-        for c in aar2html.convert(article):
-            if self.stop_requested:
-                raise ArticleLoadStopRequested
-            result.append(c)
-        steps = [aar2html.fix_new_lines,
-                 ''.join,
-                 aar2html.remove_p_after_h,
-                 aar2html.add_notebackrefs
-                 ]
-        for step in steps:
-            if self.stop_requested:
-                raise ArticleLoadStopRequested
-            result = step(result)
 
+        article_format = article.dictionary.metadata['article_format']
+
+        result = ['<html>',
+                  '<head>'
+                  '<script>%s</script>' % js,
+                  '</head>',
+                  '<body>',
+                  '<div id="globalWrapper">']
+        if article_format == 'json':
+            for c in aar2html.convert(article):
+                if self.stop_requested:
+                    raise ArticleLoadStopRequested
+                result.append(c)
+            steps = [aar2html.fix_new_lines,
+                     ''.join,
+                     aar2html.remove_p_after_h,
+                     aar2html.add_notebackrefs
+                     ]
+            for step in steps:
+                if self.stop_requested:
+                    raise ArticleLoadStopRequested
+                result = step(result)
+        else:
+            result = ''.join(result)
+            result += article.text
+        result += '</div></body></html>'
         log.debug('Converted "%s" in %ss',
                   article.title.encode('utf8'), time.time() - t0)
         return result
