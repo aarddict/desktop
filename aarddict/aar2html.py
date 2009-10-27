@@ -50,26 +50,18 @@ def default_tag_end():
     return tag_end
 
 def make_note_id(tag):
-    return '_'.join((tag.attributes['group'], tag.attributes['id']))
+    return '_n'+'_'.join((tag.attributes['group'], tag.attributes['id']))
 
 def make_ref(tag):
     target_id = make_note_id(tag)
-    ref_id = 'ref'+target_id
-    return '<a id="%s" class="ref" href="#" onClick="return s(\'%s\')">' % (ref_id, target_id)
+    ref_id = '_r'+target_id
+    return '<a id="%s" href="#" onClick="return s(\'%s\')">' % (ref_id, target_id)
 
 def make_note(tag):
     note_id = make_note_id(tag)
     return '<div id="%s" class="note">' % note_id
 
 def make_link(tag):
-    href = tag.attributes['href'].lower()
-    if (href.startswith("http://") or
-        href.startswith("https://") or
-        href.startswith("ftp://")
-        ):
-        tag.attributes['class'] = 'ext'
-    else:
-        tag.attributes['class'] = 'int'
     return tag_start(tag)
 
 def dedup_tags(tags):
@@ -269,8 +261,10 @@ def remove_p_after_h(htmlstr):
 
 def add_notebackrefs(htmlstr):
     def repl_note(m):
-        ref_id = 'ref'+m.group(1)
+        note_id = m.group(1)
+        ref_id = '_r'+note_id
         onClick = "return s(\'%s\')" % ref_id
-        return 'id="%s" class="note"><a href="#" onClick="%s" class="notebackref">[%s]</a>' % (m.group(1), onClick, m.group(2))
+        return ('id="%s"> %s. <a href="#%s" onClick="%s">^</a> ' % 
+                   (note_id, m.group(2), ref_id, onClick))
     return note_pattern.sub(repl_note, htmlstr)
 

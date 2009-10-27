@@ -489,6 +489,7 @@ def write_geometry(rect_tuple):
 
 def mkcss(values):
     css_tmpl = load_file(os.path.join(aarddict.package_dir, 'aar.css.tmpl'))
+    values['cssdir'] = aarddict.package_dir
     css = string.Template(css_tmpl).substitute(values)
     return css
 
@@ -1428,12 +1429,12 @@ class DictView(QMainWindow):
         preview_pane.setPage(WebPage(self))
 
         html = """
-This is an <a class='int' href="#">internal link</a>. <br>
-This is an <a class='ext' href="#">external link</a>. <br>
-This is text with a footnote reference<a class='ref' href="#">[1]</a>. <br>
+This is an <a href="#">internal link</a>. <br>
+This is an <a href="http://example.com">external link</a>. <br>
+This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 <p>Click on any link to see active link color.</p>
 
-<div class='note'><a class='notebackref' href="#">[1]</a> This is a footnote.</div>
+<div>1. <a href="#_r123">^</a> This is a footnote.</div>
 """
 
         preview_pane.page().currentFrame().setHtml(html)

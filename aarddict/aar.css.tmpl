@@ -1,26 +1,41 @@
+a {
+    text-decoration: none;
+    color: $internal_link_fg;
+}
+
 a:active {
     background-color: $active_link_bg;
 }
 
-.ref {
+a:hover {
+    text-decoration: underline;
+}
+
+a[href ^="sftp://"],
+a[href ^="ftp://"],
+a[href ^="http://"],
+a[href ^="https://"] {
+    color: $external_link_fg;
+    background: url($cssdir/external.png) center right no-repeat;
+    padding: 0 13px 0 0;
+}
+
+a:active[href ^="http://"],
+a:active[href ^="https://"] {
+    background-color: $active_link_bg;
+}
+
+a[id ^="_r"] {
     color: $footnote_fg;
     vertical-align: super;
     font-size: x-small;
 }
 
-.note {
+li[id ^="_n"] {
     font-size: small;
 }
 
-.int {
-    color: $internal_link_fg;
-}
-
-.ext {
-    color: $external_link_fg;
-}
-
-.notebackref {
+a[href ^="#_r"] {
     font-weight: bold;
     color: $footnote_backref_fg;
     text-decoration: none;

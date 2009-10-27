@@ -23,6 +23,7 @@ else:
             # files so it will be included in zipfile.
             all_files = ([f for f in glob.glob('aarddict/*.tmpl')] +
                          [f for f in glob.glob('aarddict/*.js')] +
+                         [f for f in glob.glob('aarddict/*.png')] +
                          [f for f in glob.glob('aarddict/locale/*/*/*.mo')] +
                          [f for f in glob.glob('aarddict/icons/*/*/*/*.png')]
                          )
@@ -57,6 +58,7 @@ def setup_common():
                 package_data={'aarddict': ['locale/*/*/*.mo',
                                            'aar.css.tmpl',
                                            '*.js',
+                                           '*.png',
                                            'icons/*/*/*/*.png']},
                 author="Igor Tkach",
                 author_email="itkach@aarddict.org",
