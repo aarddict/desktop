@@ -63,6 +63,8 @@ layout_file = os.path.join(app_dir, 'layout')
 geometry_file = os.path.join(app_dir, 'geometry')
 appearance_file = os.path.join(app_dir, 'appearance.ini')
 preferred_dicts_file = os.path.join(app_dir, 'preferred')
+lastfiledir_file = os.path.join(app_dir, 'lastfiledir')
+lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
 js = load_file('aar.js')
 
 appearance_conf = ConfigParser()
@@ -474,6 +476,26 @@ def write_preferred_dicts(preferred_dicts):
         f.write('\n'.join( '%s %s' % (UUID(bytes=key).hex, val)
                            for key, val in preferred_dicts.iteritems()))
 
+def write_lastfiledir(lastfiledir):
+    with open(lastfiledir_file, 'w') as f:
+        f.write(lastfiledir)
+
+def read_lastfiledir():
+    if os.path.exists(lastfiledir_file):
+        return load_file(lastfiledir_file).strip()
+    else:
+        return os.path.expanduser('~')
+
+def write_lastdirdir(lastdirdir):
+    with open(lastdirdir_file, 'w') as f:
+        f.write(lastdirdir)
+
+def read_lastdirdir():
+    if os.path.exists(lastdirdir_file):
+        return load_file(lastdirdir_file).strip()
+    else:
+        return os.path.expanduser('~')
+
 def read_geometry():
     if os.path.exists(geometry_file):
         return tuple(int(item) for item in load_file(geometry_file).split())
@@ -742,6 +764,8 @@ class DictView(QMainWindow):
 
         self.sources = []
         self.zoom_factor = 1.0
+        self.lastfiledir = ''
+        self.lastdirdir = ''
 
     def add_dicts(self):
         self.open_dicts(self.select_files())
@@ -814,16 +838,23 @@ class DictView(QMainWindow):
 
     def select_files(self):
         file_names = QFileDialog.getOpenFileNames(self, 'Add Dictionary',
-                                                  os.path.expanduser('~'),
+                                                  self.lastfiledir.decode('utf-8'),
                                                   'Aard Dictionary Files (*.aar)')
+        if file_names:
+            self.lastfiledir = os.path.dirname(unicode(file_names[-1]).encode('utf-8'))
         return [unicode(name).encode('utf8') for name in file_names]
 
 
     def select_dir(self):
         name = QFileDialog.getExistingDirectory (self, 'Add Dictionary Directory',
-                                                      os.path.expanduser('~'),
+                                                      self.lastdirdir.decode('utf-8'),
                                                       QFileDialog.ShowDirsOnly)
-        return [unicode(name).encode('utf8')]
+        dirname = unicode(name).encode('utf8')
+        if dirname:
+            self.lastdirdir = dirname
+            return [dirname]
+        else:
+            return []
 
     def remove_dict_source(self):
         dialog = QDialog(self)
@@ -1549,6 +1580,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             f.write(str(layout))
         with open(history_current_file, 'w') as f:
             f.write(str(self.history_view.currentRow()))
+        write_lastfiledir(self.lastfiledir)
+        write_lastdirdir(self.lastdirdir)
 
 
 def main(args):
@@ -1586,8 +1619,9 @@ def main(args):
                 word = unicode(dv.history_view.currentItem().text())
                 dv.word_input.setText(word)
 
-
     dv.preferred_dicts = read_preferred_dicts()
+    dv.lastfiledir = read_lastfiledir()
+    dv.lastdirdir = read_lastdirdir()
     dv.word_input.setFocus()
     update_css(mkcss(read_colors()))
     dv.open_dicts(read_sources()+args)
