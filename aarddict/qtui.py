@@ -28,7 +28,8 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QGridLayout, QSplitter, QProgressDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
-                         QDockWidget, QToolBar, QFormLayout, QColor, QLabel, QColorDialog)
+                         QDockWidget, QToolBar, QFormLayout, QColor, QLabel,
+                         QColorDialog, QCheckBox)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
@@ -67,6 +68,14 @@ lastfiledir_file = os.path.join(app_dir, 'lastfiledir')
 lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
 zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
 js = load_file('aar.js')
+
+mediawiki_css_file1 = os.path.join(aarddict.package_dir, 'mediawiki_shared.css')
+mediawiki_css_file2 = os.path.join(aarddict.package_dir, 'mediawiki_monobook.css')
+
+mediawiki_style = ['<link rel="stylesheet" type="text/css" href="%s" />' % mediawiki_css_file1,
+                   '<link rel="stylesheet" type="text/css" href="%s" />' % mediawiki_css_file2]
+
+css_link_tag_re = re.compile('<link rel="stylesheet" (.+?)>')
 
 appearance_conf = ConfigParser()
 
@@ -261,10 +270,11 @@ class ArticleLoadStopRequested(Exception): pass
 
 class ArticleLoadThread(QThread):
 
-    def __init__(self, article_read_funcs, parent=None):
+    def __init__(self, article_read_funcs, parent=None, use_mediawiki_style=False):
         QThread.__init__(self, parent)
         self.article_read_funcs = article_read_funcs
         self.stop_requested = False
+        self.use_mediawiki_style = use_mediawiki_style
 
     def run(self):
         self.setPriority(QThread.LowestPriority)
@@ -309,8 +319,10 @@ class ArticleLoadThread(QThread):
 
         result = ['<html>',
                   '<head>'
-                  '<script>%s</script>' % js,
-                  '</head>',
+                  '<script>%s</script>' % js]
+        if self.use_mediawiki_style:
+            result += mediawiki_style
+        result += ['</head>',
                   '<body>',
                   '<div id="globalWrapper">']
         if article_format == 'json':
@@ -785,6 +797,8 @@ class DictView(QMainWindow):
         self.lastfiledir = ''
         self.lastdirdir = ''
 
+        self.use_mediawiki_style = True
+
     def add_dicts(self):
         self.open_dicts(self.select_files())
 
@@ -1033,7 +1047,7 @@ class DictView(QMainWindow):
         if selected:
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(Qt.UserRole).toPyObject()
-            load_thread = ArticleLoadThread(article_group, self)
+            load_thread = ArticleLoadThread(article_group, self, self.use_mediawiki_style)
             connect(load_thread, SIGNAL("article_loaded"),
                     self.article_loaded, Qt.QueuedConnection)
             connect(load_thread, SIGNAL("finished ()"),
@@ -1479,12 +1493,14 @@ class DictView(QMainWindow):
         preview_pane.setPage(WebPage(self))
 
         html = """
+<div id="globalWrapper">
 This is an <a href="#">internal link</a>. <br>
 This is an <a href="http://example.com">external link</a>. <br>
 This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 <p>Click on any link to see active link color.</p>
 
 <div>1. <a href="#_r123">^</a> This is a footnote.</div>
+</div>
 """
 
         preview_pane.page().currentFrame().setHtml(html)
@@ -1552,11 +1568,28 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         color_pane.addWidget(btn_active_link, 4, 0)
         color_pane.addWidget(QLabel('Active Link'), 4, 1)
 
-        connect(btn_active_link, SIGNAL('clicked()'),
-                functools.partial(set_color, btn_active_link, 'active_link_bg'))
+        cb_use_mediawiki_style = QCheckBox('Use Wikipedia style')
+        color_pane.addWidget(cb_use_mediawiki_style, 5, 0, 1, 2)
 
+        mediawiki_style_str = '''<style type="text/css">
+@import url("%s");
+@import url("%s");
+</style>
+''' % (mediawiki_css_file1, mediawiki_css_file2)
 
-        color_pane.addWidget(preview_pane, 0, 2, 5, 1)
+        def use_mediawiki_style_changed(state):
+            if state == Qt.Checked:
+                style_str = mediawiki_style_str
+            else:
+                style_str = '<style>%s</style>' % mkcss(colors)
+            preview_pane.page().currentFrame().setHtml(style_str + html)
+
+        connect(cb_use_mediawiki_style, SIGNAL('stateChanged(int)'),
+                use_mediawiki_style_changed)
+
+        cb_use_mediawiki_style.setChecked(self.use_mediawiki_style)
+
+        color_pane.addWidget(preview_pane, 0, 2, 6, 1)
 
         content.addLayout(color_pane)
 
@@ -1568,6 +1601,22 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         def close():
             dialog.reject()
+
+            if self.use_mediawiki_style != cb_use_mediawiki_style.isChecked():
+                self.use_mediawiki_style = cb_use_mediawiki_style.isChecked()
+
+                for i in range(self.tabs.count()):
+                    view = self.tabs.widget(i)
+                    currentFrame = view.page().currentFrame()
+                    html = unicode(currentFrame.toHtml()).encode('utf8')
+                    if self.use_mediawiki_style:
+                        html = html.replace('<head>', ''.join(['<head>']+mediawiki_style))
+                    else:                        
+                        html = css_link_tag_re.sub('', html)
+                    view.page().currentFrame().setHtml(html)
+                else:
+                    pass
+
             write_colors(colors)
             update_css(mkcss(colors))
 
