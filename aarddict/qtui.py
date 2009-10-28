@@ -960,8 +960,8 @@ class DictView(QMainWindow):
         self.schedule(func)
 
     def update_word_completion(self, word):
-        #self.sidebar.setTabText(0, 'Loading...')
         self.word_completion.clear()
+        self.word_completion.addItem('Loading...')
         if self.current_lookup_thread:
             self.current_lookup_thread.stop()
             self.current_lookup_thread = None
@@ -980,6 +980,7 @@ class DictView(QMainWindow):
         def key(article):
             return collation_key(article.title, TERTIARY).getByteArray()
         articles.sort(key=key)
+        self.word_completion.clear()
         for k, g in groupby(articles, key):
             article_group = list(g)
             item = QListWidgetItem()
@@ -1320,7 +1321,7 @@ class DictView(QMainWindow):
 
             def update_progress(num):
                 if not verify_thread.stop_requested:
-                    progress.setValue(100*num)                    
+                    progress.setValue(100*num)
 
             def verified(isvalid):
                 status_item = item_list.item(current_row, 0)
