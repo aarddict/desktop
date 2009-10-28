@@ -65,6 +65,7 @@ appearance_file = os.path.join(app_dir, 'appearance.ini')
 preferred_dicts_file = os.path.join(app_dir, 'preferred')
 lastfiledir_file = os.path.join(app_dir, 'lastfiledir')
 lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
+zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
 js = load_file('aar.js')
 
 appearance_conf = ConfigParser()
@@ -508,6 +509,18 @@ def write_geometry(rect_tuple):
     with open(geometry_file, 'w') as f:
         f.write(' '.join(str(item) for item in rect_tuple))
 
+def read_zoomfactor():
+    if os.path.exists(zoomfactor_file):
+        try:
+            return float(load_file(zoomfactor_file))
+        except:
+            return 1.0
+    else:
+        return 1.0
+
+def write_zoomfactor(zoomfactor):
+    with open(zoomfactor_file, 'w') as f:
+        f.write(str(zoomfactor))
 
 def mkcss(values):
     css_tmpl = load_file(os.path.join(aarddict.package_dir, 'aar.css.tmpl'))
@@ -1582,7 +1595,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             f.write(str(self.history_view.currentRow()))
         write_lastfiledir(self.lastfiledir)
         write_lastdirdir(self.lastdirdir)
-
+        write_zoomfactor(self.zoom_factor)
 
 def main(args):
     if not os.path.exists(app_dir):
@@ -1622,6 +1635,7 @@ def main(args):
     dv.preferred_dicts = read_preferred_dicts()
     dv.lastfiledir = read_lastfiledir()
     dv.lastdirdir = read_lastdirdir()
+    dv.zoom_factor = read_zoomfactor()
     dv.word_input.setFocus()
     update_css(mkcss(read_colors()))
     dv.open_dicts(read_sources()+args)
