@@ -591,8 +591,13 @@ class DictView(QMainWindow):
         self.word_completion = QListWidget()
         connect(self.word_input, SIGNAL('word_input_down'), self.select_next_word)
         connect(self.word_input, SIGNAL('word_input_up'), self.select_prev_word)
+
+        def focus_current_tab():
+            current_tab = self.tabs.currentWidget()
+            if current_tab:
+                current_tab.setFocus()
         connect(self.word_input, SIGNAL('returnPressed ()'),
-                     self.word_completion.setFocus)
+                focus_current_tab)
 
         box = QVBoxLayout()
         box.setSpacing(2)
