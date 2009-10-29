@@ -1608,7 +1608,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 for i in range(self.tabs.count()):
                     view = self.tabs.widget(i)
                     currentFrame = view.page().currentFrame()
-                    html = unicode(currentFrame.toHtml()).encode('utf8')
+                    html = unicode(currentFrame.toHtml())
                     if self.use_mediawiki_style:
                         html = html.replace('<head>', ''.join(['<head>']+mediawiki_style))
                     else:                        
