@@ -566,19 +566,25 @@ default_colors = dict(active_link_bg='#e0e8e8',
                       footnote_backref_fg='#00557f',
                       table_bg='')
 
-def read_colors():
+def read_appearance():
     colors = dict(default_colors)
+    use_mediawiki_style = False
     appearance_conf.read(appearance_file)
     if appearance_conf.has_section('colors'):
         for opt in appearance_conf.options('colors'):
             colors[opt] = appearance_conf.get('colors', opt)
-    return colors
+    if appearance_conf.has_section('style'):
+        use_mediawiki_style = appearance_conf.getboolean('style', 'use_mediawiki_style')
+    return colors, use_mediawiki_style
 
-def write_colors(colors):
+def write_appearance(colors, use_mediawiki_style):
     if not appearance_conf.has_section('colors'):
         appearance_conf.add_section('colors')
+    if not appearance_conf.has_section('style'):
+        appearance_conf.add_section('style')
     for key, val in colors.iteritems():
         appearance_conf.set('colors', key, val)
+    appearance_conf.set('style', 'use_mediawiki_style', use_mediawiki_style)
     with open(appearance_file, 'w') as f:
         appearance_conf.write(f)
 
@@ -1505,7 +1511,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         preview_pane.page().currentFrame().setHtml(html)
 
-        colors = read_colors()
+        colors = read_appearance()[0]
 
         color_pane = QGridLayout()
         color_pane.setColumnStretch(1, 2)
@@ -1611,13 +1617,13 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                     html = unicode(currentFrame.toHtml())
                     if self.use_mediawiki_style:
                         html = html.replace('<head>', ''.join(['<head>']+mediawiki_style))
-                    else:                        
+                    else:
                         html = css_link_tag_re.sub('', html)
                     view.page().currentFrame().setHtml(html)
                 else:
                     pass
 
-            write_colors(colors)
+            write_appearance(colors, self.use_mediawiki_style)
             update_css(mkcss(colors))
 
         connect(button_box, SIGNAL('rejected()'), close)
@@ -1692,7 +1698,9 @@ def main(args):
     dv.lastdirdir = read_lastdirdir()
     dv.zoom_factor = read_zoomfactor()
     dv.word_input.setFocus()
-    update_css(mkcss(read_colors()))
+    colors, use_mediawiki_style = read_appearance()
+    update_css(mkcss(colors))
+    dv.use_mediawiki_style = use_mediawiki_style
     dv.open_dicts(read_sources()+args)
     sys.exit(app.exec_())
 
