@@ -1431,11 +1431,13 @@ class DictView(QMainWindow):
                                            (v.volume, v.file_name))
                                           for v in volumes)
 
-                params = dict(title=d.title, version=d.version,
+                params = defaultdict(str)
+                params.update(dict(title=d.title, version=d.version,
                               total_volumes=d.total_volumes,
                               volumes=volumes_str,
-                              num_of_articles=locale.format("%u", d.article_count, True)
-                              )
+                              num_of_articles=locale.format("%u",
+                                                            d.article_count,
+                                                            True)))
 
                 if d.description:
                     params['description'] = '<p>%s</p>' % linkify(d.description)
