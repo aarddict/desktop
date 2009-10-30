@@ -27,7 +27,9 @@ html_tags=set(['b',
                'note',
                'blockquote',
                'cite',
-               'dd'
+               'dd',
+               'c', #visual XDXF: color tag
+               'iref', #XDXF: reference to an Internet resource, has 'href' attribute
                ])
 
 def tag_start(tag):
@@ -64,6 +66,12 @@ def make_note(tag):
 def make_link(tag):
     return tag_start(tag)
 
+def make_iref(tag):    
+    return '<a href="%s">' % tag.attributes.get('href', '')
+
+def make_color_start(tag):
+    return '<span style="color: %s;">' % tag.attributes.get('c', '')
+
 def dedup_tags(tags):
     seen_tags = set()
     article_tags = []
@@ -83,14 +91,18 @@ tag_map_start.update({'row': lambda tag: '<tr>',
                       'p': lambda tag: '<p>',
                       'div': lambda tag: '',
                       'a' : make_link,
+                      'iref': make_iref,
+                      'c': make_color_start,
                       })
 
 tag_map_end = defaultdict(lambda: tag_end)
 tag_map_end.update({'row': lambda tag: '</tr>',
-               'ref': lambda tag: '</a>',
-               'note': lambda tag: '</div>',
-               'p': lambda tag: '',
-               'div': lambda tag: '',
+                    'ref': lambda tag: '</a>',
+                    'note': lambda tag: '</div>',
+                    'p': lambda tag: '',
+                    'div': lambda tag: '',
+                    'c': lambda tag: '</span>',
+                    'iref': lambda tag: '</a>',
                })
 
 
@@ -98,6 +110,7 @@ tag_map_end.update({'row': lambda tag: '</tr>',
 row_pattern = re.compile(r'<tr>(.*?)</tr>', re.DOTALL)
 p_after_h_patter = re.compile('(</h[1-6]>\n?)<p>')
 note_pattern = re.compile(r'id="(.+)" class="note"><b>\[([0-9]+)\]</b>')
+kref_pattern = re.compile(r'<kref>(.*?)</kref>', re.DOTALL)
 
 def convert(article):
     """
@@ -194,6 +207,8 @@ def convert(article):
         for tag_end in tagends[i]:
             if tag_end.name in html_tags:
                 yield tag_map_end[tag_end.name](tag_end)
+            elif tag_end.name == 'kref':
+                yield '</a>'
             elif tag_end.name == 'tbl':
                 tbl_tags = [to_tag(tagtuple) for tagtuple in tag_end.attributes['tags']]
                 tbl_article = Article(text=tag_end.attributes['text'],
@@ -215,7 +230,9 @@ def convert(article):
         for tag_start in tagstarts[i]:
             if tag_start.name in html_tags:
                 yield tag_map_start[tag_start.name](tag_start)
-
+            elif tag_start.name == 'kref':
+                link_target = article.text[tag_start.start:tag_start.end]
+                yield u'<a href="%s">' % link_target
             elif tag_start.name == 'tbl':
                 pass
             else:
