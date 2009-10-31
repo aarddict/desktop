@@ -568,7 +568,7 @@ default_colors = dict(active_link_bg='#e0e8e8',
 
 def read_appearance():
     colors = dict(default_colors)
-    use_mediawiki_style = False
+    use_mediawiki_style = True
     appearance_conf.read(appearance_file)
     if appearance_conf.has_section('colors'):
         for opt in appearance_conf.options('colors'):
