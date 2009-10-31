@@ -740,12 +740,12 @@ class DictView(QMainWindow):
         mn_text_size = mn_view.addMenu('Text &Size')
 
         action_increase_text = QAction(icons['zoom-in'], '&Increase', self)
-        action_increase_text.setShortcut('Ctrl+=')
+        action_increase_text.setShortcut(QKeySequence.ZoomIn)
         connect(action_increase_text, SIGNAL('triggered()'), self.increase_text_size)
         mn_text_size.addAction(action_increase_text)
 
         action_decrease_text = QAction(icons['zoom-out'], '&Decrease', self)
-        action_decrease_text.setShortcut('Ctrl+-')
+        action_decrease_text.setShortcut(QKeySequence.ZoomOut)
         connect(action_decrease_text, SIGNAL('triggered()'), self.decrease_text_size)
         mn_text_size.addAction(action_decrease_text)
 
