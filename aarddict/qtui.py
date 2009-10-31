@@ -378,7 +378,7 @@ class DictOpenThread(QThread):
             try:
                 d = Dictionary(candidate)
             except Exception, e:
-                self.emit(SIGNAL("dict_open_failed"), source, str(e))
+                self.emit(SIGNAL("dict_open_failed"), candidate, str(e))
             else:
                 self.emit(SIGNAL("dict_open_succeded"), d)
 
