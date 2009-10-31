@@ -29,7 +29,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QFormLayout, QColor, QLabel,
-                         QColorDialog, QCheckBox)
+                         QColorDialog, QCheckBox, QKeySequence)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
@@ -630,10 +630,10 @@ class DictView(QMainWindow):
         self.history_view = QListWidget()
 
         action_history_back = QAction(icons['go-previous'], '&Back', self)
-        action_history_back.setShortcut('Alt+Left')
+        action_history_back.setShortcut(QKeySequence.Back)
         connect(action_history_back, SIGNAL('triggered()'), self.history_back)
         action_history_fwd = QAction(icons['go-next'], '&Forward', self)
-        action_history_fwd.setShortcut('Alt+Right')
+        action_history_fwd.setShortcuts(QKeySequence.Forward)
         connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
 
         connect(self.history_view,
