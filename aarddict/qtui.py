@@ -113,19 +113,26 @@ about_tmpl = string.Template("""
   </td>
 </tr>
 </table>
-<p>$copyright</p>
+<p>$copyright1<br>$copyright2</p>
 <p><a href="$website">$website</a></p>
 </div>
+<div align="center">
 <p style="font-size: small;">Distributed under terms and conditions
 of <a href="http://www.gnu.org/licenses/gpl-3.0.html">GNU Public License Version 3</a>
 </p>
+<p style="font-size: small;">
+Aard Dictionary logo by Iryna Gerasymova<br>
+Human-O2 icon set by <a href="http://schollidesign.deviantart.com">~schollidesign</a>
+</p>
+</div>
 """)
 
 about_html = about_tmpl.substitute(dict(appname=aarddict.__appname__,
                                         version=aarddict.__version__,
                                         logodir=logodir,
                                         website='http://aarddict.org',
-                                        copyright='(C) 2006-2009 Igor Tkach, Jeremy Mortis'))
+                                        copyright1='(C) 2006-2009 Igor Tkach',
+                                        copyright2='(C) 2008 Jeremy Mortis'))
 
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
@@ -1468,7 +1475,7 @@ class DictView(QMainWindow):
         dialog.setWindowTitle('About')
         content = QVBoxLayout()
 
-        detail_view = SizedWebView(QSize(320, 240))
+        detail_view = SizedWebView(QSize(400, 260))
         detail_view.setPage(WebPage(self))
 
         detail_view.setHtml(about_html)
