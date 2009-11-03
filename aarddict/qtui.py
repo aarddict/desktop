@@ -29,7 +29,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QFormLayout, QColor, QLabel,
-                         QColorDialog, QCheckBox, QKeySequence)
+                         QColorDialog, QCheckBox, QKeySequence, QPalette)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
@@ -1477,7 +1477,10 @@ class DictView(QMainWindow):
 
         detail_view = SizedWebView(QSize(400, 260))
         detail_view.setPage(WebPage(self))
-
+        palette = detail_view.palette()
+        palette.setBrush(QPalette.Base, Qt.transparent)
+        detail_view.page().setPalette(palette)
+        detail_view.setAttribute(Qt.WA_OpaquePaintEvent, False)
         detail_view.setHtml(about_html)
 
         connect(detail_view, SIGNAL('linkClicked (const QUrl&)'),
