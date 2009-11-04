@@ -1,0 +1,411 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-11-04 00:40-0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: qtui.py:144
+msgid "(C) 2006-2009 Igor Tkach"
+msgstr ""
+
+#: qtui.py:145
+msgid "(C) 2008 Jeremy Mortis"
+msgstr ""
+
+#: qtui.py:146
+msgid ""
+"Distributed under terms and conditions of <a href=\"http://www.gnu.org/"
+"licenses/gpl-3.0.html\">GNU Public License Version 3</a>"
+msgstr ""
+
+#: qtui.py:149
+msgid "Aard Dictionary logo by Iryna Gerasymova"
+msgstr ""
+
+#: qtui.py:150
+msgid ""
+"Human-O2 icon set by <a href=\"http://schollidesign.deviantart.com"
+"\">~schollidesign</a>"
+msgstr ""
+
+#: qtui.py:332
+#, python-format
+msgid "Redirect to %s not found"
+msgstr ""
+
+#: qtui.py:625
+msgid "&Lookup Box"
+msgstr ""
+
+#: qtui.py:627
+msgid "Ctrl+L"
+msgstr ""
+
+#: qtui.py:628
+msgid "Move focus to word input and select its content"
+msgstr ""
+
+#: qtui.py:658
+msgid "&Back"
+msgstr ""
+
+#: qtui.py:660
+msgid "Go back to previous word in history"
+msgstr ""
+
+#: qtui.py:662
+msgid "&Forward"
+msgstr ""
+
+#: qtui.py:664
+msgid "Go forward to next word in history"
+msgstr ""
+
+#: qtui.py:678
+msgid "&Lookup"
+msgstr ""
+
+#: qtui.py:683
+msgid "&History"
+msgstr ""
+
+#: qtui.py:693
+msgid "&Dictionary"
+msgstr ""
+
+#: qtui.py:695
+msgid "&Add Dictionaries..."
+msgstr ""
+
+#: qtui.py:696
+msgid "Ctrl+O"
+msgstr ""
+
+#: qtui.py:697
+msgid "Add dictionaries"
+msgstr ""
+
+#: qtui.py:701
+msgid "Add &Directory..."
+msgstr ""
+
+#: qtui.py:702
+msgid "Add dictionary directory"
+msgstr ""
+
+#: qtui.py:706
+msgid "&Verify..."
+msgstr ""
+
+#: qtui.py:707
+msgid "Ctrl+Y"
+msgstr ""
+
+#: qtui.py:708
+msgid "Verify volume data integrity"
+msgstr ""
+
+#: qtui.py:712
+msgid "&Remove..."
+msgstr ""
+
+#: qtui.py:713
+msgid "Ctrl+R"
+msgstr ""
+
+#: qtui.py:714
+msgid "Remove dictionary or dictionary directory"
+msgstr ""
+
+#: qtui.py:718
+msgid "&Info..."
+msgstr ""
+
+#: qtui.py:719
+msgid "Ctrl+I"
+msgstr ""
+
+#: qtui.py:720
+msgid "Information about open dictionaries"
+msgstr ""
+
+#: qtui.py:724
+msgid "&Quit"
+msgstr ""
+
+#: qtui.py:725
+msgid "Ctrl+Q"
+msgstr ""
+
+#: qtui.py:726
+msgid "Exit application"
+msgstr ""
+
+#: qtui.py:730
+msgid "&Navigate"
+msgstr ""
+
+#: qtui.py:737
+msgid "&Next Article"
+msgstr ""
+
+#: qtui.py:738
+msgid "Ctrl+."
+msgstr ""
+
+#: qtui.py:739
+msgid "Show next article"
+msgstr ""
+
+#: qtui.py:743
+msgid "&Previous Article"
+msgstr ""
+
+#: qtui.py:744
+msgid "Ctrl+,"
+msgstr ""
+
+#: qtui.py:745
+msgid "Show previous article"
+msgstr ""
+
+#: qtui.py:749
+msgid "&Online Article"
+msgstr ""
+
+#: qtui.py:750
+msgid "Ctrl+T"
+msgstr ""
+
+#: qtui.py:751
+msgid "Open online version of this article in a web browser"
+msgstr ""
+
+#: qtui.py:755
+msgid "&View"
+msgstr ""
+
+#: qtui.py:760
+msgid "&Toolbar"
+msgstr ""
+
+#: qtui.py:764
+msgid "&Article Appearance..."
+msgstr ""
+
+#: qtui.py:765
+msgid "Customize article appearance"
+msgstr ""
+
+#: qtui.py:769
+msgid "Text &Size"
+msgstr ""
+
+#: qtui.py:771
+msgid "&Increase"
+msgstr ""
+
+#: qtui.py:772
+msgid "Ctrl+="
+msgstr ""
+
+#: qtui.py:773
+msgid "Increase size of article text"
+msgstr ""
+
+#: qtui.py:777
+msgid "&Decrease"
+msgstr ""
+
+#: qtui.py:779
+msgid "Decrease size of article text"
+msgstr ""
+
+#: qtui.py:783
+msgid "&Reset"
+msgstr ""
+
+#: qtui.py:784
+msgid "Ctrl+0"
+msgstr ""
+
+#: qtui.py:785
+msgid "Reset size of article text to default"
+msgstr ""
+
+#: qtui.py:789
+msgid "&Full Screen"
+msgstr ""
+
+#: qtui.py:790
+msgid "F11"
+msgstr ""
+
+#: qtui.py:791
+msgid "Toggle full screen mode"
+msgstr ""
+
+#: qtui.py:796
+msgid "H&elp"
+msgstr ""
+
+#: qtui.py:798
+msgid "&About..."
+msgstr ""
+
+#: qtui.py:799
+msgid "Information about Aard Dictionary"
+msgstr ""
+
+#: qtui.py:854
+msgid "Opening dictionaries..."
+msgstr ""
+
+#: qtui.py:855
+msgid "Stop"
+msgstr ""
+
+#: qtui.py:892
+msgid "Open Failed"
+msgstr ""
+
+#: qtui.py:894
+msgid "Failed to open some dictionaries"
+msgstr ""
+
+#: qtui.py:911
+msgid "Add Dictionary"
+msgstr ""
+
+#: qtui.py:913
+msgid "Aard Dictionary Files"
+msgstr ""
+
+#: qtui.py:920
+msgid "Add Dictionary Directory"
+msgstr ""
+
+#: qtui.py:932
+msgid "Remove Dictionaries"
+msgstr ""
+
+#: qtui.py:956
+msgid "Select &All"
+msgstr ""
+
+#: qtui.py:961
+msgid "&Remove"
+msgstr ""
+
+#: qtui.py:1337
+msgid "Verify"
+msgstr ""
+
+#: qtui.py:1343
+msgid "Status"
+msgstr ""
+
+#: qtui.py:1343 qtui.py:1464
+msgid "Volume"
+msgstr ""
+
+#: qtui.py:1354
+msgid "Unverified"
+msgstr ""
+
+#: qtui.py:1366
+msgid "&Verify"
+msgstr ""
+
+#: qtui.py:1375
+msgid "Verifying..."
+msgstr ""
+
+#: qtui.py:1387
+msgid "Ok"
+msgstr ""
+
+#: qtui.py:1390
+msgid "Corrupt"
+msgstr ""
+
+#: qtui.py:1420
+msgid "Dictionary Info"
+msgstr ""
+
+#: qtui.py:1477
+msgid "Volumes:"
+msgstr ""
+
+#: qtui.py:1480
+msgid "Number of articles:"
+msgstr ""
+
+#: qtui.py:1486
+msgid "Source"
+msgstr ""
+
+#: qtui.py:1488
+msgid "Copyright Notice"
+msgstr ""
+
+#: qtui.py:1490
+msgid "License"
+msgstr ""
+
+#: qtui.py:1509
+msgid "About"
+msgstr ""
+
+#: qtui.py:1539
+msgid "Article Appearance"
+msgstr ""
+
+#: qtui.py:1547
+msgid ""
+"<div id=\"globalWrapper\">\n"
+"This is an <a href=\"#\">internal link</a>. <br>\n"
+"This is an <a href=\"http://example.com\">external link</a>. <br>\n"
+"This is text with a footnote reference<a id=\"_r123\" href=\"#\">[1]</a>. "
+"<br>\n"
+"<p>Click on any link to see active link color.</p>\n"
+"\n"
+"<div>1. <a href=\"#_r123\">^</a> This is a footnote.</div>\n"
+"</div>\n"
+msgstr ""
+
+#: qtui.py:1580
+msgid "Internal Link"
+msgstr ""
+
+#: qtui.py:1590
+msgid "External Link"
+msgstr ""
+
+#: qtui.py:1600
+msgid "Footnote Link"
+msgstr ""
+
+#: qtui.py:1610
+msgid "Footnote Back Link"
+msgstr ""
+
+#: qtui.py:1620
+msgid "Active Link"
+msgstr ""
+
+#: qtui.py:1622
+msgid "Use Wikipedia style"
+msgstr ""

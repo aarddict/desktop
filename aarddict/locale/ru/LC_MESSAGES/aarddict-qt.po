@@ -1,0 +1,426 @@
+# This file is part of Aard Dictionary <http://aarddict.org>.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License <http://www.gnu.org/licenses/gpl-3.0.txt>
+# for more details.
+#
+# Copyright (C) 2006-2009  Igor Tkach
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.8.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-11-04 00:40-0500\n"
+"PO-Revision-Date: 2009-11-04 00:41-0500\n"
+"Last-Translator: Igor Tkach <itkach@aarddict.org>\n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Poedit-Bookmarks: -1,-1,1,-1,-1,-1,-1,-1,-1,-1\n"
+
+#: qtui.py:144
+msgid "(C) 2006-2009 Igor Tkach"
+msgstr "(C) 2006-2009 Игорь Ткач"
+
+#: qtui.py:145
+msgid "(C) 2008 Jeremy Mortis"
+msgstr "(C) 2008 Джереми Мортис"
+
+#: qtui.py:146
+msgid "Distributed under terms and conditions of <a href=\"http://www.gnu.org/licenses/gpl-3.0.html\">GNU Public License Version 3</a>"
+msgstr "Распространяется на условиях <a href=\"http://www.gnu.org/licenses/gpl-3.0.html\">GNU Public License версии 3</a>"
+
+#: qtui.py:149
+msgid "Aard Dictionary logo by Iryna Gerasymova"
+msgstr "Логотип Aard Dictionary разработан Ириной Герасимовой"
+
+#: qtui.py:150
+msgid "Human-O2 icon set by <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
+msgstr "Набор пиктограмм Human-O2 разработан <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
+
+#: qtui.py:332
+#, python-format
+msgid "Redirect to %s not found"
+msgstr "Перенаправление %s не найдено"
+
+#: qtui.py:625
+msgid "&Lookup Box"
+msgstr "П&оле ввода"
+
+#: qtui.py:627
+msgid "Ctrl+L"
+msgstr ""
+
+#: qtui.py:628
+msgid "Move focus to word input and select its content"
+msgstr "Переместить фокус в поле ввода и выделить текст в нём"
+
+#: qtui.py:658
+msgid "&Back"
+msgstr "&Назад"
+
+#: qtui.py:660
+msgid "Go back to previous word in history"
+msgstr "Вернуться к предыдущему слову"
+
+#: qtui.py:662
+msgid "&Forward"
+msgstr "&Вперёд"
+
+#: qtui.py:664
+msgid "Go forward to next word in history"
+msgstr "Перейти к следующему слову"
+
+#: qtui.py:678
+msgid "&Lookup"
+msgstr "&Поиск"
+
+#: qtui.py:683
+msgid "&History"
+msgstr "&История"
+
+#: qtui.py:693
+msgid "&Dictionary"
+msgstr "&Словарь"
+
+#: qtui.py:695
+msgid "&Add Dictionaries..."
+msgstr "Подключить &словари..."
+
+#: qtui.py:696
+msgid "Ctrl+O"
+msgstr ""
+
+#: qtui.py:697
+msgid "Add dictionaries"
+msgstr "Подключить словари"
+
+#: qtui.py:701
+msgid "Add &Directory..."
+msgstr "По&дключить папку..."
+
+#: qtui.py:702
+msgid "Add dictionary directory"
+msgstr "Подключить папку со словарями"
+
+#: qtui.py:706
+msgid "&Verify..."
+msgstr "&Проверить..."
+
+#: qtui.py:707
+msgid "Ctrl+Y"
+msgstr ""
+
+#: qtui.py:708
+msgid "Verify volume data integrity"
+msgstr "Проверить целостность данных словарных томов"
+
+#: qtui.py:712
+msgid "&Remove..."
+msgstr "&Отключить..."
+
+#: qtui.py:713
+msgid "Ctrl+R"
+msgstr ""
+
+#: qtui.py:714
+msgid "Remove dictionary or dictionary directory"
+msgstr "Отключить словарь или папку со словарями"
+
+#: qtui.py:718
+msgid "&Info..."
+msgstr "&Информация..."
+
+#: qtui.py:719
+msgid "Ctrl+I"
+msgstr ""
+
+#: qtui.py:720
+msgid "Information about open dictionaries"
+msgstr "Информация об открытых словарях"
+
+#: qtui.py:724
+msgid "&Quit"
+msgstr "&Выйти"
+
+#: qtui.py:725
+msgid "Ctrl+Q"
+msgstr ""
+
+#: qtui.py:726
+msgid "Exit application"
+msgstr "Закрыть приложение"
+
+#: qtui.py:730
+msgid "&Navigate"
+msgstr "&Навигация"
+
+#: qtui.py:737
+msgid "&Next Article"
+msgstr "&Следующая статья"
+
+#: qtui.py:738
+msgid "Ctrl+."
+msgstr ""
+
+#: qtui.py:739
+msgid "Show next article"
+msgstr "Показать следующую статью"
+
+#: qtui.py:743
+msgid "&Previous Article"
+msgstr "&Предыдущая статья"
+
+#: qtui.py:744
+msgid "Ctrl+,"
+msgstr ""
+
+#: qtui.py:745
+msgid "Show previous article"
+msgstr "Показать предыдущую статью"
+
+#: qtui.py:749
+msgid "&Online Article"
+msgstr "Статья он&лайн "
+
+#: qtui.py:750
+msgid "Ctrl+T"
+msgstr ""
+
+#: qtui.py:751
+msgid "Open online version of this article in a web browser"
+msgstr "Открыть онлайн версию текущей статьи в веб-браузере"
+
+#: qtui.py:755
+msgid "&View"
+msgstr "&Вид"
+
+#: qtui.py:760
+msgid "&Toolbar"
+msgstr "Панель &кнопок"
+
+#: qtui.py:764
+msgid "&Article Appearance..."
+msgstr "&Стиль статьи"
+
+#: qtui.py:765
+msgid "Customize article appearance"
+msgstr "Изменить внешний вид статей"
+
+#: qtui.py:769
+msgid "Text &Size"
+msgstr "&Размер текста"
+
+#: qtui.py:771
+msgid "&Increase"
+msgstr "У&величить"
+
+#: qtui.py:772
+msgid "Ctrl+="
+msgstr ""
+
+#: qtui.py:773
+msgid "Increase size of article text"
+msgstr "Увеличить размера текста статьи"
+
+#: qtui.py:777
+msgid "&Decrease"
+msgstr "У&меньшить"
+
+#: qtui.py:779
+msgid "Decrease size of article text"
+msgstr "Уменьшить размер текста статьи"
+
+#: qtui.py:783
+msgid "&Reset"
+msgstr "&Восстановить"
+
+#: qtui.py:784
+msgid "Ctrl+0"
+msgstr ""
+
+#: qtui.py:785
+msgid "Reset size of article text to default"
+msgstr "Восстановить размер текста к размеру по умолчанию"
+
+#: qtui.py:789
+msgid "&Full Screen"
+msgstr "На весь &экран"
+
+#: qtui.py:790
+msgid "F11"
+msgstr ""
+
+#: qtui.py:791
+msgid "Toggle full screen mode"
+msgstr "Переключить полноэкранный режим"
+
+#: qtui.py:796
+msgid "H&elp"
+msgstr "Спр&авка"
+
+#: qtui.py:798
+msgid "&About..."
+msgstr "&О программе"
+
+#: qtui.py:799
+msgid "Information about Aard Dictionary"
+msgstr "Информация о программе Aard Dicitonary"
+
+#: qtui.py:854
+msgid "Opening dictionaries..."
+msgstr "Идет подключение словарей..."
+
+#: qtui.py:855
+msgid "Stop"
+msgstr "Стоп"
+
+#: qtui.py:892
+msgid "Open Failed"
+msgstr "Ошибка при открытии"
+
+#: qtui.py:894
+msgid "Failed to open some dictionaries"
+msgstr "Не удалось открыть некоторые словари"
+
+#: qtui.py:911
+msgid "Add Dictionary"
+msgstr "Добавить словарь"
+
+#: qtui.py:913
+msgid "Aard Dictionary Files"
+msgstr "Файлы Aard Dictionary"
+
+#: qtui.py:920
+msgid "Add Dictionary Directory"
+msgstr "Подключить папку со словарями"
+
+#: qtui.py:932
+msgid "Remove Dictionaries"
+msgstr "Отключить словари"
+
+#: qtui.py:956
+msgid "Select &All"
+msgstr "&Выбрать все"
+
+#: qtui.py:961
+msgid "&Remove"
+msgstr "Отключить"
+
+#: qtui.py:1337
+msgid "Verify"
+msgstr "Проверить"
+
+#: qtui.py:1343
+msgid "Status"
+msgstr "Статус"
+
+#: qtui.py:1343
+#: qtui.py:1464
+msgid "Volume"
+msgstr "Том"
+
+#: qtui.py:1354
+msgid "Unverified"
+msgstr "Непроверен"
+
+#: qtui.py:1366
+msgid "&Verify"
+msgstr "П&роверить"
+
+#: qtui.py:1375
+msgid "Verifying..."
+msgstr "Идёт проверка"
+
+#: qtui.py:1387
+msgid "Ok"
+msgstr "В порядке"
+
+#: qtui.py:1390
+msgid "Corrupt"
+msgstr "Испорчен"
+
+#: qtui.py:1420
+msgid "Dictionary Info"
+msgstr "Информация о словарях"
+
+#: qtui.py:1477
+msgid "Volumes:"
+msgstr "Томов:"
+
+#: qtui.py:1480
+msgid "Number of articles:"
+msgstr "Количество статей:"
+
+#: qtui.py:1486
+msgid "Source"
+msgstr "Источник"
+
+#: qtui.py:1488
+msgid "Copyright Notice"
+msgstr "Информация об авторских правах"
+
+#: qtui.py:1490
+msgid "License"
+msgstr "Лицензия"
+
+#: qtui.py:1509
+msgid "About"
+msgstr "О программе"
+
+#: qtui.py:1539
+msgid "Article Appearance"
+msgstr "Стиль статьи"
+
+#: qtui.py:1547
+msgid ""
+"<div id=\"globalWrapper\">\n"
+"This is an <a href=\"#\">internal link</a>. <br>\n"
+"This is an <a href=\"http://example.com\">external link</a>. <br>\n"
+"This is text with a footnote reference<a id=\"_r123\" href=\"#\">[1]</a>. <br>\n"
+"<p>Click on any link to see active link color.</p>\n"
+"\n"
+"<div>1. <a href=\"#_r123\">^</a> This is a footnote.</div>\n"
+"</div>\n"
+msgstr ""
+"<div id=\"globalWrapper\">\n"
+"Это <a href=\"#\">обычная внутренняя ссылка</a>. <br>\n"
+"Это <a href=\"http://example.com\">внешняя ссылка</a>. <br>\n"
+"Это текст со сноской<a id=\"_r123\" href=\"#\">[1]</a>. <br>\n"
+"<p>Нажмите любую ссылку, чтобы увидеть цвет активной ссылки.</p>\n"
+"\n"
+"<div>1. <a href=\"#_r123\">^</a> Это сноска.</div>\n"
+"</div>\n"
+
+#: qtui.py:1580
+msgid "Internal Link"
+msgstr "Внутрення ссылка"
+
+#: qtui.py:1590
+msgid "External Link"
+msgstr "Внешняя ссылка"
+
+#: qtui.py:1600
+msgid "Footnote Link"
+msgstr "Сноска"
+
+#: qtui.py:1610
+msgid "Footnote Back Link"
+msgstr "Ссылка назад к сноске"
+
+#: qtui.py:1620
+msgid "Active Link"
+msgstr "Активная ссылка"
+
+#: qtui.py:1622
+msgid "Use Wikipedia style"
+msgstr "Использовать стиль Википедии"
+
