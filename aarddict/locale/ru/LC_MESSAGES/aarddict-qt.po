@@ -17,7 +17,7 @@ msgstr ""
 "Project-Id-Version: 0.8.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2009-11-04 00:40-0500\n"
-"PO-Revision-Date: 2009-11-04 00:41-0500\n"
+"PO-Revision-Date: 2009-11-04 01:06-0500\n"
 "Last-Translator: Igor Tkach <itkach@aarddict.org>\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -313,7 +313,7 @@ msgstr "&Выбрать все"
 
 #: qtui.py:961
 msgid "&Remove"
-msgstr "Отключить"
+msgstr "&Отключить"
 
 #: qtui.py:1337
 msgid "Verify"
