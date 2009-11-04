@@ -625,7 +625,7 @@ class DictView(QMainWindow):
         action_lookup_box = QAction(_('&Lookup Box'), self)
         action_lookup_box.setIcon(icons['edit-find'])
         action_lookup_box.setShortcut(_('Ctrl+L'))
-        action_lookup_box.setStatusTip(_('Move focus to word input and select its content'))
+        action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
         connect(action_lookup_box, SIGNAL('triggered()'), self.go_to_lookup_box)
 
         self.word_input = WordInput(action_lookup_box)
@@ -657,11 +657,11 @@ class DictView(QMainWindow):
 
         action_history_back = QAction(icons['go-previous'], _('&Back'), self)
         action_history_back.setShortcut(QKeySequence.Back)
-        action_history_back.setStatusTip(_('Go back to previous word in history'))
+        action_history_back.setToolTip(_('Go back to previous word in history'))
         connect(action_history_back, SIGNAL('triggered()'), self.history_back)
         action_history_fwd = QAction(icons['go-next'], _('&Forward'), self)
         action_history_fwd.setShortcuts(QKeySequence.Forward)
-        action_history_fwd.setStatusTip(_('Go forward to next word in history'))
+        action_history_fwd.setToolTip(_('Go forward to next word in history'))
         connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
 
         connect(self.history_view,
@@ -694,36 +694,36 @@ class DictView(QMainWindow):
 
         action_add_dicts = QAction(icons['add-file'], _('&Add Dictionaries...'), self)
         action_add_dicts.setShortcut(_('Ctrl+O'))
-        action_add_dicts.setStatusTip(_('Add dictionaries'))
+        action_add_dicts.setToolTip(_('Add dictionaries'))
         connect(action_add_dicts, SIGNAL('triggered()'), self.add_dicts)
         mn_dictionary.addAction(action_add_dicts)
 
         action_add_dict_dir = QAction(icons['add-folder'], _('Add &Directory...'), self)
-        action_add_dict_dir.setStatusTip(_('Add dictionary directory'))
+        action_add_dict_dir.setToolTip(_('Add dictionary directory'))
         connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
         mn_dictionary.addAction(action_add_dict_dir)
 
         action_verify = QAction(icons['system-run'], _('&Verify...'), self)
         action_verify.setShortcut(_('Ctrl+Y'))
-        action_verify.setStatusTip(_('Verify volume data integrity'))
+        action_verify.setToolTip(_('Verify volume data integrity'))
         connect(action_verify, SIGNAL('triggered()'), self.verify)
         mn_dictionary.addAction(action_verify)
 
         action_remove_dict_source = QAction(icons['list-remove'], _('&Remove...'), self)
         action_remove_dict_source.setShortcut(_('Ctrl+R'))
-        action_remove_dict_source.setStatusTip(_('Remove dictionary or dictionary directory'))
+        action_remove_dict_source.setToolTip(_('Remove dictionary or dictionary directory'))
         connect(action_remove_dict_source, SIGNAL('triggered()'), self.remove_dict_source)
         mn_dictionary.addAction(action_remove_dict_source)
 
         action_info = QAction(icons['document-properties'], _('&Info...'), self)
         action_info.setShortcut(_('Ctrl+I'))
-        action_info.setStatusTip(_('Information about open dictionaries'))
+        action_info.setToolTip(_('Information about open dictionaries'))
         connect(action_info, SIGNAL('triggered()'), self.show_info)
         mn_dictionary.addAction(action_info)
 
         action_quit = QAction(icons['application-exit'], _('&Quit'), self)
         action_quit.setShortcut(_('Ctrl+Q'))
-        action_quit.setStatusTip(_('Exit application'))
+        action_quit.setToolTip(_('Exit application'))
         connect(action_quit, SIGNAL('triggered()'), self.close)
         mn_dictionary.addAction(action_quit)
 
@@ -736,19 +736,19 @@ class DictView(QMainWindow):
 
         action_next_article = QAction(icons['go-next-page'], _('&Next Article'), self)
         action_next_article.setShortcut(_('Ctrl+.'))
-        action_next_article.setStatusTip(_('Show next article'))
+        action_next_article.setToolTip(_('Show next article'))
         connect(action_next_article, SIGNAL('triggered()'), self.show_next_article)
         mn_navigate.addAction(action_next_article)
 
         action_prev_article = QAction(icons['go-previous-page'], _('&Previous Article'), self)
         action_prev_article.setShortcut(_('Ctrl+,'))
-        action_prev_article.setStatusTip(_('Show previous article'))
+        action_prev_article.setToolTip(_('Show previous article'))
         connect(action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(action_prev_article)
 
         action_online_article = QAction(icons['emblem-web'], _('&Online Article'), self)
         action_online_article.setShortcut(_('Ctrl+T'))
-        action_online_article.setStatusTip(_('Open online version of this article in a web browser'))
+        action_online_article.setToolTip(_('Open online version of this article in a web browser'))
         connect(action_online_article, SIGNAL('triggered()'), self.show_article_online)
         mn_navigate.addAction(action_online_article)
 
@@ -762,7 +762,7 @@ class DictView(QMainWindow):
         mn_view.addAction(toolbar.toggleViewAction())
 
         action_article_appearance = QAction(icons['emblem-art2'], _('&Article Appearance...'), self)
-        action_article_appearance.setStatusTip(_('Customize article appearance'))
+        action_article_appearance.setToolTip(_('Customize article appearance'))
         connect(action_article_appearance, SIGNAL('triggered()'), self.article_appearance)
         mn_view.addAction(action_article_appearance)
 
@@ -770,25 +770,25 @@ class DictView(QMainWindow):
 
         action_increase_text = QAction(icons['zoom-in'], _('&Increase'), self)
         action_increase_text.setShortcuts([QKeySequence.ZoomIn, _("Ctrl+=")])
-        action_increase_text.setStatusTip(_('Increase size of article text'))
+        action_increase_text.setToolTip(_('Increase size of article text'))
         connect(action_increase_text, SIGNAL('triggered()'), self.increase_text_size)
         mn_text_size.addAction(action_increase_text)
 
         action_decrease_text = QAction(icons['zoom-out'], _('&Decrease'), self)
         action_decrease_text.setShortcut(QKeySequence.ZoomOut)
-        action_decrease_text.setStatusTip(_('Decrease size of article text'))
+        action_decrease_text.setToolTip(_('Decrease size of article text'))
         connect(action_decrease_text, SIGNAL('triggered()'), self.decrease_text_size)
         mn_text_size.addAction(action_decrease_text)
 
         action_reset_text = QAction(icons['zoom-original'], _('&Reset'), self)
         action_reset_text.setShortcut(_('Ctrl+0'))
-        action_reset_text.setStatusTip(_('Reset size of article text to default'))
+        action_reset_text.setToolTip(_('Reset size of article text to default'))
         connect(action_reset_text, SIGNAL('triggered()'), self.reset_text_size)
         mn_text_size.addAction(action_reset_text)
 
         action_full_screen = QAction(icons['view-fullscreen'], _('&Full Screen'), self)
         action_full_screen.setShortcut(_('F11'))
-        action_full_screen.setStatusTip(_('Toggle full screen mode'))
+        action_full_screen.setToolTip(_('Toggle full screen mode'))
         action_full_screen.setCheckable(True)
         connect(action_full_screen, SIGNAL('triggered(bool)'), self.toggle_full_screen)
         mn_view.addAction(action_full_screen)
@@ -796,7 +796,7 @@ class DictView(QMainWindow):
         mn_help = menubar.addMenu(_('H&elp'))
 
         action_about = QAction(icons['help-about'], _('&About...'), self)
-        action_about.setStatusTip(_('Information about Aard Dictionary'))
+        action_about.setToolTip(_('Information about Aard Dictionary'))
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
 
