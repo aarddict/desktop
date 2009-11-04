@@ -724,6 +724,7 @@ class DictView(QMainWindow):
         action_quit = QAction(icons['application-exit'], _('&Quit'), self)
         action_quit.setShortcut(_('Ctrl+Q'))
         action_quit.setToolTip(_('Exit application'))
+        action_quit.setMenuRole(QAction.QuitRole)
         connect(action_quit, SIGNAL('triggered()'), self.close)
         mn_dictionary.addAction(action_quit)
 
@@ -797,6 +798,7 @@ class DictView(QMainWindow):
 
         action_about = QAction(icons['help-about'], _('&About...'), self)
         action_about.setToolTip(_('Information about Aard Dictionary'))
+        action_about.setMenuRole(QAction.AboutRole)
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
 
