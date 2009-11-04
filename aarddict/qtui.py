@@ -47,9 +47,19 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  cmp_words,
                                  VerifyError)
 
+import gettext
+
 connect = QObject.connect
 
 log = logging.getLogger(__name__)
+
+locale.setlocale(locale.LC_ALL, '')
+locale_dir = os.path.join(aarddict.package_dir, 'locale')
+gettext_domain = aarddict.__name__ + '-qt'
+gettext.bindtextdomain(gettext_domain, locale_dir)
+gettext.textdomain(gettext_domain)
+gettext.install(gettext_domain, locale_dir)
+
 
 def load_file(name):
     path = os.path.join(aarddict.package_dir, name)
@@ -117,22 +127,31 @@ about_tmpl = string.Template("""
 <p><a href="$website">$website</a></p>
 </div>
 <div align="center">
-<p style="font-size: small;">Distributed under terms and conditions
-of <a href="http://www.gnu.org/licenses/gpl-3.0.html">GNU Public License Version 3</a>
+<p style="font-size: small;">
+$lic_notice
 </p>
 <p style="font-size: small;">
-Aard Dictionary logo by Iryna Gerasymova<br>
-Human-O2 icon set by <a href="http://schollidesign.deviantart.com">~schollidesign</a>
+$logo_notice<br>
+$icons_notice
 </p>
 </div>
 """)
 
-about_html = about_tmpl.substitute(dict(appname=aarddict.__appname__,
+about_html = about_tmpl.substitute(dict(appname=_(aarddict.__appname__),
                                         version=aarddict.__version__,
                                         logodir=logodir,
                                         website='http://aarddict.org',
-                                        copyright1='(C) 2006-2009 Igor Tkach',
-                                        copyright2='(C) 2008 Jeremy Mortis'))
+                                        copyright1=_('(C) 2006-2009 Igor Tkach'),
+                                        copyright2=_('(C) 2008 Jeremy Mortis'),
+                                        lic_notice=_('Distributed under terms and conditions'
+                                                      'of <a href="http://www.gnu.org/licenses'
+                                                      '/gpl-3.0.html">GNU Public License Version 3</a>'),
+                                        logo_notice=_('Aard Dictionary logo by Iryna Gerasymova'),
+                                        icons_notice=_('Human-O2 icon set by '
+                                                       '<a href="http://schollidesign.deviantart.com">'
+                                                       '~schollidesign</a>')
+                                        )                                   
+                                   )
 
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
@@ -310,7 +329,7 @@ class ArticleLoadThread(QThread):
         except RedirectResolveError, e:
             logging.debug('Failed to resolve redirect', exc_info=1)
             article = Article(e.article.title,
-                              u'Redirect to %s not found' % e.article.redirect,
+                              _('Redirect to %s not found') % e.article.redirect,
                               dictionary=e.article.dictionary)
         log.debug('Read "%s" from %s in %ss',
                   article.title.encode('utf8'),
@@ -603,10 +622,10 @@ class DictView(QMainWindow):
         self.setWindowTitle('Aard Dictionary')
         self.setWindowIcon(icons['aarddict'])
 
-        action_lookup_box = QAction('&Lookup Box', self)
+        action_lookup_box = QAction(_('&Lookup Box'), self)
         action_lookup_box.setIcon(icons['edit-find'])
-        action_lookup_box.setShortcut('Ctrl+L')
-        action_lookup_box.setStatusTip('Move focus to word input and select its content')
+        action_lookup_box.setShortcut(_('Ctrl+L'))
+        action_lookup_box.setStatusTip(_('Move focus to word input and select its content'))
         connect(action_lookup_box, SIGNAL('triggered()'), self.go_to_lookup_box)
 
         self.word_input = WordInput(action_lookup_box)
@@ -636,11 +655,13 @@ class DictView(QMainWindow):
 
         self.history_view = QListWidget()
 
-        action_history_back = QAction(icons['go-previous'], '&Back', self)
+        action_history_back = QAction(icons['go-previous'], _('&Back'), self)
         action_history_back.setShortcut(QKeySequence.Back)
+        action_history_back.setStatusTip(_('Go back to previous word in history'))
         connect(action_history_back, SIGNAL('triggered()'), self.history_back)
-        action_history_fwd = QAction(icons['go-next'], '&Forward', self)
+        action_history_fwd = QAction(icons['go-next'], _('&Forward'), self)
         action_history_fwd.setShortcuts(QKeySequence.Forward)
+        action_history_fwd.setStatusTip(_('Go forward to next word in history'))
         connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
 
         connect(self.history_view,
@@ -654,12 +675,12 @@ class DictView(QMainWindow):
         self.tabs = QTabWidget()
         self.setDockNestingEnabled(True)
 
-        self.dock_lookup_pane = QDockWidget('&Lookup', self)
+        self.dock_lookup_pane = QDockWidget(_('&Lookup'), self)
         self.dock_lookup_pane.setObjectName('dock_lookup_pane')
         self.dock_lookup_pane.setWidget(lookup_pane)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_lookup_pane)
 
-        dock_history = QDockWidget('&History', self)
+        dock_history = QDockWidget(_('&History'), self)
         dock_history.setObjectName('dock_history')
         dock_history.setWidget(self.history_view)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock_history)
@@ -669,108 +690,113 @@ class DictView(QMainWindow):
 
 
         menubar = self.menuBar()
-        mn_dictionary = menubar.addMenu('&Dictionary')
+        mn_dictionary = menubar.addMenu(_('&Dictionary'))
 
-        action_add_dicts = QAction(icons['add-file'], '&Add Dictionaries...', self)
-        action_add_dicts.setShortcut('Ctrl+O')
-        action_add_dicts.setStatusTip('Add dictionaries')
+        action_add_dicts = QAction(icons['add-file'], _('&Add Dictionaries...'), self)
+        action_add_dicts.setShortcut(_('Ctrl+O'))
+        action_add_dicts.setStatusTip(_('Add dictionaries'))
         connect(action_add_dicts, SIGNAL('triggered()'), self.add_dicts)
         mn_dictionary.addAction(action_add_dicts)
 
-        action_add_dict_dir = QAction(icons['add-folder'], 'Add &Directory...', self)
-        action_add_dict_dir.setStatusTip('Add dictionary directory')
+        action_add_dict_dir = QAction(icons['add-folder'], _('Add &Directory...'), self)
+        action_add_dict_dir.setStatusTip(_('Add dictionary directory'))
         connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
         mn_dictionary.addAction(action_add_dict_dir)
 
-        action_verify = QAction(icons['system-run'], '&Verify...', self)
-        action_verify.setShortcut('Ctrl+Y')
-        action_verify.setStatusTip('Verify volume data integrity')
+        action_verify = QAction(icons['system-run'], _('&Verify...'), self)
+        action_verify.setShortcut(_('Ctrl+Y'))
+        action_verify.setStatusTip(_('Verify volume data integrity'))
         connect(action_verify, SIGNAL('triggered()'), self.verify)
         mn_dictionary.addAction(action_verify)
 
-        action_remove_dict_source = QAction(icons['list-remove'], '&Remove...', self)
-        action_remove_dict_source.setShortcut('Ctrl+R')
-        action_remove_dict_source.setStatusTip('Remove dictionary or dictionary directory')
+        action_remove_dict_source = QAction(icons['list-remove'], _('&Remove...'), self)
+        action_remove_dict_source.setShortcut(_('Ctrl+R'))
+        action_remove_dict_source.setStatusTip(_('Remove dictionary or dictionary directory'))
         connect(action_remove_dict_source, SIGNAL('triggered()'), self.remove_dict_source)
         mn_dictionary.addAction(action_remove_dict_source)
 
-        action_info = QAction(icons['document-properties'], '&Info...', self)
-        action_info.setShortcut('Ctrl+I')
-        action_info.setStatusTip('Information about open dictionaries')
+        action_info = QAction(icons['document-properties'], _('&Info...'), self)
+        action_info.setShortcut(_('Ctrl+I'))
+        action_info.setStatusTip(_('Information about open dictionaries'))
         connect(action_info, SIGNAL('triggered()'), self.show_info)
         mn_dictionary.addAction(action_info)
 
-        action_quit = QAction(icons['application-exit'], '&Quit', self)
-        action_quit.setShortcut('Ctrl+Q')
-        action_quit.setStatusTip('Exit application')
+        action_quit = QAction(icons['application-exit'], _('&Quit'), self)
+        action_quit.setShortcut(_('Ctrl+Q'))
+        action_quit.setStatusTip(_('Exit application'))
         connect(action_quit, SIGNAL('triggered()'), self.close)
         mn_dictionary.addAction(action_quit)
 
-        mn_navigate = menubar.addMenu('&Navigate')
+        mn_navigate = menubar.addMenu(_('&Navigate'))
 
         mn_navigate.addAction(action_lookup_box)
 
         mn_navigate.addAction(action_history_back)
         mn_navigate.addAction(action_history_fwd)
 
-        action_next_article = QAction(icons['go-next-page'], '&Next Article', self)
-        action_next_article.setShortcut('Ctrl+.')
-        action_next_article.setStatusTip('Show next article')
+        action_next_article = QAction(icons['go-next-page'], _('&Next Article'), self)
+        action_next_article.setShortcut(_('Ctrl+.'))
+        action_next_article.setStatusTip(_('Show next article'))
         connect(action_next_article, SIGNAL('triggered()'), self.show_next_article)
         mn_navigate.addAction(action_next_article)
 
-        action_prev_article = QAction(icons['go-previous-page'], '&Previous Article', self)
-        action_prev_article.setShortcut('Ctrl+,')
-        action_prev_article.setStatusTip('Show previous article')
+        action_prev_article = QAction(icons['go-previous-page'], _('&Previous Article'), self)
+        action_prev_article.setShortcut(_('Ctrl+,'))
+        action_prev_article.setStatusTip(_('Show previous article'))
         connect(action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(action_prev_article)
 
-        action_online_article = QAction(icons['emblem-web'], '&Online Article', self)
-        action_online_article.setShortcut('Ctrl+T')
-        action_online_article.setStatusTip('Open online version of this article in a web browser')
+        action_online_article = QAction(icons['emblem-web'], _('&Online Article'), self)
+        action_online_article.setShortcut(_('Ctrl+T'))
+        action_online_article.setStatusTip(_('Open online version of this article in a web browser'))
         connect(action_online_article, SIGNAL('triggered()'), self.show_article_online)
         mn_navigate.addAction(action_online_article)
 
-        mn_view = menubar.addMenu('&View')
+        mn_view = menubar.addMenu(_('&View'))
 
         mn_view.addAction(self.dock_lookup_pane.toggleViewAction())
         mn_view.addAction(dock_history.toggleViewAction())
 
-        toolbar = QToolBar('&Toolbar', self)
+        toolbar = QToolBar(_('&Toolbar'), self)
         toolbar.setObjectName('toolbar')
         mn_view.addAction(toolbar.toggleViewAction())
 
-        action_article_appearance = QAction(icons['emblem-art2'], '&Article Appearance...', self)
+        action_article_appearance = QAction(icons['emblem-art2'], _('&Article Appearance...'), self)
+        action_article_appearance.setStatusTip(_('Customize article appearance'))
         connect(action_article_appearance, SIGNAL('triggered()'), self.article_appearance)
         mn_view.addAction(action_article_appearance)
 
-        mn_text_size = mn_view.addMenu('Text &Size')
+        mn_text_size = mn_view.addMenu(_('Text &Size'))
 
-        action_increase_text = QAction(icons['zoom-in'], '&Increase', self)
-        action_increase_text.setShortcuts([QKeySequence.ZoomIn, "Ctrl+="])
+        action_increase_text = QAction(icons['zoom-in'], _('&Increase'), self)
+        action_increase_text.setShortcuts([QKeySequence.ZoomIn, _("Ctrl+=")])
+        action_increase_text.setStatusTip(_('Increase size of article text'))
         connect(action_increase_text, SIGNAL('triggered()'), self.increase_text_size)
         mn_text_size.addAction(action_increase_text)
 
-        action_decrease_text = QAction(icons['zoom-out'], '&Decrease', self)
+        action_decrease_text = QAction(icons['zoom-out'], _('&Decrease'), self)
         action_decrease_text.setShortcut(QKeySequence.ZoomOut)
+        action_decrease_text.setStatusTip(_('Decrease size of article text'))
         connect(action_decrease_text, SIGNAL('triggered()'), self.decrease_text_size)
         mn_text_size.addAction(action_decrease_text)
 
-        action_reset_text = QAction(icons['zoom-original'], '&Reset', self)
-        action_reset_text.setShortcut('Ctrl+0')
+        action_reset_text = QAction(icons['zoom-original'], _('&Reset'), self)
+        action_reset_text.setShortcut(_('Ctrl+0'))
+        action_reset_text.setStatusTip(_('Reset size of article text to default'))
         connect(action_reset_text, SIGNAL('triggered()'), self.reset_text_size)
         mn_text_size.addAction(action_reset_text)
 
-        action_full_screen = QAction(icons['view-fullscreen'], '&Full Screen', self)
-        action_full_screen.setShortcut('F11')
-        action_full_screen.setStatusTip('Toggle full screen mode')
+        action_full_screen = QAction(icons['view-fullscreen'], _('&Full Screen'), self)
+        action_full_screen.setShortcut(_('F11'))
+        action_full_screen.setStatusTip(_('Toggle full screen mode'))
         action_full_screen.setCheckable(True)
         connect(action_full_screen, SIGNAL('triggered(bool)'), self.toggle_full_screen)
         mn_view.addAction(action_full_screen)
 
-        mn_help = menubar.addMenu('H&elp')
+        mn_help = menubar.addMenu(_('H&elp'))
 
-        action_about = QAction(icons['help-about'], '&About...', self)
+        action_about = QAction(icons['help-about'], _('&About...'), self)
+        action_about.setStatusTip(_('Information about Aard Dictionary'))
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
 
@@ -825,8 +851,8 @@ class DictView(QMainWindow):
         dict_open_thread = DictOpenThread(sources, self)
 
         progress = QProgressDialog(self)
-        progress.setLabelText("Opening dictionaries...")
-        progress.setCancelButtonText("Stop")
+        progress.setLabelText(_('Opening dictionaries...'))
+        progress.setCancelButtonText(_('Stop'))
         progress.setMinimum(0)
         progress.setMinimumDuration(800)
 
@@ -863,9 +889,9 @@ class DictView(QMainWindow):
             dict_open_thread.setParent(None)
             if errors:
                 msg_box = QMessageBox(self)
-                msg_box.setWindowTitle('Open Failed')
+                msg_box.setWindowTitle(_('Open Failed'))
                 msg_box.setIcon(QMessageBox.Warning)
-                msg_box.setInformativeText('Failed to open some dictionaries')
+                msg_box.setInformativeText(_('Failed to open some dictionaries'))
                 msg_box.setDetailedText('\n'.join('%s: %s' % error for error in errors))
                 msg_box.setStandardButtons(QMessageBox.Ok)
                 msg_box.open()
@@ -882,16 +908,16 @@ class DictView(QMainWindow):
 
 
     def select_files(self):
-        file_names = QFileDialog.getOpenFileNames(self, 'Add Dictionary',
+        file_names = QFileDialog.getOpenFileNames(self, _('Add Dictionary'),
                                                   self.lastfiledir.decode('utf-8'),
-                                                  'Aard Dictionary Files (*.aar)')
+                                                  _('Aard Dictionary Files')+' (*.aar)')
         if file_names:
             self.lastfiledir = os.path.dirname(unicode(file_names[-1]).encode('utf-8'))
         return [unicode(name).encode('utf8') for name in file_names]
 
 
     def select_dir(self):
-        name = QFileDialog.getExistingDirectory (self, 'Add Dictionary Directory',
+        name = QFileDialog.getExistingDirectory (self, _('Add Dictionary Directory'),
                                                       self.lastdirdir.decode('utf-8'),
                                                       QFileDialog.ShowDirsOnly)
         dirname = unicode(name).encode('utf8')
@@ -903,7 +929,7 @@ class DictView(QMainWindow):
 
     def remove_dict_source(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle('Remove Dictionaries')
+        dialog.setWindowTitle(_('Remove Dictionaries'))
         content = QVBoxLayout()
 
         item_list = QListWidget()
@@ -927,12 +953,12 @@ class DictView(QMainWindow):
         dialog.setLayout(content)
         button_box = QDialogButtonBox()
 
-        btn_select_all = QPushButton('Select &All')
+        btn_select_all = QPushButton(_('Select &All'))
         button_box.addButton(btn_select_all, QDialogButtonBox.ActionRole)
 
         connect(btn_select_all, SIGNAL('clicked()'), item_list.selectAll)
 
-        btn_remove = QPushButton(icons['list-remove'], '&Remove')
+        btn_remove = QPushButton(icons['list-remove'], _('&Remove'))
 
         def remove():
             rows = [index.row() for index in item_list.selectedIndexes()]
@@ -1308,13 +1334,13 @@ class DictView(QMainWindow):
 
     def verify(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle('Verify')
+        dialog.setWindowTitle(_('Verify'))
         content = QVBoxLayout()
 
         item_list = QTableWidget()
         item_list.setRowCount(len(self.dictionaries))
         item_list.setColumnCount(2)
-        item_list.setHorizontalHeaderLabels(['Status', 'Volume'])
+        item_list.setHorizontalHeaderLabels([_('Status'), _('Volume')])
         item_list.setSelectionMode(QTableWidget.SingleSelection)
         item_list.setEditTriggers(QTableWidget.NoEditTriggers)
         item_list.verticalHeader().setVisible(False)
@@ -1325,7 +1351,7 @@ class DictView(QMainWindow):
             item = QTableWidgetItem(text)
             item.setData(Qt.UserRole, QVariant(dictionary.key()))
             item_list.setItem(i, 1, item)
-            item = QTableWidgetItem('Unverified')
+            item = QTableWidgetItem(_('Unverified'))
             item.setData(Qt.DecorationRole, icons['question'])
             item_list.setItem(i, 0, item)
 
@@ -1337,7 +1363,7 @@ class DictView(QMainWindow):
         dialog.setLayout(content)
         button_box = QDialogButtonBox()
 
-        btn_verify = QPushButton(icons['system-run'], '&Verify')
+        btn_verify = QPushButton(icons['system-run'], _('&Verify'))
 
         def verify():
             current_row = item_list.currentRow()
@@ -1346,7 +1372,7 @@ class DictView(QMainWindow):
             volume = [d for d in self.dictionaries if d.key() == dict_key][0]
             verify_thread = VolumeVerifyThread(volume)
             progress = QProgressDialog(dialog)
-            progress.setWindowTitle('Verifying...')
+            progress.setWindowTitle(_('Verifying...'))
             progress.setLabelText(format_title(volume))
             progress.setValue(0)
             progress.forceShow()
@@ -1358,10 +1384,10 @@ class DictView(QMainWindow):
             def verified(isvalid):
                 status_item = item_list.item(current_row, 0)
                 if isvalid:
-                    status_item.setText('Ok')
+                    status_item.setText(_('Ok'))
                     status_item.setData(Qt.DecorationRole, icons['emblem-ok'])
                 else:
-                    status_item.setText('Corrupt')
+                    status_item.setText(_('Corrupt'))
                     status_item.setData(Qt.DecorationRole, icons['emblem-unreadable'])
 
             def finished():
@@ -1391,7 +1417,7 @@ class DictView(QMainWindow):
 
     def show_info(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle('Dictionary Info')
+        dialog.setWindowTitle(_('Dictionary Info'))
         content = QVBoxLayout()
 
         item_list = QListWidget()
@@ -1434,8 +1460,8 @@ class DictView(QMainWindow):
             if volumes:
                 volumes = sorted(volumes, key=lambda v: v.volume)
                 d = volumes[0]
-                volumes_str = '<br>'.join(('<strong>Volume %s:</strong> <em>%s</em>' %
-                                           (v.volume, v.file_name))
+                volumes_str = '<br>'.join(('<strong>%s %s:</strong> <em>%s</em>' %
+                                           (_('Volume'), v.volume, v.file_name))
                                           for v in volumes)
 
                 params = defaultdict(str)
@@ -1449,11 +1475,11 @@ class DictView(QMainWindow):
                 if d.description:
                     params['description'] = '<p>%s</p>' % linkify(d.description)
                 if d.source:
-                    params['source'] = '<h2>Source</h2>%s' % linkify(d.source)
+                    params['source'] = '<h2>%s</h2>%s' % (_('Source'), linkify(d.source))
                 if d.copyright:
-                    params['copyright'] = '<h2>Copyright Notice</h2>%s' % linkify(d.copyright)
+                    params['copyright'] = '<h2>%s</h2>%s' %(_('Copyright Notice'), linkify(d.copyright))
                 if d.license:
-                    params['license'] = '<h2>License</h2><pre>%s</pre>' % d.license
+                    params['license'] = '<h2>%s</h2><pre>%s</pre>' % (_('License'), d.license)
 
                 html = dict_detail_tmpl.safe_substitute(params)
             else:
@@ -1472,7 +1498,7 @@ class DictView(QMainWindow):
 
     def about(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle('About')
+        dialog.setWindowTitle(_('About'))
         content = QVBoxLayout()
 
         detail_view = SizedWebView(QSize(400, 260))
@@ -1502,7 +1528,7 @@ class DictView(QMainWindow):
 
     def article_appearance(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle('Article Appearance')
+        dialog.setWindowTitle(_('Article Appearance'))
         content = QVBoxLayout()
 
         preview_pane = SizedWebView(QSize(300, 300))
@@ -1510,8 +1536,7 @@ class DictView(QMainWindow):
 
         preview_pane.setPage(WebPage(self))
 
-        html = """
-<div id="globalWrapper">
+        html = _("""<div id="globalWrapper">
 This is an <a href="#">internal link</a>. <br>
 This is an <a href="http://example.com">external link</a>. <br>
 This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
@@ -1519,7 +1544,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
 <div>1. <a href="#_r123">^</a> This is a footnote.</div>
 </div>
-"""
+""")
 
         preview_pane.page().currentFrame().setHtml(html)
 
@@ -1544,7 +1569,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         btn_internal_link = QPushButton()
         btn_internal_link.setIcon(QIcon(pixmap))
         color_pane.addWidget(btn_internal_link, 0, 0)
-        color_pane.addWidget(QLabel('Internal Link'), 0, 1)
+        color_pane.addWidget(QLabel(_('Internal Link')), 0, 1)
 
         connect(btn_internal_link, SIGNAL('clicked()'),
                 functools.partial(set_color, btn_internal_link, 'internal_link_fg'))
@@ -1554,7 +1579,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         btn_external_link = QPushButton()
         btn_external_link.setIcon(QIcon(pixmap))
         color_pane.addWidget(btn_external_link, 1, 0)
-        color_pane.addWidget(QLabel('External Link'), 1, 1)
+        color_pane.addWidget(QLabel(_('External Link')), 1, 1)
 
         connect(btn_external_link, SIGNAL('clicked()'),
                 functools.partial(set_color, btn_external_link, 'external_link_fg'))
@@ -1564,7 +1589,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         btn_footnote = QPushButton()
         btn_footnote.setIcon(QIcon(pixmap))
         color_pane.addWidget(btn_footnote, 2, 0)
-        color_pane.addWidget(QLabel('Footnote Link'), 2, 1)
+        color_pane.addWidget(QLabel(_('Footnote Link')), 2, 1)
 
         connect(btn_footnote, SIGNAL('clicked()'),
                 functools.partial(set_color, btn_footnote, 'footnote_fg'))
@@ -1574,7 +1599,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         btn_footnote_back = QPushButton()
         btn_footnote_back.setIcon(QIcon(pixmap))
         color_pane.addWidget(btn_footnote_back, 3, 0)
-        color_pane.addWidget(QLabel('Footnote Back Link'), 3, 1)
+        color_pane.addWidget(QLabel(_('Footnote Back Link')), 3, 1)
 
         connect(btn_footnote_back, SIGNAL('clicked()'),
                 functools.partial(set_color, btn_footnote_back, 'footnote_backref_fg'))
@@ -1584,9 +1609,9 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         btn_active_link = QPushButton()
         btn_active_link.setIcon(QIcon(pixmap))
         color_pane.addWidget(btn_active_link, 4, 0)
-        color_pane.addWidget(QLabel('Active Link'), 4, 1)
+        color_pane.addWidget(QLabel(_('Active Link')), 4, 1)
 
-        cb_use_mediawiki_style = QCheckBox('Use Wikipedia style')
+        cb_use_mediawiki_style = QCheckBox(_('Use Wikipedia style'))
         color_pane.addWidget(cb_use_mediawiki_style, 5, 0, 1, 2)
 
         mediawiki_style_str = '''<style type="text/css">
