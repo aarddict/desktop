@@ -1497,8 +1497,10 @@ class DictView(QMainWindow):
         connect(item_list,
                 SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                 current_changed)
-
-
+        
+        if item_list.count():
+            item_list.setCurrentRow(0)
+        
         connect(button_box, SIGNAL('rejected()'), dialog.reject)
 
         dialog.setSizeGripEnabled(True)
