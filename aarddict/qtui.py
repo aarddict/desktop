@@ -58,7 +58,7 @@ locale_dir = os.path.join(aarddict.package_dir, 'locale')
 gettext_domain = aarddict.__name__ + '-qt'
 gettext.bindtextdomain(gettext_domain, locale_dir)
 gettext.textdomain(gettext_domain)
-gettext.install(gettext_domain, locale_dir)
+gettext.install(gettext_domain, locale_dir, unicode=True)
 
 
 def load_file(name):
@@ -100,9 +100,9 @@ dict_detail_tmpl= string.Template("""
 <body>
 <h1>$title $version</h1>
 <div style="margin-left:20px;marging-right:20px;">
-<p><strong>Volumes: $total_volumes</strong></p>
+<p><strong>$lbl_total_volumes $total_volumes</strong></p>
 $volumes
-<p><strong>Number of articles:</strong> <em>$num_of_articles</em></p>
+<p><strong>$lbl_num_of_articles</strong> <em>$num_of_articles</em></p>
 </div>
 $description
 $source
@@ -143,7 +143,7 @@ about_html = about_tmpl.substitute(dict(appname=_(aarddict.__appname__),
                                         website='http://aarddict.org',
                                         copyright1=_('(C) 2006-2009 Igor Tkach'),
                                         copyright2=_('(C) 2008 Jeremy Mortis'),
-                                        lic_notice=_('Distributed under terms and conditions'
+                                        lic_notice=_('Distributed under terms and conditions '
                                                       'of <a href="http://www.gnu.org/licenses'
                                                       '/gpl-3.0.html">GNU Public License Version 3</a>'),
                                         logo_notice=_('Aard Dictionary logo by Iryna Gerasymova'),
@@ -1464,13 +1464,21 @@ class DictView(QMainWindow):
                                            (_('Volume'), v.volume, v.file_name))
                                           for v in volumes)
 
-                params = defaultdict(str)
-                params.update(dict(title=d.title, version=d.version,
+                params = defaultdict(unicode)
+                
+                try:                    
+                    num_of_articles = locale.format('%u', d.article_count, True)
+                    num_of_articles = num_of_articles.decode(locale.getpreferredencoding())
+                except:
+                    log.warn("Failed to format number of articles")
+                    num_of_articles = unicode(d.article_count)
+
+                params.update(dict(title=d.title, version=d.version,                                 
+                              lbl_total_volumes=_('Volumes:'),
                               total_volumes=d.total_volumes,
-                              volumes=volumes_str,
-                              num_of_articles=locale.format("%u",
-                                                            d.article_count,
-                                                            True)))
+                              volumes=volumes_str,                              
+                              lbl_num_of_articles=_('Number of articles:'),
+                              num_of_articles=num_of_articles))
 
                 if d.description:
                     params['description'] = '<p>%s</p>' % linkify(d.description)
