@@ -300,7 +300,7 @@ class WordLookupThread(QThread):
         articles = []
         dict_access_lock.lock()
         try:
-            for article in self.dictionaries.lookup(wordstr):
+            for article in self.dictionaries.best_match(wordstr):
                 if self.stop_requested:
                     raise WordLookupStopRequested
                 else:
@@ -1066,20 +1066,34 @@ class DictView(QMainWindow):
     def word_lookup_finished(self, word, articles):
         log.debug('Lookup for %r finished, got %d article(s)', word, len(articles))
         def key(article):
-            return collation_key(article.title, TERTIARY).getByteArray()
-        articles.sort(key=key)
+             return collation_key(article.title, TERTIARY).getByteArray()
+        # articles.sort(key=key)
         self.word_completion.clear()
-        for k, g in groupby(articles, key):
-            article_group = list(g)
-            item = QListWidgetItem()
-            item.setText(article_group[0].title)
-            item.setData(Qt.UserRole, QVariant(article_group))
+        items = dict()
+        for article in articles:
+            article_key = key(article)
+            if article_key in items:                
+                item = items[article_key]
+                article_group = item.data(Qt.UserRole).toPyObject()
+                article_group.append(article)
+                item.setData(Qt.UserRole, QVariant(article_group))
+            else:
+                item = QListWidgetItem()
+                item.setText(article.title)
+                item.setData(Qt.UserRole, QVariant([article]))
+                items[article_key] = item
             self.word_completion.addItem(item)
-        self.select_word(unicode(word))
-        self.current_lookup_thread = None
-        if len(articles) == 0:
+            
+        count = range(self.word_completion.count())
+        if count:
+            item = self.word_completion.item(0)
+            self.word_completion.setCurrentItem(item)
+            self.word_completion.scrollToItem(item)
+        else:
             #add to history if nothing found so that back button works
             self.add_to_history(unicode(word))
+
+        self.current_lookup_thread = None
 
     def select_next_word(self):
         count = self.word_completion.count()
@@ -1260,23 +1274,6 @@ class DictView(QMainWindow):
             result = mainFrame.evaluateJavaScript(js)
             if result.toBool():
                 break
-
-    def select_word(self, word):
-        if word is None:
-            return
-        word, section = split_word(word)
-        count = range(self.word_completion.count())
-        for strength in (TERTIARY, SECONDARY, PRIMARY):
-            for i in count:
-                item = self.word_completion.item(i)
-                if cmp_words(unicode(item.text()), word, strength=strength) == 0:
-                    self.word_completion.setCurrentItem(item)
-                    self.word_completion.scrollToItem(item)
-                    return
-        if count:
-            item = self.word_completion.item(0)
-            self.word_completion.setCurrentItem(item)
-            self.word_completion.scrollToItem(item)
 
 
     def link_clicked(self, url):

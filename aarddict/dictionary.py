@@ -23,6 +23,7 @@ import bz2
 import os
 from bisect import bisect_left
 from itertools import islice, chain
+from collections import defaultdict
 
 import simplejson
 from PyICU import Locale, Collator
@@ -116,6 +117,61 @@ def cmp_words(word1, word2, strength):
 
     """
     k1 = collation_key(word1[:len(word2)], strength)
+    k2 = collation_key(word2, strength)
+    return k1.compareTo(k2)
+
+cmp_word_start = cmp_words
+
+def cmp_word_exact(word1, word2, strength):
+    """
+    >>> cmp_words_exact(u'a', u'b', PRIMARY)
+    -1
+
+    >>> cmp_words_exact(u'abc', u'a', PRIMARY)
+    1
+
+    >>> cmp_words_exact(u'A', u'a', PRIMARY)
+    0
+
+    >>> cmp_words_exact('á'.decode('utf8'), u'a', PRIMARY)
+    0
+
+    >>> cmp_words_exact('ábc'.decode('utf8'), u'a', SECONDARY)
+    1
+
+    >>> cmp_words_exact('á'.decode('utf8'), 'Á'.decode('utf8'), PRIMARY)
+    0
+
+    >>> cmp_words_exact('á'.decode('utf8'), 'Á'.decode('utf8'), SECONDARY)
+    0
+
+    >>> cmp_words_exact('á'.decode('utf8'), 'Á'.decode('utf8'), TERTIARY)
+    -1
+
+    >>> cmp_words_exact('á'.decode('utf8'), 'Á'.decode('utf8'), QUATERNARY)
+    -1
+
+
+    >>> cmp_words_exact('ábc'.decode('utf8'), u'a', PRIMARY)
+    1
+
+    >>> cmp_words_exact('ábc'.decode('utf8'), u'a', SECONDARY)
+    1
+
+    >>> cmp_words_exact('ábc'.decode('utf8'), 'Á'.decode('utf8'), PRIMARY)
+    1
+
+    >>> cmp_words_exact('ábc'.decode('utf8'), 'Á'.decode('utf8'), SECONDARY)
+    1
+
+    >>> cmp_words_exact('ábc'.decode('utf8'), 'Á'.decode('utf8'), TERTIARY)
+    1
+
+    >>> cmp_words_exact('ábc'.decode('utf8'), 'Á'.decode('utf8'), QUATERNARY)
+    1
+
+    """
+    k1 = collation_key(word1, strength)
     k2 = collation_key(word2, strength)
     return k1.compareTo(k2)
 
@@ -253,7 +309,7 @@ class Article(object):
         self.dictionary = dictionary
         self.section = None
 
-    def _redirect(self):        
+    def _redirect(self):
         redirect = self.meta.get(u'r',
                                  self.meta.get('redirect', u''))
         if redirect and self.section:
@@ -375,24 +431,24 @@ class Dictionary(object):
             self.file_name = file_or_filename
             close_on_error = True
             self.file = open(file_or_filename, "rb")
-        
+
         try:
             header = Header(self.file)
         except:
             logging.exception('Failed to read dictionary header from %s', self.file_name)
-            raise DictFormatError(self.file_name, 
+            raise DictFormatError(self.file_name,
                                   "Not a recognized aarddict dictionary file")
 
         if header.signature != 'aard':
             if close_on_error and self.file:
                 self.file.close()
-            raise DictFormatError(self.file_name, 
+            raise DictFormatError(self.file_name,
                                   "Not a recognized aarddict dictionary file")
 
         if header.version != 1:
             if close_on_error and self.file:
                 self.file.close()
-            raise DictFormatError(self.file_name, 
+            raise DictFormatError(self.file_name,
                                   "File format version is not compatible with this viewer")
 
         self.index_count = header.index_count
@@ -469,8 +525,8 @@ class Dictionary(object):
     def __hash__(self):
         return self.key().__hash__()
 
-    def lookup(self, word, strength=PRIMARY):
-        if not word: 
+    def lookup(self, word, strength=PRIMARY, cmp_func=cmp_word_start):
+        if not word:
             return
         if not isinstance(word, unicode):
             word = word.decode('utf8')
@@ -481,15 +537,15 @@ class Dictionary(object):
         try:
             while True:
                 matched_word = self.words[pos]
-                if cmp_words(matched_word, lookupword, PRIMARY) != 0:
-                    break
-                elif strength != PRIMARY and cmp_words(matched_word, lookupword, strength) != 0:
+                cmp_result = cmp_func(matched_word, lookupword, strength)
+                if cmp_result == 0:
+                    article_func = self.articles[pos]
+                    article_func.section = section
+                    article_func.position = pos
+                    yield article_func
                     pos += 1
-                    continue
-                article_func = self.articles[pos]
-                article_func.section = section
-                yield article_func
-                pos += 1
+                else:
+                    break
         except IndexError:
             raise StopIteration
 
@@ -529,7 +585,36 @@ class DictionaryCollection(list):
         return set((d.uuid for d in self))
 
     def volumes(self, uuid):
-        return sorted((d for d in self if d.uuid == uuid), key=lambda d: d.volume)
+        return sorted((d for d in self if d.uuid == uuid),
+                      key=lambda d: d.volume)
+
+    def best_match(self, word, max_from_vol=50):
+        counts = defaultdict(int)
+        seen = set()
+        for cmp_func in (cmp_word_exact, cmp_word_start):
+            for strength in (QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
+                for vol in self:
+                    count = counts[vol]
+                    if count >= max_from_vol: continue
+                    for article in vol.lookup(word, strength=strength,
+                                              cmp_func=cmp_func):
+                        article_key = (article.position, vol)
+                        if article_key in seen:
+                            continue
+                        else:
+                            yield self._wrap_redirect(article)
+                            seen.add(article_key)
+                            count += 1
+                            if count >= max_from_vol: break
+                    counts[vol] = count
+
+
+    def _wrap_redirect(self, article):
+        redirect_article =  functools.partial(self.redirect, article)
+        redirect_article.title = article.title
+        redirect_article.section = article.section
+        redirect_article.source = article.source
+        return redirect_article
 
     def lookup(self, start_word, max_from_one_dict=50,
                uuid=None, strength=PRIMARY, resolve_redirects=True):
@@ -539,15 +624,11 @@ class DictionaryCollection(list):
         for uuid in uuids:
             vols = self.volumes(uuid)
             for article in islice(chain(*[islice(vol.lookup(start_word, strength=strength),
-                                                 max_from_one_dict) 
-                                          for vol in vols]), 
+                                                 max_from_one_dict)
+                                          for vol in vols]),
                                   max_from_one_dict):
                 if resolve_redirects:
-                    redirect_article =  functools.partial(self.redirect, article)
-                    redirect_article.title = article.title
-                    redirect_article.section = article.section
-                    redirect_article.source = article.source                
-                    yield redirect_article
+                    yield self._wrap_redirect(article)
                 else:
                     yield article
 
@@ -556,7 +637,7 @@ class DictionaryCollection(list):
 
         if not redir:
             return article
-        
+
         logging.debug('Redirect "%s" section "%s" ==> "%s" (level %d)',
                       article.title, article.section, redir, level)
 
@@ -584,15 +665,15 @@ class DictionaryCollection(list):
         article = read_func()
         article.title = read_func.title
         article.section = read_func.section
-        rarticle = self._redirect(article)    
+        rarticle = self._redirect(article)
         if rarticle:
             return rarticle
         else:
             raise RedirectNotFound(article)
 
 
-class RedirectResolveError(Exception): 
-    
+class RedirectResolveError(Exception):
+
     def __init__(self, article):
         self.article = article
 
