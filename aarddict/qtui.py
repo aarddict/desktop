@@ -29,7 +29,8 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QFormLayout, QColor, QLabel,
-                         QColorDialog, QCheckBox, QKeySequence, QPalette)
+                         QColorDialog, QCheckBox, QKeySequence, QPalette, 
+                         QMenu)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
@@ -219,10 +220,37 @@ class WebPage(QWebPage):
     def javaScriptAlert (self, originatingFrame, msg):
         log.debug('[js] %s: %s', originatingFrame, msg)
 
-class SizedWebView(QWebView):
+
+class WebView(QWebView):
+
+    def __init__(self, parent=None):
+        QWebView.__init__(self, parent)
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        connect(self,SIGNAL('customContextMenuRequested (const QPoint&)'),
+                self.context_menu_requested)
+
+    def context_menu_requested(self, point):
+        context_menu = QMenu()
+        frame = self.page().currentFrame()
+
+        if unicode(self.selectedText()):
+            context_menu.addAction(self.pageAction(QWebPage.Copy))
+        hit_test = frame.hitTestContent(point)
+        if unicode(hit_test.linkUrl().toString()):
+            context_menu.addAction(self.pageAction(QWebPage.CopyLinkToClipboard))
+        context_menu.addAction(self.pageAction(QWebPage.SelectAll))
+
+        if self.settings().testAttribute(QWebSettings.DeveloperExtrasEnabled):
+            context_menu.addSeparator()
+            context_menu.addAction(self.pageAction(QWebPage.InspectElement))
+
+        context_menu.exec_(self.mapToGlobal(point))
+
+
+class SizedWebView(WebView):
 
     def __init__(self, size_hint, parent=None):
-        QWebView.__init__(self, parent)
+        WebView.__init__(self, parent)
         self.size_hint = size_hint
 
     def sizeHint(self):
@@ -1138,7 +1166,7 @@ class DictView(QMainWindow):
         log.debug('Loading %d article(s)', len(read_funcs))
         self.tabs.blockSignals(True)
         for i, read_func in enumerate(read_funcs):
-            view = QWebView()
+            view = WebView()
             view.setPage(WebPage(self))
             view.page().currentFrame().setHtml('Loading...')
             view.setZoomFactor(self.zoom_factor)
@@ -1437,7 +1465,7 @@ class DictView(QMainWindow):
 
         splitter = QSplitter()
         splitter.addWidget(item_list)
-        detail_view = QWebView()
+        detail_view = WebView()
         detail_view.setPage(WebPage(self))
 
         connect(detail_view, SIGNAL('linkClicked (const QUrl&)'),
