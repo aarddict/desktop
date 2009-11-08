@@ -29,7 +29,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QFormLayout, QColor, QLabel,
-                         QColorDialog, QCheckBox, QKeySequence, QPalette, 
+                         QColorDialog, QCheckBox, QKeySequence, QPalette,
                          QMenu)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
@@ -43,6 +43,7 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  PRIMARY,
                                  SECONDARY,
                                  TERTIARY,
+                                 QUATERNARY,
                                  Article,
                                  split_word,
                                  cmp_words,
@@ -151,7 +152,7 @@ about_html = about_tmpl.substitute(dict(appname=_(aarddict.__appname__),
                                         icons_notice=_('Human-O2 icon set by '
                                                        '<a href="http://schollidesign.deviantart.com">'
                                                        '~schollidesign</a>')
-                                        )                                   
+                                        )
                                    )
 
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
@@ -642,6 +643,13 @@ def write_appearance(colors, use_mediawiki_style):
     with open(appearance_file, 'w') as f:
         appearance_conf.write(f)
 
+grouping_strength = {1: QUATERNARY, 2: TERTIARY, 3: SECONDARY}
+
+def article_grouping_key(article):
+    title = article.title
+    strength = grouping_strength.get(len(title), PRIMARY)
+    return collation_key(title, strength).getByteArray()
+
 class DictView(QMainWindow):
 
     def __init__(self):
@@ -1065,14 +1073,11 @@ class DictView(QMainWindow):
 
     def word_lookup_finished(self, word, articles):
         log.debug('Lookup for %r finished, got %d article(s)', word, len(articles))
-        def key(article):
-             return collation_key(article.title, TERTIARY).getByteArray()
-        # articles.sort(key=key)
         self.word_completion.clear()
         items = dict()
         for article in articles:
-            article_key = key(article)
-            if article_key in items:                
+            article_key =  article_grouping_key(article)
+            if article_key in items:
                 item = items[article_key]
                 article_group = item.data(Qt.UserRole).toPyObject()
                 article_group.append(article)
@@ -1083,7 +1088,7 @@ class DictView(QMainWindow):
                 item.setData(Qt.UserRole, QVariant([article]))
                 items[article_key] = item
             self.word_completion.addItem(item)
-            
+
         count = range(self.word_completion.count())
         if count:
             item = self.word_completion.item(0)
@@ -1154,13 +1159,45 @@ class DictView(QMainWindow):
         self.tabs.blockSignals(False)
 
     def article_loaded(self, title, article, html):
-        log.debug('Loaded article "%s" (original title "%s") (section "%s")',
-                  article.title, title, article.section)
+        log.debug('Loaded article "%s" (original title "%s") (section "%s") (%s at %s)',
+                  article.title, title, article.section, article.position, article.dictionary)
+
+        dictionary = article.dictionary
+        volume = dictionary.key()
+
         for i in range(self.tabs.count()):
-            view = self.tabs.widget(i)
-            if view.property('aard:loading').toBool():
-                view.setProperty('aard:loading', QVariant(False))
-                break
+            w = self.tabs.widget(i)
+            pos = w.property('aard:position').toPyObject()
+            vol = w.property('aard:volume').toPyObject()
+            if pos == article.position and vol == volume:                
+                log.debug('Duplicate article')
+                tooltip = unicode(self.tabs.tabToolTip(i))
+                self.tabs.setTabToolTip(i, u'\n'.join((tooltip, title)))
+                return
+
+        view = WebView()
+        view.setPage(WebPage(self))        
+        dict_title = format_title(dictionary)
+        view.setProperty('aard:dictionary', QVariant(dictionary.uuid))
+        view.setProperty('aard:volume', QVariant(volume))
+        view.setProperty('aard:title', QVariant(article.title))
+        view.setProperty('aard:position', QVariant(article.position))
+        view.page().currentFrame().setHtml(html, QUrl(title))
+        view.setZoomFactor(self.zoom_factor)
+        
+        i = self.tabs.count()
+        if i < 9:
+            tab_label = ('&%d ' % (i+1))+dict_title
+        else:
+            tab_label = dict_title
+
+        self.tabs.blockSignals(True)
+        self.tabs.addTab(view, tab_label)
+        self.tabs.setTabToolTip(self.tabs.count() - 1,
+                                u'\n'.join((dict_title, title)))
+        self.select_preferred_dict()
+        self.tabs.blockSignals(False)
+
         connect(view, SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
 
@@ -1172,32 +1209,9 @@ class DictView(QMainWindow):
             connect(view, SIGNAL('loadFinished (bool)'),
                     loadFinished, Qt.QueuedConnection)
 
-        view.page().currentFrame().setHtml(html, QUrl(title))
-        view.setZoomFactor(self.zoom_factor)
-        view.setProperty('aard:title', QVariant(article.title))
 
     def article_load_started(self, read_funcs):
         log.debug('Loading %d article(s)', len(read_funcs))
-        self.tabs.blockSignals(True)
-        for i, read_func in enumerate(read_funcs):
-            view = WebView()
-            view.setPage(WebPage(self))
-            view.page().currentFrame().setHtml('Loading...')
-            view.setZoomFactor(self.zoom_factor)
-            view.setProperty('aard:loading', QVariant(True))
-            dictionary = read_func.source
-            dict_title = format_title(dictionary)
-            view.setProperty('aard:dictionary', QVariant(dictionary.uuid))
-            view.setProperty('aard:volume', QVariant(dictionary.key()))
-            if i < 9:
-                tab_label = ('&%d ' % (i+1))+dict_title
-            else:
-                tab_label = dict_title
-            self.tabs.addTab(view, tab_label)
-            self.tabs.setTabToolTip(self.tabs.count() - 1,
-                                    u'\n'.join((dict_title, read_func.title)))
-        self.select_preferred_dict()
-        self.tabs.blockSignals(False)
 
     def show_next_article(self):
         current = self.tabs.currentIndex()
@@ -1208,7 +1222,6 @@ class DictView(QMainWindow):
 
     def show_prev_article(self):
         current = self.tabs.currentIndex()
-        count = self.tabs.count()
         new_current = current - 1
         if new_current > -1:
             self.tabs.setCurrentIndex(new_current)
@@ -1492,18 +1505,18 @@ class DictView(QMainWindow):
                                           for v in volumes)
 
                 params = defaultdict(unicode)
-                
-                try:                    
+
+                try:
                     num_of_articles = locale.format('%u', d.article_count, True)
                     num_of_articles = num_of_articles.decode(locale.getpreferredencoding())
                 except:
                     log.warn("Failed to format number of articles")
                     num_of_articles = unicode(d.article_count)
 
-                params.update(dict(title=d.title, version=d.version,                                 
+                params.update(dict(title=d.title, version=d.version,
                               lbl_total_volumes=_('Volumes:'),
                               total_volumes=d.total_volumes,
-                              volumes=volumes_str,                              
+                              volumes=volumes_str,
                               lbl_num_of_articles=_('Number of articles:'),
                               num_of_articles=num_of_articles))
 
@@ -1524,10 +1537,10 @@ class DictView(QMainWindow):
         connect(item_list,
                 SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                 current_changed)
-        
+
         if item_list.count():
             item_list.setCurrentRow(0)
-        
+
         connect(button_box, SIGNAL('rejected()'), dialog.reject)
 
         dialog.setSizeGripEnabled(True)

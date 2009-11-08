@@ -225,6 +225,7 @@ def _read_article(dictionary, offset, len_fmt, pos):
     decompressed_article = _read_raw_article(dictionary, offset, len_fmt, pos)
     article = to_article(decompressed_article)
     article.dictionary = dictionary
+    article.position = pos
     return article
 
 
@@ -301,13 +302,14 @@ class ArticleList(object):
 
 class Article(object):
 
-    def __init__(self, title="", text="", tags=None, meta=None, dictionary=None):
+    def __init__(self, title="", text="", tags=None, meta=None, dictionary=None, position=None):
         self.title = title
         self.text = text
         self.tags = [] if tags is None else tags
         self.meta = {} if meta is None else meta
         self.dictionary = dictionary
         self.section = None
+        self.position = None
 
     def _redirect(self):
         redirect = self.meta.get(u'r',
