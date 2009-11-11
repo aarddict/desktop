@@ -295,7 +295,6 @@ class WordLookupThread(QThread):
         self.stop_requested = False
 
     def run(self):
-        self.setPriority(QThread.LowestPriority)
         wordstr = unicode(self.word).encode('utf8')
         log.debug("Looking up %s", wordstr)
         articles = []
@@ -332,7 +331,6 @@ class ArticleLoadThread(QThread):
         self.use_mediawiki_style = use_mediawiki_style
 
     def run(self):
-        self.setPriority(QThread.LowestPriority)
         self.emit(SIGNAL("article_load_started"), self.article_read_funcs)
         dict_access_lock.lock()
         try:
@@ -689,8 +687,10 @@ class DictView(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.setUnifiedTitleAndToolBarOnMac(False)
-        self.setWindowTitle('Aard Dictionary')
         self.setWindowIcon(icons['aarddict'])
+        
+        self.dictionaries = DictionaryCollection()
+        self.update_title()
 
         action_lookup_box = QAction(_('&Lookup Box'), self)
         action_lookup_box.setIcon(icons['edit-find'])
@@ -893,9 +893,7 @@ class DictView(QMainWindow):
 
         self.timer = QTimer()
         self.timer.setSingleShot(True)
-        self.scheduled_func = None
-
-        self.dictionaries = DictionaryCollection()
+        self.scheduled_func = None        
 
         self.preferred_dicts = {}
 
@@ -960,6 +958,7 @@ class DictView(QMainWindow):
 
         def finished():
             dict_open_thread.setParent(None)
+            self.update_title()
             if errors:
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle(_('Open Failed'))
@@ -1070,6 +1069,7 @@ class DictView(QMainWindow):
         self.sources = write_sources(remaining)
 
         if to_be_removed:
+            self.update_title()
             func = functools.partial(self.update_word_completion, self.word_input.text())
             self.schedule(func, 0)
 
@@ -1104,7 +1104,7 @@ class DictView(QMainWindow):
                 functools.partial(word_lookup_thread.setParent, None),
                 Qt.QueuedConnection)
         self.current_lookup_thread = word_lookup_thread
-        word_lookup_thread.start()
+        word_lookup_thread.start(QThread.LowestPriority)
 
     def word_lookup_finished(self, word, articles):
         log.debug('Lookup for %r finished, got %d article(s)', word, len(articles))
@@ -1184,7 +1184,7 @@ class DictView(QMainWindow):
                     self.article_load_started, Qt.QueuedConnection)
             connect(self, SIGNAL("stop_article_load"),
                     load_thread.stop, Qt.QueuedConnection)
-            load_thread.start()
+            load_thread.start(QThread.LowestPriority)
 
     def clear_current_articles(self):
         self.tabs.blockSignals(True)
@@ -1478,7 +1478,7 @@ class DictView(QMainWindow):
                     Qt.QueuedConnection)
             connect(verify_thread, SIGNAL('finished()'), finished,
                     Qt.QueuedConnection)
-            verify_thread.start()
+            verify_thread.start(QThread.LowestPriority)
 
 
         connect(btn_verify, SIGNAL('clicked()'), verify)
@@ -1781,6 +1781,23 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         write_lastfiledir(self.lastfiledir)
         write_lastdirdir(self.lastdirdir)
         write_zoomfactor(self.zoom_factor)
+
+    def update_title(self):
+        dict_title = self.create_dict_title()
+        title = "%s - %s" % (_(aarddict.__appname__), dict_title)
+        self.setWindowTitle(title)
+
+    def create_dict_title(self):
+        dcount = len(self.dictionaries.uuids())
+        vcount = len(self.dictionaries)
+        if vcount == 0:
+            return _('No dictionaries')
+        volumestr_template =  gettext.ngettext('%d volume', '%d volumes', vcount)
+        volumestr = volumestr_template % vcount
+        dictstr_template = gettext.ngettext('%d dictionary', '%d dictionaries', dcount)
+        dictstr =  dictstr_template % dcount
+        return '%s (%s)' % (dictstr, volumestr)
+
 
 def main(args):
     if not os.path.exists(app_dir):
