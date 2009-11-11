@@ -657,6 +657,7 @@ class TabWidget(QTabWidget):
         self.setDocumentMode(True)
         self.article_progress = QProgressBar(self)
         self.article_progress.setMinimum(0)
+        self.article_progress.hide()
 
     def _update_progress_pos(self):
         self.article_progress.move(self.geometry().width() -
