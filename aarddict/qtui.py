@@ -60,7 +60,7 @@ locale_dir = os.path.join(aarddict.package_dir, 'locale')
 gettext_domain = aarddict.__name__ + '-qt'
 gettext.bindtextdomain(gettext_domain, locale_dir)
 gettext.textdomain(gettext_domain)
-gettext.install(gettext_domain, locale_dir, unicode=True)
+gettext.install(gettext_domain, locale_dir, unicode=True, names=['ngettext'])
 
 
 def load_file(name):
@@ -1784,7 +1784,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
     def update_title(self):
         dict_title = self.create_dict_title()
-        title = "%s - %s" % (_(aarddict.__appname__), dict_title)
+        title = u'%s - %s' % (_(aarddict.__appname__), dict_title)
         self.setWindowTitle(title)
 
     def create_dict_title(self):
@@ -1792,11 +1792,11 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         vcount = len(self.dictionaries)
         if vcount == 0:
             return _('No dictionaries')
-        volumestr_template =  gettext.ngettext('%d volume', '%d volumes', vcount)
+        volumestr_template =  ngettext('%d volume', '%d volumes', vcount)
         volumestr = volumestr_template % vcount
-        dictstr_template = gettext.ngettext('%d dictionary', '%d dictionaries', dcount)
+        dictstr_template = ngettext('%d dictionary', '%d dictionaries', dcount)
         dictstr =  dictstr_template % dcount
-        return '%s (%s)' % (dictstr, volumestr)
+        return u'%s (%s)' % (dictstr, volumestr)
 
 
 def main(args):
