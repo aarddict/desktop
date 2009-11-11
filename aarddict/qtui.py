@@ -30,7 +30,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QFormLayout, QColor, QLabel,
                          QColorDialog, QCheckBox, QKeySequence, QPalette,
-                         QMenu)
+                         QMenu, QProgressBar)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
@@ -341,6 +341,7 @@ class ArticleLoadThread(QThread):
                 html = self._tohtml(article)
                 title = read_func.title
                 self.emit(SIGNAL("article_loaded"), title, article, html)
+                QThread.yieldCurrentThread()
         except ArticleLoadStopRequested:
             self.emit(SIGNAL("article_load_stopped"), self)
         else:
@@ -650,6 +651,39 @@ def article_grouping_key(article):
     strength = grouping_strength.get(len(title), PRIMARY)
     return collation_key(title, strength).getByteArray()
 
+
+class TabWidget(QTabWidget):
+
+    def __init__(self):
+        QTabWidget.__init__(self)
+        self.setDocumentMode(True)
+        self.article_progress = QProgressBar(self)
+        self.article_progress.setMinimum(0)
+
+    def _update_progress_pos(self):
+        self.article_progress.move(self.geometry().width() -
+                                   self.article_progress.geometry().width() - 3, 2)
+
+
+    def progress_start(self, maximum):
+        self.article_progress.setMaximum(maximum)
+        self.article_progress.setValue(0)
+        self.article_progress.show()
+
+    def progress_update(self):
+        value = self.article_progress.value() + 1
+        self.article_progress.setValue(value)
+        if value == self.article_progress.maximum():
+            self.progress_stop()
+
+    def progress_stop(self):
+        self.article_progress.hide()
+
+    def resizeEvent(self, event):
+        QTabWidget.resizeEvent(self, event)
+        self._update_progress_pos()
+
+
 class DictView(QMainWindow):
 
     def __init__(self):
@@ -708,7 +742,8 @@ class DictView(QMainWindow):
                      SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.word_selection_changed)
 
-        self.tabs = QTabWidget()
+        self.tabs = TabWidget()
+
         self.setDockNestingEnabled(True)
 
         self.dock_lookup_pane = QDockWidget(_('&Lookup'), self)
@@ -1138,8 +1173,12 @@ class DictView(QMainWindow):
             load_thread = ArticleLoadThread(article_group, self, self.use_mediawiki_style)
             connect(load_thread, SIGNAL("article_loaded"),
                     self.article_loaded, Qt.QueuedConnection)
+
+            def finished():
+                load_thread.setParent(None)
+
             connect(load_thread, SIGNAL("finished ()"),
-                    functools.partial(load_thread.setParent, None),
+                    finished,
                     Qt.QueuedConnection)
             connect(load_thread, SIGNAL("article_load_started"),
                     self.article_load_started, Qt.QueuedConnection)
@@ -1152,10 +1191,7 @@ class DictView(QMainWindow):
         for i in reversed(range(self.tabs.count())):
             w = self.tabs.widget(i)
             self.tabs.removeTab(i)
-            p = w.page()
-            w.setPage(None)
             w.deleteLater()
-            p.deleteLater()
         self.tabs.blockSignals(False)
 
     def article_loaded(self, title, article, html):
@@ -1164,27 +1200,27 @@ class DictView(QMainWindow):
 
         dictionary = article.dictionary
         volume = dictionary.key()
-
+        self.tabs.progress_update()
         for i in range(self.tabs.count()):
             w = self.tabs.widget(i)
             pos = w.property('aard:position').toPyObject()
             vol = w.property('aard:volume').toPyObject()
-            if pos == article.position and vol == volume:                
+            if pos == article.position and vol == volume:
                 log.debug('Duplicate article')
                 tooltip = unicode(self.tabs.tabToolTip(i))
                 self.tabs.setTabToolTip(i, u'\n'.join((tooltip, title)))
                 return
 
         view = WebView()
-        view.setPage(WebPage(self))        
-        dict_title = format_title(dictionary)
+        view.setPage(WebPage(view))
         view.setProperty('aard:dictionary', QVariant(dictionary.uuid))
         view.setProperty('aard:volume', QVariant(volume))
         view.setProperty('aard:title', QVariant(article.title))
         view.setProperty('aard:position', QVariant(article.position))
         view.page().currentFrame().setHtml(html, QUrl(title))
         view.setZoomFactor(self.zoom_factor)
-        
+
+        dict_title = format_title(dictionary)
         i = self.tabs.count()
         if i < 9:
             tab_label = ('&%d ' % (i+1))+dict_title
@@ -1212,6 +1248,7 @@ class DictView(QMainWindow):
 
     def article_load_started(self, read_funcs):
         log.debug('Loading %d article(s)', len(read_funcs))
+        self.tabs.progress_start(len(read_funcs))
 
     def show_next_article(self):
         current = self.tabs.currentIndex()
