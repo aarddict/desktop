@@ -1168,16 +1168,18 @@ class DictView(QMainWindow):
 
     def update_shown_article(self, selected):
         self.emit(SIGNAL("stop_article_load"))
-        self.clear_current_articles()
+        self.clear_current_articles()        
         if selected:
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(Qt.UserRole).toPyObject()
+            self.tabs.progress_start(len(article_group))
             load_thread = ArticleLoadThread(article_group, self, self.use_mediawiki_style)
             connect(load_thread, SIGNAL("article_loaded"),
                     self.article_loaded, Qt.QueuedConnection)
 
             def finished():
                 load_thread.setParent(None)
+                self.tabs.progress_stop()
 
             connect(load_thread, SIGNAL("finished ()"),
                     finished,
@@ -1249,8 +1251,7 @@ class DictView(QMainWindow):
 
 
     def article_load_started(self, read_funcs):
-        log.debug('Loading %d article(s)', len(read_funcs))
-        self.tabs.progress_start(len(read_funcs))
+        log.debug('Loading %d article(s)', len(read_funcs))        
 
     def show_next_article(self):
         current = self.tabs.currentIndex()
