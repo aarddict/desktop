@@ -690,7 +690,7 @@ class DictView(QMainWindow):
         QMainWindow.__init__(self)
         self.setUnifiedTitleAndToolBarOnMac(False)
         self.setWindowIcon(icons['aarddict'])
-        
+
         self.dictionaries = DictionaryCollection()
         self.update_title()
 
@@ -895,7 +895,7 @@ class DictView(QMainWindow):
 
         self.timer = QTimer()
         self.timer.setSingleShot(True)
-        self.scheduled_func = None        
+        self.scheduled_func = None
 
         self.preferred_dicts = {}
 
@@ -961,6 +961,7 @@ class DictView(QMainWindow):
         def finished():
             dict_open_thread.setParent(None)
             self.update_title()
+            self.update_preferred_dicts()
             if errors:
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle(_('Open Failed'))
@@ -1079,7 +1080,12 @@ class DictView(QMainWindow):
         if current_tab_index > -1:
             web_view = self.tabs.widget(current_tab_index)
             dict_uuid = str(web_view.property('aard:dictionary').toByteArray())
+            self.update_preferred_dicts(dict_uuid=dict_uuid)
+
+    def update_preferred_dicts(self, dict_uuid=None):
+        if dict_uuid:
             self.preferred_dicts[dict_uuid] = time.time()
+        self.dictionaries.sort(key=lambda d: -self.preferred_dicts.get(d.uuid, 0))        
 
     def schedule(self, func, delay=500):
         if self.scheduled_func:
@@ -1168,7 +1174,7 @@ class DictView(QMainWindow):
 
     def update_shown_article(self, selected):
         self.emit(SIGNAL("stop_article_load"))
-        self.clear_current_articles()        
+        self.clear_current_articles()
         if selected:
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(Qt.UserRole).toPyObject()
@@ -1251,7 +1257,7 @@ class DictView(QMainWindow):
 
 
     def article_load_started(self, read_funcs):
-        log.debug('Loading %d article(s)', len(read_funcs))        
+        log.debug('Loading %d article(s)', len(read_funcs))
 
     def show_next_article(self):
         current = self.tabs.currentIndex()
