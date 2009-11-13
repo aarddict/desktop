@@ -329,6 +329,7 @@ class ArticleLoadThread(QThread):
         self.article_read_funcs = article_read_funcs
         self.stop_requested = False
         self.use_mediawiki_style = use_mediawiki_style
+        self.html_cache = {}
 
     def run(self):
         self.emit(SIGNAL("article_load_started"), self.article_read_funcs)
@@ -346,6 +347,8 @@ class ArticleLoadThread(QThread):
             self.emit(SIGNAL("article_load_finished"), self, self.article_read_funcs)
         finally:
             dict_access_lock.unlock()
+            self.html_cache.clear()
+            del self.html_cache
             del self.article_read_funcs
 
     def _load_article(self, read_func):
@@ -369,34 +372,39 @@ class ArticleLoadThread(QThread):
         if self.stop_requested:
             raise ArticleLoadStopRequested
 
-        article_format = article.dictionary.metadata['article_format']
+        cache_key = (article.position, article.dictionary)
+        if cache_key in self.html_cache:
+            result = self.html_cache[cache_key]
+        else:                                
+            article_format = article.dictionary.metadata['article_format']
 
-        result = ['<html>',
-                  '<head>'
-                  '<script>%s</script>' % js]
-        if self.use_mediawiki_style:
-            result += mediawiki_style
-        result += ['</head>',
-                  '<body>',
-                  '<div id="globalWrapper">']
-        if article_format == 'json':
-            for c in aar2html.convert(article):
-                if self.stop_requested:
-                    raise ArticleLoadStopRequested
-                result.append(c)
-            steps = [aar2html.fix_new_lines,
-                     ''.join,
-                     aar2html.remove_p_after_h,
-                     aar2html.add_notebackrefs
-                     ]
-            for step in steps:
-                if self.stop_requested:
-                    raise ArticleLoadStopRequested
-                result = step(result)
-        else:
-            result = ''.join(result)
-            result += article.text
-        result += '</div></body></html>'
+            result = ['<html>',
+                      '<head>'
+                      '<script>%s</script>' % js]
+            if self.use_mediawiki_style:
+                result += mediawiki_style
+            result += ['</head>',
+                      '<body>',
+                      '<div id="globalWrapper">']
+            if article_format == 'json':
+                for c in aar2html.convert(article):
+                    if self.stop_requested:
+                        raise ArticleLoadStopRequested
+                    result.append(c)
+                steps = [aar2html.fix_new_lines,
+                         ''.join,
+                         aar2html.remove_p_after_h,
+                         aar2html.add_notebackrefs
+                         ]
+                for step in steps:
+                    if self.stop_requested:
+                        raise ArticleLoadStopRequested
+                    result = step(result)
+            else:
+                result = ''.join(result)
+                result += article.text
+            result += '</div></body></html>'
+            self.html_cache[cache_key] = result
         log.debug('Converted "%s" in %ss',
                   article.title.encode('utf8'), time.time() - t0)
         return result
@@ -1085,7 +1093,7 @@ class DictView(QMainWindow):
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
             self.preferred_dicts[dict_uuid] = time.time()
-        self.dictionaries.sort(key=lambda d: -self.preferred_dicts.get(d.uuid, 0))        
+        self.dictionaries.sort(key=lambda d: -self.preferred_dicts.get(d.uuid, 0))
 
     def schedule(self, func, delay=500):
         if self.scheduled_func:
