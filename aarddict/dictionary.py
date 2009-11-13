@@ -14,12 +14,12 @@
 # Copyright (C) 2008-2009  Jeremy Mortis, Igor Tkach
 
 from __future__ import with_statement
-import functools
 import struct
 import logging
 import zlib
 import bz2
 import os
+from functools import partial
 from bisect import bisect_left
 from itertools import islice, chain
 from collections import defaultdict, deque
@@ -317,7 +317,7 @@ class ArticleList(object):
         if 0 <= i < len(self):
             key_pos, article_unit_ptr = self.read_index_item(i)
             key = self.read_key(key_pos)
-            article_func = functools.partial(self.read_article, article_unit_ptr)
+            article_func = partial(self.read_article, article_unit_ptr)
             article_func.title = key.decode('utf8')
             article_func.source = self.dictionary
             return article_func
@@ -506,16 +506,16 @@ class Dictionary(object):
         if locale_article_language:
             self.article_language = locale_article_language
 
-        read_index_item = functools.partial(_read_index_item,
+        read_index_item = partial(_read_index_item,
                                                  self.file,
                                                  header.index1_offset,
                                                  header.index1_item_format)
-        read_key = functools.partial(_read_key,
+        read_key = partial(_read_key,
                                      self.file,
                                      header.index2_offset,
                                      header.key_length_format)
         read_article_func = _read_raw_article if raw_articles else _read_article
-        read_article = functools.partial(read_article_func,
+        read_article = partial(read_article_func,
                                          self,
                                          header.article_offset,
                                          header.article_length_format)
@@ -637,7 +637,7 @@ class DictionaryCollection(list):
 
 
     def _wrap_redirect(self, article):
-        redirect_article =  functools.partial(self.redirect, article)
+        redirect_article = partial(self.redirect, article)
         redirect_article.title = article.title
         redirect_article.section = article.section
         redirect_article.source = article.source
