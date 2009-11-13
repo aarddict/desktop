@@ -15,7 +15,6 @@
 
 from __future__ import with_statement
 import functools
-
 import struct
 import logging
 import zlib
@@ -23,7 +22,7 @@ import bz2
 import os
 from bisect import bisect_left
 from itertools import islice, chain
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import simplejson
 from PyICU import Locale, Collator
@@ -234,6 +233,32 @@ def _read_raw_article(dictionary, offset, len_fmt, pos):
     return decompress(compressed_article)
 
 
+class CacheList(object):
+
+    def __init__(self, alist, max_cache_size=100):
+        self.alist = alist
+        self.max_cache_size = max_cache_size
+        self.cache = {}
+        self.cache_list = deque()
+        self.hit = 0
+        self.miss = 0
+
+    def __len__(self):
+        return len(self.alist)
+
+    def __getitem__(self, i):
+        if i in self.cache:
+            self.hit += 1
+            result = self.cache[i]
+        else:
+            self.miss += 1
+            self.cache[i] = result = self.alist[i]
+            self.cache_list.append(i)
+            if len(self.cache_list) > self.max_cache_size:
+                del self.cache[self.cache_list.popleft()]
+        return result
+
+    
 class WordList(object):
     """
     List of all words in the dictionary (unicode).
@@ -494,11 +519,11 @@ class Dictionary(object):
                                          self,
                                          header.article_offset,
                                          header.article_length_format)
-        self.words = WordList(self.index_count, read_index_item, read_key)
-        self.articles = ArticleList(self,
-                                    read_index_item,
-                                    read_key,
-                                    read_article)
+        self.words = CacheList(WordList(self.index_count, read_index_item, read_key))
+        self.articles = CacheList(ArticleList(self,
+                                              read_index_item,
+                                              read_key,
+                                              read_article))
 
     title = property(lambda self: self.metadata.get("title", ""))
     version = property(lambda self: self.metadata.get("version", ""))
