@@ -375,7 +375,7 @@ class ArticleLoadThread(QThread):
         cache_key = (article.position, article.dictionary)
         if cache_key in self.html_cache:
             result = self.html_cache[cache_key]
-        else:                                
+        else:
             article_format = article.dictionary.metadata['article_format']
 
             result = ['<html>',
@@ -876,13 +876,13 @@ class DictView(QMainWindow):
         mn_view.addAction(action_full_screen)
 
         mn_help = menubar.addMenu(_('H&elp'))
-    
+
         action_about = QAction(icons['help-about'], _('&About...'), self)
         action_about.setToolTip(_('Information about Aard Dictionary'))
         action_about.setMenuRole(QAction.AboutRole)
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
-        
+
         toolbar.addAction(action_history_back)
         toolbar.addAction(action_history_fwd)
         toolbar.addAction(action_online_article)
@@ -923,32 +923,32 @@ class DictView(QMainWindow):
         import debug
 
         mn_debug = self.menuBar().addMenu('Debug')
-            
+
         action_cache_stats = QAction('Cache Stats', self)
-        connect(action_cache_stats, SIGNAL('triggered()'), 
+        connect(action_cache_stats, SIGNAL('triggered()'),
                 debug.dump_cache_stats)
         mn_debug.addAction(action_cache_stats)
 
         action_instances_diff = QAction('Instances Diff', self)
-        connect(action_instances_diff, SIGNAL('triggered()'), 
+        connect(action_instances_diff, SIGNAL('triggered()'),
                 debug.dump_type_count_diff)
         mn_debug.addAction(action_instances_diff)
 
         action_set_diff_checkpoint = QAction('Set Instances Diff Checkpoint', self)
-        connect(action_set_diff_checkpoint, SIGNAL('triggered()'), 
+        connect(action_set_diff_checkpoint, SIGNAL('triggered()'),
                 debug.set_type_count_checkpoint)
         mn_debug.addAction(action_set_diff_checkpoint)
 
         action_instances_checkpoint_diff = QAction('Instances Checkpoint Diff', self)
-        connect(action_instances_checkpoint_diff, SIGNAL('triggered()'), 
+        connect(action_instances_checkpoint_diff, SIGNAL('triggered()'),
                 debug.dump_type_count_checkpoint_diff)
         mn_debug.addAction(action_instances_checkpoint_diff)
 
         action_rungc = QAction('Run GC', self)
-        connect(action_rungc, SIGNAL('triggered()'), 
+        connect(action_rungc, SIGNAL('triggered()'),
                 debug.rungc)
         mn_debug.addAction(action_rungc)
-        
+
 
     def add_dicts(self):
         self.open_dicts(self.select_files())
@@ -1218,20 +1218,21 @@ class DictView(QMainWindow):
         if selected:
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(Qt.UserRole).toPyObject()
-            self.tabs.progress_start(len(article_group))
+            self.tabs.progress_start(2*len(article_group))
             load_thread = ArticleLoadThread(article_group, self, self.use_mediawiki_style)
             connect(load_thread, SIGNAL("article_loaded"),
                     self.article_loaded, Qt.QueuedConnection)
 
             def finished():
                 load_thread.setParent(None)
-                self.tabs.progress_stop()
 
             connect(load_thread, SIGNAL("finished ()"),
                     finished,
                     Qt.QueuedConnection)
             connect(load_thread, SIGNAL("article_load_started"),
                     self.article_load_started, Qt.QueuedConnection)
+            connect(load_thread, SIGNAL("article_load_stopped"),
+                    self.tabs.progress_stop, Qt.QueuedConnection)
             connect(self, SIGNAL("stop_article_load"),
                     load_thread.stop, Qt.QueuedConnection)
             load_thread.start(QThread.LowestPriority)
@@ -1259,6 +1260,7 @@ class DictView(QMainWindow):
                 log.debug('Duplicate article')
                 tooltip = unicode(self.tabs.tabToolTip(i))
                 self.tabs.setTabToolTip(i, u'\n'.join((tooltip, title)))
+                self.tabs.progress_update()
                 return
 
         view = WebView()
@@ -1267,6 +1269,15 @@ class DictView(QMainWindow):
         view.setProperty('aard:volume', QVariant(volume))
         view.setProperty('aard:title', QVariant(article.title))
         view.setProperty('aard:position', QVariant(article.position))
+
+        def loadFinished(ok):
+            if ok and article.section:
+                self.go_to_section(view, article.section)            
+            self.tabs.progress_update()
+
+        connect(view, SIGNAL('loadFinished (bool)'),
+                loadFinished, Qt.QueuedConnection)
+
         view.page().currentFrame().setHtml(html, QUrl(title))
         view.setZoomFactor(self.zoom_factor)
 
@@ -1286,14 +1297,6 @@ class DictView(QMainWindow):
 
         connect(view, SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
-
-        def loadFinished(ok):
-            if ok:
-                self.go_to_section(view, article.section)
-
-        if article.section:
-            connect(view, SIGNAL('loadFinished (bool)'),
-                    loadFinished, Qt.QueuedConnection)
 
 
     def article_load_started(self, read_funcs):
