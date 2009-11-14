@@ -244,24 +244,25 @@ def cache_result(func):
 
 class CacheList(object):
 
-    def __init__(self, alist, max_cache_size=100):
+    def __init__(self, alist, max_cache_size=100, name=''):
         self.alist = alist
         self.max_cache_size = max_cache_size
         self.cache = {}
         self.cache_list = deque()
         self.hit = 0
         self.miss = 0
+        self.name = name
 
     def __len__(self):
         return len(self.alist)
 
     def __getitem__(self, i):
         if i in self.cache:
-            self.hit += 1
             result = self.cache[i]
+            self.hit += 1
         else:
-            self.miss += 1
             self.cache[i] = result = self.alist[i]
+            self.miss += 1
             self.cache_list.append(i)
             if len(self.cache_list) > self.max_cache_size:
                 del self.cache[self.cache_list.popleft()]
@@ -528,11 +529,15 @@ class Dictionary(object):
                                          self,
                                          header.article_offset,
                                          header.article_length_format)
-        self.words = CacheList(WordList(self.index_count, read_index_item, read_key))
+        self.words = CacheList(WordList(self.index_count, 
+                                        read_index_item, 
+                                        read_key),
+                               name='%s (w)' % format_title(self))
         self.articles = CacheList(ArticleList(self,
                                               read_index_item,
                                               read_key,
-                                              read_article))
+                                              read_article),
+                                  name='%s (a)' % format_title(self))
 
     title = property(lambda self: self.metadata.get("title", ""))
     version = property(lambda self: self.metadata.get("version", ""))

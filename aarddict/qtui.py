@@ -694,7 +694,7 @@ class TabWidget(QTabWidget):
 
 class DictView(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, debug=False):
         QMainWindow.__init__(self)
         self.setUnifiedTitleAndToolBarOnMac(False)
         self.setWindowIcon(icons['aarddict'])
@@ -876,13 +876,13 @@ class DictView(QMainWindow):
         mn_view.addAction(action_full_screen)
 
         mn_help = menubar.addMenu(_('H&elp'))
-
+    
         action_about = QAction(icons['help-about'], _('&About...'), self)
         action_about.setToolTip(_('Information about Aard Dictionary'))
         action_about.setMenuRole(QAction.AboutRole)
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
-
+        
         toolbar.addAction(action_history_back)
         toolbar.addAction(action_history_fwd)
         toolbar.addAction(action_online_article)
@@ -918,6 +918,37 @@ class DictView(QMainWindow):
         self.lastdirdir = ''
 
         self.use_mediawiki_style = True
+
+    def add_debug_menu(self):
+        import debug
+
+        mn_debug = self.menuBar().addMenu('Debug')
+            
+        action_cache_stats = QAction('Cache Stats', self)
+        connect(action_cache_stats, SIGNAL('triggered()'), 
+                debug.dump_cache_stats)
+        mn_debug.addAction(action_cache_stats)
+
+        action_instances_diff = QAction('Instances Diff', self)
+        connect(action_instances_diff, SIGNAL('triggered()'), 
+                debug.dump_type_count_diff)
+        mn_debug.addAction(action_instances_diff)
+
+        action_set_diff_checkpoint = QAction('Set Instances Diff Checkpoint', self)
+        connect(action_set_diff_checkpoint, SIGNAL('triggered()'), 
+                debug.set_type_count_checkpoint)
+        mn_debug.addAction(action_set_diff_checkpoint)
+
+        action_instances_checkpoint_diff = QAction('Instances Checkpoint Diff', self)
+        connect(action_instances_checkpoint_diff, SIGNAL('triggered()'), 
+                debug.dump_type_count_checkpoint_diff)
+        mn_debug.addAction(action_instances_checkpoint_diff)
+
+        action_rungc = QAction('Run GC', self)
+        connect(action_rungc, SIGNAL('triggered()'), 
+                debug.rungc)
+        mn_debug.addAction(action_rungc)
+        
 
     def add_dicts(self):
         self.open_dicts(self.select_files())
@@ -1817,12 +1848,18 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         return u'%s (%s)' % (dictstr, volumestr)
 
 
-def main(args):
+def main(args, debug=False):
+
     if not os.path.exists(app_dir):
         os.makedirs(app_dir)
     app = QApplication(sys.argv)
     load_icons()
     dv = DictView()
+
+    if debug:
+        from PyQt4.QtWebKit import QWebSettings
+        QWebSettings.globalSettings().setAttribute(QWebSettings.DeveloperExtrasEnabled, True)
+        dv.add_debug_menu()
 
     x, y, w, h = read_geometry()
     dv.move(QPoint(x, y))

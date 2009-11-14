@@ -120,10 +120,7 @@ def main():
 
     if options.ui and options.ui.lower() == 'qt':
         import qtui
-        if options.debug:
-            from PyQt4.QtWebKit import QWebSettings
-            QWebSettings.globalSettings().setAttribute(QWebSettings.DeveloperExtrasEnabled, True)
-        qtui.main(args)
+        qtui.main(args, debug=options.debug)
     else:
         try:
             import hildon
@@ -134,48 +131,6 @@ def main():
             import hildonui
             viewer = hildonui.HildonDictViewer()
         viewer.main()
-
-
-type_stats = {}
-first_type_stats = {}
-
-def _dump_type_count_diff():
-    try:
-        import objgraph
-    except:
-        pass
-    else:
-        import gc
-        from operator import itemgetter
-        global type_stats
-        global first_type_stats
-        print 'gc', gc.collect()
-        typestats = objgraph.typestats()
-        if not first_type_stats:
-            first_type_stats = typestats
-        diff = {}
-        for key, val in typestats.iteritems():
-            countdiff = val - type_stats.get(key, 0)
-            if countdiff:
-                diff[key] = countdiff
-
-        print '='*40, '\n',\
-               '\n'.join(('%s: %d' % item) for item in
-                         sorted(diff.iteritems(), key=itemgetter(1))), \
-               '\n', '='*40
-
-        first_diff = {}
-        for key, val in typestats.iteritems():
-            countdiff = val - first_type_stats.get(key, 0)
-            if countdiff:
-                first_diff[key] = countdiff
-
-        print '*'*40, '\n',\
-               '\n'.join(('%s: %d' % item) for item in
-                         sorted(first_diff.iteritems(), key=itemgetter(1))), \
-               '\n', '*'*40
-
-        type_stats = typestats
 
 
 if __name__ == '__main__':
