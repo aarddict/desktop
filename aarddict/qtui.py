@@ -822,13 +822,13 @@ class DictView(QMainWindow):
         mn_navigate.addAction(self.action_history_fwd)
 
         self.action_next_article = QAction(icons['go-next-page'], _('&Next Article'), self)
-        self.action_next_article.setShortcut(_('Ctrl+.'))
+        self.action_next_article.setShortcuts([_('Ctrl+K'), _('Ctrl+.')])
         self.action_next_article.setToolTip(_('Show next article'))
         connect(self.action_next_article, SIGNAL('triggered()'), self.show_next_article)
         mn_navigate.addAction(self.action_next_article)
 
         self.action_prev_article = QAction(icons['go-previous-page'], _('&Previous Article'), self)
-        self.action_prev_article.setShortcut(_('Ctrl+,'))
+        self.action_prev_article.setShortcuts([_('Ctrl+J'), _('Ctrl+,')])
         self.action_prev_article.setToolTip(_('Show previous article'))
         connect(self.action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(self.action_prev_article)

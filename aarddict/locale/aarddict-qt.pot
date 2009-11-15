@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-11-15 01:33-0500\n"
+"POT-Creation-Date: 2009-11-15 02:04-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -171,6 +171,10 @@ msgid "&Next Article"
 msgstr ""
 
 #: qtui.py:825
+msgid "Ctrl+K"
+msgstr ""
+
+#: qtui.py:825
 msgid "Ctrl+."
 msgstr ""
 
@@ -180,6 +184,10 @@ msgstr ""
 
 #: qtui.py:830
 msgid "&Previous Article"
+msgstr ""
+
+#: qtui.py:831
+msgid "Ctrl+J"
 msgstr ""
 
 #: qtui.py:831
