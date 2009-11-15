@@ -833,11 +833,11 @@ class DictView(QMainWindow):
         connect(self.action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(self.action_prev_article)
 
-        action_online_article = QAction(icons['emblem-web'], _('&Online Article'), self)
-        action_online_article.setShortcut(_('Ctrl+T'))
-        action_online_article.setToolTip(_('Open online version of this article in a web browser'))
-        connect(action_online_article, SIGNAL('triggered()'), self.show_article_online)
-        mn_navigate.addAction(action_online_article)
+        self.action_online_article = QAction(icons['emblem-web'], _('&Online Article'), self)
+        self.action_online_article.setShortcut(_('Ctrl+T'))
+        self.action_online_article.setToolTip(_('Open online version of this article in a web browser'))
+        connect(self.action_online_article, SIGNAL('triggered()'), self.show_article_online)
+        mn_navigate.addAction(self.action_online_article)
 
         mn_view = menubar.addMenu(_('&View'))
 
@@ -890,7 +890,7 @@ class DictView(QMainWindow):
 
         toolbar.addAction(self.action_history_back)
         toolbar.addAction(self.action_history_fwd)
-        toolbar.addAction(action_online_article)
+        toolbar.addAction(self.action_online_article)
         toolbar.addSeparator()
         toolbar.addAction(action_increase_text)
         toolbar.addAction(action_decrease_text)
@@ -1125,11 +1125,12 @@ class DictView(QMainWindow):
             web_view = self.tabs.widget(current_tab_index)
             dict_uuid = str(web_view.property('aard:dictionary').toByteArray())
             self.update_preferred_dicts(dict_uuid=dict_uuid)
-        self.update_article_next_prev_actions(current_tab_index)
+        self.update_current_article_actions(current_tab_index)
 
-    def update_article_next_prev_actions(self, current_tab_index):        
+    def update_current_article_actions(self, current_tab_index):        
         self.action_next_article.setEnabled(-1 < current_tab_index < self.tabs.count() - 1)
         self.action_prev_article.setEnabled(current_tab_index > 0)
+        self.action_online_article.setEnabled(self.get_current_article_url() is not None)        
 
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
@@ -1259,7 +1260,7 @@ class DictView(QMainWindow):
             self.tabs.removeTab(i)
             w.deleteLater()
         self.tabs.blockSignals(False)
-        self.update_article_next_prev_actions(self.tabs.currentIndex())
+        self.update_current_article_actions(self.tabs.currentIndex())
 
     def article_loaded(self, title, article, html):
         log.debug('Loaded article "%s" (original title "%s") (section "%s") (%s at %s)',
@@ -1310,7 +1311,7 @@ class DictView(QMainWindow):
                                 u'\n'.join((dict_title, title)))
         self.select_preferred_dict()
         self.tabs.blockSignals(False)
-        self.update_article_next_prev_actions(self.tabs.currentIndex())
+        self.update_current_article_actions(self.tabs.currentIndex())
 
         connect(view, SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
