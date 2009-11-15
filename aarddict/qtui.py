@@ -821,17 +821,17 @@ class DictView(QMainWindow):
         mn_navigate.addAction(self.action_history_back)
         mn_navigate.addAction(self.action_history_fwd)
 
-        action_next_article = QAction(icons['go-next-page'], _('&Next Article'), self)
-        action_next_article.setShortcut(_('Ctrl+.'))
-        action_next_article.setToolTip(_('Show next article'))
-        connect(action_next_article, SIGNAL('triggered()'), self.show_next_article)
-        mn_navigate.addAction(action_next_article)
+        self.action_next_article = QAction(icons['go-next-page'], _('&Next Article'), self)
+        self.action_next_article.setShortcut(_('Ctrl+.'))
+        self.action_next_article.setToolTip(_('Show next article'))
+        connect(self.action_next_article, SIGNAL('triggered()'), self.show_next_article)
+        mn_navigate.addAction(self.action_next_article)
 
-        action_prev_article = QAction(icons['go-previous-page'], _('&Previous Article'), self)
-        action_prev_article.setShortcut(_('Ctrl+,'))
-        action_prev_article.setToolTip(_('Show previous article'))
-        connect(action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
-        mn_navigate.addAction(action_prev_article)
+        self.action_prev_article = QAction(icons['go-previous-page'], _('&Previous Article'), self)
+        self.action_prev_article.setShortcut(_('Ctrl+,'))
+        self.action_prev_article.setToolTip(_('Show previous article'))
+        connect(self.action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
+        mn_navigate.addAction(self.action_prev_article)
 
         action_online_article = QAction(icons['emblem-web'], _('&Online Article'), self)
         action_online_article.setShortcut(_('Ctrl+T'))
@@ -1125,6 +1125,11 @@ class DictView(QMainWindow):
             web_view = self.tabs.widget(current_tab_index)
             dict_uuid = str(web_view.property('aard:dictionary').toByteArray())
             self.update_preferred_dicts(dict_uuid=dict_uuid)
+        self.update_article_next_prev_actions(current_tab_index)
+
+    def update_article_next_prev_actions(self, current_tab_index):        
+        self.action_next_article.setEnabled(-1 < current_tab_index < self.tabs.count() - 1)
+        self.action_prev_article.setEnabled(current_tab_index > 0)
 
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
@@ -1254,6 +1259,7 @@ class DictView(QMainWindow):
             self.tabs.removeTab(i)
             w.deleteLater()
         self.tabs.blockSignals(False)
+        self.update_article_next_prev_actions(self.tabs.currentIndex())
 
     def article_loaded(self, title, article, html):
         log.debug('Loaded article "%s" (original title "%s") (section "%s") (%s at %s)',
@@ -1304,6 +1310,7 @@ class DictView(QMainWindow):
                                 u'\n'.join((dict_title, title)))
         self.select_preferred_dict()
         self.tabs.blockSignals(False)
+        self.update_article_next_prev_actions(self.tabs.currentIndex())
 
         connect(view, SIGNAL('linkClicked (const QUrl&)'),
                      self.link_clicked)
