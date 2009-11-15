@@ -736,11 +736,11 @@ class DictView(QMainWindow):
         self.history_view = QListWidget()
 
         self.action_history_back = QAction(icons['go-previous'], _('&Back'), self)
-        self.action_history_back.setShortcut(QKeySequence.Back)
+        self.action_history_back.setShortcuts([QKeySequence.Back, _('Ctrl+[')])
         self.action_history_back.setToolTip(_('Go back to previous word in history'))
         connect(self.action_history_back, SIGNAL('triggered()'), self.history_back)
         self.action_history_fwd = QAction(icons['go-next'], _('&Forward'), self)
-        self.action_history_fwd.setShortcuts(QKeySequence.Forward)
+        self.action_history_fwd.setShortcuts([QKeySequence.Forward, _('Ctrl+]')])
         self.action_history_fwd.setToolTip(_('Go forward to next word in history'))
         connect(self.action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
 
