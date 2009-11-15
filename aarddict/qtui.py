@@ -735,18 +735,23 @@ class DictView(QMainWindow):
 
         self.history_view = QListWidget()
 
-        action_history_back = QAction(icons['go-previous'], _('&Back'), self)
-        action_history_back.setShortcut(QKeySequence.Back)
-        action_history_back.setToolTip(_('Go back to previous word in history'))
-        connect(action_history_back, SIGNAL('triggered()'), self.history_back)
-        action_history_fwd = QAction(icons['go-next'], _('&Forward'), self)
-        action_history_fwd.setShortcuts(QKeySequence.Forward)
-        action_history_fwd.setToolTip(_('Go forward to next word in history'))
-        connect(action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
+        self.action_history_back = QAction(icons['go-previous'], _('&Back'), self)
+        self.action_history_back.setShortcut(QKeySequence.Back)
+        self.action_history_back.setToolTip(_('Go back to previous word in history'))
+        connect(self.action_history_back, SIGNAL('triggered()'), self.history_back)
+        self.action_history_fwd = QAction(icons['go-next'], _('&Forward'), self)
+        self.action_history_fwd.setShortcuts(QKeySequence.Forward)
+        self.action_history_fwd.setToolTip(_('Go forward to next word in history'))
+        connect(self.action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
 
         connect(self.history_view,
                      SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
                      self.history_selection_changed)
+
+        connect(self.history_view,
+                     SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
+                     self.update_action_history_back)
+
 
         connect(self.word_completion,
                      SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
@@ -813,8 +818,8 @@ class DictView(QMainWindow):
 
         mn_navigate.addAction(action_lookup_box)
 
-        mn_navigate.addAction(action_history_back)
-        mn_navigate.addAction(action_history_fwd)
+        mn_navigate.addAction(self.action_history_back)
+        mn_navigate.addAction(self.action_history_fwd)
 
         action_next_article = QAction(icons['go-next-page'], _('&Next Article'), self)
         action_next_article.setShortcut(_('Ctrl+.'))
@@ -883,8 +888,8 @@ class DictView(QMainWindow):
         connect(action_about, SIGNAL('triggered(bool)'), self.about)
         mn_help.addAction(action_about)
 
-        toolbar.addAction(action_history_back)
-        toolbar.addAction(action_history_fwd)
+        toolbar.addAction(self.action_history_back)
+        toolbar.addAction(self.action_history_fwd)
         toolbar.addAction(action_online_article)
         toolbar.addSeparator()
         toolbar.addAction(action_increase_text)
@@ -1211,6 +1216,11 @@ class DictView(QMainWindow):
         title = unicode(selected.text()) if selected else u''
         func = functools.partial(self.set_word_input, title)
         self.schedule(func, 200)
+
+    def update_action_history_back(self, selected, deselected):
+        current_row = self.history_view.currentRow()
+        self.action_history_fwd.setEnabled(current_row > 0)
+        self.action_history_back.setEnabled(-1 < current_row < self.history_view.count() - 1)
 
     def update_shown_article(self, selected):
         self.emit(SIGNAL("stop_article_load"))
@@ -1891,6 +1901,7 @@ def main(args, debug=False):
                 dv.history_view.blockSignals(False)
                 word = unicode(dv.history_view.currentItem().text())
                 dv.word_input.setText(word)
+                dv.update_action_history_back(dv.history_view.currentItem(), None)
 
     dv.preferred_dicts = read_preferred_dicts()
     dv.lastfiledir = read_lastfiledir()
