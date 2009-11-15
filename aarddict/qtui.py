@@ -750,7 +750,7 @@ class DictView(QMainWindow):
 
         connect(self.history_view,
                      SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
-                     self.update_action_history_back)
+                     self.update_history_actions)
 
 
         connect(self.word_completion,
@@ -1223,7 +1223,7 @@ class DictView(QMainWindow):
         func = functools.partial(self.set_word_input, title)
         self.schedule(func, 200)
 
-    def update_action_history_back(self, selected, deselected):
+    def update_history_actions(self, selected, deselected):
         current_row = self.history_view.currentRow()
         self.action_history_fwd.setEnabled(current_row > 0)
         self.action_history_back.setEnabled(-1 < current_row < self.history_view.count() - 1)
@@ -1447,6 +1447,7 @@ class DictView(QMainWindow):
             while self.history_view.count() > max_history:
                 self.history_view.takeItem(self.history_view.count() - 1)
             self.history_view.blockSignals(False)
+            self.update_history_actions(None, None)
 
     def toggle_full_screen(self, full_screen):
         if full_screen:
@@ -1909,7 +1910,7 @@ def main(args, debug=False):
                 dv.history_view.blockSignals(False)
                 word = unicode(dv.history_view.currentItem().text())
                 dv.word_input.setText(word)
-                dv.update_action_history_back(dv.history_view.currentItem(), None)
+                dv.update_history_actions(None, None)
 
     dv.preferred_dicts = read_preferred_dicts()
     dv.lastfiledir = read_lastfiledir()
