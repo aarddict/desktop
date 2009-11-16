@@ -78,6 +78,7 @@ appearance_file = os.path.join(app_dir, 'appearance.ini')
 preferred_dicts_file = os.path.join(app_dir, 'preferred')
 lastfiledir_file = os.path.join(app_dir, 'lastfiledir')
 lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
+lastsave_file = os.path.join(app_dir, 'lastsave')
 zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
 js = load_file('aar.js')
 
@@ -572,6 +573,17 @@ def read_lastdirdir():
     else:
         return os.path.expanduser('~')
 
+def write_lastsave(lastsave):
+    with open(lastsave_file, 'w') as f:
+        f.write(lastsave)
+
+def read_lastsave():
+    if os.path.exists(lastsave_file):
+        return load_file(lastsave_file).strip()
+    else:
+        return os.path.expanduser('~')
+
+
 def read_geometry():
     if os.path.exists(geometry_file):
         return tuple(int(item) for item in load_file(geometry_file).split())
@@ -931,6 +943,7 @@ class DictView(QMainWindow):
         self.zoom_factor = 1.0
         self.lastfiledir = ''
         self.lastdirdir = ''
+        self.lastsave = ''
 
         self.use_mediawiki_style = True
 
@@ -1866,6 +1879,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             f.write(str(self.history_view.currentRow()))
         write_lastfiledir(self.lastfiledir)
         write_lastdirdir(self.lastdirdir)
+        write_lastsave(self.lastsave)
         write_zoomfactor(self.zoom_factor)
 
     def update_title(self):
@@ -1888,12 +1902,14 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         current_tab = self.tabs.currentWidget()
         if current_tab:
             article_title = unicode(current_tab.property('aard:title').toString())
-
+            dirname = os.path.dirname(self.lastsave.decode('utf-8'))
+            propose_name = os.path.extsep.join((article_title, u'html'))
             file_name = QFileDialog.getSaveFileName(self, _('Save Article'),
-                                                    os.path.extsep.join((article_title, 'html')),
+                                                    os.path.join(dirname, propose_name),
                                                     _('HTML Documents (*.htm *.html)'))
             if file_name:
                 file_name = unicode(file_name)
+                self.lastsave = file_name.encode('utf8')
                 with open(file_name, 'w') as f:
                     current_frame = current_tab.page().currentFrame()
                     html = unicode(current_frame.toHtml())
@@ -1948,6 +1964,7 @@ def main(args, debug=False):
     dv.preferred_dicts = read_preferred_dicts()
     dv.lastfiledir = read_lastfiledir()
     dv.lastdirdir = read_lastdirdir()
+    dv.lastsave = read_lastsave()
     dv.zoom_factor = read_zoomfactor()
     dv.word_input.setFocus()
     colors, use_mediawiki_style = read_appearance()
