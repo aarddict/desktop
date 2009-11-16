@@ -570,7 +570,7 @@ class Dictionary(object):
         if not word:
             return
         if not isinstance(word, unicode):
-            word = word.decode('utf8')
+            word = word.decode('utf8')        
         lookupword, section = split_word(word)
 
         pos = bisect_left(CollationKeyList(self.words, strength),
