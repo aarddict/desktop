@@ -855,7 +855,7 @@ class DictView(QMainWindow):
         connect(self.action_save_article, SIGNAL('triggered()'), self.save_article)
         mn_article.addAction(self.action_save_article)
 
-        self.action_online_article = QAction(icons['emblem-web'], _('&Online Article'), self)
+        self.action_online_article = QAction(icons['emblem-web'], _('&View Online'), self)
         self.action_online_article.setShortcut(_('Ctrl+T'))
         self.action_online_article.setToolTip(_('Open online version of this article in a web browser'))
         connect(self.action_online_article, SIGNAL('triggered()'), self.show_article_online)
