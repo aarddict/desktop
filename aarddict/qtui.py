@@ -203,6 +203,7 @@ def load_icons():
     icons['question'] = mkicon('status/dialog-question')
     icons['warning'] = mkicon('status/dialog-warning')
     icons['aarddict'] = mkicon('apps/aarddict', icondir=logodir)
+    icons['document-save'] = mkicon('actions/document-save')
 
 
 def linkify(text):
@@ -836,6 +837,12 @@ class DictView(QMainWindow):
 
         mn_article = menubar.addMenu(_('&Article'))
 
+        self.action_save_article = QAction(icons['document-save'], _('&Save'), self)
+        self.action_save_article.setShortcut(_('Ctrl+S'))
+        self.action_save_article.setToolTip(_('Save article text to file'))
+        connect(self.action_save_article, SIGNAL('triggered()'), self.save_article)
+        mn_article.addAction(self.action_save_article)
+
         self.action_online_article = QAction(icons['emblem-web'], _('&Online Article'), self)
         self.action_online_article.setShortcut(_('Ctrl+T'))
         self.action_online_article.setToolTip(_('Open online version of this article in a web browser'))
@@ -1134,6 +1141,7 @@ class DictView(QMainWindow):
         self.action_next_article.setEnabled(-1 < current_tab_index < self.tabs.count() - 1)
         self.action_prev_article.setEnabled(current_tab_index > 0)
         self.action_online_article.setEnabled(self.get_current_article_url() is not None)
+        self.action_save_article.setEnabled(self.tabs.count())
 
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
@@ -1875,6 +1883,24 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         dictstr_template = ngettext('%d dictionary', '%d dictionaries', dcount)
         dictstr =  dictstr_template % dcount
         return u'%s (%s)' % (dictstr, volumestr)
+
+    def save_article(self):
+        current_tab = self.tabs.currentWidget()
+        if current_tab:
+            article_title = unicode(current_tab.property('aard:title').toString())
+
+            file_name = QFileDialog.getSaveFileName(self, _('Save Article'),
+                                                    os.path.extsep.join((article_title, 'html')),
+                                                    _('HTML Documents (*.htm *.html)'))
+            if file_name:
+                file_name = unicode(file_name)
+                with open(file_name, 'w') as f:
+                    current_frame = current_tab.page().currentFrame()
+                    html = unicode(current_frame.toHtml())
+                    html = html.replace(u'<html><head>',
+                                        u'<html><head><meta http-equiv="Content-Type" '
+                                        u'content="text/html; charset=utf-8"/>')
+                    f.write(html.encode('utf8'))
 
 
 def main(args, debug=False):
