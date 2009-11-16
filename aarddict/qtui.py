@@ -833,11 +833,14 @@ class DictView(QMainWindow):
         connect(self.action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(self.action_prev_article)
 
+
+        mn_article = menubar.addMenu(_('&Article'))
+
         self.action_online_article = QAction(icons['emblem-web'], _('&Online Article'), self)
         self.action_online_article.setShortcut(_('Ctrl+T'))
         self.action_online_article.setToolTip(_('Open online version of this article in a web browser'))
         connect(self.action_online_article, SIGNAL('triggered()'), self.show_article_online)
-        mn_navigate.addAction(self.action_online_article)
+        mn_article.addAction(self.action_online_article)
 
         mn_view = menubar.addMenu(_('&View'))
 
@@ -1127,10 +1130,10 @@ class DictView(QMainWindow):
             self.update_preferred_dicts(dict_uuid=dict_uuid)
         self.update_current_article_actions(current_tab_index)
 
-    def update_current_article_actions(self, current_tab_index):        
+    def update_current_article_actions(self, current_tab_index):
         self.action_next_article.setEnabled(-1 < current_tab_index < self.tabs.count() - 1)
         self.action_prev_article.setEnabled(current_tab_index > 0)
-        self.action_online_article.setEnabled(self.get_current_article_url() is not None)        
+        self.action_online_article.setEnabled(self.get_current_article_url() is not None)
 
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
@@ -1289,7 +1292,7 @@ class DictView(QMainWindow):
 
         def loadFinished(ok):
             if ok and article.section:
-                self.go_to_section(view, article.section)            
+                self.go_to_section(view, article.section)
             self.tabs.progress_update()
 
         connect(view, SIGNAL('loadFinished (bool)'),
@@ -1403,7 +1406,7 @@ class DictView(QMainWindow):
             webbrowser.open(title)
         else:
             if '_' in title:
-                log.debug('Found underscore character in title %s, replacing with space', 
+                log.debug('Found underscore character in title %s, replacing with space',
                           title.encode('utf8'))
                 title = title.replace(u'_', u' ')
             self.set_word_input(title)
