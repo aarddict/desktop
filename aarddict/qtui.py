@@ -1429,17 +1429,25 @@ class DictView(QMainWindow):
                 break
 
 
-    def link_clicked(self, url):
+    def link_clicked(self, url):        
         scheme = url.scheme()
         title = unicode(url.toString())
+        log.debug('Link clicked: %s', title.encode('utf8'))
         if scheme in ('http', 'https', 'ftp', 'sftp'):
             webbrowser.open(title)
         else:
             if '_' in title:
                 log.debug('Found underscore character in title %s, replacing with space',
                           title.encode('utf8'))
-                title = title.replace(u'_', u' ')
-            self.set_word_input(title)
+                title = title.replace(u'_', u' ')            
+            if title.startswith('#'):
+                current_tab = self.tabs.currentWidget()
+                if current_tab:
+                    self.go_to_section(current_tab, title[1:])
+                else:
+                    log.error('Link %r clicked, but no article view?', title)
+            else:
+                self.set_word_input(title)
 
     def set_word_input(self, text):
         self.word_input.setText(text)
