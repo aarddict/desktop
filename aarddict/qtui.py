@@ -205,6 +205,7 @@ def load_icons():
     icons['warning'] = mkicon('status/dialog-warning')
     icons['aarddict'] = mkicon('apps/aarddict', icondir=logodir)
     icons['document-save'] = mkicon('actions/document-save')
+    icons['edit-copy'] = mkicon('actions/edit-copy')
 
 
 def linkify(text):
@@ -849,6 +850,12 @@ class DictView(QMainWindow):
 
         mn_article = menubar.addMenu(_('&Article'))
 
+        self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'), self)
+        self.action_copy_article.setShortcut(_('Ctrl+Shift+C'))
+        self.action_copy_article.setToolTip(_('Copy article to clipboard'))
+        connect(self.action_copy_article, SIGNAL('triggered()'), self.copy_article)
+        mn_article.addAction(self.action_copy_article)
+
         self.action_save_article = QAction(icons['document-save'], _('&Save'), self)
         self.action_save_article.setShortcut(_('Ctrl+S'))
         self.action_save_article.setToolTip(_('Save article text to file'))
@@ -1151,10 +1158,12 @@ class DictView(QMainWindow):
         self.update_current_article_actions(current_tab_index)
 
     def update_current_article_actions(self, current_tab_index):
-        self.action_next_article.setEnabled(-1 < current_tab_index < self.tabs.count() - 1)
+        count = self.tabs.count()
+        self.action_next_article.setEnabled(-1 < current_tab_index < count - 1)
         self.action_prev_article.setEnabled(current_tab_index > 0)
         self.action_online_article.setEnabled(self.get_current_article_url() is not None)
-        self.action_save_article.setEnabled(self.tabs.count())
+        self.action_save_article.setEnabled(count > 0)
+        self.action_copy_article.setEnabled(count > 0)
 
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
@@ -1918,6 +1927,13 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                                         u'content="text/html; charset=utf-8"/>')
                     f.write(html.encode('utf8'))
 
+    def copy_article(self):
+        current_tab = self.tabs.currentWidget()
+        if current_tab:
+            page = current_tab.page()
+            page.triggerAction(QWebPage.SelectAll)
+            page.triggerAction(QWebPage.Copy)
+            page.currentFrame().evaluateJavaScript("document.getSelection().empty();")
 
 def main(args, debug=False):
 

@@ -16,8 +16,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.8.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-11-16 00:13-0500\n"
-"PO-Revision-Date: 2009-11-16 00:16-0500\n"
+"POT-Creation-Date: 2009-11-16 21:59-0500\n"
+"PO-Revision-Date: 2009-11-16 22:00-0500\n"
 "Last-Translator: Igor Tkach <itkach@aarddict.org>\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -46,373 +46,385 @@ msgstr "Логотип Aard Dictionary разработан Ириной Гер�
 msgid "Human-O2 icon set by <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
 msgstr "Набор пиктограмм Human-O2 разработан <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
 
-#: qtui.py:365
+#: qtui.py:366
 #, python-format
 msgid "Redirect to %s not found"
 msgstr "Перенаправление %s не найдено"
 
-#: qtui.py:718
+#: qtui.py:719
 msgid "&Lookup Box"
 msgstr "П&оле ввода"
 
-#: qtui.py:720
+#: qtui.py:721
 msgid "Ctrl+L"
 msgstr ""
 
-#: qtui.py:721
+#: qtui.py:722
 msgid "Move focus to word input and select its content"
 msgstr "Переместить фокус в поле ввода и выделить текст в нём"
 
-#: qtui.py:751
+#: qtui.py:752
 msgid "&Back"
 msgstr "&Назад"
 
-#: qtui.py:752
+#: qtui.py:753
 msgid "Ctrl+["
 msgstr ""
 
-#: qtui.py:753
+#: qtui.py:754
 msgid "Go back to previous word in history"
 msgstr "Вернуться к предыдущему слову"
 
-#: qtui.py:755
+#: qtui.py:756
 msgid "&Forward"
 msgstr "&Вперёд"
 
-#: qtui.py:756
+#: qtui.py:757
 msgid "Ctrl+]"
 msgstr ""
 
-#: qtui.py:757
+#: qtui.py:758
 msgid "Go forward to next word in history"
 msgstr "Перейти к следующему слову"
 
-#: qtui.py:777
+#: qtui.py:778
 msgid "&Lookup"
 msgstr "&Поиск"
 
-#: qtui.py:782
+#: qtui.py:783
 msgid "&History"
 msgstr "&История"
 
-#: qtui.py:792
+#: qtui.py:793
 msgid "&Dictionary"
 msgstr "&Словарь"
 
-#: qtui.py:794
+#: qtui.py:795
 msgid "&Add Dictionaries..."
 msgstr "Подключить &словари..."
 
-#: qtui.py:795
+#: qtui.py:796
 msgid "Ctrl+O"
 msgstr ""
 
-#: qtui.py:796
+#: qtui.py:797
 msgid "Add dictionaries"
 msgstr "Подключить словари"
 
-#: qtui.py:800
+#: qtui.py:801
 msgid "Add &Directory..."
 msgstr "По&дключить папку..."
 
-#: qtui.py:801
+#: qtui.py:802
 msgid "Add dictionary directory"
 msgstr "Подключить папку со словарями"
 
-#: qtui.py:805
+#: qtui.py:806
 msgid "&Verify..."
 msgstr "&Проверить..."
 
-#: qtui.py:806
+#: qtui.py:807
 msgid "Ctrl+Y"
 msgstr ""
 
-#: qtui.py:807
+#: qtui.py:808
 msgid "Verify volume data integrity"
 msgstr "Проверить целостность данных словарных томов"
 
-#: qtui.py:811
+#: qtui.py:812
 msgid "&Remove..."
 msgstr "&Отключить..."
 
-#: qtui.py:812
+#: qtui.py:813
 msgid "Ctrl+R"
 msgstr ""
 
-#: qtui.py:813
+#: qtui.py:814
 msgid "Remove dictionary or dictionary directory"
 msgstr "Отключить словарь или папку со словарями"
 
-#: qtui.py:817
+#: qtui.py:818
 msgid "&Info..."
 msgstr "&Информация..."
 
-#: qtui.py:818
+#: qtui.py:819
 msgid "Ctrl+I"
 msgstr ""
 
-#: qtui.py:819
+#: qtui.py:820
 msgid "Information about open dictionaries"
 msgstr "Информация об открытых словарях"
 
-#: qtui.py:823
+#: qtui.py:824
 msgid "&Quit"
 msgstr "&Выйти"
 
-#: qtui.py:824
+#: qtui.py:825
 msgid "Ctrl+Q"
 msgstr ""
 
-#: qtui.py:825
+#: qtui.py:826
 msgid "Exit application"
 msgstr "Закрыть приложение"
 
-#: qtui.py:830
+#: qtui.py:831
 msgid "&Navigate"
 msgstr "&Навигация"
 
-#: qtui.py:837
+#: qtui.py:838
 msgid "&Next Article"
 msgstr "&Следующая статья"
 
-#: qtui.py:838
+#: qtui.py:839
 msgid "Ctrl+K"
 msgstr ""
 
-#: qtui.py:838
+#: qtui.py:839
 msgid "Ctrl+."
 msgstr ""
 
-#: qtui.py:839
+#: qtui.py:840
 msgid "Show next article"
 msgstr "Показать следующую статью"
 
-#: qtui.py:843
+#: qtui.py:844
 msgid "&Previous Article"
 msgstr "&Предыдущая статья"
 
-#: qtui.py:844
+#: qtui.py:845
 msgid "Ctrl+J"
 msgstr ""
 
-#: qtui.py:844
+#: qtui.py:845
 msgid "Ctrl+,"
 msgstr ""
 
-#: qtui.py:845
+#: qtui.py:846
 msgid "Show previous article"
 msgstr "Показать предыдущую статью"
 
-#: qtui.py:850
+#: qtui.py:851
 msgid "&Article"
 msgstr "&Cтатья"
 
-#: qtui.py:852
+#: qtui.py:853
+msgid "&Copy"
+msgstr "С&копировать"
+
+#: qtui.py:854
+msgid "Ctrl+Shift+C"
+msgstr ""
+
+#: qtui.py:855
+msgid "Copy article to clipboard"
+msgstr "Скопировать статью в буфер обмена"
+
+#: qtui.py:859
 msgid "&Save"
 msgstr "&Сохранить"
 
-#: qtui.py:853
+#: qtui.py:860
 msgid "Ctrl+S"
 msgstr ""
 
-#: qtui.py:854
+#: qtui.py:861
 msgid "Save article text to file"
 msgstr "Сохранить текст статьи в файл"
 
-#: qtui.py:858
+#: qtui.py:865
 msgid "&View Online"
 msgstr "&Посмотреть в сети"
 
-#: qtui.py:859
+#: qtui.py:866
 msgid "Ctrl+T"
 msgstr ""
 
-#: qtui.py:860
+#: qtui.py:867
 msgid "Open online version of this article in a web browser"
 msgstr "Открыть онлайн версию текущей статьи в веб-браузере"
 
-#: qtui.py:864
+#: qtui.py:871
 msgid "&View"
 msgstr "&Вид"
 
-#: qtui.py:869
+#: qtui.py:876
 msgid "&Toolbar"
 msgstr "Панель &кнопок"
 
-#: qtui.py:873
+#: qtui.py:880
 msgid "&Article Appearance..."
 msgstr "&Стиль статьи"
 
-#: qtui.py:874
+#: qtui.py:881
 msgid "Customize article appearance"
 msgstr "Изменить внешний вид статей"
 
-#: qtui.py:878
+#: qtui.py:885
 msgid "Text &Size"
 msgstr "&Размер текста"
 
-#: qtui.py:880
+#: qtui.py:887
 msgid "&Increase"
 msgstr "У&величить"
 
-#: qtui.py:881
+#: qtui.py:888
 msgid "Ctrl+="
 msgstr ""
 
-#: qtui.py:882
+#: qtui.py:889
 msgid "Increase size of article text"
 msgstr "Увеличить размера текста статьи"
 
-#: qtui.py:886
+#: qtui.py:893
 msgid "&Decrease"
 msgstr "У&меньшить"
 
-#: qtui.py:888
+#: qtui.py:895
 msgid "Decrease size of article text"
 msgstr "Уменьшить размер текста статьи"
 
-#: qtui.py:892
+#: qtui.py:899
 msgid "&Reset"
 msgstr "&Восстановить"
 
-#: qtui.py:893
+#: qtui.py:900
 msgid "Ctrl+0"
 msgstr ""
 
-#: qtui.py:894
+#: qtui.py:901
 msgid "Reset size of article text to default"
 msgstr "Восстановить размер текста к размеру по умолчанию"
 
-#: qtui.py:898
+#: qtui.py:905
 msgid "&Full Screen"
 msgstr "На весь &экран"
 
-#: qtui.py:899
+#: qtui.py:906
 msgid "F11"
 msgstr ""
 
-#: qtui.py:900
+#: qtui.py:907
 msgid "Toggle full screen mode"
 msgstr "Переключить полноэкранный режим"
 
-#: qtui.py:905
+#: qtui.py:912
 msgid "H&elp"
 msgstr "Спр&авка"
 
-#: qtui.py:907
+#: qtui.py:914
 msgid "&About..."
 msgstr "&О программе"
 
-#: qtui.py:908
+#: qtui.py:915
 msgid "Information about Aard Dictionary"
 msgstr "Информация о программе Aard Dicitonary"
 
-#: qtui.py:994
+#: qtui.py:1001
 msgid "Opening dictionaries..."
 msgstr "Идет подключение словарей..."
 
-#: qtui.py:995
+#: qtui.py:1002
 msgid "Stop"
 msgstr "Стоп"
 
-#: qtui.py:1034
+#: qtui.py:1041
 msgid "Open Failed"
 msgstr "Ошибка при открытии"
 
-#: qtui.py:1036
+#: qtui.py:1043
 msgid "Failed to open some dictionaries"
 msgstr "Не удалось открыть некоторые словари"
 
-#: qtui.py:1053
+#: qtui.py:1060
 msgid "Add Dictionary"
 msgstr "Добавить словарь"
 
-#: qtui.py:1055
+#: qtui.py:1062
 msgid "Aard Dictionary Files"
 msgstr "Файлы Aard Dictionary"
 
-#: qtui.py:1062
+#: qtui.py:1069
 msgid "Add Dictionary Directory"
 msgstr "Подключить папку со словарями"
 
-#: qtui.py:1074
+#: qtui.py:1081
 msgid "Remove Dictionaries"
 msgstr "Отключить словари"
 
-#: qtui.py:1098
+#: qtui.py:1105
 msgid "Select &All"
 msgstr "&Выбрать все"
 
-#: qtui.py:1103
+#: qtui.py:1110
 msgid "&Remove"
 msgstr "&Отключить"
 
-#: qtui.py:1513
+#: qtui.py:1520
 msgid "Verify"
 msgstr "Проверить"
 
-#: qtui.py:1519
+#: qtui.py:1526
 msgid "Status"
 msgstr "Статус"
 
-#: qtui.py:1519
-#: qtui.py:1640
+#: qtui.py:1526
+#: qtui.py:1647
 msgid "Volume"
 msgstr "Том"
 
-#: qtui.py:1530
+#: qtui.py:1537
 msgid "Unverified"
 msgstr "Непроверен"
 
-#: qtui.py:1542
+#: qtui.py:1549
 msgid "&Verify"
 msgstr "П&роверить"
 
-#: qtui.py:1551
+#: qtui.py:1558
 msgid "Verifying..."
 msgstr "Идёт проверка"
 
-#: qtui.py:1563
+#: qtui.py:1570
 msgid "Ok"
 msgstr "В порядке"
 
-#: qtui.py:1566
+#: qtui.py:1573
 msgid "Corrupt"
 msgstr "Испорчен"
 
-#: qtui.py:1596
+#: qtui.py:1603
 msgid "Dictionary Info"
 msgstr "Информация о словарях"
 
-#: qtui.py:1653
+#: qtui.py:1660
 msgid "Volumes:"
 msgstr "Томов:"
 
-#: qtui.py:1656
+#: qtui.py:1663
 msgid "Number of articles:"
 msgstr "Количество статей:"
 
-#: qtui.py:1662
+#: qtui.py:1669
 msgid "Source"
 msgstr "Источник"
 
-#: qtui.py:1664
+#: qtui.py:1671
 msgid "Copyright Notice"
 msgstr "Информация об авторских правах"
 
-#: qtui.py:1666
+#: qtui.py:1673
 msgid "License"
 msgstr "Лицензия"
 
-#: qtui.py:1687
+#: qtui.py:1694
 msgid "About"
 msgstr "О программе"
 
-#: qtui.py:1717
+#: qtui.py:1724
 msgid "Article Appearance"
 msgstr "Стиль статьи"
 
-#: qtui.py:1725
+#: qtui.py:1732
 msgid ""
 "<div id=\"globalWrapper\">\n"
 "This is an <a href=\"#\">internal link</a>. <br>\n"
@@ -432,35 +444,35 @@ msgstr ""
 "<div>1. <a href=\"#_r123\">^</a> Это сноска.</div>\n"
 "</div>\n"
 
-#: qtui.py:1758
+#: qtui.py:1765
 msgid "Internal Link"
 msgstr "Внутрення ссылка"
 
-#: qtui.py:1768
+#: qtui.py:1775
 msgid "External Link"
 msgstr "Внешняя ссылка"
 
-#: qtui.py:1778
+#: qtui.py:1785
 msgid "Footnote Link"
 msgstr "Сноска"
 
-#: qtui.py:1788
+#: qtui.py:1795
 msgid "Footnote Back Link"
 msgstr "Ссылка назад к сноске"
 
-#: qtui.py:1798
+#: qtui.py:1805
 msgid "Active Link"
 msgstr "Активная ссылка"
 
-#: qtui.py:1800
+#: qtui.py:1807
 msgid "Use Wikipedia style"
 msgstr "Использовать стиль Википедии"
 
-#: qtui.py:1894
+#: qtui.py:1901
 msgid "No dictionaries"
 msgstr "Словарей нет"
 
-#: qtui.py:1895
+#: qtui.py:1902
 #, python-format
 msgid "%d volume"
 msgid_plural "%d volumes"
@@ -468,7 +480,7 @@ msgstr[0] "%d том"
 msgstr[1] "%d тома"
 msgstr[2] "%d томов"
 
-#: qtui.py:1897
+#: qtui.py:1904
 #, python-format
 msgid "%d dictionary"
 msgid_plural "%d dictionaries"
@@ -476,11 +488,11 @@ msgstr[0] "%d словарь"
 msgstr[1] "%d словаря"
 msgstr[2] "%d словарей"
 
-#: qtui.py:1907
+#: qtui.py:1914
 msgid "Save Article"
 msgstr "Сохранить статью"
 
-#: qtui.py:1909
+#: qtui.py:1916
 msgid "HTML Documents (*.htm *.html)"
 msgstr "Документы HTML (*.htm *.html)"
 
