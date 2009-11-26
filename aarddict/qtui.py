@@ -914,7 +914,7 @@ class DictView(QMainWindow):
         action_about = QAction(icons['help-about'], _('&About...'), self)
         action_about.setToolTip(_('Information about Aard Dictionary'))
         action_about.setMenuRole(QAction.AboutRole)
-        connect(action_about, SIGNAL('triggered(bool)'), self.about)
+        connect(action_about, SIGNAL('triggered()'), self.about)
         mn_help.addAction(action_about)
 
         toolbar.addAction(self.action_history_back)
