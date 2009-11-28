@@ -1607,6 +1607,9 @@ class DictView(QMainWindow):
 
         connect(button_box, SIGNAL('rejected()'), dialog.reject)
 
+        if item_list.rowCount():
+            item_list.setCurrentCell(0, 0)
+
         dialog.exec_()
 
     def show_info(self):
