@@ -953,6 +953,7 @@ class DictView(QMainWindow):
         self.lastsave = ''
 
         self.use_mediawiki_style = True
+        self.update_current_article_actions(-1)
 
     def add_debug_menu(self):
         import debug
