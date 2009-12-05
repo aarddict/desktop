@@ -706,6 +706,13 @@ class TabWidget(QTabWidget):
         self._update_progress_pos()
 
 
+def fix_float_title(widget, title_key, floating):
+    title = _(title_key)
+    if floating:
+        title = title.replace('&', '')
+    widget.setWindowTitle(title)
+
+
 class DictView(QMainWindow):
 
     def __init__(self, debug=False):
@@ -778,11 +785,16 @@ class DictView(QMainWindow):
         self.dock_lookup_pane = QDockWidget(_('&Lookup'), self)
         self.dock_lookup_pane.setObjectName('dock_lookup_pane')
         self.dock_lookup_pane.setWidget(lookup_pane)
+        #On Windows and Mac OS X title bar shows & when floating
+        connect(self.dock_lookup_pane, SIGNAL('topLevelChanged (bool)'),
+                functools.partial(fix_float_title, self.dock_lookup_pane, '&Lookup'))
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_lookup_pane)
 
         dock_history = QDockWidget(_('&History'), self)
         dock_history.setObjectName('dock_history')
         dock_history.setWidget(self.history_view)
+        connect(dock_history, SIGNAL('topLevelChanged (bool)'),
+                functools.partial(fix_float_title, dock_history, '&History'))
         self.addDockWidget(Qt.LeftDockWidgetArea, dock_history)
 
         self.tabifyDockWidget(self.dock_lookup_pane, dock_history)
@@ -1430,7 +1442,7 @@ class DictView(QMainWindow):
                 break
 
 
-    def link_clicked(self, url):        
+    def link_clicked(self, url):
         scheme = url.scheme()
         title = unicode(url.toString())
         log.debug('Link clicked: %s', title.encode('utf8'))
@@ -1440,7 +1452,7 @@ class DictView(QMainWindow):
             if '_' in title:
                 log.debug('Found underscore character in title %s, replacing with space',
                           title.encode('utf8'))
-                title = title.replace(u'_', u' ')            
+                title = title.replace(u'_', u' ')
             if title.startswith('#'):
                 current_tab = self.tabs.currentWidget()
                 if current_tab:
