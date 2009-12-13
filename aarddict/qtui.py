@@ -106,6 +106,7 @@ dict_detail_tmpl= string.Template("""
 <p><strong>$lbl_total_volumes $total_volumes</strong></p>
 $volumes
 <p><strong>$lbl_num_of_articles</strong> <em>$num_of_articles</em></p>
+$language_links
 </div>
 $description
 $source
@@ -1689,6 +1690,10 @@ class DictView(QMainWindow):
                               lbl_num_of_articles=_('Number of articles:'),
                               num_of_articles=num_of_articles))
 
+                if d.language_links:                    
+                    params['language_links'] = ('<p><strong>%s</strong> <em>%s</em></p>' 
+                                                % (_('Language links:'), 
+                                                   ', '.join(d.language_links)))
                 if d.description:
                     params['description'] = '<p>%s</p>' % linkify(d.description)
                 if d.source:

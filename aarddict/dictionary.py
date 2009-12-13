@@ -499,7 +499,7 @@ class Dictionary(object):
 
         self.article_count = self.metadata.get('article_count',
                                                self.index_count)
-
+        
         self.index_language = self.metadata.get("index_language", "")
         if isinstance(self.index_language, unicode):
             self.index_language = self.index_language.encode('utf8')
@@ -545,6 +545,7 @@ class Dictionary(object):
     copyright = property(lambda self: self.metadata.get("copyright", ""))
     license = property(lambda self: self.metadata.get("license", ""))
     source = property(lambda self: self.metadata.get("source", ""))
+    language_links = property(lambda self: sorted(self.metadata.get("language_links", [])))
 
     def __len__(self):
         return self.index_count
