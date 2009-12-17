@@ -2,13 +2,12 @@ import gc
 from operator import itemgetter
 from datetime import datetime
 
-import objgraph
-
 import dictionary
 
 last_type_stats = {}
 
 def dump_type_count_diff():
+    import objgraph
     global last_type_stats
     type_stats = objgraph.typestats()
     diff = {}
@@ -26,6 +25,7 @@ def dump_type_count_diff():
 checkpoint_type_stats = {}
 
 def set_type_count_checkpoint():
+    import objgraph
     global checkpoint_type_stats
     checkpoint_type_stats = objgraph.typestats()
     print '====>\t', 'checkpoint', datetime.strftime(datetime.now(), '%X')
@@ -35,6 +35,7 @@ def set_type_count_checkpoint():
 
 
 def dump_type_count_checkpoint_diff():
+    import objgraph
     type_stats = objgraph.typestats()
     diff = {}
     for key, val in type_stats.iteritems():
