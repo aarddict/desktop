@@ -61,6 +61,9 @@ def main():
     options, args = parser.parse_args()
 
     if options.debug:
+        #if not set tries to imnport multiprocessing
+        #which is excluded when built with py2exe
+        logging.logMultiprocessing = 0
         logging.getLogger().setLevel(logging.DEBUG)
     else:
         import warnings
