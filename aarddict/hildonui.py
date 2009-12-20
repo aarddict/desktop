@@ -115,8 +115,15 @@ class HildonDictViewer(ui.DictViewer):
                 self.mi_exit)
     
     def create_file_chooser_dlg(self):
-        return hildon.FileChooserDialog(self.window, 
-                                        gtk.FILE_CHOOSER_ACTION_OPEN)  
+        try:            
+            return hildon.FileChooserDialog(self.window,
+                                            gtk.FILE_CHOOSER_ACTION_OPEN)
+        except TypeError:
+            #Constructor changed in Maemo5, needs extra arg
+            return hildon.FileChooserDialog(self.window,
+                                            gtk.FILE_CHOOSER_ACTION_OPEN,
+                                            hildon.FileSystemModel())            
+
     
     def open_external_link(self, url):
         webbrowser.open(url, context = osso_c)

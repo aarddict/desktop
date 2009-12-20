@@ -88,6 +88,12 @@ Maemo Application Manager.
 Release Notes
 =============
 
+0.7.6.1
+-----
+
+- Fix :menuselection:`Open...` (``create_file_chooser_dlg`` in
+  ``hildonui``) to work in both Maemo 4 and Maemo 5.  
+
 0.7.6
 -----
 
