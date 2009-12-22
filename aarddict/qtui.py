@@ -758,11 +758,11 @@ class DictView(QMainWindow):
         self.history_view = QListWidget()
 
         self.action_history_back = QAction(icons['go-previous'], _('&Back'), self)
-        self.action_history_back.setShortcuts([QKeySequence.Back, _('Ctrl+[')])
+        self.action_history_back.setShortcuts([QKeySequence.Back, _('Ctrl+['), _('Esc')])
         self.action_history_back.setToolTip(_('Go back to previous word in history'))
         connect(self.action_history_back, SIGNAL('triggered()'), self.history_back)
         self.action_history_fwd = QAction(icons['go-next'], _('&Forward'), self)
-        self.action_history_fwd.setShortcuts([QKeySequence.Forward, _('Ctrl+]')])
+        self.action_history_fwd.setShortcuts([QKeySequence.Forward, _('Ctrl+]'), _('Shift+Esc')])
         self.action_history_fwd.setToolTip(_('Go forward to next word in history'))
         connect(self.action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
 
@@ -898,13 +898,13 @@ class DictView(QMainWindow):
         mn_text_size = mn_view.addMenu(_('Text &Size'))
 
         action_increase_text = QAction(icons['zoom-in'], _('&Increase'), self)
-        action_increase_text.setShortcuts([QKeySequence.ZoomIn, _("Ctrl+=")])
+        action_increase_text.setShortcuts([QKeySequence.ZoomIn, _("Ctrl+="), _('F7')])
         action_increase_text.setToolTip(_('Increase size of article text'))
         connect(action_increase_text, SIGNAL('triggered()'), self.increase_text_size)
         mn_text_size.addAction(action_increase_text)
 
         action_decrease_text = QAction(icons['zoom-out'], _('&Decrease'), self)
-        action_decrease_text.setShortcut(QKeySequence.ZoomOut)
+        action_decrease_text.setShortcuts([QKeySequence.ZoomOut, _('F8')])
         action_decrease_text.setToolTip(_('Decrease size of article text'))
         connect(action_decrease_text, SIGNAL('triggered()'), self.decrease_text_size)
         mn_text_size.addAction(action_decrease_text)
