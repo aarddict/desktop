@@ -3,11 +3,14 @@ RELEASE=$1
 
 mkdir -p usr/{bin/,lib/python2.5/site-packages/aarddict/locale,share/{applications/hildon/,dbus-1/services/,pixmaps}}
 
-DEPENDS="python2.5, python2.5-hildon, python2.5-gtk2, python2.5-osso, python2.5-xml, pyicu (>= 0.8.1), simplejson"
+DEPENDS="python2.5, python2.5-qt4-core (>= 4.6.2), python2.5-qt4-gui (>= 4.6.2), python2.5-qt4-network (>= 4.6.2), python2.5-qt4-webkit (>= 4.6.2), libqt4-core (>= 4.5.3), libqt4-gui (>= 4.5.3), libqt4-network (>= 4.5.3), libqt4-webkit (>= 4.5.3), pyicu (>= 0.8.1), simplejson"
 cp ../run usr/bin/aarddict || exit
-cp -R ../aarddict/*.py usr/lib/python2.5/site-packages/aarddict || exit
-cp -R ../aarddict/locale usr/lib/python2.5/site-packages/aarddict || exit
-cp -R ../aarddict/*.cfg usr/lib/python2.5/site-packages/aarddict || exit
+
+for i in "*.py" "*.js" "*.png" "*.cfg" "*.css" "*.tmpl" locale icons
+do
+  cp -R ../aarddict/$i usr/lib/python2.5/site-packages/aarddict || exit
+done
+
 cp -R ../icons/ usr/share/
 chmod +x usr/bin/aarddict
 
