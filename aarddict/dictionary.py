@@ -233,15 +233,6 @@ def _read_raw_article(dictionary, offset, len_fmt, pos):
     return decompress(compressed_article)
 
 
-def cache_result(func):
-    def wrapper():
-        if wrapper.result is None:
-            wrapper.result = func()
-        return wrapper.result
-    wrapper.result = None
-    return wrapper
-
-
 class CacheList(object):
 
     def __init__(self, alist, max_cache_size=100, name=''):
@@ -327,7 +318,7 @@ class ArticleList(object):
         if 0 <= i < len(self):
             key_pos, article_unit_ptr = self.read_index_item(i)
             key = self.read_key(key_pos)
-            article_func = cache_result(partial(self.read_article, article_unit_ptr))
+            article_func = partial(self.read_article, article_unit_ptr)
             article_func.title = key.decode('utf8')
             article_func.source = self.dictionary
             return article_func
