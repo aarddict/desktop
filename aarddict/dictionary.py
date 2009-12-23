@@ -524,11 +524,10 @@ class Dictionary(object):
                                         read_index_item, 
                                         read_key),
                                name='%s (w)' % format_title(self))
-        self.articles = CacheList(ArticleList(self,
-                                              read_index_item,
-                                              read_key,
-                                              read_article),
-                                  name='%s (a)' % format_title(self))
+        self.articles = ArticleList(self,
+                                    read_index_item,
+                                    read_key,
+                                    read_article)
 
     title = property(lambda self: self.metadata.get("title", ""))
     version = property(lambda self: self.metadata.get("version", ""))
