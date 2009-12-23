@@ -92,7 +92,7 @@ css_link_tag_re = re.compile('<link rel="stylesheet" (.+?)>')
 
 appearance_conf = ConfigParser()
 
-max_history = 100
+max_history = 50
 
 iconset = 'Human-O2'
 icondir = os.path.join(aarddict.package_dir, 'icons/%s/' % iconset)
