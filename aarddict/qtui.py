@@ -726,7 +726,7 @@ class DictView(QMainWindow):
 
         action_lookup_box = QAction(_('&Lookup Box'), self)
         action_lookup_box.setIcon(icons['edit-find'])
-        action_lookup_box.setShortcut(_('Ctrl+L'))
+        action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
         action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
         connect(action_lookup_box, SIGNAL('triggered()'), self.go_to_lookup_box)
 
