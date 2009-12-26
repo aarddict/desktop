@@ -1292,11 +1292,13 @@ class DictView(QMainWindow):
 
             def finished():
                 if load_thread.errors:
-                    errors_txt = u'\n'.join([(_('Error reading article %s from %s (file %s): %s') %
-                                             (read_func.title,
-                                              format_title(read_func.source),
-                                              read_func.source.file_name,
-                                              ex))
+                    errors_txt = u'\n'.join([(_('Error reading article %(title)s from '
+                                                '%(dict_title)s (file %(dict_file)s): '
+                                                '%(exception)s') %
+                                              dict(title=read_func.title,
+                                                   dict_title=format_title(read_func.source),
+                                                   dict_file=read_func.source.file_name,
+                                                   exception=ex))
                                              for read_func, ex in load_thread.errors])
                     for error in load_thread.errors:
                         read_func, ex = error
