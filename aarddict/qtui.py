@@ -334,6 +334,7 @@ class ArticleLoadThread(QThread):
         self.stop_requested = False
         self.use_mediawiki_style = use_mediawiki_style
         self.html_cache = {}
+        self.errors = []
 
     def run(self):
         self.emit(SIGNAL("article_load_started"), self.article_read_funcs)
@@ -348,7 +349,7 @@ class ArticleLoadThread(QThread):
         except ArticleLoadStopRequested:
             self.emit(SIGNAL("article_load_stopped"), self)
         except Exception, e:
-            self.emit(SIGNAL("article_load_error"), self, read_func, e)
+            self.errors.append((read_func, e))
         else:
             self.emit(SIGNAL("article_load_finished"), self, self.article_read_funcs)
         finally:
@@ -364,7 +365,7 @@ class ArticleLoadThread(QThread):
         try:
             article = read_func()
         except RedirectResolveError, e:
-            log.debug('Failed to resolve redirect', exc_info=1)            
+            log.debug('Failed to resolve redirect', exc_info=1)
             article = Article(e.article.title,
                               _('Redirect to %s not found') % e.article.redirect.encode('utf8'),
                               dictionary=e.article.dictionary)
@@ -511,7 +512,7 @@ class SingleRowItemSelectionModel(QItemSelectionModel):
                                                         QItemSelectionModel.Clear)
 
 
-def write_sources(sources):    
+def write_sources(sources):
     with open(sources_file, 'w') as f:
         written = list()
         for source in sources:
@@ -1290,6 +1291,28 @@ class DictView(QMainWindow):
                     self.article_loaded, Qt.QueuedConnection)
 
             def finished():
+                if load_thread.errors:
+                    errors_txt = u'\n'.join([(_('Error reading article %s from %s (file %s): %s') %
+                                             (read_func.title,
+                                              format_title(read_func.source),
+                                              read_func.source.file_name,
+                                              ex))
+                                             for read_func, ex in load_thread.errors])
+                    for error in load_thread.errors:
+                        read_func, ex = error
+                        print repr(read_func.source), ex
+                    msg_box = QMessageBox(self)
+                    msg_box.setWindowTitle(_('Article Load Failed'))
+                    msg_box.setIcon(QMessageBox.Critical)
+                    msg_box.setInformativeText(_('There was an error while loading articles. '
+                                                 'Dictionary files may be corrupted. '
+                                                 'Would you like to verify now?'))
+                    msg_box.setDetailedText(errors_txt)
+                    msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                    result = msg_box.exec_()
+                    if result == QMessageBox.Yes:
+                        self.verify()
+                del load_thread.errors[:]
                 load_thread.setParent(None)
 
             connect(load_thread, SIGNAL("finished ()"),
@@ -1673,7 +1696,7 @@ class DictView(QMainWindow):
             if volumes:
                 volumes = sorted(volumes, key=lambda v: v.volume)
                 d = volumes[0]
-                
+
                 volumes_str = '<br>'.join(('<strong>%s %s:</strong> <em>%s</em>' %
                                            (_('Volume'), v.volume, v.file_name))
                                           for v in volumes)
@@ -1694,9 +1717,9 @@ class DictView(QMainWindow):
                               lbl_num_of_articles=_('Number of articles:'),
                               num_of_articles=num_of_articles))
 
-                if d.language_links:                    
-                    params['language_links'] = ('<p><strong>%s</strong> <em>%s</em></p>' 
-                                                % (_('Language links:'), 
+                if d.language_links:
+                    params['language_links'] = ('<p><strong>%s</strong> <em>%s</em></p>'
+                                                % (_('Language links:'),
                                                    ', '.join(d.language_links)))
                 if d.description:
                     params['description'] = '<p>%s</p>' % linkify(d.description)
@@ -1969,7 +1992,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                     msg_box.setDetailedText(unicode(e))
                     msg_box.setStandardButtons(QMessageBox.Ok)
                     msg_box.open()
-                    
+
 
     def copy_article(self):
         current_tab = self.tabs.currentWidget()
