@@ -1129,7 +1129,7 @@ class DictView(QMainWindow):
             for row in reversed(sorted(rows)):
                 item_list.takeItem(row)
             if rows:
-                remaining = [unicode(item_list.item(i).text()).encode('utf8')
+                remaining = [unicode(item_list.item(i).text())
                              for i in range(item_list.count())]
                 self.cleanup_sources(remaining)
 
