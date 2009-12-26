@@ -1950,13 +1950,24 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             if file_name:
                 file_name = unicode(file_name)
                 self.lastsave = file_name
-                with open(file_name, 'w') as f:
-                    current_frame = current_tab.page().currentFrame()
-                    html = unicode(current_frame.toHtml())
-                    html = html.replace(u'<html><head>',
-                                        u'<html><head><meta http-equiv="Content-Type" '
-                                        u'content="text/html; charset=utf-8"/>')
-                    f.write(html.encode('utf8'))
+                try:
+                    with open(file_name, 'w') as f:
+                        current_frame = current_tab.page().currentFrame()
+                        html = unicode(current_frame.toHtml())
+                        html = html.replace(u'<html><head>',
+                                            u'<html><head><meta http-equiv="Content-Type" '
+                                            u'content="text/html; charset=utf-8"/>')
+                        f.write(html.encode('utf8'))
+                except Exception, e:
+                    msg_box = QMessageBox(self)
+                    msg_box.setWindowTitle(_('Failed to Save Article'))
+                    msg_box.setIcon(QMessageBox.Critical)
+                    msg_box.setInformativeText(_('There was an error when writing article to file %s')
+                                               % file_name)
+                    msg_box.setDetailedText(unicode(e))
+                    msg_box.setStandardButtons(QMessageBox.Ok)
+                    msg_box.open()
+                    
 
     def copy_article(self):
         current_tab = self.tabs.currentWidget()
