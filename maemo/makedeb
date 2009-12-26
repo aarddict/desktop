@@ -85,7 +85,7 @@ Name=$APP_NAME
 Type=Application
 Exec=/usr/bin/aarddict
 Icon=aarddict
-X-Osso-Service=aarddict
+X-HildonDesk-ShowInToolbar=true
 X-Osso-Type=application/x-executable" > usr/share/applications/hildon/aarddict.desktop
 
 echo "[D-BUS Service]
