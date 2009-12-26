@@ -556,6 +556,10 @@ class Dictionary(object):
         else:
             return self.file_name
 
+    def __repr__(self):
+        return '<%s.%s %s %r>' % (self.__module__, self.__class__.__name__, 
+                               self.key(), self.file_name)
+
     def __hash__(self):
         return self.key().__hash__()
 
