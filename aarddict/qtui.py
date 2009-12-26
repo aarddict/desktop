@@ -299,8 +299,8 @@ class WordLookupThread(QThread):
         self.stop_requested = False
 
     def run(self):
-        wordstr = unicode(self.word).encode('utf8')
-        log.debug("Looking up %s", wordstr)
+        wordstr = unicode(self.word)
+        log.debug("Looking up %r", wordstr)
         articles = []
         dict_access_lock.lock()
         try:
