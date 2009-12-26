@@ -347,6 +347,8 @@ class ArticleLoadThread(QThread):
                 QThread.yieldCurrentThread()
         except ArticleLoadStopRequested:
             self.emit(SIGNAL("article_load_stopped"), self)
+        except Exception, e:
+            self.emit(SIGNAL("article_load_error"), self, read_func, e)
         else:
             self.emit(SIGNAL("article_load_finished"), self, self.article_read_funcs)
         finally:

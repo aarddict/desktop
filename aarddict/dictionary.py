@@ -406,12 +406,11 @@ def to_article(raw_article):
             text, tag_list = articletuple
             meta = {}
     except:
-        logging.exception('was trying to load article from string:\n%s', raw_article[:10])
-        text = raw_article
-        tags = []
+        logging.exception('was trying to load article from string:\n%r', raw_article[:20])
+        raise
     else:
         tags = [to_tag(tagtuple) for tagtuple in tag_list]
-    return Article(text=text, tags=tags, meta=meta)
+        return Article(text=text, tags=tags, meta=meta)
 
 
 HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
@@ -673,7 +672,7 @@ class DictionaryCollection(list):
         if not redir:
             return article
 
-        logging.debug('Redirect "%s" section "%s" ==> "%s" (level %d)',
+        logging.debug('Redirect %r section %r ==> %r (level %d)',
                       article.title, article.section, redir, level)
 
         if level > max_redirect_levels:
