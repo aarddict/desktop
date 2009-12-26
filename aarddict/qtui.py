@@ -220,10 +220,10 @@ class WebPage(QWebPage):
         self.setLinkDelegationPolicy(QWebPage.DelegateAllLinks)
 
     def javaScriptConsoleMessage (self, message, lineNumber, sourceID):
-        log.debug('[js] %s (line %d): %s', sourceID, lineNumber, message)
+        log.debug('[js] %r (line %d): %r', sourceID, lineNumber, message)
 
     def javaScriptAlert (self, originatingFrame, msg):
-        log.debug('[js] %s: %s', originatingFrame, msg)
+        log.debug('[js] %r: %r', originatingFrame, msg)
 
 
 class WebView(QWebView):
@@ -362,12 +362,12 @@ class ArticleLoadThread(QThread):
         try:
             article = read_func()
         except RedirectResolveError, e:
-            logging.debug('Failed to resolve redirect', exc_info=1)
+            log.debug('Failed to resolve redirect', exc_info=1)            
             article = Article(e.article.title,
-                              _('Redirect to %s not found') % e.article.redirect,
+                              _('Redirect to %s not found') % e.article.redirect.encode('utf8'),
                               dictionary=e.article.dictionary)
-        log.debug('Read "%s" from %s in %ss',
-                  article.title.encode('utf8'),
+        log.debug('Read %r from %s in %ss',
+                  article.title,
                   article.dictionary, time.time() - t0)
         return article
 
@@ -409,8 +409,8 @@ class ArticleLoadThread(QThread):
                 result += article.text
             result += '</div></body></html>'
             self.html_cache[cache_key] = result
-        log.debug('Converted "%s" in %ss',
-                  article.title.encode('utf8'), time.time() - t0)
+        log.debug('Converted %r in %ss',
+                  article.title, time.time() - t0)
         return result
 
 
@@ -518,7 +518,7 @@ def write_sources(sources):
                 f.write('\n')
                 written.append(source)
             else:
-                log.debug('Source %s is already written, ignoring', source)
+                log.debug('Source %r is already written, ignoring', source)
     return written
 
 def read_sources():
@@ -621,7 +621,7 @@ def mkcss(values):
 def update_css(css):
     remove_tmp_css_file()
     handle, name = tempfile.mkstemp(dir=app_dir, suffix='.css')
-    log.debug('Created new css temp file: %s', name)
+    log.debug('Created new css temp file: %r', name)
     css_file = os.fdopen(handle, 'w')
     with css_file:
         css_file.write(css)
@@ -629,9 +629,9 @@ def update_css(css):
 
 def remove_tmp_css_file():
     url = QWebSettings.globalSettings().userStyleSheetUrl()
-    current_file = str(url.toString())
+    current_file = unicode(url.toString())
     if current_file:
-        log.debug('Removing current css temp file: %s', current_file)
+        log.debug('Removing current css temp file: %r', current_file)
         os.remove(current_file)
 
 
@@ -1028,7 +1028,7 @@ class DictView(QMainWindow):
 
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
-            log.debug('Opened %s' % d.file_name)
+            log.debug('Opened %r' % d.file_name)
             count = 0
             if d not in self.dictionaries:
                 self.dictionaries.append(d)
@@ -1311,7 +1311,7 @@ class DictView(QMainWindow):
         self.update_current_article_actions(self.tabs.currentIndex())
 
     def article_loaded(self, title, article, html):
-        log.debug('Loaded article "%s" (original title "%s") (section "%s") (%s at %s)',
+        log.debug('Loaded article %r (original title %r) (section %r) (%r at %r)',
                   article.title, title, article.section, article.position, article.dictionary)
 
         dictionary = article.dictionary
@@ -1402,7 +1402,7 @@ class DictView(QMainWindow):
             try:
                 siteinfo = dictionary.metadata['siteinfo']
             except KeyError:
-                logging.debug('No site info in dictionary %s', dictionary_key)
+                logging.debug('No site info in dictionary %r', dictionary_key)
                 if 'lang' in dictionary.metadata and 'sitelang' in dictionary.metadata:
                     url = u'http://%s.wikipedia.org/wiki/%s' % (dictionary.metadata['lang'],
                                                                 article_title)
@@ -1452,8 +1452,8 @@ class DictView(QMainWindow):
             webbrowser.open(title)
         else:
             if '_' in title:
-                log.debug('Found underscore character in title %s, replacing with space',
-                          title.encode('utf8'))
+                log.debug('Found underscore character in title %r, replacing with space',
+                          title)
                 title = title.replace(u'_', u' ')
             if title.startswith('#'):
                 current_tab = self.tabs.currentWidget()
