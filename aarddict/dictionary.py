@@ -552,7 +552,10 @@ class Dictionary(object):
         return self.key() == other.key()
 
     def __str__(self):
-        return self.file_name
+        if isinstance(self.file_name, unicode):
+            return self.file_name.encode('utf8')
+        else:
+            return self.file_name
 
     def __hash__(self):
         return self.key().__hash__()

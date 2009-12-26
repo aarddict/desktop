@@ -509,12 +509,12 @@ class SingleRowItemSelectionModel(QItemSelectionModel):
                                                         QItemSelectionModel.Clear)
 
 
-def write_sources(sources):
+def write_sources(sources):    
     with open(sources_file, 'w') as f:
         written = list()
         for source in sources:
             if source not in written:
-                f.write(source)
+                f.write(source.encode('utf8'))
                 f.write('\n')
                 written.append(source)
             else:
@@ -523,7 +523,7 @@ def write_sources(sources):
 
 def read_sources():
     if os.path.exists(sources_file):
-        return [source for source
+        return [source.decode('utf8') for source
                 in load_file(sources_file).splitlines() if source]
     else:
         return []
@@ -557,31 +557,31 @@ def write_preferred_dicts(preferred_dicts):
 
 def write_lastfiledir(lastfiledir):
     with open(lastfiledir_file, 'w') as f:
-        f.write(lastfiledir)
+        f.write(lastfiledir.encode('utf8'))
 
 def read_lastfiledir():
     if os.path.exists(lastfiledir_file):
-        return load_file(lastfiledir_file).strip()
+        return load_file(lastfiledir_file).decode('utf8').strip()
     else:
         return os.path.expanduser('~')
 
 def write_lastdirdir(lastdirdir):
     with open(lastdirdir_file, 'w') as f:
-        f.write(lastdirdir)
+        f.write(lastdirdir.encode('utf8'))
 
 def read_lastdirdir():
     if os.path.exists(lastdirdir_file):
-        return load_file(lastdirdir_file).strip()
+        return load_file(lastdirdir_file).decode('utf8').strip()
     else:
         return os.path.expanduser('~')
 
 def write_lastsave(lastsave):
     with open(lastsave_file, 'w') as f:
-        f.write(lastsave)
+        f.write(lastsave.encode('utf8'))
 
 def read_lastsave():
     if os.path.exists(lastsave_file):
-        return load_file(lastsave_file).strip()
+        return load_file(lastsave_file).decode('utf8').strip()
     else:
         return os.path.expanduser('~')
 
@@ -961,9 +961,9 @@ class DictView(QMainWindow):
 
         self.sources = []
         self.zoom_factor = 1.0
-        self.lastfiledir = ''
-        self.lastdirdir = ''
-        self.lastsave = ''
+        self.lastfiledir = u''
+        self.lastdirdir = u''
+        self.lastsave = u''
 
         self.use_mediawiki_style = True
         self.update_current_article_actions(-1)
@@ -1072,18 +1072,19 @@ class DictView(QMainWindow):
 
     def select_files(self):
         file_names = QFileDialog.getOpenFileNames(self, _('Add Dictionary'),
-                                                  self.lastfiledir.decode('utf-8'),
+                                                  self.lastfiledir,
                                                   _('Aard Dictionary Files')+' (*.aar)')
+        file_names = [unicode(name) for name in file_names]
         if file_names:
-            self.lastfiledir = os.path.dirname(unicode(file_names[-1]).encode('utf-8'))
-        return [unicode(name).encode('utf8') for name in file_names]
+            self.lastfiledir = os.path.dirname(file_names[-1])
+        return file_names
 
 
     def select_dir(self):
         name = QFileDialog.getExistingDirectory (self, _('Add Dictionary Directory'),
-                                                      self.lastdirdir.decode('utf-8'),
+                                                      self.lastdirdir,
                                                       QFileDialog.ShowDirsOnly)
-        dirname = unicode(name).encode('utf8')
+        dirname = unicode(name)
         if dirname:
             self.lastdirdir = dirname
             return [dirname]
@@ -1670,6 +1671,7 @@ class DictView(QMainWindow):
             if volumes:
                 volumes = sorted(volumes, key=lambda v: v.volume)
                 d = volumes[0]
+                
                 volumes_str = '<br>'.join(('<strong>%s %s:</strong> <em>%s</em>' %
                                            (_('Volume'), v.volume, v.file_name))
                                           for v in volumes)
@@ -1940,14 +1942,14 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         current_tab = self.tabs.currentWidget()
         if current_tab:
             article_title = unicode(current_tab.property('aard:title').toString())
-            dirname = os.path.dirname(self.lastsave.decode('utf-8'))
+            dirname = os.path.dirname(self.lastsave)
             propose_name = os.path.extsep.join((article_title, u'html'))
             file_name = QFileDialog.getSaveFileName(self, _('Save Article'),
                                                     os.path.join(dirname, propose_name),
                                                     _('HTML Documents (*.htm *.html)'))
             if file_name:
                 file_name = unicode(file_name)
-                self.lastsave = file_name.encode('utf8')
+                self.lastsave = file_name
                 with open(file_name, 'w') as f:
                     current_frame = current_tab.page().currentFrame()
                     html = unicode(current_frame.toHtml())
@@ -2015,7 +2017,8 @@ def main(args, debug=False):
     colors, use_mediawiki_style = read_appearance()
     update_css(mkcss(colors))
     dv.use_mediawiki_style = use_mediawiki_style
-    dv.open_dicts(read_sources()+args)
+    preferred_enc = locale.getpreferredencoding()
+    dv.open_dicts(read_sources()+[arg.decode(preferred_enc) for arg in args])
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
