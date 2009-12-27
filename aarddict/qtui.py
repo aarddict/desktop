@@ -1474,7 +1474,7 @@ class DictView(QMainWindow):
     def link_clicked(self, url):
         scheme = url.scheme()
         title = unicode(url.toString())
-        log.debug('Link clicked: %s', title.encode('utf8'))
+        log.debug('Link clicked: %r')
         if scheme in ('http', 'https', 'ftp', 'sftp'):
             webbrowser.open(title)
         else:
