@@ -1089,7 +1089,7 @@ class DictView(QMainWindow):
                                                       QFileDialog.ShowDirsOnly)
         dirname = unicode(name)
         if dirname:
-            self.lastdirdir = dirname
+            self.lastdirdir = os.path.dirname(dirname)
             return [dirname]
         else:
             return []
