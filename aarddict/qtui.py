@@ -1994,7 +1994,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             page.triggerAction(QWebPage.Copy)
             page.currentFrame().evaluateJavaScript("document.getSelection().empty();")
 
-def main(args, debug=False):
+def main(args, debug=False, dev_extras=False):
 
     if not os.path.exists(app_dir):
         os.makedirs(app_dir)
@@ -2002,9 +2002,11 @@ def main(args, debug=False):
     load_icons()
     dv = DictView()
 
-    if debug:
+    if dev_extras:
         from PyQt4.QtWebKit import QWebSettings
-        QWebSettings.globalSettings().setAttribute(QWebSettings.DeveloperExtrasEnabled, True)
+        (QWebSettings.globalSettings()
+         .setAttribute(QWebSettings.DeveloperExtrasEnabled, True))
+    if debug:
         dv.add_debug_menu()
 
     x, y, w, h = read_geometry()

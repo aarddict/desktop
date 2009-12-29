@@ -54,6 +54,12 @@ def main():
         default=False,
         help='Print metadata for dictionary files specified'
         )
+    parser.add_option(
+        '-e', '--dev-extras',
+        action='store_true',
+        default=False,
+        help='Enable WebKit development extras'
+        )
     options, args = parser.parse_args()
 
     if options.debug:
@@ -118,7 +124,9 @@ def main():
         raise SystemExit
 
     import aarddict.qtui
-    aarddict.qtui.main(args, debug=options.debug)
+    aarddict.qtui.main(args, 
+                       debug=options.debug, 
+                       dev_extras=options.dev_extras)
 
 
 if __name__ == '__main__':
