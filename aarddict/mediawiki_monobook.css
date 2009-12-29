@@ -265,48 +265,12 @@ span.subpages {
 	padding-bottom: 0;
 }
 
-/* user notification thing */
-.usermessage {
-	background-color: #ffce7b;
-	border: 1px solid #ffa500;
-	color: black;
-	font-weight: bold;
-	margin: 2em 0 1em;
-	padding: .5em 1em;
-	vertical-align: middle;
-}
-#siteNotice {
-	text-align: center;
-	font-size: 95%;
-	padding: 0 0.9em;
-}
-#siteNotice p {
-	margin: 0;
-	padding: 0;
-}
-
 .catlinks {
 	border: 1px solid #aaa;
 	background-color: #f9f9f9;
 	padding: 5px;
 	margin-top: 1em;
 	clear: both;
-}
-/* currently unused, intended to be used by a metadata box
-in the bottom-right corner of the content area */
-.documentDescription {
-	/* The summary text describing the document */
-	font-weight: bold;
-	display: block;
-	margin: 1em 0;
-	line-height: 1.5em;
-}
-.documentByLine {
-	text-align: right;
-	font-size: 90%;
-	clear: both;
-	font-weight: normal;
-	color: #76797c;
 }
 
 /* emulate center */
@@ -585,43 +549,6 @@ a[href ^="https://"] {
 }
 
 
-/* TODO: #t-iscite is only used by the Cite extension, come up with some
- * system which allows extensions to add to this file on the fly
- */
-#t-ispermalink, #t-iscite {
-	color: #999;
-}
-/*
-** footer
-*/
-#footer {
-	background-color: white;
-	border-top: 1px solid #fabd23;
-	border-bottom: 1px solid #fabd23;
-	margin: .6em 0 1em 0;
-	padding: .4em 0 1.2em 0;
-	text-align: center;
-	font-size: 90%;
-}
-#footer li {
-	display: inline;
-	margin: 0 1.3em;
-}
-#f-poweredbyico, #f-copyrightico {
-	margin: 0 8px;
-	position: relative;
-	top: -2px; /* Bump it up just a tad */
-}
-#f-poweredbyico {
-	float: right;
-	height: 1%;
-}
-#f-copyrightico {
-	float: left;
-	height: 1%;
-}
-
-
 /* noarticletext */
 div.noarticletext {
 	border: 1px solid #ccc;
@@ -630,63 +557,5 @@ div.noarticletext {
 	color: #000;
 }
 
-div#searchTargetContainer {
-	left:       10px;
-	top:        10px;
-	width:      90%;
-	background: white;
-}
-
-div#searchTarget {
-	padding:    3px;
-	margin:     5px;
-	background: #F0F0F0;
-	border:     solid 1px blue;
-}
-
-div#searchTarget ul li {
-	list-style: none;
-}
-
-div#searchTarget ul li:before {
-	color: orange;
-	content: "\00BB \0020";
-}
-
-div#searchTargetHide {
-	float:right;
-	border:solid 1px black;
-	background:#DCDCDC;
-	padding:2px;
-}
-
-#powersearch p {
-	margin-top:0px;
-}
-
-div.multipageimagenavbox {
-   border: solid 1px silver;
-   padding: 4px;
-   margin: 1em;
-   background: #f0f0f0;
-}
-
-div.multipageimagenavbox div.thumb {
-   border: none;
-   margin-left: 2em;
-   margin-right: 2em;
-}
-
-div.multipageimagenavbox hr {
-   margin: 6px;
-}
-
-table.multipageimage td {
-   text-align: center;
-}
-
 .templatesUsed { margin-top: 1.5em; }
 
-.mw-summary-preview {
-	margin: 0.1em 0;
-}
