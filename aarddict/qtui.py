@@ -80,15 +80,15 @@ lastfiledir_file = os.path.join(app_dir, 'lastfiledir')
 lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
 lastsave_file = os.path.join(app_dir, 'lastsave')
 zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
-js = load_file('aar.js')
 
-mediawiki_css_file1 = os.path.join(aarddict.package_dir, 'mediawiki_shared.css')
-mediawiki_css_file2 = os.path.join(aarddict.package_dir, 'mediawiki_monobook.css')
+js = '<script type="text/javascript">%s</script>' % load_file('aar.js')
 
-mediawiki_style = ['<link rel="stylesheet" type="text/css" href="%s" />' % mediawiki_css_file1,
-                   '<link rel="stylesheet" type="text/css" href="%s" />' % mediawiki_css_file2]
+mediawiki_style = ['<style type="text/css">%s</style>' % 
+                   load_file('mediawiki_shared.css').decode('utf8'),
+                   '<style type="text/css">%s</style>' % 
+                   load_file('mediawiki_monobook.css').decode('utf8')]
 
-css_link_tag_re = re.compile('<link rel="stylesheet" (.+?)>')
+style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>', re.UNICODE | re.DOTALL)
 
 appearance_conf = ConfigParser()
 
@@ -386,10 +386,11 @@ class ArticleLoadThread(QThread):
             article_format = article.dictionary.metadata['article_format']
 
             result = ['<html>',
-                      '<head>'
-                      '<script>%s</script>' % js]
+                      '<head>']
             if self.use_mediawiki_style:
                 result += mediawiki_style
+            else:
+                result += aard_style
             result += ['</head>',
                       '<body>',
                       '<div id="globalWrapper">']
@@ -401,8 +402,7 @@ class ArticleLoadThread(QThread):
                 steps = [aar2html.fix_new_lines,
                          ''.join,
                          aar2html.remove_p_after_h,
-                         aar2html.add_notebackrefs
-                         ]
+                         aar2html.add_notebackrefs]
                 for step in steps:
                     if self.stop_requested:
                         raise ArticleLoadStopRequested
@@ -410,6 +410,7 @@ class ArticleLoadThread(QThread):
             else:
                 result = ''.join(result)
                 result += article.text
+            result += js
             result += '</div></body></html>'
             self.html_cache[cache_key] = result
         log.debug('Converted %r in %ss',
@@ -621,22 +622,12 @@ def mkcss(values):
     return css
 
 
+aard_style = None
+
 def update_css(css):
-    remove_tmp_css_file()
-    handle, name = tempfile.mkstemp(dir=app_dir, suffix='.css')
-    log.debug('Created new css temp file: %r', name)
-    css_file = os.fdopen(handle, 'w')
-    with css_file:
-        css_file.write(css)
-    QWebSettings.globalSettings().setUserStyleSheetUrl(QUrl(name))
-
-def remove_tmp_css_file():
-    url = QWebSettings.globalSettings().userStyleSheetUrl()
-    current_file = unicode(url.toString())
-    if current_file:
-        log.debug('Removing current css temp file: %r', current_file)
-        os.remove(current_file)
-
+    global aard_style    
+    aard_style = '<style type="text/css">%s</style>' % css
+    return aard_style
 
 
 default_colors = dict(active_link_bg='#e0e8e8',
@@ -1867,17 +1858,13 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         cb_use_mediawiki_style = QCheckBox(_('Use Wikipedia style'))
         color_pane.addWidget(cb_use_mediawiki_style, 5, 0, 1, 2)
 
-        mediawiki_style_str = '''<style type="text/css">
-@import url("%s");
-@import url("%s");
-</style>
-''' % (mediawiki_css_file1, mediawiki_css_file2)
+        mediawiki_style_str = ''.join(mediawiki_style)
 
         def use_mediawiki_style_changed(state):
             if state == Qt.Checked:
                 style_str = mediawiki_style_str
             else:
-                style_str = '<style>%s</style>' % mkcss(colors)
+                style_str = update_css(mkcss(colors))
             preview_pane.page().currentFrame().setHtml(style_str + html)
 
         connect(cb_use_mediawiki_style, SIGNAL('stateChanged(int)'),
@@ -1905,10 +1892,12 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                     view = self.tabs.widget(i)
                     currentFrame = view.page().currentFrame()
                     html = unicode(currentFrame.toHtml())
+                    html = style_tag_re.sub(u'', html)
                     if self.use_mediawiki_style:
-                        html = html.replace('<head>', ''.join(['<head>']+mediawiki_style))
+                        style_str = mediawiki_style_str
                     else:
-                        html = css_link_tag_re.sub('', html)
+                        style_str = aard_style
+                    html = html.replace('<head>', ''.join(['<head>', style_str]))
                     view.page().currentFrame().setHtml(html)
                 else:
                     pass
@@ -1924,7 +1913,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
     def closeEvent(self, event):
         self.write_settings()
-        remove_tmp_css_file()
         for d in self.dictionaries:
             d.close()
         event.accept()
