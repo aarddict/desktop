@@ -83,7 +83,11 @@ zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
 
 js = '<script type="text/javascript">%s</script>' % load_file('aar.js')
 
-mediawiki_style = ['<style type="text/css">%s</style>' % 
+shared_style_str = ('<style type="text/css">%s</style>' % 
+                    load_file('shared.css').decode('utf8'))
+
+mediawiki_style = [ shared_style_str,
+                    '<style type="text/css">%s</style>' % 
                    load_file('mediawiki_shared.css').decode('utf8'),
                    '<style type="text/css">%s</style>' % 
                    load_file('mediawiki_monobook.css').decode('utf8')]
@@ -627,7 +631,7 @@ aard_style = None
 
 def update_css(css):
     global aard_style    
-    aard_style = '<style type="text/css">%s</style>' % css
+    aard_style = [shared_style_str, '<style type="text/css">%s</style>' % css]
     return aard_style
 
 
@@ -1865,7 +1869,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             if state == Qt.Checked:
                 style_str = mediawiki_style_str
             else:
-                style_str = update_css(mkcss(colors))
+                style_str = ''.join(update_css(mkcss(colors)))
             preview_pane.page().currentFrame().setHtml(style_str + html)
 
         connect(cb_use_mediawiki_style, SIGNAL('stateChanged(int)'),
@@ -1897,7 +1901,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                     if self.use_mediawiki_style:
                         style_str = mediawiki_style_str
                     else:
-                        style_str = aard_style
+                        style_str = ''.join(aard_style)
                     html = html.replace('<head>', ''.join(['<head>', style_str]))
                     view.page().currentFrame().setHtml(html)
                 else:
