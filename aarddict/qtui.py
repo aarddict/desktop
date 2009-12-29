@@ -1791,7 +1791,7 @@ This is an <a href="http://example.com">external link</a>. <br>
 This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 <p>Click on any link to see active link color.</p>
 
-<div>1. <a href="#_r123">^</a> This is a footnote.</div>
+<div>1. <a href="#_r123">&#8593;</a> This is a footnote.</div>
 </div>
 """)
 
