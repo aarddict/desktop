@@ -391,7 +391,8 @@ class ArticleLoadThread(QThread):
                 result += mediawiki_style
             else:
                 result += aard_style
-            result += ['</head>',
+            result += ['<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>'
+                       '</head>',
                       '<body>',
                       '<div id="globalWrapper">']
             if article_format == 'json':
@@ -1969,9 +1970,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                     with open(file_name, 'w') as f:
                         current_frame = current_tab.page().currentFrame()
                         html = unicode(current_frame.toHtml())
-                        html = html.replace(u'<html><head>',
-                                            u'<html><head><meta http-equiv="Content-Type" '
-                                            u'content="text/html; charset=utf-8"/>')
                         f.write(html.encode('utf8'))
                 except Exception, e:
                     msg_box = QMessageBox(self)
