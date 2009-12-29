@@ -419,38 +419,6 @@ img.thumbborder {
 }
 
 /*
-** classes for special content elements like town boxes
-** intended to be referenced directly from the wiki src
-*/
-
-/*
-** User styles
-*/
-/* table standards */
-table.rimage {
-	float: right;
-	position: relative;
-	margin-left: 1em;
-	margin-bottom: 1em;
-	text-align: center;
-}
-.toccolours {
-	border: 1px solid #aaa;
-	background-color: #f9f9f9;
-	padding: 5px;
-	font-size: 95%;
-}
-
-/*
-** edit views etc
-*/
-.special li {
-	line-height: 1.4em;
-	margin: 0;
-	padding: 0;
-}
-
-/*
 ** keep the whitespace in front of the ^=, hides rule from konqueror
 ** this is css3, the validator doesn't like it when validating as css2
 */
@@ -528,24 +496,4 @@ table.rimage {
 .ltr #bodyContent a.external {
 	padding-left: 0;
 }
-
-/* disable interwiki styling */
-#bodyContent a.extiw,
-#bodyContent a.extiw:active {
-	color: #36b;
-}
-#bodyContent a.external {
-	color: #36b;
-}
-
-
-/* noarticletext */
-div.noarticletext {
-	border: 1px solid #ccc;
-	background: #fff;
-	padding: .2em 1em;
-	color: #000;
-}
-
-.templatesUsed { margin-top: 1.5em; }
 
