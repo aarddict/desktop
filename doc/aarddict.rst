@@ -26,9 +26,9 @@ Keyboard Shortcuts
 |:kbd:`Esc`,          |                                    |                           |
 |:kbd:`Ctrl+[`        |                                    |                           |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Alt+Right`,    |:menuselection:`Navigate-->Forward` |                           |
-|:kbd:`Shift+Esc`,    |                                    |                           |
-|:kbd:`Ctrl+]`        |                                    |                           |
+|:kbd:`Alt+Right`,    |:menuselection:`Navigate-->Forward` |On Nokia Internet Tablets  |
+|:kbd:`Shift+Esc`,    |                                    |:kbd:`Esc` maps to         |
+|:kbd:`Ctrl+]`        |                                    |`Back`/`Cancel` button.    |
 +---------------------+------------------------------------+---------------------------+
 |:kbd:`Ctrl+K`,       |:menuselection:`Navigate-->Previous |                           |
 |:kbd:`Ctrl+,`        |Article`                            |                           |
@@ -43,16 +43,21 @@ Keyboard Shortcuts
 |:kbd:`Ctrl+T`        |:menuselection:`Article-->View      |                           |
 |                     |Online`                             |                           |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl++`,       |:menuselection:`View-->Text         |                           |
-|:kbd:`Ctrl+=`        |Size-->Increase`                    |                           |
+|:kbd:`Ctrl++`,       |:menuselection:`View-->Text         |On Nokia Internet Tablets  |
+|:kbd:`Ctrl+=`,       |Size-->Increase`                    |:kbd:`F7` maps to `Zoom In`|
+|:kbd:`F7`            |                                    |button.                    |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+-`        |:menuselection:`View-->Text         |                           |
-|                     |Size-->Decrease`                    |                           |
+|:kbd:`Ctrl+-`,       |:menuselection:`View-->Text         |On Nokia Internet Tablets  |
+|:kbd:`F8`            |Size-->Decrease`                    |:kbd:`F8` maps to `Zoom    |
+|                     |                                    |Out` button.               |
 +---------------------+------------------------------------+---------------------------+
 |:kbd:`Ctrl+0`        |:menuselection:`View-->Text         |                           |
 |                     |Size-->Reset`                       |                           |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`F11`           |:menuselection:`View-->Full Screen` |                           |
+|:kbd:`F11`           |:menuselection:`View-->Full Screen` |On Nokia Internet Tablets  |
+|                     |                                    |full screen mode is toggled|
+|                     |                                    |by the `Full Screen`       |
+|                     |                                    |button.                    |
 +---------------------+------------------------------------+---------------------------+
 |:kbd:`Enter`         |Move keyboard focus to current      |When in `Lookup` box.      |
 |                     |article                             |                           |
