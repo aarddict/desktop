@@ -31,6 +31,22 @@ On Windows earlier than Windows XP SP3 users may also need to install
 
 .. _Microsoft Visual C++ 2008 SP1 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&displaylang=en
 
+Wikipedia Language Link Support
+===============================
+Many Wikipedia articles have equivalent articles in other language
+Wikipedias and contain corresponding inter-wiki links. Aard Dictionary
+compiler can optionally put corresponding article titles into
+dictionary's index so that articles can be found by their titles in other
+languages. For example, if English Wikipedia is compiled with Russian
+language links, searching for `Уравнение лап` finds `Laplace's
+Equation` by corresponding Russian title `Уравнение Лапласа`.
+
+.. image:: aarddict_0.8.0_ubuntu_language_link_in_action.png
+
+Dictionary info dialog shows list of language link languages included
+into dictionarie's lookup index.
+
+.. image:: aarddict_0.8.0_ubuntu_dict_info.png
 
 User Interface Language
 =======================
