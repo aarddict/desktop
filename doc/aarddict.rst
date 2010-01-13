@@ -235,6 +235,10 @@ Dictionary 0.8.0 and newer.
 Release Notes
 =============
 
+0.7.6.1
+-------
+- Fix :menuselection:`Open...` to work in both Maemo 4 and Maemo 5
+
 0.7.6
 -----
 
