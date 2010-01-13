@@ -2,34 +2,71 @@
 Aard Dictionary
 ===============
 
-Installation Notes
+Keyboard Shortcuts
 ==================
 
-Windows
--------
-If starting the application results in error message like this::
++---------------------+------------------------------------+---------------------------+
+|Key Sequence         |Action                              |Notes                      |
++=====================+====================================+===========================+
+|:kbd:`Ctrl+O`        |:menuselection:`Dictionary-->Add    |                           |
+|                     |Dictionaries`                       |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+Y`        |:menuselection:`Dictionary-->Verify`|                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+R`        |:menuselection:`Dictionary-->Remove`|                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+I`        |:menuselection:`Dictionary-->Info`  |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+Q`        |:menuselection:`Dictionary-->Quit`  |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+L`,       |:menuselection:`Navigate-->Lookup   |                           |
+|:kbd:`F2`            |Box`                                |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Alt+Left`,     |:menuselection:`Navigate-->Back`    |                           |
+|:kbd:`Esc`,          |                                    |                           |
+|:kbd:`Ctrl+[`        |                                    |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Alt+Right`,    |:menuselection:`Navigate-->Forward` |                           |
+|:kbd:`Shift+Esc`,    |                                    |                           |
+|:kbd:`Ctrl+]`        |                                    |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+K`,       |:menuselection:`Navigate-->Previous |                           |
+|:kbd:`Ctrl+,`        |Article`                            |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+J`,       |:menuselection:`Navigate-->Next     |                           |
+|:kbd:`Ctrl+.`        |Article`                            |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+Shift+C`  |:menuselection:`Article-->Copy`     |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+S`        |:menuselection:`Article-->Save`     |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+T`        |:menuselection:`Article-->View      |                           |
+|                     |Online`                             |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl++`,       |:menuselection:`View-->Text         |                           |
+|:kbd:`Ctrl+=`        |Size-->Increase`                    |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+-`        |:menuselection:`View-->Text         |                           |
+|                     |Size-->Decrease`                    |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Ctrl+0`        |:menuselection:`View-->Text         |                           |
+|                     |Size-->Reset`                       |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`F11`           |:menuselection:`View-->Full Screen` |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Enter`         |Move keyboard focus to current      |When in `Lookup` box.      |
+|                     |article                             |                           |
+|                     |                                    |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Down`          |Select next word in word list       |When in `Lookup`           |
+|                     |                                    |box. Keyboard focus remains|
+|                     |                                    |in lookup box.             |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Up`            |Select previous word in word list   |When in `Lookup`           |
+|                     |                                    |box. Keyboard focus remains|
+|                     |                                    |in lookup box.             |
++---------------------+------------------------------------+---------------------------+
 
-  This application has failed to start because the application
-  configuration is incorrect. Reinstalling the application may fix this
-  problem. 
-
-or
-
-::
-
-  The application has failed to start because its side-by-side
-  configuration is incorrect. Please see the application event log for
-  more detail. 
-
-most likely `Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)`_
-needs to be installed.
-
-On Windows earlier than Windows XP SP3 users may also need to install
-`Microsoft Visual C++ 2005 Redistributable Package (x86)`_. 
-
-.. _Microsoft Visual C++ 2005 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?FamilyId=32BC1BEE-A3F9-4C13-9C99-220B62A191EE&displaylang=en
-
-.. _Microsoft Visual C++ 2008 SP1 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&displaylang=en
 
 Wikipedia Language Link Support
 ===============================
@@ -99,6 +136,37 @@ Maemo Application Manager.
 .. _`Doulos SIL Font package`: http://aarddict.org/dists/diablo/user/binary-armel/ttf-sil-doulos_4.104-1maemo_all.deb
 .. _International Phonetic Alphabet: http://en.wikipedia.org/wiki/International_Phonetic_Alphabet
 .. _`WAZU JAPAN's Gallery of Unicode Fonts`: http://www.wazu.jp/
+
+
+Installation Notes
+==================
+
+Windows
+-------
+If starting the application results in error message like this::
+
+  This application has failed to start because the application
+  configuration is incorrect. Reinstalling the application may fix this
+  problem. 
+
+or
+
+::
+
+  The application has failed to start because its side-by-side
+  configuration is incorrect. Please see the application event log for
+  more detail. 
+
+most likely `Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)`_
+needs to be installed.
+
+On Windows earlier than Windows XP SP3 users may also need to install
+`Microsoft Visual C++ 2005 Redistributable Package (x86)`_. 
+
+.. _Microsoft Visual C++ 2005 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?FamilyId=32BC1BEE-A3F9-4C13-9C99-220B62A191EE&displaylang=en
+
+.. _Microsoft Visual C++ 2008 SP1 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&displaylang=en
+
 
 Building Mac OS X App
 =====================
