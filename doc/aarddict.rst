@@ -19,16 +19,24 @@ Keyboard Shortcuts
 +---------------------+------------------------------------+---------------------------+
 |:kbd:`Ctrl+Q`        |:menuselection:`Dictionary-->Quit`  |                           |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+L`,       |:menuselection:`Navigate-->Lookup   |                           |
-|:kbd:`F2`            |Box`                                |                           |
+|:kbd:`Ctrl+L`,       |:menuselection:`Navigate-->Lookup   |Moves keyboard focus to    |
+|:kbd:`F2`            |Box`                                |`Lookup` box (making lookup|
+|                     |                                    |pane visible if hidden) and|
+|                     |                                    |selects it's current       |
+|                     |                                    |text. Start typing to      |
+|                     |                                    |replace current text or    |
+|                     |                                    |start editing current text |
+|                     |                                    |by moving caret with       |
+|                     |                                    |:kbd:`Left` or :kbd:`Right`|
+|                     |                                    |arrow keys.                |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Alt+Left`,     |:menuselection:`Navigate-->Back`    |                           |
-|:kbd:`Esc`,          |                                    |                           |
-|:kbd:`Ctrl+[`        |                                    |                           |
+|:kbd:`Alt+Left`,     |:menuselection:`Navigate-->Back`    |On Nokia Internet Tablets  |
+|:kbd:`Esc`,          |                                    |:kbd:`Esc` maps to         |
+|:kbd:`Ctrl+[`        |                                    |`Back`/`Cancel` button.    |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Alt+Right`,    |:menuselection:`Navigate-->Forward` |On Nokia Internet Tablets  |
-|:kbd:`Shift+Esc`,    |                                    |:kbd:`Esc` maps to         |
-|:kbd:`Ctrl+]`        |                                    |`Back`/`Cancel` button.    |
+|:kbd:`Alt+Right`,    |:menuselection:`Navigate-->Forward` |                           |
+|:kbd:`Shift+Esc`,    |                                    |                           |
+|:kbd:`Ctrl+]`        |                                    |                           |
 +---------------------+------------------------------------+---------------------------+
 |:kbd:`Ctrl+K`,       |:menuselection:`Navigate-->Previous |                           |
 |:kbd:`Ctrl+,`        |Article`                            |                           |
@@ -59,9 +67,13 @@ Keyboard Shortcuts
 |                     |                                    |by the `Full Screen`       |
 |                     |                                    |button.                    |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Enter`         |Move keyboard focus to current      |When in `Lookup` box.      |
-|                     |article                             |                           |
-|                     |                                    |                           |
+|:kbd:`Enter`         |Move keyboard focus to current      |When in `Lookup`           |
+|                     |article                             |box. Keyboard focus moves  |
+|                     |                                    |to current article view so |
+|                     |                                    |that it can be scrolled    |
+|                     |                                    |with arrow keys, :kbd:`Page|
+|                     |                                    |Up`/:kbd:`Page Down` and   |
+|                     |                                    |:kbd:`Home`/:kbd:`End`     |
 +---------------------+------------------------------------+---------------------------+
 |:kbd:`Down`          |Select next word in word list       |When in `Lookup`           |
 |                     |                                    |box. Keyboard focus remains|
