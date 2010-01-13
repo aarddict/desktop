@@ -30,15 +30,35 @@ div#mw-js-message {
 }
 
 
+.thumbinner {
+   display: none;
+}
+
+.thumbcaption {
+   display: none;
+}
+
+.magnify {
+   display: none;
+}
+
+.vertical-navbox {
+    display: none;
+}
+
+.tmbox {
+    display: none;
+}
+
 /**
  * Image captions
- */
+ *
 body.rtl .thumbcaption { text-align:right; }
 body.rtl .magnify { float:left; }
 
 body.ltr .thumbcaption { text-align:left; }
 body.ltr .magnify { float:right; }
-
+*/
 
 /* Plainlinks - this can be used to switch 
  * off special external link styling */
