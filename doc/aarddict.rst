@@ -84,7 +84,6 @@ Keyboard Shortcuts
 |                     |                                    |in lookup box.             |
 +---------------------+------------------------------------+---------------------------+
 
-
 Wikipedia Language Link Support
 ===============================
 Many Wikipedia articles have equivalent articles in other language
@@ -101,6 +100,30 @@ Dictionary info dialog shows list of language link languages included
 into dictionarie's lookup index.
 
 .. image:: aarddict_0.8.0_ubuntu_dict_info.png
+
+
+Verifying Dictionary Data Integrity
+===================================
+When downloading or copying large data files such as Aard Dicrionary
+volumes data may get corrupted due to software, hardware or data
+transmittion error. Dictionary volumes store SHA-1_ digest of the content
+which is used to verify data integrity. To verify volume data
+integrity open `Verify` dialog (:menuselection:`Dictionary -->
+Verify...`), select one of the volumes and click `Verify` button. 
+
+.. image:: aarddict_0.8.0_ubuntu_verifying.png
+
+Once verified volume status changes from `Unverified` to `OK` or
+`Corrupt`. 
+
+.. image:: aarddict_0.8.0_ubuntu_verified.png
+
+Volumes can also be verified by running Aard Dictionary 
+from the command line like this::
+
+  aarddict --verify enwiki-20090810-1.1_of_4.aar enwiki-20090810-1.2_of_4.aar
+  
+.. _SHA-1: http://en.wikipedia.org/wiki/SHA_hash_functions
 
 User Interface Language
 =======================
