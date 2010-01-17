@@ -50,6 +50,10 @@ div#mw-js-message {
     display: none;
 }
 
+.maptable {
+    display: none;
+}
+
 /**
  * Image captions
  *
