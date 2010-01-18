@@ -2,7 +2,47 @@
 Aard Dictionary
 ===============
 
-Keyboard Shortcuts
+Overview
+============
+Aard Dictionary's user interface consists of lookup and history pane
+(intially grouped into tabs), article pane, toolbar and menu. 
+
+.. image:: aarddict_0.8.0_ubuntu_planks_law.png
+
+First open some dictionaries, either by selecting
+:menuselection:`Dictionary-->Add Dictionaries` or
+:menuselection:`Dictionary-->Add Directory`. Adding a directory means
+that Aard Dictionary will scan that directory (without subdirectories)
+and open any dictionaries it finds every time it is started. 
+
+Start typing a word to look up in `Lookup Box`. List of matching words
+appears below `Lookup Box` and is updated when typing is paused, best
+matches displayed first and first match automatically selected. 
+Articles with similar titles found in one or more dictionaries are
+grouped together and are display in multiple tabs in article pane when
+selected. 
+
+.. image:: aarddict_0.8.0_ubuntu_multiple_articles.png
+
+Lookup pane, history pane and toolbar can be rearranged and moved to a new
+position (click pane's title bar or toolbar's drag handle and start
+dragging), either docked around article pane: 
+
+.. image:: aarddict_0.8.0_ubuntu_hydrogen.png
+
+.. image:: aarddict_0.8.0_ubuntu_lanthanum_non_standard_layout.png
+
+or floating:
+
+.. image:: aarddict_0.8.0_ubuntu_floating.png
+
+Lookup pane, history pane and toolbar can also be hidden
+(through :menuselection:`View` menu, close button in lookup and history pane's
+title bar, or title bar's popup menu). 
+
+.. image:: aarddict_0.8.0_ubuntu_periodic_table.png
+
+Keyboard Shortcuts					   
 ==================
 
 +---------------------+------------------------------------+---------------------------+
