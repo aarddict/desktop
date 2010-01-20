@@ -868,7 +868,7 @@ class DictView(QMainWindow):
         connect(self.action_copy_article, SIGNAL('triggered()'), self.copy_article)
         mn_article.addAction(self.action_copy_article)
 
-        self.action_save_article = QAction(icons['document-save'], _('&Save'), self)
+        self.action_save_article = QAction(icons['document-save'], _('&Save...'), self)
         self.action_save_article.setShortcut(_('Ctrl+S'))
         self.action_save_article.setToolTip(_('Save article text to file'))
         connect(self.action_save_article, SIGNAL('triggered()'), self.save_article)
