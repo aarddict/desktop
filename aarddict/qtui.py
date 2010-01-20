@@ -83,14 +83,17 @@ zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
 
 js = '<script type="text/javascript">%s</script>' % load_file('aar.js')
 
-shared_style_str = ('<style type="text/css">%s</style>' % 
-                    load_file('shared.css').decode('utf8'))
+shared_style_str = load_file('shared.css').decode('utf8')
 
-mediawiki_style = [ shared_style_str,
-                    '<style type="text/css">%s</style>' % 
-                   load_file('mediawiki_shared.css').decode('utf8'),
-                   '<style type="text/css">%s</style>' % 
-                   load_file('mediawiki_monobook.css').decode('utf8')]
+aard_style_tmpl = string.Template(('<style type="text/css">%s</style>' %
+                                   '\n'.join((shared_style_str, 
+                                              load_file('aar.css.tmpl').decode('utf8')))))
+
+
+mediawiki_style = ('<style type="text/css">%s</style>' % 
+                   '\n'.join((shared_style_str, 
+                              load_file('mediawiki_shared.css').decode('utf8'),
+                              load_file('mediawiki_monobook.css').decode('utf8'))))
 
 style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>', re.UNICODE | re.DOTALL)
 
@@ -392,9 +395,9 @@ class ArticleLoadThread(QThread):
             result = ['<html>',
                       '<head>']
             if self.use_mediawiki_style:
-                result += mediawiki_style
+                result.append(mediawiki_style)
             else:
-                result += aard_style
+                result.append(aard_style)
             result += ['<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>'
                        '</head>',
                       '<body>',
@@ -620,18 +623,14 @@ def write_zoomfactor(zoomfactor):
     with open(zoomfactor_file, 'w') as f:
         f.write(str(zoomfactor))
 
-def mkcss(values):
-    css_tmpl = load_file(os.path.join(aarddict.package_dir, 'aar.css.tmpl'))
-    values['cssdir'] = aarddict.package_dir
-    css = string.Template(css_tmpl).substitute(values)
-    return css
-
+def mkcss(values):    
+    return aard_style_tmpl.substitute(values)
 
 aard_style = None
 
 def update_css(css):
     global aard_style    
-    aard_style = [shared_style_str, '<style type="text/css">%s</style>' % css]
+    aard_style = css
     return aard_style
 
 
@@ -1298,7 +1297,6 @@ class DictView(QMainWindow):
                                              for read_func, ex in load_thread.errors])
                     for error in load_thread.errors:
                         read_func, ex = error
-                        print repr(read_func.source), ex
                     msg_box = QMessageBox(self)
                     msg_box.setWindowTitle(_('Article Load Failed'))
                     msg_box.setIcon(QMessageBox.Critical)
@@ -1795,7 +1793,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 </div>
 """)
 
-        preview_pane.page().currentFrame().setHtml(html)
+        preview_pane.page().currentFrame().setHtml(mediawiki_style if self.use_mediawiki_style 
+                                                   else aard_style + html)
 
         colors = read_appearance()[0]
 
@@ -1809,7 +1808,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 pixmap.fill(c)
                 btn.setIcon(QIcon(pixmap))
                 colors[color_name] = str(c.name())
-                style_str = '<style>%s</style>' % mkcss(colors)
+                style_str = mkcss(colors)
                 preview_pane.page().currentFrame().setHtml(style_str + html)
 
 
@@ -1860,16 +1859,17 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         color_pane.addWidget(btn_active_link, 4, 0)
         color_pane.addWidget(QLabel(_('Active Link')), 4, 1)
 
+        connect(btn_active_link, SIGNAL('clicked()'),
+                functools.partial(set_color, btn_active_link, 'active_link_bg'))
+
         cb_use_mediawiki_style = QCheckBox(_('Use Wikipedia style'))
         color_pane.addWidget(cb_use_mediawiki_style, 5, 0, 1, 2)
 
-        mediawiki_style_str = ''.join(mediawiki_style)
-
         def use_mediawiki_style_changed(state):
             if state == Qt.Checked:
-                style_str = mediawiki_style_str
+                style_str = mediawiki_style
             else:
-                style_str = ''.join(update_css(mkcss(colors)))
+                style_str = mkcss(colors)
             preview_pane.page().currentFrame().setHtml(style_str + html)
 
         connect(cb_use_mediawiki_style, SIGNAL('stateChanged(int)'),
@@ -1889,26 +1889,16 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         def close():
             dialog.reject()
-
-            if self.use_mediawiki_style != cb_use_mediawiki_style.isChecked():
-                self.use_mediawiki_style = cb_use_mediawiki_style.isChecked()
-
-                for i in range(self.tabs.count()):
-                    view = self.tabs.widget(i)
-                    currentFrame = view.page().currentFrame()
-                    html = unicode(currentFrame.toHtml())
-                    html = style_tag_re.sub(u'', html)
-                    if self.use_mediawiki_style:
-                        style_str = mediawiki_style_str
-                    else:
-                        style_str = ''.join(aard_style)
-                    html = html.replace('<head>', ''.join(['<head>', style_str]))
-                    view.page().currentFrame().setHtml(html)
-                else:
-                    pass
-
-            write_appearance(colors, self.use_mediawiki_style)
             update_css(mkcss(colors))
+            self.use_mediawiki_style = cb_use_mediawiki_style.isChecked()
+            style_str = mediawiki_style if self.use_mediawiki_style else aard_style
+            for i in range(self.tabs.count()):
+                view = self.tabs.widget(i)
+                currentFrame = view.page().currentFrame()
+                html = unicode(currentFrame.toHtml())
+                html = style_tag_re.sub(style_str, html, count=1)
+                view.page().currentFrame().setHtml(html)
+            write_appearance(colors, self.use_mediawiki_style)
 
         connect(button_box, SIGNAL('rejected()'), close)
 

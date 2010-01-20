@@ -15,6 +15,20 @@ a:active[href ^="https://"] {
     background-color: $active_link_bg;
 }
 
+a[href ^="sftp://"],
+a[href ^="ftp://"],
+a[href ^="http://"],
+a[href ^="https://"] {
+    color: $external_link_fg;
+}
+
+a[id ^="_r"] {
+    color: $footnote_fg;
+}
+
+a[href ^="#_r"] {
+    color: $footnote_backref_fg;
+}
 
 table {
     background-color: $table_bg;
