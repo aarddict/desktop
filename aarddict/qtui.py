@@ -149,7 +149,7 @@ about_html = about_tmpl.substitute(dict(appname=_(aarddict.__appname__),
                                         version=aarddict.__version__,
                                         logodir=logodir,
                                         website='http://aarddict.org',
-                                        copyright1=_('(C) 2006-2009 Igor Tkach'),
+                                        copyright1=_('(C) 2006-2010 Igor Tkach'),
                                         copyright2=_('(C) 2008 Jeremy Mortis'),
                                         lic_notice=_('Distributed under terms and conditions '
                                                       'of <a href="http://www.gnu.org/licenses'
