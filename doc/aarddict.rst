@@ -315,8 +315,51 @@ Dictionary 0.8.0 and newer.
 Release Notes
 =============
 
+0.8.0
+-----
+
+- UI rewritten in PyQt_/Qt_.
+
+- `Customizable UI components layout`_.
+
+- Improve keyboard navigation.
+
+- Improve article rendering.
+
+- Add toolbar.
+
+- Use single word completion list instead of word list per language,
+  show best match at the top.
+ 
+- In word list group similar titles together (titles that differ only
+  in case or accented characters except for one and two-letter
+  titles). 
+
+- Render articles in both old JSON-based format (`.aar` dictionaries)
+  and HTML (`.html.aar` dictionaries).
+
+- Switch between Aard Dictionary article visual style with customize
+  colors and Wikipedia Monobook style.
+
+- Implement :menuselection:`Article --> Save` action: saves article to
+  HTML file.
+
+- Implement :menuselection:`Dictionary --> Add Directory...`: adds
+  directory to be scanned for dictionaries on application start, opens 
+  all dictionaries found (non-recursive).
+
+- Display list of language link languages in dictionary info dialog. 
+
+- Build Mac OS X application bundle.
+
+.. _PyQt: http://www.riverbankcomputing.co.uk/software/pyqt
+.. _Qt: http://qt.nokia.com
+.. _Customizable UI components layout: http://doc.qt.nokia.com/4.5/qmainwindow.html#qt-main-window-framework
+
+
 0.7.6.1
 -------
+
 - Fix :menuselection:`Open...` to work in both Maemo 4 and Maemo 5
 
 0.7.6
