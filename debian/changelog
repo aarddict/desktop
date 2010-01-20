@@ -1,0 +1,4 @@
+aarddict (0.8.0-1) unstable; urgency=low
+
+  * First package release prepared with proper Debian tools.
+ -- Igor Tkach <itkach@aarddict.org>  Wed, 20 Jan 2010 00:09:00 -0500

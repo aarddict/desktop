@@ -1,0 +1,14 @@
+Source: aarddict
+Section: x11
+Priority: optional
+Maintainer: Igor Tkach <itkach@aarddict.org>
+Build-Depends: debhelper (>=7.0.0), python-support (>= 0.6), cdbs (>= 0.4.49), python-all-dev
+XS-Python-Version: >=2.5
+Standards-Version: 3.8.1
+
+Package: aarddict
+Architecture: all
+Homepage: http://aarddict.org
+XB-Python-Version: ${python:Versions}
+Depends: ${misc:Depends}, ${python:Depends}, python-pyicu (>= 0.8), python-simplejson, python-pkg-resources, python-qt4 (>=4.5)
+Description: Aard Dictionary is a dictionary and offline Wikipedia reader.
