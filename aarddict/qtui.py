@@ -59,7 +59,7 @@ log = logging.getLogger(__name__)
 
 locale.setlocale(locale.LC_ALL, '')
 locale_dir = os.path.join(package_dir, 'locale')
-gettext_domain = aarddict.__name__ + '-qt'
+gettext_domain = aarddict.__name__
 gettext.bindtextdomain(gettext_domain, locale_dir)
 gettext.textdomain(gettext_domain)
 gettext.install(gettext_domain, locale_dir, unicode=True, names=['ngettext'])
