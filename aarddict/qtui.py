@@ -49,6 +49,8 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  cmp_words,
                                  VerifyError)
 
+from aarddict import package_dir
+
 import gettext
 
 connect = QObject.connect
@@ -56,17 +58,17 @@ connect = QObject.connect
 log = logging.getLogger(__name__)
 
 locale.setlocale(locale.LC_ALL, '')
-locale_dir = os.path.join(aarddict.package_dir, 'locale')
+locale_dir = os.path.join(package_dir, 'locale')
 gettext_domain = aarddict.__name__ + '-qt'
 gettext.bindtextdomain(gettext_domain, locale_dir)
 gettext.textdomain(gettext_domain)
 gettext.install(gettext_domain, locale_dir, unicode=True, names=['ngettext'])
 
 
-def load_file(name):
-    path = os.path.join(aarddict.package_dir, name)
-    with open(path, 'rb') as f:
-        return f.read()
+def load_file(name, binary=False):
+    with open(name, 'r'+ ('b' if binary else '')) as f:
+        content = f.read()
+        return content if binary else content.decode('utf8')
 
 app_dir = os.path.expanduser('~/.aarddict')
 sources_file = os.path.join(app_dir, 'sources')
@@ -81,19 +83,21 @@ lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
 lastsave_file = os.path.join(app_dir, 'lastsave')
 zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
 
-js = '<script type="text/javascript">%s</script>' % load_file('aar.js')
+js = ('<script type="text/javascript">%s</script>' % 
+      load_file(os.path.join(package_dir, 'aar.js')))
 
-shared_style_str = load_file('shared.css').decode('utf8')
+shared_style_str = load_file(os.path.join(package_dir, 'shared.css'))
 
 aard_style_tmpl = string.Template(('<style type="text/css">%s</style>' %
                                    '\n'.join((shared_style_str, 
-                                              load_file('aar.css.tmpl').decode('utf8')))))
+                                              load_file(os.path.join(package_dir, 
+                                                                     'aar.css.tmpl'))))))
 
 
 mediawiki_style = ('<style type="text/css">%s</style>' % 
                    '\n'.join((shared_style_str, 
-                              load_file('mediawiki_shared.css').decode('utf8'),
-                              load_file('mediawiki_monobook.css').decode('utf8'))))
+                              load_file(os.path.join(package_dir, 'mediawiki_shared.css')),
+                              load_file(os.path.join(package_dir, 'mediawiki_monobook.css')))))
 
 style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>', re.UNICODE | re.DOTALL)
 
@@ -102,8 +106,8 @@ appearance_conf = ConfigParser()
 max_history = 50
 
 iconset = 'Human-O2'
-icondir = os.path.join(aarddict.package_dir, 'icons/%s/' % iconset)
-logodir = os.path.join(aarddict.package_dir, 'icons/%s/' % 'hicolor')
+icondir = os.path.join(package_dir, 'icons/%s/' % iconset)
+logodir = os.path.join(package_dir, 'icons/%s/' % 'hicolor')
 
 dict_detail_tmpl= string.Template("""
 <html>
@@ -535,7 +539,7 @@ def write_sources(sources):
 
 def read_sources():
     if os.path.exists(sources_file):
-        return [source.decode('utf8') for source
+        return [source for source
                 in load_file(sources_file).splitlines() if source]
     else:
         return []
@@ -573,7 +577,7 @@ def write_lastfiledir(lastfiledir):
 
 def read_lastfiledir():
     if os.path.exists(lastfiledir_file):
-        return load_file(lastfiledir_file).decode('utf8').strip()
+        return load_file(lastfiledir_file).strip()
     else:
         return os.path.expanduser('~')
 
@@ -583,7 +587,7 @@ def write_lastdirdir(lastdirdir):
 
 def read_lastdirdir():
     if os.path.exists(lastdirdir_file):
-        return load_file(lastdirdir_file).decode('utf8').strip()
+        return load_file(lastdirdir_file).strip()
     else:
         return os.path.expanduser('~')
 
@@ -593,7 +597,7 @@ def write_lastsave(lastsave):
 
 def read_lastsave():
     if os.path.exists(lastsave_file):
-        return load_file(lastsave_file).decode('utf8').strip()
+        return load_file(lastsave_file).strip()
     else:
         return os.path.expanduser('~')
 
@@ -2005,7 +2009,7 @@ def main(args, debug=False, dev_extras=False):
 
     if os.path.exists(layout_file):
         try:
-            dv.restoreState(QByteArray(load_file(layout_file)))
+            dv.restoreState(QByteArray(load_file(layout_file, binary=True)))
         except:
             log.exception('Failed to restore layout from %s', layout_file)
 
