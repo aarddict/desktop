@@ -42,6 +42,11 @@ title bar, or title bar's popup menu).
 
 .. image:: aarddict_0.8.0_ubuntu_periodic_table.png
 
+Article visual style can be customized with `Article Appearance`
+dialog (:menuselection:`View --> Article Appearance...`).
+
+.. image:: aarddict_0.8.0_ubuntu_article_appearance.png
+
 Keyboard Shortcuts					   
 ==================
 
