@@ -20,3 +20,7 @@ a[href ^="#_r"] {
     font-weight: bold;
     text-decoration: none;
 }
+
+pre:empty {
+    display: none;
+}
