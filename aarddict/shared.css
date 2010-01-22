@@ -23,7 +23,8 @@ a[href ^="#_r"] {
 
 pre:empty,
 .thumbinner, .thumbcaption, .magnify, 
-.vertical-navbox, .tmbox, .maptable  {
+.vertical-navbox, .tmbox, .maptable,
+.printonly  {
     display: none;
 }
 
