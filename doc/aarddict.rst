@@ -5,7 +5,7 @@ Aard Dictionary
 Overview
 ============
 Aard Dictionary's user interface consists of lookup and history pane
-(intially grouped into tabs), article pane, toolbar and menu. 
+(intially grouped into tabs), article pane, toolbar and menu.
 
 .. image:: aarddict_0.8.0_ubuntu_planks_law.png
 
@@ -13,11 +13,11 @@ First open some dictionaries, either by selecting
 :menuselection:`Dictionary-->Add Dictionaries` or
 :menuselection:`Dictionary-->Add Directory`. Adding a directory means
 that Aard Dictionary will scan that directory (without subdirectories)
-and open any dictionaries it finds every time it is started. 
+and open any dictionaries it finds every time it is started.
 
 Dictionaries have `.aar` extension. Dictionaries in newer :term:`aar-HTML`
 format have double extension `.html.aar`, while dictionaries in older
-:term:`aar-JSON` format have single `.aar` extension. 
+:term:`aar-JSON` format have single `.aar` extension.
 
 Start typing a word to look up in `Lookup Box`. List of matching words
 appears below `Lookup Box` and is updated when typing is paused, best
@@ -30,7 +30,7 @@ tabs in article pane when selected.
 
 Lookup pane, history pane and toolbar can be rearranged and moved to a new
 position (click pane's title bar or toolbar's drag handle and start
-dragging), either docked around article pane: 
+dragging), either docked around article pane:
 
 .. image:: aarddict_0.8.0_ubuntu_hydrogen.png
 
@@ -42,7 +42,7 @@ or floating:
 
 Lookup pane, history pane and toolbar can also be hidden
 (through :menuselection:`View` menu, close button in lookup and history pane's
-title bar, or title bar's popup menu). 
+title bar, or title bar's popup menu).
 b
 .. image:: aarddict_0.8.0_ubuntu_periodic_table.png
 
@@ -51,7 +51,7 @@ dialog (:menuselection:`View --> Article Appearance...`).
 
 .. image:: aarddict_0.8.0_ubuntu_article_appearance.png
 
-Keyboard Shortcuts					   
+Keyboard Shortcuts
 ==================
 
 +---------------------+------------------------------------+---------------------------+
@@ -158,20 +158,20 @@ volumes data may get corrupted due to software, hardware or data
 transmittion error. Dictionary volumes store SHA-1_ digest of the content
 which is used to verify data integrity. To verify volume data
 integrity open `Verify` dialog (:menuselection:`Dictionary -->
-Verify...`), select one of the volumes and click `Verify` button. 
+Verify...`), select one of the volumes and click `Verify` button.
 
 .. image:: aarddict_0.8.0_ubuntu_verifying.png
 
 Once verified volume status changes from `Unverified` to `OK` or
-`Corrupt`. 
+`Corrupt`.
 
 .. image:: aarddict_0.8.0_ubuntu_verified.png
 
-Volumes can also be verified by running Aard Dictionary 
+Volumes can also be verified by running Aard Dictionary
 from the command line like this::
 
   aarddict --verify enwiki-20090810-1.1_of_4.aar enwiki-20090810-1.2_of_4.aar
-  
+
 .. _SHA-1: http://en.wikipedia.org/wiki/SHA_hash_functions
 
 User Interface Language
@@ -203,7 +203,7 @@ Fonts
 Many dictionaries use `International Phonetic Alphabet`_ (IPA) in
 their articles to write phonetic transcription of a word (describe
 it's pronunciation). To have IPA
-characters displayed properly you may 
+characters displayed properly you may
 need to install one of the excellent IPA fonts available at
 http://scripts.sil.org.
 
@@ -274,7 +274,7 @@ If starting the application results in error message like this::
 
   This application has failed to start because the application
   configuration is incorrect. Reinstalling the application may fix this
-  problem. 
+  problem.
 
 or
 
@@ -282,13 +282,13 @@ or
 
   The application has failed to start because its side-by-side
   configuration is incorrect. Please see the application event log for
-  more detail. 
+  more detail.
 
 most likely `Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)`_
 needs to be installed.
 
 On Windows earlier than Windows XP SP3 users may also need to install
-`Microsoft Visual C++ 2005 Redistributable Package (x86)`_. 
+`Microsoft Visual C++ 2005 Redistributable Package (x86)`_.
 
 .. _Microsoft Visual C++ 2005 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?FamilyId=32BC1BEE-A3F9-4C13-9C99-220B62A191EE&displaylang=en
 
@@ -314,7 +314,7 @@ Building Mac OS X App
 =====================
 
 Mac OS X application bundle can be built with py2app_ for Aard
-Dictionary 0.8.0 and newer. 
+Dictionary 0.8.0 and newer.
 
 - Install MacPorts_
 
@@ -326,26 +326,26 @@ Dictionary 0.8.0 and newer.
 
     sudo port install python_select
     sudo python_select python26
- 
+
   Make sure Python 2.6 you just installed runs indeed when you type
   ``python`` (you mae need to open a new terminal for
   ``python_select`` to take effect).
- 
+
 
 - Install PyQT4::
 
     sudo port install py26-pyqt4
-   
+
   This should bring in py26-sip and qt4-mac as dependencies. Qt4
   compilation takes several hours and requires a lot of disc space
   (around 6-8 Gb).
-  
+
 - Install py2app::
 
     sudo port install py26-py2app
 
 - Install PyICU. This is a bit tricky because MacPorts 1.8.1 includes
-  ICU 4.3.1 and PyICU doesn't seem to build with that. It looks like 
+  ICU 4.3.1 and PyICU doesn't seem to build with that. It looks like
   ``py26-pyicu @0.8.1`` port was added when ICU was at 4.2.0 and it
   probably worked then. In any case, PyICU 0.8.1 only claims to work
   with ICU 3.6 and 3.8, so it is best to install and activate older
@@ -354,25 +354,107 @@ Dictionary 0.8.0 and newer.
 - Copy :file:`aarddict.py` recipe (and :file:`__init__.py`) for py2app
   from ``macosx`` to installed py2app package directory::
 
-    cp macosx/py2app/recipes/*.py /opt/local/Library/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/py2app/recipes/ 
-  
+    cp macosx/py2app/recipes/*.py /opt/local/Library/Frameworks/Python.framework/Versions/2.6/lib/python2.6/site-packages/py2app/recipes/
+
   This recipe is same as for `numpy` and other libraries that have
-  package data and won't work if put in zip archive. 
+  package data and won't work if put in zip archive.
 
 - Finally, run py2app_::
 
     python setup.py py2app
 
 - Remove unused debug binaries::
-  
+
     find dist/ -name "*_debug*" -print0 | xargs -0 rm
-  
+
   A number of unused Qt frameworks gets included in final app (QtDesigner,
   QtSql etc.) but they can't be removed since they are linked in
   :file:`_qt.so`.
 
 .. _py2app: http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html
 .. _MacPorts: http://www.macports.org/
+
+
+History
+=======
+Aard Dictionary started from `SDict Viewer`_ code base as an attempt
+to address some of it's shortcomings. Initially Jeremy Mortis started
+to hack on `SDict Viewer`_ and ptksdict_ so that he could look up
+words in French Wikipedia without having to type accented
+characters. This required changes to dictionary format. Trying to make
+`SDict Viewer`_ work with both the original Sdictionary format and the
+new format turned out to be cumbersome and limiting, so `SDict Viewer`_
+was forked into a new project that can focus on building functionality
+around new format.
+
+SDict Viewer Issues
+-------------------
+`SDict Viewer`_ has a number of
+issues due to limitations of underlying Sdictionary format developed
+by `AXMA Soft`_. Aard Dictionary tries to resolve them by introducing
+:doc:`aard format </aardtools/doc/aardformat>`.
+
+Short Index Depth
+~~~~~~~~~~~~~~~~~
+
+Sdictionary relies on so called `short index` to perform word lookups.
+First few letters of all words in a dictionary are mapped to a pointer
+that points to position in `full index` (maximum length of a key in
+short index is `index depth`). To find a word SDict Viewer uses short
+index to jump to a particular place in full index and then iterates
+through the word list until it finds the word or encounters a word
+that doesn't begin with the same letters.
+
+This works reasonably well for small and medium sized
+dictionaries. Short index depth for dictionaries from http://sdict.com
+is 3, although the format theoretically allows deeper short
+index. With large dictionaries like Wikipedia short index of depth 3
+is not enough: SDict Viewer sometimes ends up iterating through tens
+or even hundreds of thousands words, which takes significant amount of
+time even on powerful desktop machines.
+
+SDict Viewer tries to alleviate this problem by building additional
+short index on the fly as it iterates through corresponding word list
+fragment, so that subsequent lookups in that fragment of word list are
+fast. This, however, significantly slows down first lookup.
+
+Reading and parsing short index when opening a dictionary is in itself
+a time consuming operation. SDict Viewer saves binary dump of short
+index on application exit, which speeds up subsequent loads of
+corresponding dictionary. This, however, requires certain amount of
+storage and memory at runtime. Size of short index may grow
+noticeably - depending on how "under-indexed" a particular dictionary
+is and how often it is used.
+
+Article Formatting
+~~~~~~~~~~~~~~~~~~
+Sdictionary format uses several HTML-style tags to mark up dictionary
+article text. Sdictionary compiler doesn't escape special characters
+like ``<`` and ``>``, doesn't produce well-formed markup, doesn't produce
+clean article text.    Parsing such article text on Nokia Internet
+Tablets is not very fast and doesn't always produce nice-looking
+results.
+
+Hyperlinks
+~~~~~~~~~~
+Sdictionary format defines ``<r>`` tag to mark regions of text that are
+links (references) to other entries in the same dictionary. There is,
+however, no facility to specify link target, so this mechanism breaks
+when link target is not exactly the same as corresponding text in the
+article. There is no support for external (``http://``) links. SDict
+Viewer treats all strings that start with ``http://`` as external links,
+this slows down article formatting.
+
+Compression
+~~~~~~~~~~~
+Sdictionary format theoretically has three options for compressing
+dictionary data: no compression, gzip and bzip2. In practice all
+dictionaries actually use gzip. Sdictionary compiler doesn't actually
+allow to create bzip2 compressed dictionaries.
+
+.. _AXMA Soft: http://axmasoft.com
+.. _SDict Viewer: http://sdictviewer.sourceforge.net
+.. _ptksdict: http://www.sdict.com/en/versions.php?version=unix_ptk
 
 
 Release Notes
@@ -393,10 +475,10 @@ Release Notes
 
 - Use single word completion list instead of word list per language,
   show best match at the top.
- 
+
 - In word list group similar titles together (titles that differ only
   in case or accented characters except for one and two-letter
-  titles). 
+  titles).
 
 - Render articles in both old JSON-based format (`.aar` dictionaries)
   and HTML (`.html.aar` dictionaries).
@@ -408,10 +490,10 @@ Release Notes
   HTML file.
 
 - Implement :menuselection:`Dictionary --> Add Directory...`: adds
-  directory to be scanned for dictionaries on application start, opens 
+  directory to be scanned for dictionaries on application start, opens
   all dictionaries found (non-recursive).
 
-- Display list of language link languages in dictionary info dialog. 
+- Display list of language link languages in dictionary info dialog.
 
 - Build Mac OS X application bundle.
 
@@ -444,7 +526,7 @@ Release Notes
 
 - Remove :kbd:`Control-f` key binding for history forward and
   :kbd:`Control-b` for history back in Hildon UI, use
-  :kbd:`Shift-Back` and :kbd:`Back` instead. 
+  :kbd:`Shift-Back` and :kbd:`Back` instead.
 
 - Windows version now uses Python 2.6.
 
@@ -493,7 +575,7 @@ Release Notes
 
 - Properly limit matched word list for multivolume dictionaries.
 
-- Python 2.5 .deb is now installable on Ubuntu 8.04 LTS.   
+- Python 2.5 .deb is now installable on Ubuntu 8.04 LTS.
 
 
 .. _issue #6: http://bitbucket.org/itkach/aarddict/issue/6
