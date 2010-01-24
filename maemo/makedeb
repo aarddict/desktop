@@ -36,7 +36,18 @@ Installed-Size: $SIZE
 Suggests: ttf-sil-doulos
 Maintainer: Igor Tkach <itkach@aarddict.org>
 Homepage: http://aarddict.org
-Description: Aard Dictionary is a multiplatform dictionary and offline Wikipedia reader.
+Description: Aard Dictionary is a dictionary and offline Wikipedia reader
+ Aard Dictionary is a free, fast, easy to use word lookup program that
+  * looks up words fast even with huge dictionaries like 
+    English Wikipedia
+  * looks up words in multiple dictionaries in multiple 
+    languages without switching
+  * works great as offline Wikipedia reader
+  * is keyboard navigation friendly
+  * has efficient, highly compressed dictionary data storage 
+    format with ability to verify data integrity built-in 
+ Download Wikipedia and dictionaries at http://aarddict.org or 
+ compile your own dictionaries with Aard Tools.
 Maemo-Icon-26:
 	iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAAABGdBTUEAAK/INwWK6QAAABl0
 	RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAfwSURBVHjajFZ5bBTnFf/NzM6e
