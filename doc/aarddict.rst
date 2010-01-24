@@ -294,6 +294,21 @@ On Windows earlier than Windows XP SP3 users may also need to install
 
 .. _Microsoft Visual C++ 2008 SP1 Redistributable Package (x86): http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&displaylang=en
 
+Maemo
+-----
+Aard Dictionary 0.8.0 depends on PyQt4 libraries that have not been
+released yet. `Aard Dictionary 0.8.0 single click install`_ enables
+Maemo's `extras-devel` repository. Be advised that `extras-devel`
+contains software that is primarily intended for developers and
+testers. If you are uncomfortable installing potentially unstable
+software you may want to stick to an older version of Aard Dictionary.
+
+Another issue users may encounter when installing on N800/N810 is that Aard Dictionary
+0.8.0 together with PyQt4 and Qt4 libraries requires approximately 19
+Mb download and 62 Mb of device memory. Some applications may need to
+be uninstalled to free enough memory for the installation.
+
+.. _Aard Dictionary 0.8.0 single click install: http://aarddict.org/aarddict_0.8.0.dev.install
 
 Building Mac OS X App
 =====================
