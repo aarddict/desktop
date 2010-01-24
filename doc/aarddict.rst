@@ -15,6 +15,10 @@ First open some dictionaries, either by selecting
 that Aard Dictionary will scan that directory (without subdirectories)
 and open any dictionaries it finds every time it is started. 
 
+Dictionaries have `.aar` extension. Dictionaries in newer :term:`aar-HTML`
+format have double extension `.html.aar`, while dictionaries in older
+:term:`aar-JSON` format have single `.aar` extension. 
+
 Start typing a word to look up in `Lookup Box`. List of matching words
 appears below `Lookup Box` and is updated when typing is paused, best
 matches displayed first (at the top of the list) and first match
@@ -39,7 +43,7 @@ or floating:
 Lookup pane, history pane and toolbar can also be hidden
 (through :menuselection:`View` menu, close button in lookup and history pane's
 title bar, or title bar's popup menu). 
-
+b
 .. image:: aarddict_0.8.0_ubuntu_periodic_table.png
 
 Article visual style can be customized with `Article Appearance`
@@ -223,6 +227,39 @@ Maemo Application Manager.
 .. _`WAZU JAPAN's Gallery of Unicode Fonts`: http://www.wazu.jp/
 
 
+Limitations
+===========
+
+- Wikipedia for Aard Dictionary doesn't include any audio, video and
+  images except for images rendering math (:term:`aar-HTML`).
+
+- Wikipedia for Aard Dictionary does not include Wikipedia
+  navigational features like categories, portals and navigation boxes.
+
+- Wikipedia inter-project links generally do not work.
+
+- Many XDXF dictionaries have only basic or no markup in
+  articles. Accordingly, dictionaries converted from such XDXF also
+  have just plain text articles. Some dictionaries have simple plain
+  text markup or formatting conventions that can be converted to
+  proper XDXF and aard markup, but this requires a custom conversion
+  tool which hasn't been written yet.
+
+- Dictionaries in :term:`aar-JSON` have very limited table support. Complex
+  tables may miss some data and/or have incorrect structure and
+  generally disregard most of the style present in original table. In
+  Aard Dictionary 0.7.x tables are rendered in monospace font, there is no
+  text wrapping inside table cells, which produces very long
+  horizontal scrollbars in some articles. All text in cells is left
+  aligned.
+
+- In aar-JSON mathematical formulas are not rendered, TeX markup is
+  included as is.
+
+- Aard Dictionary 0.7.x can only render dictionaries in :term:`aar-JSON` format,
+  dictionaries in :term:`aar-HTML` can be opened, but articles won't be
+  rendered, article view will only show raw HTML.
+
 Installation Notes
 ==================
 
@@ -316,6 +353,7 @@ Dictionary 0.8.0 and newer.
 
 .. _py2app: http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html
 .. _MacPorts: http://www.macports.org/
+
 
 Release Notes
 =============
