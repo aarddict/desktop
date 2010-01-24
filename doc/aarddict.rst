@@ -43,7 +43,7 @@ or floating:
 Lookup pane, history pane and toolbar can also be hidden
 (through :menuselection:`View` menu, close button in lookup and history pane's
 title bar, or title bar's popup menu).
-b
+
 .. image:: aarddict_0.8.0_ubuntu_periodic_table.png
 
 Article visual style can be customized with `Article Appearance`
