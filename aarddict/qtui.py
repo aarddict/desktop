@@ -18,7 +18,8 @@ from collections import defaultdict
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QModelIndex, QSize, QByteArray, QPoint, QRect)
+                          QModelIndex, QSize, QByteArray, QPoint, QRect, QTranslator, 
+                          QLocale)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -1993,6 +1994,11 @@ def main(args, debug=False, dev_extras=False):
     if not os.path.exists(app_dir):
         os.makedirs(app_dir)
     app = QApplication(sys.argv)
+
+    qtranslator = QTranslator()
+    qtranslator.load('qt_'+str(QLocale.system().name()), locale_dir)
+    app.installTranslator(qtranslator)
+
     load_icons()
     dv = DictView()
 
