@@ -1814,8 +1814,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 btn.setIcon(QIcon(pixmap))
                 colors[color_name] = str(c.name())
                 style_str = mkcss(colors)
-                preview_pane.page().currentFrame().setHtml(style_str + html)
-
+                if not cb_use_mediawiki_style.isChecked():
+                    preview_pane.page().currentFrame().setHtml(style_str + html)
 
         pixmap = QPixmap(24, 16)
         pixmap.fill(QColor(colors['internal_link_fg']))
