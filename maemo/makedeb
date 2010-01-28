@@ -18,6 +18,7 @@ DIRS="usr"
 rm $(find $DIRS -name "*~")
 rm $(find $DIRS -name "*.po")
 rm $(find $DIRS -name "*.pot")
+rm $(find $DIRS -name "*.ts")
 
 PACKAGE=aarddict
 VERSION=`python -c "import aarddict; print aarddict.__version__"`

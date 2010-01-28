@@ -26,6 +26,7 @@ else:
                          [f for f in glob.glob('aarddict/*.png')] +
                          [f for f in glob.glob('aarddict/*.css')] +
                          [f for f in glob.glob('aarddict/locale/*/*/*.mo')] +
+                         [f for f in glob.glob('aarddict/locale/*.qm')] +
                          [f for f in glob.glob('aarddict/icons/*/*/*/*.png')]
                          )
             for f in all_files:
@@ -57,6 +58,7 @@ def setup_common():
                 packages=find_packages(),
                 install_requires=['PyICU >= 0.8', 'simplejson'],
                 package_data={'aarddict': ['locale/*/*/*.mo',
+                                           'locale/*.qm',
                                            'aar.css.tmpl',
                                            '*.js',
                                            '*.css',
