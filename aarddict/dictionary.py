@@ -23,6 +23,7 @@ from functools import partial
 from bisect import bisect_left
 from itertools import islice, chain
 from collections import defaultdict, deque
+from uuid import UUID
 
 import simplejson
 from PyICU import Locale, Collator
@@ -480,7 +481,7 @@ class Dictionary(object):
 
         self.index_count = header.index_count
         self.sha1sum = header.sha1sum
-        self.uuid = header.uuid
+        self.uuid = UUID(bytes=header.uuid)
         self.volume = header.volume
         self.total_volumes = header.of
 

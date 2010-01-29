@@ -560,7 +560,7 @@ def read_preferred_dicts():
     if os.path.exists(preferred_dicts_file):
         def parse(line):
             key, val = line.split()
-            return (UUID(hex=key).bytes, float(val))
+            return (UUID(hex=key), float(val))
         return dict(parse(line) for line
                     in load_file(preferred_dicts_file).splitlines()
                     if line)
@@ -569,7 +569,7 @@ def read_preferred_dicts():
 
 def write_preferred_dicts(preferred_dicts):
     with open(preferred_dicts_file, 'w') as f:
-        f.write('\n'.join( '%s %s' % (UUID(bytes=key).hex, val)
+        f.write('\n'.join( '%s %s' % (key.hex, val)
                            for key, val in preferred_dicts.iteritems()))
 
 def write_lastfiledir(lastfiledir):
@@ -1171,7 +1171,7 @@ class DictView(QMainWindow):
     def article_tab_switched(self, current_tab_index):
         if current_tab_index > -1:
             web_view = self.tabs.widget(current_tab_index)
-            dict_uuid = str(web_view.property('aard:dictionary').toByteArray())
+            dict_uuid = web_view.property('aard:dictionary').toPyObject()
             self.update_preferred_dicts(dict_uuid=dict_uuid)
         self.update_current_article_actions(current_tab_index)
 
@@ -1452,7 +1452,7 @@ class DictView(QMainWindow):
             for i, dict_key in enumerate(preferred_dict_keys):
                 for page_num in range(self.tabs.count()):
                     web_view = self.tabs.widget(page_num)
-                    dict_uuid = str(web_view.property('aard:dictionary').toByteArray())
+                    dict_uuid = web_view.property('aard:dictionary').toPyObject()
                     if dict_uuid == dict_key:
                         self.tabs.setCurrentIndex(page_num)
                         raise StopIteration()
@@ -1662,12 +1662,12 @@ class DictView(QMainWindow):
         dictmap = defaultdict(list)
 
         for dictionary in self.dictionaries:
-            dictmap[UUID(bytes=dictionary.uuid).hex].append(dictionary)
+            dictmap[dictionary.uuid].append(dictionary)
 
-        for uuid_hex, dicts in dictmap.iteritems():
+        for uuid, dicts in dictmap.iteritems():
             text = format_title(dicts[0], with_vol_num=False)
             item = QListWidgetItem(text)
-            item.setData(Qt.UserRole, QVariant(uuid_hex))
+            item.setData(Qt.UserRole, QVariant(uuid))
             item_list.addItem(item)
 
         splitter = QSplitter()
@@ -1691,8 +1691,8 @@ class DictView(QMainWindow):
         content.addWidget(button_box)
 
         def current_changed(current, old_current):
-            uuid_hex = str(current.data(Qt.UserRole).toString())
-            volumes = dictmap[uuid_hex]
+            uuid = current.data(Qt.UserRole).toPyObject()
+            volumes = dictmap[uuid]
 
             if volumes:
                 volumes = sorted(volumes, key=lambda v: v.volume)
