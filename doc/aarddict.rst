@@ -271,7 +271,7 @@ Installation Notes
 Windows
 -------
 .. warning:: 
-   Users are highly recommended to uninstall Aard Dictionary 0.7.x by
+   Users are strongly advised to uninstall Aard Dictionary 0.7.x by
    running Aard Dictionary uninstaller before upgrading to 0.8.0 
 
 If starting the application results in error message like this::
