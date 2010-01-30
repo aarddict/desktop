@@ -59,6 +59,17 @@ connect = QObject.connect
 log = logging.getLogger(__name__)
 
 locale.setlocale(locale.LC_ALL, '')
+
+if os.name == 'nt':
+    # windows hack for locale setting
+    lang = os.getenv('LANG')
+    if lang is None:
+        default_lang, default_enc = locale.getdefaultlocale()
+        if default_lang:
+            lang = default_lang
+        if lang:
+            os.environ['LANG'] = lang
+
 locale_dir = os.path.join(package_dir, 'locale')
 gettext_domain = aarddict.__name__
 gettext.bindtextdomain(gettext_domain, locale_dir)
