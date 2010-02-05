@@ -11,8 +11,7 @@ Architecture: all
 Homepage: http://aarddict.org
 XB-Python-Version: ${python:Versions}
 Depends: ${misc:Depends}, ${python:Depends}, python-pyicu (>= 0.8), python-simplejson, python-pkg-resources, python-qt4 (>=4.5)
-Description: Aard Dictionary is a dictionary and offline Wikipedia reader
- .
+Description: Aard Dictionary is a dictionary and offline Wikipedia reader 
  Aard Dictionary is a free, fast, easy to use word lookup program that
   * looks up words fast even with huge dictionaries like English Wikipedia
   * looks up words in multiple dictionaries in multiple languages without 
