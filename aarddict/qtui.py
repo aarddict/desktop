@@ -390,7 +390,7 @@ class ArticleLoadThread(QThread):
         except RedirectResolveError, e:
             log.debug('Failed to resolve redirect', exc_info=1)
             article = Article(e.article.title,
-                              _('Redirect to %s not found') % e.article.redirect.encode('utf8'),
+                              _('Redirect to %s not found') % e.article.redirect,
                               dictionary=e.article.dictionary)
         log.debug('Read %r from %s in %ss',
                   article.title,
