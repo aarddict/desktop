@@ -308,8 +308,8 @@ testers. If you are uncomfortable installing potentially unstable
 software you may want to stick to an older version of Aard Dictionary.
 
 Another issue users may encounter when installing on N800/N810 is that Aard Dictionary
-0.8.0 together with PyQt4 and Qt4 libraries requires approximately 19
-Mb download and 62 Mb of device memory. Some applications may need to
+0.8.0 together with PyQt4 and Qt4 libraries is approximately 17
+Mb download and requires 56 Mb of device memory. Some applications may need to
 be uninstalled to free enough memory for the installation.
 
 .. _Aard Dictionary 0.8.0 single click install: http://aarddict.org/aarddict_0.8.0.dev.install
