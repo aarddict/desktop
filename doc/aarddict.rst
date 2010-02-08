@@ -176,8 +176,8 @@ from the command line like this::
 
 User Interface Language
 =======================
-Currently Aard Dictionary interface is available in English (default) and
-Russian. User interface language should be selected automatically
+Currently Aard Dictionary user interface is available in English, 
+Russian and Greek. User interface language should be selected automatically
 based on system's locale. System settings can be overridden by
 starting Aard Dictionary from command line like this::
 
