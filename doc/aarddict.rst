@@ -487,7 +487,7 @@ Release Notes
 - Render articles in both old JSON-based format (`.aar` dictionaries)
   and HTML (`.html.aar` dictionaries).
 
-- Switch between Aard Dictionary article visual style with customize
+- Switch between Aard Dictionary article visual style with customizable
   colors and Wikipedia Monobook style.
 
 - Implement :menuselection:`Article --> Save` action: saves article to
