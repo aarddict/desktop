@@ -76,7 +76,7 @@ def setup_common():
                              'Programming Language :: Python',
                              'License :: OSI Approved :: GNU General Public License (GPL)',
                              'Topic :: Utilities',
-                             'Environment :: X11 Applications :: GTK'
+                             'Environment :: X11 Applications :: Qt'
                              ]
                 )
 
