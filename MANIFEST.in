@@ -1,5 +1,13 @@
 include LICENSE
+include run
+include run.py
 include desktop/*.desktop
+include debian/*
+include maemo/makedeb
+include maemo/postinst
+include windows/*
+include macosx/*
 recursive-include icons *.png
-recursive-include doc *.rst
+recursive-include doc *.rst *.png
+recursive-include aarddict *.png *.js *.tmpl *css *.mo *.po *.pot *.qm *.ts
 
