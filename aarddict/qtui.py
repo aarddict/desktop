@@ -2058,6 +2058,4 @@ def main(args, debug=False, dev_extras=False):
     dv.open_dicts(read_sources()+[arg.decode(preferred_enc) for arg in args])
     sys.exit(app.exec_())
 
-if __name__ == '__main__':
-    main()
 
