@@ -9,33 +9,31 @@ import logging
 import string
 import locale
 import re
-import tempfile
 
 from ConfigParser import ConfigParser
 from uuid import UUID
-from itertools import groupby
 from collections import defaultdict
 
 from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QModelIndex, QSize, QByteArray, QPoint, QRect, QTranslator, 
+                          QSize, QByteArray, QPoint, QRect, QTranslator, 
                           QLocale)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
                          QKeySequence, QToolButton,
                          QMainWindow, QListWidget, QListWidgetItem,
-                         QTabWidget, QApplication, QStyle,
+                         QTabWidget, QApplication,
                          QGridLayout, QSplitter, QProgressDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
-                         QDockWidget, QToolBar, QFormLayout, QColor, QLabel,
+                         QDockWidget, QToolBar, QColor, QLabel,
                          QColorDialog, QCheckBox, QKeySequence, QPalette,
                          QMenu, QProgressBar)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
-import aar2html
+from aarddict import aar2html
 import aarddict
 from aarddict.dictionary import (Dictionary, format_title,
                                  DictionaryCollection,
@@ -46,7 +44,6 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  TERTIARY,
                                  QUATERNARY,
                                  Article,
-                                 split_word,
                                  cmp_words,
                                  VerifyError)
 
@@ -2014,7 +2011,6 @@ def main(args, debug=False, dev_extras=False):
     dv = DictView()
 
     if dev_extras:
-        from PyQt4.QtWebKit import QWebSettings
         (QWebSettings.globalSettings()
          .setAttribute(QWebSettings.DeveloperExtrasEnabled, True))
     if debug:
