@@ -193,6 +193,7 @@ icons = {}
 
 def load_icons():
     icons['edit-find'] = mkicon('actions/edit-find')
+    icons['edit-clear'] = mkicon('actions/edit-clear')
     icons['system-search'] = mkicon('actions/system-search')
     icons['add-file'] = mkicon('actions/add-files-to-archive')
     icons['add-folder'] = mkicon('actions/add-folder-to-archive')
@@ -519,12 +520,16 @@ class WordInput(QLineEdit):
 
     word_input_down = pyqtSignal()
     word_input_up = pyqtSignal()
+    word_input_clear = pyqtSignal()
 
-    def __init__(self, action, parent=None):
+    def __init__(self, parent=None):
         QLineEdit.__init__(self, parent)
         box = QHBoxLayout()
-        btn_clear = QToolButton()
-        btn_clear.setDefaultAction(action)
+        btn_clear = QPushButton()
+        btn_clear.clicked.connect(self.word_input_clear.emit)
+        btn_clear.setIcon(icons['edit-clear'])
+        btn_clear.setShortcut(_('Ctrl+N'))
+        btn_clear.setStyleSheet('border-style: none;')
         btn_clear.setCursor(Qt.ArrowCursor)
         box.addStretch(1)
         box.addWidget(btn_clear, 0)
@@ -532,7 +537,7 @@ class WordInput(QLineEdit):
         box.setContentsMargins(0,0,0,0)
         s = btn_clear.sizeHint()
         self.setLayout(box)
-        self.setTextMargins(0, 0, s.width(), 0)
+        self.setTextMargins(0, 4, s.width(), 4)
 
     def keyPressEvent (self, event):
         QLineEdit.keyPressEvent(self, event)
@@ -754,20 +759,23 @@ class DictView(QMainWindow):
         self.dictionaries = DictionaryCollection()
         self.update_title()
 
-        action_lookup_box = QAction(_('&Lookup Box'), self)
+        action_lookup_box = QAction(_('&Lookup Box'), 
+                                    self, triggered=self.go_to_lookup_box)
         action_lookup_box.setIcon(icons['edit-find'])
         action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
         action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
 
-        action_lookup_box.triggered.connect(self.go_to_lookup_box)
+        def clear_word_input():
+            self.word_input.setFocus()
+            self.set_word_input('')
 
-        self.word_input = WordInput(action_lookup_box)
+        self.word_input = WordInput()
         self.word_input.textEdited.connect(self.word_input_text_edited)
-
-
-        self.word_completion = QListWidget()
         self.word_input.word_input_down.connect(self.select_next_word)
         self.word_input.word_input_up.connect(self.select_prev_word)
+        self.word_input.word_input_clear.connect(clear_word_input)
+
+        self.word_completion = QListWidget()
 
         def focus_current_tab():
             current_tab = self.tabs.currentWidget()
