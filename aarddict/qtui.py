@@ -9,15 +9,16 @@ import logging
 import string
 import locale
 import re
+import types
 
 from ConfigParser import ConfigParser
 from uuid import UUID
 from collections import defaultdict
 
-from PyQt4.QtCore import (QObject, Qt, QThread, SIGNAL, QMutex,
+from PyQt4.QtCore import (QObject, Qt, QThread, QMutex,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QSize, QByteArray, QPoint, QRect, QTranslator, 
-                          QLocale)
+                          QSize, QByteArray, QPoint, QRect, QTranslator,
+                          QLocale, pyqtSignal, QString)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -50,8 +51,6 @@ from aarddict.dictionary import (Dictionary, format_title,
 from aarddict import package_dir
 
 import gettext
-
-connect = QObject.connect
 
 log = logging.getLogger(__name__)
 
@@ -92,19 +91,19 @@ lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
 lastsave_file = os.path.join(app_dir, 'lastsave')
 zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
 
-js = ('<script type="text/javascript">%s</script>' % 
+js = ('<script type="text/javascript">%s</script>' %
       load_file(os.path.join(package_dir, 'aar.js')))
 
 shared_style_str = load_file(os.path.join(package_dir, 'shared.css'))
 
 aard_style_tmpl = string.Template(('<style type="text/css">%s</style>' %
-                                   '\n'.join((shared_style_str, 
-                                              load_file(os.path.join(package_dir, 
+                                   '\n'.join((shared_style_str,
+                                              load_file(os.path.join(package_dir,
                                                                      'aar.css.tmpl'))))))
 
 
-mediawiki_style = ('<style type="text/css">%s</style>' % 
-                   '\n'.join((shared_style_str, 
+mediawiki_style = ('<style type="text/css">%s</style>' %
+                   '\n'.join((shared_style_str,
                               load_file(os.path.join(package_dir, 'mediawiki_shared.css')),
                               load_file(os.path.join(package_dir, 'mediawiki_monobook.css')))))
 
@@ -251,8 +250,7 @@ class WebView(QWebView):
     def __init__(self, parent=None):
         QWebView.__init__(self, parent)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
-        connect(self,SIGNAL('customContextMenuRequested (const QPoint&)'),
-                self.context_menu_requested)
+        self.customContextMenuRequested.connect(self.context_menu_requested)
 
     def context_menu_requested(self, point):
         context_menu = QMenu()
@@ -312,6 +310,10 @@ class WordLookupStopRequested(Exception): pass
 
 class WordLookupThread(QThread):
 
+    match_found = pyqtSignal(QString, types.FunctionType)
+    stopped = pyqtSignal(QString)
+    done = pyqtSignal(QString, list)
+
     def __init__(self, dictionaries, word, parent=None):
         QThread.__init__(self, parent)
         self.dictionaries = dictionaries
@@ -329,13 +331,13 @@ class WordLookupThread(QThread):
                     raise WordLookupStopRequested
                 else:
                     articles.append(article)
-                    self.emit(SIGNAL('match_found'), self.word, article)
+                    self.match_found.emit(self.word, article)
             if self.stop_requested:
                 raise WordLookupStopRequested
         except WordLookupStopRequested:
-            self.emit(SIGNAL('stopped'), self.word)
+            self.stopped.emit(self.word)
         else:
-            self.emit(SIGNAL('done'), self.word, articles)
+            self.done.emit(self.word, articles)
         finally:
             dict_access_lock.unlock()
 
@@ -348,6 +350,11 @@ class ArticleLoadStopRequested(Exception): pass
 
 class ArticleLoadThread(QThread):
 
+    article_loaded = pyqtSignal(unicode, types.FunctionType, unicode)
+    article_load_started = pyqtSignal(list)
+    article_load_stopped = pyqtSignal(QThread)
+    article_load_finished = pyqtSignal(QThread, list)
+
     def __init__(self, article_read_funcs, parent=None, use_mediawiki_style=False):
         QThread.__init__(self, parent)
         self.article_read_funcs = article_read_funcs
@@ -357,21 +364,21 @@ class ArticleLoadThread(QThread):
         self.errors = []
 
     def run(self):
-        self.emit(SIGNAL("article_load_started"), self.article_read_funcs)
+        self.article_load_started.emit(self.article_read_funcs)
         dict_access_lock.lock()
         try:
             for read_func in self.article_read_funcs:
                 article = self._load_article(read_func)
                 html = self._tohtml(article)
                 title = read_func.title
-                self.emit(SIGNAL("article_loaded"), title, article, html)
+                self.article_loaded.emit(title, article, html)
                 QThread.yieldCurrentThread()
         except ArticleLoadStopRequested:
-            self.emit(SIGNAL("article_load_stopped"), self)
+            self.article_load_stopped.emit(self)
         except Exception, e:
             self.errors.append((read_func, e))
         else:
-            self.emit(SIGNAL("article_load_finished"), self, self.article_read_funcs)
+            self.article_load_finished.emit(self, self.article_read_funcs)
         finally:
             dict_access_lock.unlock()
             self.html_cache.clear()
@@ -445,6 +452,10 @@ class ArticleLoadThread(QThread):
 
 class DictOpenThread(QThread):
 
+    dict_open_failed = pyqtSignal(str, str)
+    dict_open_succeded = pyqtSignal(Dictionary)
+    dict_open_started = pyqtSignal(int)
+
     def __init__(self, sources, parent=None):
         QThread.__init__(self, parent)
         self.sources = sources
@@ -462,21 +473,24 @@ class DictOpenThread(QThread):
                     s = os.path.join(source, f)
                     if os.path.isfile(s) and f.lower().endswith(ext):
                         files.append(s)
-        self.emit(SIGNAL("dict_open_started"), len(files))
+        self.dict_open_started.emit(len(files))
         for candidate in files:
             if self.stop_requested:
                 return
             try:
                 d = Dictionary(candidate)
             except Exception, e:
-                self.emit(SIGNAL("dict_open_failed"), candidate, str(e))
+                self.dict_open_failed.emit(candidate, str(e))
             else:
-                self.emit(SIGNAL("dict_open_succeded"), d)
+                self.dict_open_succeded.emit(d)
 
     def stop(self):
         self.stop_requested = True
 
 class VolumeVerifyThread(QThread):
+
+    verified = pyqtSignal(bool)
+    progress = pyqtSignal(float)
 
     def __init__(self, volume, parent=None):
         QThread.__init__(self, parent)
@@ -491,17 +505,20 @@ class VolumeVerifyThread(QThread):
                 if progress > 1.0:
                     progress = 1.0
                 if not self.stop_requested:
-                    self.emit(SIGNAL("progress"), progress)
+                    self.progress.emit(progress)
         except VerifyError:
-            self.emit(SIGNAL("verified"), False)
+            self.verified.emit(False)
         else:
-            self.emit(SIGNAL("verified"),  True)
+            self.verified.emit(True)
 
     def stop(self):
         self.stop_requested = True
 
 
 class WordInput(QLineEdit):
+
+    word_input_down = pyqtSignal()
+    word_input_up = pyqtSignal()
 
     def __init__(self, action, parent=None):
         QLineEdit.__init__(self, parent)
@@ -520,9 +537,9 @@ class WordInput(QLineEdit):
     def keyPressEvent (self, event):
         QLineEdit.keyPressEvent(self, event)
         if event.matches(QKeySequence.MoveToNextLine):
-            self.emit(SIGNAL('word_input_down'))
+            self.word_input_down.emit()
         elif event.matches(QKeySequence.MoveToPreviousLine):
-            self.emit(SIGNAL('word_input_up'))
+            self.word_input_up.emit()
 
 
 class SingleRowItemSelectionModel(QItemSelectionModel):
@@ -636,13 +653,13 @@ def write_zoomfactor(zoomfactor):
     with open(zoomfactor_file, 'w') as f:
         f.write(str(zoomfactor))
 
-def mkcss(values):    
+def mkcss(values):
     return aard_style_tmpl.substitute(values)
 
 aard_style = None
 
 def update_css(css):
-    global aard_style    
+    global aard_style
     aard_style = css
     return aard_style
 
@@ -727,6 +744,8 @@ def fix_float_title(widget, title_key, floating):
 
 class DictView(QMainWindow):
 
+    stop_article_load = pyqtSignal()
+
     def __init__(self, debug=False):
         QMainWindow.__init__(self)
         self.setUnifiedTitleAndToolBarOnMac(False)
@@ -739,22 +758,23 @@ class DictView(QMainWindow):
         action_lookup_box.setIcon(icons['edit-find'])
         action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
         action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
-        connect(action_lookup_box, SIGNAL('triggered()'), self.go_to_lookup_box)
+
+        action_lookup_box.triggered.connect(self.go_to_lookup_box)
 
         self.word_input = WordInput(action_lookup_box)
+        self.word_input.textEdited.connect(self.word_input_text_edited)
 
-        connect(self.word_input, SIGNAL('textEdited (const QString&)'),
-                     self.word_input_text_edited)
+
         self.word_completion = QListWidget()
-        connect(self.word_input, SIGNAL('word_input_down'), self.select_next_word)
-        connect(self.word_input, SIGNAL('word_input_up'), self.select_prev_word)
+        self.word_input.word_input_down.connect(self.select_next_word)
+        self.word_input.word_input_up.connect(self.select_prev_word)
 
         def focus_current_tab():
             current_tab = self.tabs.currentWidget()
             if current_tab:
                 current_tab.setFocus()
-        connect(self.word_input, SIGNAL('returnPressed ()'),
-                focus_current_tab)
+
+        self.word_input.returnPressed.connect(focus_current_tab)
 
         box = QVBoxLayout()
         box.setSpacing(2)
@@ -768,27 +788,19 @@ class DictView(QMainWindow):
 
         self.history_view = QListWidget()
 
-        self.action_history_back = QAction(icons['go-previous'], _('&Back'), self)
+        self.action_history_back = QAction(icons['go-previous'], _('&Back'),
+                                           self, triggered=self.history_back)
         self.action_history_back.setShortcuts([QKeySequence.Back, _('Ctrl+['), _('Esc')])
         self.action_history_back.setToolTip(_('Go back to previous word in history'))
-        connect(self.action_history_back, SIGNAL('triggered()'), self.history_back)
-        self.action_history_fwd = QAction(icons['go-next'], _('&Forward'), self)
+
+        self.action_history_fwd = QAction(icons['go-next'], _('&Forward'),
+                                          self, triggered=self.history_fwd)
         self.action_history_fwd.setShortcuts([QKeySequence.Forward, _('Ctrl+]'), _('Shift+Esc')])
         self.action_history_fwd.setToolTip(_('Go forward to next word in history'))
-        connect(self.action_history_fwd, SIGNAL('triggered()'), self.history_fwd)
 
-        connect(self.history_view,
-                     SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
-                     self.history_selection_changed)
-
-        connect(self.history_view,
-                     SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
-                     self.update_history_actions)
-
-
-        connect(self.word_completion,
-                     SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
-                     self.word_selection_changed)
+        self.history_view.currentItemChanged.connect(self.history_selection_changed)
+        self.history_view.currentItemChanged.connect(self.update_history_actions)
+        self.word_completion.currentItemChanged.connect(self.word_selection_changed)
 
         self.tabs = TabWidget()
 
@@ -798,15 +810,16 @@ class DictView(QMainWindow):
         self.dock_lookup_pane.setObjectName('dock_lookup_pane')
         self.dock_lookup_pane.setWidget(lookup_pane)
         #On Windows and Mac OS X title bar shows & when floating
-        connect(self.dock_lookup_pane, SIGNAL('topLevelChanged (bool)'),
-                functools.partial(fix_float_title, self.dock_lookup_pane, '&Lookup'))
+        self.dock_lookup_pane.topLevelChanged[bool].connect(
+            functools.partial(fix_float_title, self.dock_lookup_pane, '&Lookup'))
+
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_lookup_pane)
 
         dock_history = QDockWidget(_('&History'), self)
         dock_history.setObjectName('dock_history')
         dock_history.setWidget(self.history_view)
-        connect(dock_history, SIGNAL('topLevelChanged (bool)'),
-                functools.partial(fix_float_title, dock_history, '&History'))
+        dock_history.topLevelChanged[bool].connect(
+            functools.partial(fix_float_title, dock_history, '&History'))
         self.addDockWidget(Qt.LeftDockWidgetArea, dock_history)
 
         self.tabifyDockWidget(self.dock_lookup_pane, dock_history)
@@ -816,40 +829,40 @@ class DictView(QMainWindow):
         menubar = self.menuBar()
         mn_dictionary = menubar.addMenu(_('&Dictionary'))
 
-        action_add_dicts = QAction(icons['add-file'], _('&Add Dictionaries...'), self)
+        action_add_dicts = QAction(icons['add-file'], _('&Add Dictionaries...'),
+                                   self, triggered=self.add_dicts)
         action_add_dicts.setShortcut(_('Ctrl+O'))
         action_add_dicts.setToolTip(_('Add dictionaries'))
-        connect(action_add_dicts, SIGNAL('triggered()'), self.add_dicts)
         mn_dictionary.addAction(action_add_dicts)
 
-        action_add_dict_dir = QAction(icons['add-folder'], _('Add &Directory...'), self)
+        action_add_dict_dir = QAction(icons['add-folder'], _('Add &Directory...'),
+                                      self, triggered=self.add_dict_dir)
         action_add_dict_dir.setToolTip(_('Add dictionary directory'))
-        connect(action_add_dict_dir, SIGNAL('triggered()'), self.add_dict_dir)
         mn_dictionary.addAction(action_add_dict_dir)
 
-        action_verify = QAction(icons['system-run'], _('&Verify...'), self)
+        action_verify = QAction(icons['system-run'], _('&Verify...'),
+                                self, triggered=self.verify)
         action_verify.setShortcut(_('Ctrl+Y'))
         action_verify.setToolTip(_('Verify volume data integrity'))
-        connect(action_verify, SIGNAL('triggered()'), self.verify)
         mn_dictionary.addAction(action_verify)
 
-        action_remove_dict_source = QAction(icons['list-remove'], _('&Remove...'), self)
+        action_remove_dict_source = QAction(icons['list-remove'], _('&Remove...'),
+                                            self, triggered=self.remove_dict_source)
         action_remove_dict_source.setShortcut(_('Ctrl+R'))
         action_remove_dict_source.setToolTip(_('Remove dictionary or dictionary directory'))
-        connect(action_remove_dict_source, SIGNAL('triggered()'), self.remove_dict_source)
         mn_dictionary.addAction(action_remove_dict_source)
 
-        action_info = QAction(icons['document-properties'], _('&Info...'), self)
+        action_info = QAction(icons['document-properties'], _('&Info...'),
+                              self, triggered=self.show_info)
         action_info.setShortcut(_('Ctrl+I'))
         action_info.setToolTip(_('Information about open dictionaries'))
-        connect(action_info, SIGNAL('triggered()'), self.show_info)
         mn_dictionary.addAction(action_info)
 
-        action_quit = QAction(icons['application-exit'], _('&Quit'), self)
+        action_quit = QAction(icons['application-exit'], _('&Quit'),
+                              self, triggered=self.close)
         action_quit.setShortcut(_('Ctrl+Q'))
         action_quit.setToolTip(_('Exit application'))
         action_quit.setMenuRole(QAction.QuitRole)
-        connect(action_quit, SIGNAL('triggered()'), self.close)
         mn_dictionary.addAction(action_quit)
 
         mn_navigate = menubar.addMenu(_('&Navigate'))
@@ -859,37 +872,37 @@ class DictView(QMainWindow):
         mn_navigate.addAction(self.action_history_back)
         mn_navigate.addAction(self.action_history_fwd)
 
-        self.action_next_article = QAction(icons['go-next-page'], _('&Next Article'), self)
+        self.action_next_article = QAction(icons['go-next-page'], _('&Next Article'),
+                                           self, triggered=self.show_next_article)
         self.action_next_article.setShortcuts([_('Ctrl+K'), _('Ctrl+.')])
         self.action_next_article.setToolTip(_('Show next article'))
-        connect(self.action_next_article, SIGNAL('triggered()'), self.show_next_article)
         mn_navigate.addAction(self.action_next_article)
 
-        self.action_prev_article = QAction(icons['go-previous-page'], _('&Previous Article'), self)
+        self.action_prev_article = QAction(icons['go-previous-page'], _('&Previous Article'),
+                                           self, triggered=self.show_prev_article)
         self.action_prev_article.setShortcuts([_('Ctrl+J'), _('Ctrl+,')])
         self.action_prev_article.setToolTip(_('Show previous article'))
-        connect(self.action_prev_article, SIGNAL('triggered()'), self.show_prev_article)
         mn_navigate.addAction(self.action_prev_article)
 
 
         mn_article = menubar.addMenu(_('&Article'))
 
-        self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'), self)
+        self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'),
+                                           self, triggered=self.copy_article)
         self.action_copy_article.setShortcut(_('Ctrl+Shift+C'))
         self.action_copy_article.setToolTip(_('Copy article to clipboard'))
-        connect(self.action_copy_article, SIGNAL('triggered()'), self.copy_article)
         mn_article.addAction(self.action_copy_article)
 
-        self.action_save_article = QAction(icons['document-save'], _('&Save...'), self)
+        self.action_save_article = QAction(icons['document-save'], _('&Save...'),
+                                           self, triggered=self.save_article)
         self.action_save_article.setShortcut(_('Ctrl+S'))
         self.action_save_article.setToolTip(_('Save article text to file'))
-        connect(self.action_save_article, SIGNAL('triggered()'), self.save_article)
         mn_article.addAction(self.action_save_article)
 
-        self.action_online_article = QAction(icons['emblem-web'], _('&View Online'), self)
+        self.action_online_article = QAction(icons['emblem-web'], _('&View Online'),
+                                             self, triggered=self.show_article_online)
         self.action_online_article.setShortcut(_('Ctrl+T'))
         self.action_online_article.setToolTip(_('Open online version of this article in a web browser'))
-        connect(self.action_online_article, SIGNAL('triggered()'), self.show_article_online)
         mn_article.addAction(self.action_online_article)
 
         mn_view = menubar.addMenu(_('&View'))
@@ -901,44 +914,44 @@ class DictView(QMainWindow):
         toolbar.setObjectName('toolbar')
         mn_view.addAction(toolbar.toggleViewAction())
 
-        action_article_appearance = QAction(icons['emblem-art2'], _('&Article Appearance...'), self)
+        action_article_appearance = QAction(icons['emblem-art2'], _('&Article Appearance...'),
+                                            self, triggered=self.article_appearance)
         action_article_appearance.setToolTip(_('Customize article appearance'))
-        connect(action_article_appearance, SIGNAL('triggered()'), self.article_appearance)
         mn_view.addAction(action_article_appearance)
 
         mn_text_size = mn_view.addMenu(_('Text &Size'))
 
-        action_increase_text = QAction(icons['zoom-in'], _('&Increase'), self)
+        action_increase_text = QAction(icons['zoom-in'], _('&Increase'),
+                                       self, triggered=self.increase_text_size)
         action_increase_text.setShortcuts([QKeySequence.ZoomIn, _("Ctrl+="), _('F7')])
         action_increase_text.setToolTip(_('Increase size of article text'))
-        connect(action_increase_text, SIGNAL('triggered()'), self.increase_text_size)
         mn_text_size.addAction(action_increase_text)
 
-        action_decrease_text = QAction(icons['zoom-out'], _('&Decrease'), self)
+        action_decrease_text = QAction(icons['zoom-out'], _('&Decrease'),
+                                       self, triggered=self.decrease_text_size)
         action_decrease_text.setShortcuts([QKeySequence.ZoomOut, _('F8')])
         action_decrease_text.setToolTip(_('Decrease size of article text'))
-        connect(action_decrease_text, SIGNAL('triggered()'), self.decrease_text_size)
         mn_text_size.addAction(action_decrease_text)
 
-        action_reset_text = QAction(icons['zoom-original'], _('&Reset'), self)
+        action_reset_text = QAction(icons['zoom-original'], _('&Reset'),
+                                    self, triggered=self.reset_text_size)
         action_reset_text.setShortcut(_('Ctrl+0'))
         action_reset_text.setToolTip(_('Reset size of article text to default'))
-        connect(action_reset_text, SIGNAL('triggered()'), self.reset_text_size)
         mn_text_size.addAction(action_reset_text)
 
         action_full_screen = QAction(icons['view-fullscreen'], _('&Full Screen'), self)
         action_full_screen.setShortcut(_('F11'))
         action_full_screen.setToolTip(_('Toggle full screen mode'))
         action_full_screen.setCheckable(True)
-        connect(action_full_screen, SIGNAL('triggered(bool)'), self.toggle_full_screen)
+        action_full_screen.triggered[bool].connect(self.toggle_full_screen)
         mn_view.addAction(action_full_screen)
 
         mn_help = menubar.addMenu(_('H&elp'))
 
-        action_about = QAction(icons['help-about'], _('&About...'), self)
+        action_about = QAction(icons['help-about'], _('&About...'),
+                               self, triggered=self.about)
         action_about.setToolTip(_('Information about Aard Dictionary'))
         action_about.setMenuRole(QAction.AboutRole)
-        connect(action_about, SIGNAL('triggered()'), self.about)
         mn_help.addAction(action_about)
 
         toolbar.addAction(self.action_history_back)
@@ -965,8 +978,7 @@ class DictView(QMainWindow):
 
         self.preferred_dicts = {}
 
-        connect(self.tabs, SIGNAL('currentChanged (int)'),
-                self.article_tab_switched)
+        self.tabs.currentChanged.connect(self.article_tab_switched)
 
         self.current_lookup_thread = None
 
@@ -981,33 +993,16 @@ class DictView(QMainWindow):
 
     def add_debug_menu(self):
         import debug
-
         mn_debug = self.menuBar().addMenu('Debug')
-
-        action_cache_stats = QAction('Cache Stats', self)
-        connect(action_cache_stats, SIGNAL('triggered()'),
-                debug.dump_cache_stats)
-        mn_debug.addAction(action_cache_stats)
-
-        action_instances_diff = QAction('Instances Diff', self)
-        connect(action_instances_diff, SIGNAL('triggered()'),
-                debug.dump_type_count_diff)
-        mn_debug.addAction(action_instances_diff)
-
-        action_set_diff_checkpoint = QAction('Set Instances Diff Checkpoint', self)
-        connect(action_set_diff_checkpoint, SIGNAL('triggered()'),
-                debug.set_type_count_checkpoint)
-        mn_debug.addAction(action_set_diff_checkpoint)
-
-        action_instances_checkpoint_diff = QAction('Instances Checkpoint Diff', self)
-        connect(action_instances_checkpoint_diff, SIGNAL('triggered()'),
-                debug.dump_type_count_checkpoint_diff)
-        mn_debug.addAction(action_instances_checkpoint_diff)
-
-        action_rungc = QAction('Run GC', self)
-        connect(action_rungc, SIGNAL('triggered()'),
-                debug.rungc)
-        mn_debug.addAction(action_rungc)
+        mn_debug.addAction(QAction('Cache Stats', self,
+                                   triggered=debug.dump_cache_stats))
+        mn_debug.addAction(QAction('Instances Diff', self,
+                                   triggered=debug.dump_type_count_diff))
+        mn_debug.addAction(QAction('Set Instances Diff Checkpoint', self,
+                                   triggered=debug.set_type_count_checkpoint))
+        mn_debug.addAction(QAction('Instances Checkpoint Diff', self,
+                                   triggered=debug.dump_type_count_checkpoint_diff))
+        mn_debug.addAction(QAction('Run GC', self, triggered=debug.rungc))
 
 
     def add_dicts(self):
@@ -1034,8 +1029,7 @@ class DictView(QMainWindow):
             progress.setMaximum(num)
             progress.setValue(0)
 
-        connect(dict_open_thread, SIGNAL('dict_open_started'),
-                show_loading_dicts_dialog)
+        dict_open_thread.dict_open_started.connect(show_loading_dicts_dialog)
 
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
@@ -1070,14 +1064,10 @@ class DictView(QMainWindow):
                 msg_box.setStandardButtons(QMessageBox.Ok)
                 msg_box.open()
 
-        connect(progress, SIGNAL('canceled ()'), canceled)
-        connect(dict_open_thread, SIGNAL('dict_open_succeded'), dict_opened,
-                Qt.QueuedConnection)
-        connect(dict_open_thread, SIGNAL('dict_open_failed'), dict_failed,
-                Qt.QueuedConnection)
-        connect(dict_open_thread, SIGNAL('finished()'),
-                finished,
-                Qt.QueuedConnection)
+        progress.canceled.connect(canceled)
+        dict_open_thread.dict_open_succeded.connect(dict_opened, Qt.QueuedConnection)
+        dict_open_thread.dict_open_failed.connect(dict_failed, Qt.QueuedConnection)
+        dict_open_thread.finished.connect(finished, Qt.QueuedConnection)
         dict_open_thread.start()
 
 
@@ -1130,8 +1120,7 @@ class DictView(QMainWindow):
 
         btn_select_all = QPushButton(_('Select &All'))
         button_box.addButton(btn_select_all, QDialogButtonBox.ActionRole)
-
-        connect(btn_select_all, SIGNAL('clicked()'), item_list.selectAll)
+        btn_select_all.clicked.connect(item_list.selectAll)
 
         btn_remove = QPushButton(icons['list-remove'], _('&Remove'))
 
@@ -1144,14 +1133,14 @@ class DictView(QMainWindow):
                              for i in range(item_list.count())]
                 self.cleanup_sources(remaining)
 
-        connect(btn_remove, SIGNAL('clicked()'), remove)
+        btn_remove.clicked.connect(remove)
 
         button_box.addButton(btn_remove, QDialogButtonBox.ApplyRole)
         button_box.setStandardButtons(QDialogButtonBox.Close)
 
         content.addWidget(button_box)
 
-        connect(button_box, SIGNAL('rejected()'), dialog.reject)
+        button_box.rejected.connect(dialog.reject)
 
         dialog.exec_()
 
@@ -1198,8 +1187,8 @@ class DictView(QMainWindow):
 
     def schedule(self, func, delay=500):
         if self.scheduled_func:
-            self.disconnect(self.timer, SIGNAL('timeout()'), self.scheduled_func)
-        connect(self.timer, SIGNAL('timeout()'), func)
+            self.timer.timeout.disconnect(self.scheduled_func)
+        self.timer.timeout.connect(func)
         self.scheduled_func = func
         self.timer.start(delay)
 
@@ -1216,11 +1205,9 @@ class DictView(QMainWindow):
             self.current_lookup_thread = None
 
         word_lookup_thread = WordLookupThread(self.dictionaries, word, self)
-        connect(word_lookup_thread, SIGNAL("done"),
-                self.word_lookup_finished, Qt.QueuedConnection)
-        connect(word_lookup_thread, SIGNAL("finished ()"),
-                functools.partial(word_lookup_thread.setParent, None),
-                Qt.QueuedConnection)
+        word_lookup_thread.done.connect(self.word_lookup_finished, Qt.QueuedConnection)
+        word_lookup_thread.finished.connect(
+            functools.partial(word_lookup_thread.setParent, None), Qt.QueuedConnection)
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start(QThread.LowestPriority)
 
@@ -1288,15 +1275,14 @@ class DictView(QMainWindow):
         self.action_history_back.setEnabled(-1 < current_row < self.history_view.count() - 1)
 
     def update_shown_article(self, selected):
-        self.emit(SIGNAL("stop_article_load"))
+        self.stop_article_load.emit()
         self.clear_current_articles()
         if selected:
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(Qt.UserRole).toPyObject()
             self.tabs.progress_start(2*len(article_group))
             load_thread = ArticleLoadThread(article_group, self, self.use_mediawiki_style)
-            connect(load_thread, SIGNAL("article_loaded"),
-                    self.article_loaded, Qt.QueuedConnection)
+            load_thread.article_loaded.connect(self.article_loaded, Qt.QueuedConnection)
 
             def finished():
                 if load_thread.errors:
@@ -1324,15 +1310,16 @@ class DictView(QMainWindow):
                 del load_thread.errors[:]
                 load_thread.setParent(None)
 
-            connect(load_thread, SIGNAL("finished ()"),
-                    finished,
-                    Qt.QueuedConnection)
-            connect(load_thread, SIGNAL("article_load_started"),
-                    self.article_load_started, Qt.QueuedConnection)
-            connect(load_thread, SIGNAL("article_load_stopped"),
-                    self.tabs.progress_stop, Qt.QueuedConnection)
-            connect(self, SIGNAL("stop_article_load"),
-                    load_thread.stop, Qt.QueuedConnection)
+            load_thread.finished.connect(finished, Qt.QueuedConnection)
+
+            load_thread.article_load_started.connect(self.article_load_started,
+                                                     Qt.QueuedConnection)
+
+            load_thread.article_load_stopped.connect(self.tabs.progress_stop,
+                                                     Qt.QueuedConnection)
+
+            self.stop_article_load.connect(load_thread.stop, Qt.QueuedConnection)
+
             load_thread.start(QThread.LowestPriority)
 
     def clear_current_articles(self):
@@ -1345,6 +1332,8 @@ class DictView(QMainWindow):
         self.update_current_article_actions(self.tabs.currentIndex())
 
     def article_loaded(self, title, article, html):
+        if isinstance(title, QString):
+            title = unicode(title)
         log.debug('Loaded article %r (original title %r) (section %r) (%r at %r)',
                   article.title, title, article.section, article.position, article.dictionary)
 
@@ -1374,8 +1363,7 @@ class DictView(QMainWindow):
                 self.go_to_section(view, article.section)
             self.tabs.progress_update()
 
-        connect(view, SIGNAL('loadFinished (bool)'),
-                loadFinished, Qt.QueuedConnection)
+        view.loadFinished[bool].connect(loadFinished, Qt.QueuedConnection)
 
         view.page().currentFrame().setHtml(html, QUrl(title))
         view.setZoomFactor(self.zoom_factor)
@@ -1395,8 +1383,7 @@ class DictView(QMainWindow):
         self.tabs.blockSignals(False)
         self.update_current_article_actions(self.tabs.currentIndex())
 
-        connect(view, SIGNAL('linkClicked (const QUrl&)'),
-                     self.link_clicked)
+        view.linkClicked.connect(self.link_clicked)
 
 
     def article_load_started(self, read_funcs):
@@ -1636,24 +1623,20 @@ class DictView(QMainWindow):
                 verify_thread.volume = None
                 verify_thread.setParent(None)
 
-            connect(progress, SIGNAL('canceled ()'), verify_thread.stop, Qt.DirectConnection)
-            connect(verify_thread, SIGNAL('progress'), update_progress,
-                    Qt.QueuedConnection)
-            connect(verify_thread, SIGNAL('verified'), verified,
-                    Qt.QueuedConnection)
-            connect(verify_thread, SIGNAL('finished()'), finished,
-                    Qt.QueuedConnection)
+            progress.canceled.connect(verify_thread.stop, Qt.DirectConnection)
+            verify_thread.progress.connect(update_progress, Qt.QueuedConnection)
+            verify_thread.verified.connect(verified, Qt.QueuedConnection)
+            verify_thread.finished.connect(finished, Qt.QueuedConnection)
             verify_thread.start(QThread.LowestPriority)
 
-
-        connect(btn_verify, SIGNAL('clicked()'), verify)
+        btn_verify.clicked.connect(verify)
 
         button_box.addButton(btn_verify, QDialogButtonBox.ApplyRole)
         button_box.setStandardButtons(QDialogButtonBox.Close)
 
         content.addWidget(button_box)
 
-        connect(button_box, SIGNAL('rejected()'), dialog.reject)
+        button_box.rejected.connect(dialog.reject)
 
         if item_list.rowCount():
             item_list.setCurrentCell(0, 0)
@@ -1683,8 +1666,7 @@ class DictView(QMainWindow):
         detail_view = WebView()
         detail_view.setPage(WebPage(self))
 
-        connect(detail_view, SIGNAL('linkClicked (const QUrl&)'),
-                     self.link_clicked)
+        detail_view.linkClicked.connect(self.link_clicked)
 
         splitter.addWidget(detail_view)
         splitter.setSizes([100, 300])
@@ -1744,14 +1726,12 @@ class DictView(QMainWindow):
                 html = ''
             detail_view.setHtml(html)
 
-        connect(item_list,
-                SIGNAL('currentItemChanged (QListWidgetItem *,QListWidgetItem *)'),
-                current_changed)
+        item_list.currentItemChanged.connect(current_changed)
 
         if item_list.count():
             item_list.setCurrentRow(0)
 
-        connect(button_box, SIGNAL('rejected()'), dialog.reject)
+        button_box.rejected.connect(dialog.reject)
 
         dialog.setSizeGripEnabled(True)
         dialog.exec_()
@@ -1769,8 +1749,7 @@ class DictView(QMainWindow):
         detail_view.setAttribute(Qt.WA_OpaquePaintEvent, False)
         detail_view.setHtml(about_html)
 
-        connect(detail_view, SIGNAL('linkClicked (const QUrl&)'),
-                     self.link_clicked)
+        detail_view.linkClicked.connect(self.link_clicked)
 
         content.addWidget(detail_view)
 
@@ -1781,7 +1760,7 @@ class DictView(QMainWindow):
 
         content.addWidget(button_box)
 
-        connect(button_box, SIGNAL('rejected()'), dialog.reject)
+        button_box.rejected.connect(dialog.reject)
 
         dialog.setSizeGripEnabled(True)
         dialog.exec_()
@@ -1806,7 +1785,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 </div>
 """)
 
-        preview_pane.page().currentFrame().setHtml(mediawiki_style if self.use_mediawiki_style 
+        preview_pane.page().currentFrame().setHtml(mediawiki_style if self.use_mediawiki_style
                                                    else aard_style + html)
 
         colors = read_appearance()[0]
@@ -1832,8 +1811,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         color_pane.addWidget(btn_internal_link, 0, 0)
         color_pane.addWidget(QLabel(_('Internal Link')), 0, 1)
 
-        connect(btn_internal_link, SIGNAL('clicked()'),
-                functools.partial(set_color, btn_internal_link, 'internal_link_fg'))
+        btn_internal_link.clicked.connect(
+            functools.partial(set_color, btn_internal_link, 'internal_link_fg'))
 
         pixmap = QPixmap(24, 16)
         pixmap.fill(QColor(colors['external_link_fg']))
@@ -1842,8 +1821,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         color_pane.addWidget(btn_external_link, 1, 0)
         color_pane.addWidget(QLabel(_('External Link')), 1, 1)
 
-        connect(btn_external_link, SIGNAL('clicked()'),
-                functools.partial(set_color, btn_external_link, 'external_link_fg'))
+        btn_external_link.clicked.connect(
+            functools.partial(set_color, btn_external_link, 'external_link_fg'))
 
         pixmap = QPixmap(24, 16)
         pixmap.fill(QColor(colors['footnote_fg']))
@@ -1852,8 +1831,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         color_pane.addWidget(btn_footnote, 2, 0)
         color_pane.addWidget(QLabel(_('Footnote Link')), 2, 1)
 
-        connect(btn_footnote, SIGNAL('clicked()'),
-                functools.partial(set_color, btn_footnote, 'footnote_fg'))
+        btn_footnote.clicked.connect(
+            functools.partial(set_color, btn_footnote, 'footnote_fg'))
 
         pixmap = QPixmap(24, 16)
         pixmap.fill(QColor(colors['footnote_backref_fg']))
@@ -1862,8 +1841,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         color_pane.addWidget(btn_footnote_back, 3, 0)
         color_pane.addWidget(QLabel(_('Footnote Back Link')), 3, 1)
 
-        connect(btn_footnote_back, SIGNAL('clicked()'),
-                functools.partial(set_color, btn_footnote_back, 'footnote_backref_fg'))
+        btn_footnote_back.clicked.connect(
+            functools.partial(set_color, btn_footnote_back, 'footnote_backref_fg'))
 
         pixmap = QPixmap(24, 16)
         pixmap.fill(QColor(colors['active_link_bg']))
@@ -1872,8 +1851,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         color_pane.addWidget(btn_active_link, 4, 0)
         color_pane.addWidget(QLabel(_('Active Link')), 4, 1)
 
-        connect(btn_active_link, SIGNAL('clicked()'),
-                functools.partial(set_color, btn_active_link, 'active_link_bg'))
+        btn_active_link.clicked.connect(
+            functools.partial(set_color, btn_active_link, 'active_link_bg'))
 
         cb_use_mediawiki_style = QCheckBox(_('Use Wikipedia style'))
         color_pane.addWidget(cb_use_mediawiki_style, 5, 0, 1, 2)
@@ -1885,9 +1864,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 style_str = mkcss(colors)
             preview_pane.page().currentFrame().setHtml(style_str + html)
 
-        connect(cb_use_mediawiki_style, SIGNAL('stateChanged(int)'),
-                use_mediawiki_style_changed)
 
+        cb_use_mediawiki_style.stateChanged.connect(use_mediawiki_style_changed)
         cb_use_mediawiki_style.setChecked(self.use_mediawiki_style)
 
         color_pane.addWidget(preview_pane, 0, 2, 6, 1)
@@ -1913,7 +1891,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 view.page().currentFrame().setHtml(html)
             write_appearance(colors, self.use_mediawiki_style)
 
-        connect(button_box, SIGNAL('rejected()'), close)
+        button_box.rejected.connect(button_box)
 
         dialog.setLayout(content)
 
@@ -2057,5 +2035,3 @@ def main(args, debug=False, dev_extras=False):
     preferred_enc = locale.getpreferredencoding()
     dv.open_dicts(read_sources()+[arg.decode(preferred_enc) for arg in args])
     sys.exit(app.exec_())
-
-
