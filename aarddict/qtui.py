@@ -547,13 +547,42 @@ class WordInput(QLineEdit):
         elif event.matches(QKeySequence.MoveToPreviousLine):
             self.word_input_up.emit()
 
+class FindInput(QLineEdit):
+
+    passthrough_keys = (QKeySequence.MoveToNextLine,
+                        QKeySequence.MoveToPreviousLine,
+                        QKeySequence.MoveToNextPage,
+                        QKeySequence.MoveToPreviousPage,
+                        QKeySequence.MoveToStartOfDocument,
+                        QKeySequence.MoveToEndOfDocument)
+
+    def __init__(self, tabs, parent=None):
+        QLineEdit.__init__(self, parent)
+        self.tabs = tabs
+
+    def keyReleaseEvent (self, event):
+        if any(event.matches(k) for k in self.passthrough_keys):
+            current_tab = self.tabs.currentWidget()
+            if current_tab:
+                current_tab.keyReleaseEvent(event)
+        else:
+            QLineEdit.keyReleaseEvent(self, event)
+
+    def keyPressEvent (self, event):
+        if any(event.matches(k) for k in self.passthrough_keys):
+            current_tab = self.tabs.currentWidget()
+            if current_tab:
+                current_tab.keyPressEvent(event)
+        else:
+            QLineEdit.keyPressEvent(self, event)
+
 
 class FindWidget(QToolBar):
 
     def __init__(self, tabs, parent=None):
         QToolBar.__init__(self, _('&Find'), parent)
         self.tabs = tabs
-        self.find_input = QLineEdit()
+        self.find_input = FindInput(tabs, self)
         self.find_input.textEdited.connect(self.find_in_article)
         lbl_find = QLabel(_('Find:'))
         lbl_find.setStyleSheet('padding-right: 2px;')
