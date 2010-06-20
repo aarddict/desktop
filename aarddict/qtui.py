@@ -30,7 +30,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QColor, QLabel,
                          QColorDialog, QCheckBox, QKeySequence, QPalette,
-                         QMenu, QProgressBar)
+                         QMenu, QProgressBar, QShortcut)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
@@ -227,6 +227,7 @@ def load_icons():
     icons['aarddict'] = mkicon('apps/aarddict', icondir=logodir)
     icons['document-save'] = mkicon('actions/document-save')
     icons['edit-copy'] = mkicon('actions/edit-copy')
+    icons['window-close'] = mkicon('actions/window-close')
 
 
 def linkify(text):
@@ -547,6 +548,53 @@ class WordInput(QLineEdit):
             self.word_input_up.emit()
 
 
+class FindWidget(QToolBar):
+
+    def __init__(self, tabs, parent=None):
+        QToolBar.__init__(self, _('&Find'), parent)
+        self.tabs = tabs
+        self.find_input = QLineEdit()
+        self.find_input.textEdited.connect(self.find_in_article)
+        lbl_find = QLabel(_('Find:'))
+        lbl_find.setStyleSheet('padding-right: 2px;')
+        find_action_close = QAction(icons['window-close'], '', self,
+                                    triggered=self.hide)
+        self.addAction(find_action_close)
+        self.addWidget(lbl_find)
+        self.addWidget(self.find_input)
+        self.addAction(QAction(icons['go-previous'], '', self,
+                               triggered=lambda: self.find_in_article(forward=False)))
+        self.addAction(QAction(icons['go-next'], '', self,
+                               triggered=lambda: self.find_in_article(forward=True)))
+        self.cb_find_match_case = QCheckBox(_('&Match Case'))
+        self.addWidget(self.cb_find_match_case)
+
+
+    def find_in_article(self, word=None, forward=True):
+        if word is None:
+            word = self.find_input.text()
+        current_tab = self.tabs.currentWidget()
+        if current_tab:
+            page = current_tab.page()
+            flags = QWebPage.FindWrapsAroundDocument
+            if self.cb_find_match_case.isChecked():
+                flags = flags | QWebPage.FindCaseSensitively
+            if not forward:
+                flags = flags | QWebPage.FindBackward
+            page.findText(word, flags)
+
+
+    def keyPressEvent (self, event):
+        key = event.key()
+        modifiers = event.modifiers()
+        if key == Qt.Key_Return or key == Qt.Key_Enter:
+            if modifiers == Qt.NoModifier:
+                self.find_in_article(forward=True)
+            elif modifiers == Qt.ControlModifier:
+                self.find_in_article(forward=False)
+        else:
+            QToolBar.keyPressEvent(self, event)
+
 class SingleRowItemSelectionModel(QItemSelectionModel):
 
     def select(self, arg1, arg2):
@@ -759,7 +807,7 @@ class DictView(QMainWindow):
         self.dictionaries = DictionaryCollection()
         self.update_title()
 
-        action_lookup_box = QAction(_('&Lookup Box'), 
+        action_lookup_box = QAction(_('&Lookup Box'),
                                     self, triggered=self.go_to_lookup_box)
         action_lookup_box.setIcon(icons['edit-find'])
         action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
@@ -798,7 +846,7 @@ class DictView(QMainWindow):
 
         self.action_history_back = QAction(icons['go-previous'], _('&Back'),
                                            self, triggered=self.history_back)
-        self.action_history_back.setShortcuts([QKeySequence.Back, _('Ctrl+['), _('Esc')])
+        self.action_history_back.setShortcuts([QKeySequence.Back, _('Ctrl+[')])
         self.action_history_back.setToolTip(_('Go back to previous word in history'))
 
         self.action_history_fwd = QAction(icons['go-next'], _('&Forward'),
@@ -901,6 +949,18 @@ class DictView(QMainWindow):
         self.action_copy_article.setToolTip(_('Copy article to clipboard'))
         mn_article.addAction(self.action_copy_article)
 
+        def go_to_find_pane():
+            find_toolbar.show()
+            find_toolbar.find_input.setFocus()
+            find_toolbar.find_input.selectAll()
+
+        action_article_find = QAction(_('&Find...'),
+                                           self, triggered=go_to_find_pane)
+        action_article_find.setShortcuts([_('Ctrl+F'), _('/')])
+        action_article_find.setToolTip(_('Find text in article'))
+        mn_article.addAction(action_article_find)
+
+
         self.action_save_article = QAction(icons['document-save'], _('&Save...'),
                                            self, triggered=self.save_article)
         self.action_save_article.setShortcut(_('Ctrl+S'))
@@ -978,7 +1038,30 @@ class DictView(QMainWindow):
         toolbar.addAction(action_quit)
         self.addToolBar(toolbar)
 
-        self.setCentralWidget(self.tabs)
+
+        find_toolbar = FindWidget(self.tabs)
+        find_toolbar.hide()
+
+        def esc():
+            if find_toolbar.isVisible():
+                if find_toolbar.find_input.hasFocus():
+                    focus_current_tab()
+                find_toolbar.hide()
+            else:
+                self.history_back()
+
+        QShortcut(QKeySequence(_('Esc')), self).activated.connect(esc)
+
+        central_widget_box = QVBoxLayout()
+        central_widget_box.setSpacing(2)
+        central_widget_box.setContentsMargins(0, 0, 0, 0)
+        central_widget_box.addWidget(self.tabs)
+        central_widget_box.addWidget(find_toolbar)
+        central_widget = QWidget()
+        central_widget.setLayout(central_widget_box)
+
+
+        self.setCentralWidget(central_widget)
 
         self.timer = QTimer()
         self.timer.setSingleShot(True)
@@ -1982,6 +2065,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             page.triggerAction(QWebPage.SelectAll)
             page.triggerAction(QWebPage.Copy)
             page.currentFrame().evaluateJavaScript("document.getSelection().empty();")
+
 
 def main(args, debug=False, dev_extras=False):
 
