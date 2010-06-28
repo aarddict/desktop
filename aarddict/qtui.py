@@ -838,7 +838,6 @@ class DictView(QMainWindow):
 
         action_lookup_box = QAction(_('&Lookup Box'),
                                     self, triggered=self.go_to_lookup_box)
-        action_lookup_box.setIcon(icons['edit-find'])
         action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
         action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
 
@@ -985,6 +984,7 @@ class DictView(QMainWindow):
 
         action_article_find = QAction(_('&Find...'),
                                            self, triggered=go_to_find_pane)
+        action_article_find.setIcon(icons['edit-find'])
         action_article_find.setShortcuts([_('Ctrl+F'), _('/')])
         action_article_find.setToolTip(_('Find text in article'))
         mn_article.addAction(action_article_find)
@@ -1053,6 +1053,7 @@ class DictView(QMainWindow):
 
         toolbar.addAction(self.action_history_back)
         toolbar.addAction(self.action_history_fwd)
+        toolbar.addAction(action_article_find)
         toolbar.addAction(self.action_online_article)
         toolbar.addSeparator()
         toolbar.addAction(action_increase_text)
