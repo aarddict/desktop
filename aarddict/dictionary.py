@@ -260,7 +260,7 @@ class CacheList(object):
                 del self.cache[self.cache_list.popleft()]
         return result
 
-    
+
 class WordList(object):
     """
     List of all words in the dictionary (unicode).
@@ -490,7 +490,7 @@ class Dictionary(object):
 
         self.article_count = self.metadata.get('article_count',
                                                self.index_count)
-        
+
         self.index_language = self.metadata.get("index_language", "")
         if isinstance(self.index_language, unicode):
             self.index_language = self.index_language.encode('utf8')
@@ -520,8 +520,8 @@ class Dictionary(object):
                                          self,
                                          header.article_offset,
                                          header.article_length_format)
-        self.words = CacheList(WordList(self.index_count, 
-                                        read_index_item, 
+        self.words = CacheList(WordList(self.index_count,
+                                        read_index_item,
                                         read_key),
                                name='%s (w)' % format_title(self))
         self.articles = ArticleList(self,
@@ -558,7 +558,7 @@ class Dictionary(object):
             return self.file_name
 
     def __repr__(self):
-        return '<%s.%s %s %r>' % (self.__module__, self.__class__.__name__, 
+        return '<%s.%s %s %r>' % (self.__module__, self.__class__.__name__,
                                self.key(), self.file_name)
 
     def __hash__(self):
@@ -568,7 +568,7 @@ class Dictionary(object):
         if not word:
             return
         if not isinstance(word, unicode):
-            word = word.decode('utf8')        
+            word = word.decode('utf8')
         lookupword, section = split_word(word)
 
         pos = bisect_left(CollationKeyList(self.words, strength),
@@ -631,7 +631,7 @@ class DictionaryCollection(list):
         counts = defaultdict(int)
         seen = set()
         for cmp_func in (cmp_word_exact, cmp_word_start):
-            for strength in (QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
+            for strength in (TERTIARY, SECONDARY, PRIMARY):
                 for vol in self:
                     count = counts[vol]
                     if count >= max_from_vol: continue
@@ -683,9 +683,7 @@ class DictionaryCollection(list):
         if level > max_redirect_levels:
             raise RedirectTooManyLevels(article)
 
-        for strength in (IDENTICAL, QUATERNARY, TERTIARY,
-                         SECONDARY, PRIMARY):
-
+        for strength in (TERTIARY, SECONDARY, PRIMARY):
             resulti = self.lookup(redir,
                                   uuid=article.dictionary.uuid,
                                   strength=strength,

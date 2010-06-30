@@ -41,7 +41,6 @@ from aarddict.dictionary import (Dictionary, format_title,
                                  PRIMARY,
                                  SECONDARY,
                                  TERTIARY,
-                                 QUATERNARY,
                                  Article,
                                  cmp_words,
                                  VerifyError)
@@ -762,7 +761,7 @@ def write_appearance(colors, use_mediawiki_style):
     with open(appearance_file, 'w') as f:
         appearance_conf.write(f)
 
-grouping_strength = {1: QUATERNARY, 2: TERTIARY, 3: SECONDARY}
+grouping_strength = {1: TERTIARY, 2: TERTIARY, 3: SECONDARY}
 
 def article_grouping_key(article):
     title = article.title
