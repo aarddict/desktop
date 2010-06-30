@@ -22,9 +22,8 @@ from PyQt4.QtCore import (QObject, Qt, QThread, QMutex,
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
-                         QKeySequence, QToolButton,
-                         QMainWindow, QListWidget, QListWidgetItem,
-                         QTabWidget, QApplication,
+                         QKeySequence, QMainWindow, QListWidget,
+                         QListWidgetItem, QTabWidget, QApplication,
                          QGridLayout, QSplitter, QProgressDialog,
                          QMessageBox, QDialog, QDialogButtonBox, QPushButton,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
@@ -34,7 +33,6 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
-from aarddict import aar2html
 import aarddict
 from aarddict.dictionary import (Dictionary, format_title,
                                  DictionaryCollection,
@@ -177,6 +175,21 @@ about_html = about_tmpl.substitute(dict(appname=_(aarddict.__appname__),
                                    )
 
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
+
+
+article_tmpl = string.Template(u"""<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        $style
+    </head>
+    <body>
+        <div id="globalWrapper">
+        $content
+        </div>
+        $scripts
+    </body>
+</html>
+""")
 
 
 def mkicon(name, toggle_name=None, icondir=icondir):
@@ -407,41 +420,15 @@ class ArticleLoadThread(QThread):
         t0 = time.time()
         if self.stop_requested:
             raise ArticleLoadStopRequested
-
         cache_key = (article.position, article.dictionary)
         if cache_key in self.html_cache:
             result = self.html_cache[cache_key]
         else:
-            article_format = article.dictionary.metadata['article_format']
-
-            result = ['<html>',
-                      '<head>']
-            if self.use_mediawiki_style:
-                result.append(mediawiki_style)
-            else:
-                result.append(aard_style)
-            result += ['<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>'
-                       '</head>',
-                      '<body>',
-                      '<div id="globalWrapper">']
-            if article_format == 'json':
-                for c in aar2html.convert(article):
-                    if self.stop_requested:
-                        raise ArticleLoadStopRequested
-                    result.append(c)
-                steps = [aar2html.fix_new_lines,
-                         ''.join,
-                         aar2html.remove_p_after_h,
-                         aar2html.add_notebackrefs]
-                for step in steps:
-                    if self.stop_requested:
-                        raise ArticleLoadStopRequested
-                    result = step(result)
-            else:
-                result = ''.join(result)
-                result += article.text
-            result += js
-            result += '</div></body></html>'
+            result = article_tmpl.substitute(dict(style=(mediawiki_style
+                                                         if self.use_mediawiki_style
+                                                         else aard_style),
+                                                  content=article.text,
+                                                  scripts=js))
             self.html_cache[cache_key] = result
         log.debug('Converted %r in %ss',
                   article.title, time.time() - t0)
