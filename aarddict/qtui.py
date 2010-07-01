@@ -1306,6 +1306,11 @@ class DictView(QMainWindow):
         self.schedule(func)
 
     def update_word_completion(self, word):
+        current_input = self.word_input.text()
+        if word != current_input:
+            log.debug('Word input is %r, different from requested %r, '
+                      'not updating word completion', word, current_input)
+            return     
         self.word_input.setFocus()
         self.word_completion.clear()
         self.word_completion.addItem('Loading...')
