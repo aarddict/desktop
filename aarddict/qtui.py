@@ -1161,9 +1161,7 @@ class DictView(QMainWindow):
             dict_open_thread.setParent(None)
             self.update_title()
             self.update_preferred_dicts()
-            func = functools.partial(self.update_word_completion,
-                                     self.word_input.text())
-            self.schedule(func, 200)
+            self.schedule(self.update_word_completion, 200)
             if errors:
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle(_('Open Failed'))
@@ -1271,8 +1269,7 @@ class DictView(QMainWindow):
 
         if to_be_removed:
             self.update_title()
-            func = functools.partial(self.update_word_completion, self.word_input.text())
-            self.schedule(func, 0)
+            self.schedule(self.update_word_completion, 0)
 
     def article_tab_switched(self, current_tab_index):
         if current_tab_index > -1:
@@ -1302,15 +1299,10 @@ class DictView(QMainWindow):
         self.timer.start(delay)
 
     def word_input_text_edited(self, word):
-        func = functools.partial(self.update_word_completion, word)
-        self.schedule(func)
+        self.schedule(self.update_word_completion)
 
-    def update_word_completion(self, word):
-        current_input = self.word_input.text()
-        if word != current_input:
-            log.debug('Word input is %r, different from requested %r, '
-                      'not updating word completion', word, current_input)
-            return     
+    def update_word_completion(self):
+        word = self.word_input.text()
         self.word_input.setFocus()
         self.word_completion.clear()
         self.word_completion.addItem('Loading...')
@@ -1607,8 +1599,7 @@ class DictView(QMainWindow):
     def set_word_input(self, text):
         self.word_input.setText(text)
         #don't call directly to make sure previous update is unscheduled
-        func = functools.partial(self.update_word_completion, text)
-        self.schedule(func, 0)
+        self.schedule(self.update_word_completion, 0)
 
     def history_back(self):
         count = self.history_view.count()
