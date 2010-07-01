@@ -648,19 +648,8 @@ class Library(list):
         return r[0] if r else None
 
     def best_match(self, word, max_from_vol=50):
-        counts = defaultdict(int)
-        seen = set()
-        for cmp_func, strength in self.best_match_comparisons:
-            for vol in self:
-                count = counts[vol]
-                if count >= max_from_vol: continue
-                for entry in vol.lookup(word, strength, cmp_func):
-                    if entry not in seen:
-                        seen.add(entry)
-                        yield entry
-                        count += 1
-                        if count >= max_from_vol: break
-                counts[vol] = count
+        return self._lookup(word, self, 
+                            self.best_match_comparisons, max_from_vol)
 
     def read(self, entry):
         vol = self.volume(entry.volume_id)
@@ -680,6 +669,26 @@ class Library(list):
                     return redirect
         raise ArticleNotFound(entry)
 
+    def _lookup(self, word, volumes, comparisons, max_from_vol):
+        if not word:
+            raise StopIteration
+        
+        
+        
+        counts = defaultdict(int)
+        seen = set()
+        for cmp_func, strength in comparisons:
+            for vol in volumes:
+                count = counts[vol]
+                if count >= max_from_vol: continue
+                for entry in vol.lookup(word, strength, cmp_func):
+                    if entry not in seen:
+                        yield entry
+                        seen.add(entry)
+                        count += 1
+                        if count >= max_from_vol: break
+                counts[vol] = count
+
     def _redirect(self, redirect):
         vol = self.volume(redirect.entry.volume_id)
         if vol:
@@ -691,7 +700,5 @@ class Library(list):
                 pass
 
     def _find(self, word, dictionary_id):
-        return (entry
-                for cmp_func, strength in self.find_comparisons[:len(word)]
-                for vol in self.volumes(dictionary_id)
-                for entry in vol.lookup(word, strength, cmp_func))
+        return self._lookup(word, self.volumes(dictionary_id), 
+                            self.find_comparisons[:len(word)], 1)
