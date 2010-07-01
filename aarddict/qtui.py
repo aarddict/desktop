@@ -34,9 +34,11 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
 import aarddict
-from aarddict.dictionary import (Dictionary, format_title,
-                                 DictionaryCollection,
-                                 RedirectResolveError,
+from aarddict.dictionary import (format_title,
+                                 Volume,
+                                 Library,
+                                 TooManyRedirects,
+                                 ArticleNotFound,
                                  collation_key,
                                  PRIMARY,
                                  SECONDARY,
@@ -324,7 +326,7 @@ class WordLookupStopRequested(Exception): pass
 
 class WordLookupThread(QThread):
 
-    match_found = pyqtSignal(QString, types.FunctionType)
+    match_found = pyqtSignal(QString, object)
     stopped = pyqtSignal(QString)
     done = pyqtSignal(QString, list)
 
@@ -337,21 +339,21 @@ class WordLookupThread(QThread):
     def run(self):
         wordstr = unicode(self.word)
         log.debug("Looking up %r", wordstr)
-        articles = []
+        entries = []
         dict_access_lock.lock()
         try:
-            for article in self.dictionaries.best_match(wordstr):
+            for entry in self.dictionaries.best_match(wordstr):
                 if self.stop_requested:
                     raise WordLookupStopRequested
                 else:
-                    articles.append(article)
-                    self.match_found.emit(self.word, article)
+                    entries.append(entry)
+                    self.match_found.emit(self.word, entry)
             if self.stop_requested:
                 raise WordLookupStopRequested
         except WordLookupStopRequested:
             self.stopped.emit(self.word)
         else:
-            self.done.emit(self.word, articles)
+            self.done.emit(self.word, entries)
         finally:
             dict_access_lock.unlock()
 
@@ -364,73 +366,77 @@ class ArticleLoadStopRequested(Exception): pass
 
 class ArticleLoadThread(QThread):
 
-    article_loaded = pyqtSignal(unicode, types.FunctionType, unicode)
+    article_loaded = pyqtSignal(unicode, object, unicode)
     article_load_started = pyqtSignal(list)
     article_load_stopped = pyqtSignal(QThread)
     article_load_finished = pyqtSignal(QThread, list)
 
-    def __init__(self, article_read_funcs, parent=None, use_mediawiki_style=False):
+    def __init__(self, dictionaries, entries, parent=None, use_mediawiki_style=False):
         QThread.__init__(self, parent)
-        self.article_read_funcs = article_read_funcs
+        self.dictionaries = dictionaries
+        self.entries = entries
         self.stop_requested = False
         self.use_mediawiki_style = use_mediawiki_style
         self.html_cache = {}
         self.errors = []
 
     def run(self):
-        self.article_load_started.emit(self.article_read_funcs)
+        self.article_load_started.emit(self.entries)
         dict_access_lock.lock()
         try:
-            for read_func in self.article_read_funcs:
-                article = self._load_article(read_func)
-                html = self._tohtml(article)
-                title = read_func.title
-                self.article_loaded.emit(title, article, html)
+            for entry in self.entries:
+                try:
+                    article = self._load_article(entry)
+                    html = self._tohtml(article)
+                    title = article.entry.orig_title
+                except Exception, e:
+                    self.errors.append((entry, e))
+                else:
+                    self.article_loaded.emit(title, article, html)
                 QThread.yieldCurrentThread()
         except ArticleLoadStopRequested:
             self.article_load_stopped.emit(self)
-        except Exception, e:
-            self.errors.append((read_func, e))
         else:
-            self.article_load_finished.emit(self, self.article_read_funcs)
+            self.article_load_finished.emit(self, self.entries)
         finally:
             dict_access_lock.unlock()
             self.html_cache.clear()
             del self.html_cache
-            del self.article_read_funcs
+            del self.entries
+            del self.dictionaries
 
-    def _load_article(self, read_func):
+    def _load_article(self, entry):
         t0 = time.time()
         if self.stop_requested:
             raise ArticleLoadStopRequested
         try:
-            article = read_func()
-        except RedirectResolveError, e:
+            article = self.dictionaries.read(entry)
+        except ArticleNotFound, e:
+            log.debug('Article not found', exc_info=1)
+            article = Article(entry,
+                              _('Article "%s" not found') % e.entry.title)
+        except TooManyRedirects, e:
             log.debug('Failed to resolve redirect', exc_info=1)
-            article = Article(e.article.title,
-                              _('Redirect to %s not found') % e.article.redirect,
-                              dictionary=e.article.dictionary)
+            article = Article(entry,
+                              _('Too many redirects for "%s"') % e.entry.title)
         log.debug('Read %r from %s in %ss',
-                  article.title,
-                  article.dictionary, time.time() - t0)
+                  entry.title, entry.volume_id, time.time() - t0)
         return article
 
     def _tohtml(self, article):
         t0 = time.time()
         if self.stop_requested:
             raise ArticleLoadStopRequested
-        cache_key = (article.position, article.dictionary)
-        if cache_key in self.html_cache:
-            result = self.html_cache[cache_key]
+        if article.entry in self.html_cache:
+            result = self.html_cache[article.entry]
         else:
             result = article_tmpl.substitute(dict(style=(mediawiki_style
                                                          if self.use_mediawiki_style
                                                          else aard_style),
                                                   content=article.text,
                                                   scripts=js))
-            self.html_cache[cache_key] = result
-        log.debug('Converted %r in %ss',
-                  article.title, time.time() - t0)
+            self.html_cache[article.entry] = result
+        log.debug('Converted %r in %ss', article.entry, time.time() - t0)
         return result
 
 
@@ -441,13 +447,14 @@ class ArticleLoadThread(QThread):
 class DictOpenThread(QThread):
 
     dict_open_failed = pyqtSignal(str, str)
-    dict_open_succeded = pyqtSignal(Dictionary)
+    dict_open_succeded = pyqtSignal(Volume)
     dict_open_started = pyqtSignal(int)
 
-    def __init__(self, sources, parent=None):
+    def __init__(self, sources, dictionaries, parent=None):
         QThread.__init__(self, parent)
         self.sources = sources
         self.stop_requested = False
+        self.dictionaries = dictionaries
 
     def run(self):
         ext = os.path.extsep + 'aar'
@@ -466,11 +473,11 @@ class DictOpenThread(QThread):
             if self.stop_requested:
                 return
             try:
-                d = Dictionary(candidate)
+                vol = self.dictionaries.add(candidate)
             except Exception, e:
                 self.dict_open_failed.emit(candidate, str(e))
             else:
-                self.dict_open_succeded.emit(d)
+                self.dict_open_succeded.emit(vol)
 
     def stop(self):
         self.stop_requested = True
@@ -819,7 +826,7 @@ class DictView(QMainWindow):
         self.setUnifiedTitleAndToolBarOnMac(False)
         self.setWindowIcon(icons['aarddict'])
 
-        self.dictionaries = DictionaryCollection()
+        self.dictionaries = Library()
         self.update_title()
 
         action_lookup_box = QAction(_('&Lookup Box'),
@@ -1122,7 +1129,7 @@ class DictView(QMainWindow):
 
         self.sources = write_sources(self.sources + sources)
 
-        dict_open_thread = DictOpenThread(sources, self)
+        dict_open_thread = DictOpenThread(sources, self.dictionaries, self)
 
         progress = QProgressDialog(self)
         progress.setLabelText(_('Opening dictionaries...'))
@@ -1141,14 +1148,9 @@ class DictView(QMainWindow):
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
             log.debug('Opened %r' % d.file_name)
-            count = 0
-            if d not in self.dictionaries:
-                self.dictionaries.append(d)
-                count += 1
-            if count:
-                func = functools.partial(self.update_word_completion,
-                                         self.word_input.text())
-                self.schedule(func, 0)
+            func = functools.partial(self.update_word_completion,
+                                     self.word_input.text())
+            self.schedule(func, 200)
 
         def dict_failed(source, error):
             errors.append((source, error))
@@ -1318,21 +1320,21 @@ class DictView(QMainWindow):
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start(QThread.LowestPriority)
 
-    def word_lookup_finished(self, word, articles):
-        log.debug('Lookup for %r finished, got %d article(s)', word, len(articles))
+    def word_lookup_finished(self, word, entries):
+        log.debug('Lookup for %r finished, got %d article(s)', word, len(entries))
         self.word_completion.clear()
         items = dict()
-        for article in articles:
-            article_key =  article_grouping_key(article)
+        for entry in entries:
+            article_key =  article_grouping_key(entry)
             if article_key in items:
                 item = items[article_key]
                 article_group = item.data(Qt.UserRole).toPyObject()
-                article_group.append(article)
+                article_group.append(entry)
                 item.setData(Qt.UserRole, QVariant(article_group))
             else:
                 item = QListWidgetItem()
-                item.setText(article.title)
-                item.setData(Qt.UserRole, QVariant([article]))
+                item.setText(entry.title)
+                item.setData(Qt.UserRole, QVariant([entry]))
                 items[article_key] = item
             self.word_completion.addItem(item)
 
@@ -1388,21 +1390,27 @@ class DictView(QMainWindow):
             self.add_to_history(unicode(selected.text()))
             article_group = selected.data(Qt.UserRole).toPyObject()
             self.tabs.progress_start(2*len(article_group))
-            load_thread = ArticleLoadThread(article_group, self, self.use_mediawiki_style)
+            load_thread = ArticleLoadThread(self.dictionaries, 
+                                            article_group, self, 
+                                            self.use_mediawiki_style)
             load_thread.article_loaded.connect(self.article_loaded, Qt.QueuedConnection)
 
             def finished():
                 if load_thread.errors:
-                    errors_txt = u'\n'.join([(_('Error reading article %(title)s from '
-                                                '%(dict_title)s (file %(dict_file)s): '
-                                                '%(exception)s') %
-                                              dict(title=read_func.title,
-                                                   dict_title=format_title(read_func.source),
-                                                   dict_file=read_func.source.file_name,
-                                                   exception=ex))
-                                             for read_func, ex in load_thread.errors])
+                    formatted_errors = []
                     for error in load_thread.errors:
-                        read_func, ex = error
+                        entry, ex = error
+                        vol = self.dictionaries.volume(entry.volume_id)
+                        formatted_error = (_('Error reading article %(title)s from '
+                                            '%(dict_title)s (file %(dict_file)s): '
+                                            '%(exception)s') %
+                                           dict(title=entry.title,
+                                                dict_title=format_title(vol),
+                                                dict_file=vol.file_name,
+                                                exception=ex))
+                        formatted_errors.append(formatted_error)
+                    errors_txt = u'\n'.join(formatted_errors)
+
                     msg_box = QMessageBox(self)
                     msg_box.setWindowTitle(_('Article Load Failed'))
                     msg_box.setIcon(QMessageBox.Critical)
@@ -1441,17 +1449,16 @@ class DictView(QMainWindow):
     def article_loaded(self, title, article, html):
         if isinstance(title, QString):
             title = unicode(title)
-        log.debug('Loaded article %r (original title %r) (section %r) (%r at %r)',
-                  article.title, title, article.section, article.position, article.dictionary)
-
-        dictionary = article.dictionary
-        volume = dictionary.key()
+        log.debug('Loaded article %r', article)
+        volume_id = article.entry.volume_id
+        volume = self.dictionaries.volume(volume_id)
+        dictionary_id = volume.uuid
         self.tabs.progress_update()
         for i in range(self.tabs.count()):
             w = self.tabs.widget(i)
-            pos = w.property('aard:position').toPyObject()
+            index = w.property('aard:index').toPyObject()
             vol = w.property('aard:volume').toPyObject()
-            if pos == article.position and vol == volume:
+            if index == article.entry.index and vol == volume_id:
                 log.debug('Duplicate article')
                 tooltip = unicode(self.tabs.tabToolTip(i))
                 self.tabs.setTabToolTip(i, u'\n'.join((tooltip, title)))
@@ -1460,14 +1467,14 @@ class DictView(QMainWindow):
 
         view = WebView()
         view.setPage(WebPage(view))
-        view.setProperty('aard:dictionary', QVariant(dictionary.uuid))
-        view.setProperty('aard:volume', QVariant(volume))
-        view.setProperty('aard:title', QVariant(article.title))
-        view.setProperty('aard:position', QVariant(article.position))
+        view.setProperty('aard:dictionary', QVariant(dictionary_id))
+        view.setProperty('aard:volume', QVariant(volume_id))
+        view.setProperty('aard:title', QVariant(article.entry.title))
+        view.setProperty('aard:index', QVariant(article.entry.index))
 
         def loadFinished(ok):
-            if ok and article.section:
-                self.go_to_section(view, article.section)
+            if ok and article.entry.section:
+                self.go_to_section(view, article.entry.section)
             self.tabs.progress_update()
 
         view.loadFinished[bool].connect(loadFinished, Qt.QueuedConnection)
@@ -1475,7 +1482,7 @@ class DictView(QMainWindow):
         view.page().currentFrame().setHtml(html, QUrl(title))
         view.setZoomFactor(self.zoom_factor)
 
-        dict_title = format_title(dictionary)
+        dict_title = format_title(volume)
         i = self.tabs.count()
         if i < 9:
             tab_label = ('&%d ' % (i+1))+dict_title
@@ -1522,17 +1529,17 @@ class DictView(QMainWindow):
             article_title = unicode(current_tab.property('aard:title').toString())
             if not article_title:
                 return None
-            dictionary_key = unicode(current_tab.property('aard:volume').toString())
-            dictionary_list = [d for d in self.dictionaries if d.key() == dictionary_key]
-            if len(dictionary_list) == 0:
+            volume_id = unicode(current_tab.property('aard:volume').toString())
+            volume = self.dictionaries.volume(volume_id)
+            if not volume:
                 return None
-            dictionary = dictionary_list[0]
+            metadata = volume.metadata
             try:
-                siteinfo = dictionary.metadata['siteinfo']
+                siteinfo = metadata['siteinfo']
             except KeyError:
-                logging.debug('No site info in dictionary %r', dictionary_key)
-                if 'lang' in dictionary.metadata and 'sitelang' in dictionary.metadata:
-                    url = u'http://%s.wikipedia.org/wiki/%s' % (dictionary.metadata['lang'],
+                logging.debug('No site info in dictionary %r', volume_id)
+                if 'lang' in metadata and 'sitelang' in metadata:
+                    url = u'http://%s.wikipedia.org/wiki/%s' % (metadata['lang'],
                                                                 article_title)
                     return url
             else:
@@ -1541,7 +1548,7 @@ class DictView(QMainWindow):
                     server = general['server']
                     articlepath = general['articlepath']
                 except KeyError:
-                    logging.debug('Site info for %s is incomplete', dictionary_key)
+                    logging.debug('Site info for %s is incomplete', volume_id)
                 else:
                     url = ''.join((server, articlepath.replace(u'$1', article_title)))
                     return url
@@ -1682,10 +1689,10 @@ class DictView(QMainWindow):
         item_list.verticalHeader().setVisible(False)
         item_list.setSelectionModel(SingleRowItemSelectionModel(item_list.model()))
 
-        for i, dictionary in enumerate(self.dictionaries):
-            text = format_title(dictionary)
+        for i, volume in enumerate(self.dictionaries):
+            text = format_title(volume)
             item = QTableWidgetItem(text)
-            item.setData(Qt.UserRole, QVariant(dictionary.key()))
+            item.setData(Qt.UserRole, QVariant(volume.volume_id))
             item_list.setItem(i, 1, item)
             item = QTableWidgetItem(_('Unverified'))
             item.setData(Qt.DecorationRole, icons['question'])
@@ -1704,8 +1711,8 @@ class DictView(QMainWindow):
         def verify():
             current_row = item_list.currentRow()
             item = item_list.item(current_row, 1)
-            dict_key = str(item.data(Qt.UserRole).toString())
-            volume = [d for d in self.dictionaries if d.key() == dict_key][0]
+            volume_id = str(item.data(Qt.UserRole).toString())
+            volume = self.dictionaries.volume(volume_id)
             verify_thread = VolumeVerifyThread(volume)
             progress = QProgressDialog(dialog)
             progress.setWindowTitle(_('Verifying...'))

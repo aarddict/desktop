@@ -21,7 +21,7 @@ import bz2
 import os
 from functools import partial
 from bisect import bisect_left
-from itertools import islice, chain
+# from itertools import islice, chain
 from collections import defaultdict, deque
 from uuid import UUID
 
@@ -221,16 +221,8 @@ def _read_key(file, offset, len_fmt, pos):
     return _readstr(file, offset + pos, len_fmt)
 
 
-def _read_article(dictionary, offset, len_fmt, pos):
-    decompressed_article = _read_raw_article(dictionary, offset, len_fmt, pos)
-    article = to_article(decompressed_article)
-    article.dictionary = dictionary
-    article.position = pos
-    return article
-
-
-def _read_raw_article(dictionary, offset, len_fmt, pos):
-    compressed_article = _readstr(dictionary.file, offset + pos, len_fmt)
+def _read_article(file, offset, len_fmt, pos):
+    compressed_article = _readstr(file, offset + pos, len_fmt)
     return decompress(compressed_article)
 
 
@@ -306,79 +298,81 @@ class CollationKeyList(object):
 
 class ArticleList(object):
 
-    def __init__(self, dictionary, read_index_item, read_key, read_article):
-        self.dictionary = dictionary
+    def __init__(self, length, read_index_item, read_key, read_article):
+        self.length = length
         self.read_index_item = read_index_item
         self.read_key = read_key
         self.read_article = read_article
 
     def __len__(self):
-        return len(self.dictionary)
+        return self.length
 
     def __getitem__(self, i):
         if 0 <= i < len(self):
-            key_pos, article_unit_ptr = self.read_index_item(i)
-            key = self.read_key(key_pos)
-            article_func = partial(self.read_article, article_unit_ptr)
-            article_func.title = key.decode('utf8')
-            article_func.source = self.dictionary
-            return article_func
+            _, article_unit_ptr = self.read_index_item(i)
+            return self.read_article(article_unit_ptr)
         else:
             raise IndexError
 
 
-class Article(object):
+class Entry(object):
 
-    def __init__(self, title="", text="", meta=None, dictionary=None, position=None):
+    def __init__(self, volume_id, index, title, section=None, redirect_from=None):
+        self.volume_id = volume_id
+        self.index = index
         self.title = title
-        self.text = text
-        self.meta = {} if meta is None else meta
-        self.dictionary = dictionary
-        self.section = None
-        self.position = position
+        self.section = section
+        self.redirect_from = redirect_from
 
-    def _redirect(self):
-        redirect = self.meta.get(u'r',
-                                 self.meta.get('redirect', u''))
-        if redirect and self.section:
-            redirect = u'#'.join((redirect, self.section))
-        return redirect
+    def _orig_title(self):
+        current = self
+        while current is not None:
+            title = current.title
+            current = current.redirect_from
+        return title
 
-    redirect = property(_redirect)
+    orig_title = property(_orig_title)
+
+    def __eq__(self, other):
+        return (self.volume_id == other.volume_id and
+                self.index == other.index and
+                self.section == other.section)
+
+    def __hash__(self):
+        return hash((self.volume_id, self.index, self.section))
 
     def __repr__(self):
-        """
-        >>> a = Article(title=u'a', text=u'Article about a',
-        ...             tags=[Tag(u'b', 1, 2)], meta={u'c': u'whatever'})
-        >>> a1 = eval(repr(a))
-        >>> a1.title
-        u'a'
-        >>> a1.text
-        u'Article about a'
-        >>> a1.tags
-        [Tag(u'b', 1, 2, attributes={})]
-        >>> a1.meta
-        {u'c': u'whatever'}
-
-        """
-        return 'Article(title=%r, text=%r, meta=%r)' % (self.title,
-                                                        self.text,
-                                                        self.meta)
+        return ('%s(%r, %r, %r, %r, %r)' %
+                (self.__class__.__name__, self.volume_id,
+                 self.index, self.title, self.section, self.redirect_from))
 
 
-def to_article(raw_article):
-    try:
-        articletuple = simplejson.loads(raw_article)
-        if len(articletuple) == 3:
-            text, _, meta = articletuple
-        else:
-            text, _ = articletuple
-            meta = {}
-    except:
-        logging.exception('was trying to load article from string:\n%r', raw_article[:20])
-        raise
-    else:
-        return Article(text=text, meta=meta)
+class Article(object):
+
+    def __init__(self, entry, text):
+        self.entry = entry
+        self.text = text
+
+    def __repr__(self):
+        return ('%s(%r, %r)' % (self.__class__.__name__, self.entry, self.text))
+
+
+class Redirect(object):
+
+    def __init__(self, entry, target):
+        self.entry = entry
+        self.target = target
+
+    def __len__(self):
+        count = 0
+        current = self.entry
+        while current is not None:
+            count += 1
+            current = current.redirect_from
+        return count
+
+    def __repr__(self):
+        return ('%s(%r, %r)' % (self.__class__.__name__, self.entry, self.target))
 
 
 HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
@@ -415,9 +409,9 @@ class Header(object):
     index2_offset = property(lambda self: self.index1_offset + self.index_count*struct.calcsize(self.index1_item_format))
 
 
-class Dictionary(object):
+class Volume(object):
 
-    def __init__(self, file_or_filename, raw_articles=False):
+    def __init__(self, file_or_filename):
         if isinstance(file_or_filename, file):
             self.file_name = file_or_filename.name
             close_on_error = False
@@ -447,7 +441,7 @@ class Dictionary(object):
                                   "File format version is not compatible with this viewer")
 
         self.index_count = header.index_count
-        self.sha1sum = header.sha1sum
+        self.volume_id = self.sha1sum = header.sha1sum
         self.uuid = UUID(bytes=header.uuid)
         self.volume = header.volume
         self.total_volumes = header.of
@@ -475,23 +469,22 @@ class Dictionary(object):
             self.article_language = locale_article_language
 
         read_index_item = partial(_read_index_item,
-                                                 self.file,
-                                                 header.index1_offset,
-                                                 header.index1_item_format)
+                                  self.file,
+                                  header.index1_offset,
+                                  header.index1_item_format)
         read_key = partial(_read_key,
-                                     self.file,
-                                     header.index2_offset,
-                                     header.key_length_format)
-        read_article_func = _read_raw_article if raw_articles else _read_article
-        read_article = partial(read_article_func,
-                                         self,
-                                         header.article_offset,
-                                         header.article_length_format)
+                           self.file,
+                           header.index2_offset,
+                           header.key_length_format)
+        read_article = partial(_read_article,
+                               self.file,
+                               header.article_offset,
+                               header.article_length_format)
         self.words = CacheList(WordList(self.index_count,
                                         read_index_item,
                                         read_key),
                                name='%s (w)' % format_title(self))
-        self.articles = ArticleList(self,
+        self.articles = ArticleList(self.index_count,
                                     read_index_item,
                                     read_key,
                                     read_article)
@@ -508,7 +501,7 @@ class Dictionary(object):
         return self.index_count
 
     def __getitem__(self, s):
-        return self.lookup(s)
+        return self.lookup(s, TERTIARY, cmp_word_exact)
 
     def __contains__(self, s):
         for item in self[s]:
@@ -516,7 +509,7 @@ class Dictionary(object):
         return False
 
     def __eq__(self, other):
-        return self.key() == other.key()
+        return self.volume_id == other.volume_id
 
     def __str__(self):
         if isinstance(self.file_name, unicode):
@@ -525,38 +518,53 @@ class Dictionary(object):
             return self.file_name
 
     def __repr__(self):
-        return '<%s.%s %s %r>' % (self.__module__, self.__class__.__name__,
-                               self.key(), self.file_name)
+        return ('%s(%r)' % (self.__class__.__name__, self.file_name))
 
     def __hash__(self):
-        return self.key().__hash__()
+        return self.volume_id.__hash__()
 
     def lookup(self, word, strength=PRIMARY, cmp_func=cmp_word_start):
-        if not word:
-            return
-        if not isinstance(word, unicode):
-            word = word.decode('utf8')
-        lookupword, section = split_word(word)
 
-        pos = bisect_left(CollationKeyList(self.words, strength),
-                          collation_key(lookupword, strength).getByteArray())
+        index = bisect_left(CollationKeyList(self.words, strength),
+                            collation_key(word, strength).getByteArray())
         try:
             while True:
-                matched_word = self.words[pos]
-                cmp_result = cmp_func(matched_word, lookupword, strength)
+                matched_word = self.words[index]
+                cmp_result = cmp_func(matched_word, word, strength)
                 if cmp_result == 0:
-                    article_func = self.articles[pos]
-                    article_func.section = section
-                    article_func.position = pos
-                    yield article_func
-                    pos += 1
+                    yield Entry(self.volume_id, index, matched_word)
+                    index += 1
                 else:
                     break
         except IndexError:
             raise StopIteration
 
-    def key(self):
-        return self.sha1sum
+    def read(self, entry):
+        if entry.volume_id != self.volume_id:
+            raise ValueError("Entry is not from this volume")
+
+        serialized_article = self.articles[entry.index]
+
+        try:
+            articletuple = simplejson.loads(serialized_article)
+            if len(articletuple) == 3:
+                text, _, meta = articletuple
+            else:
+                text, _ = articletuple
+                meta = {}
+        except:
+            logging.exception('was trying to load article from string:\n%r',
+                              serialized_article[:20])
+            raise
+        else:
+            redirect = meta.get(u'r', meta.get('redirect', u''))
+            if redirect and entry.section:
+                redirect = u'#'.join((redirect, entry.section))
+
+            if redirect:
+                return Redirect(entry, redirect)
+            else:
+                return Article(entry, text)
 
     def verify(self):
         st_size = os.stat(self.file_name).st_size
@@ -571,18 +579,58 @@ class Dictionary(object):
     def close(self):
         self.file.close()
 
+
 class DictFormatError(Exception):
 
     def __init__(self, file_name, reason):
+        Exception.__init__(self, file_name, reason)
         self.file_name = file_name
         self.reason = reason
 
     def __str__(self):
         return '%s: %s' % (self.file_name, self.reason)
 
+
 class VerifyError(Exception): pass
 
-class DictionaryCollection(list):
+
+class ArticleNotFound(Exception):
+
+    def __init__(self, entry):
+        Exception.__init__(self, entry)
+        self.entry = entry
+
+
+class TooManyRedirects(Exception):
+
+    def __init__(self, entry):
+        Exception.__init__(self, entry)
+        self.entry = entry
+
+
+class Library(list):
+
+    best_match_comparisons = ((cmp_word_exact, TERTIARY),
+                              (cmp_word_exact, SECONDARY),
+                              (cmp_word_exact, PRIMARY),
+                              (cmp_word_start, TERTIARY),
+                              (cmp_word_start, SECONDARY),
+                              (cmp_word_start, PRIMARY))
+
+    find_comparisons = ((cmp_word_exact, TERTIARY),
+                        (cmp_word_exact, SECONDARY),
+                        (cmp_word_exact, PRIMARY))
+
+    def add(self, filename):
+        d = Volume(filename)
+        try:
+            index = self.index(d)
+        except ValueError:
+            self.append(d)
+            return d
+        else:
+            d.close()
+            return self[index]
 
     def langs(self):
         return set((d.index_language for d in self))
@@ -594,94 +642,55 @@ class DictionaryCollection(list):
         return sorted((d for d in self if d.uuid == uuid),
                       key=lambda d: d.volume)
 
+    def volume(self, volume_id):
+        r = [v for v in self if v.volume_id == volume_id]
+        return r[0] if r else None
+
     def best_match(self, word, max_from_vol=50):
         counts = defaultdict(int)
         seen = set()
-        for cmp_func in (cmp_word_exact, cmp_word_start):
-            for strength in (TERTIARY, SECONDARY, PRIMARY):
-                for vol in self:
-                    count = counts[vol]
-                    if count >= max_from_vol: continue
-                    for article in vol.lookup(word, strength=strength,
-                                              cmp_func=cmp_func):
-                        article_key = (article.position, vol)
-                        if article_key in seen:
-                            continue
-                        else:
-                            yield self._wrap_redirect(article)
-                            seen.add(article_key)
-                            count += 1
-                            if count >= max_from_vol: break
-                    counts[vol] = count
+        for cmp_func, strength in self.best_match_comparisons:
+            for vol in self:
+                count = counts[vol]
+                if count >= max_from_vol: continue
+                for entry in vol.lookup(word, strength, cmp_func):
+                    if entry not in seen:
+                        seen.add(entry)
+                        yield entry
+                        count += 1
+                        if count >= max_from_vol: break
+                counts[vol] = count
 
+    def read(self, entry):
+        vol = self.volume(entry.volume_id)
+        if not vol:
+            raise ArticleNotFound(entry)
+        result = vol.read(entry)
+        if isinstance(result, Article):
+            return result
+        if isinstance(result, Redirect):
+            level = len(result)
+            logging.debug('%r [%d]', result, level)
+            if level > max_redirect_levels:
+                raise TooManyRedirects(entry)
+            else:
+                redirect = self._redirect(result)
+                if redirect:
+                    return redirect
+        raise ArticleNotFound(entry)
 
-    def _wrap_redirect(self, article):
-        redirect_article = partial(self.redirect, article)
-        redirect_article.title = article.title
-        redirect_article.section = article.section
-        redirect_article.source = article.source
-        return redirect_article
-
-    def lookup(self, start_word, max_from_one_dict=50,
-               uuid=None, strength=PRIMARY, resolve_redirects=True):
-
-        uuids = self.uuids() if uuid is None else (uuid,)
-
-        for uuid in uuids:
-            vols = self.volumes(uuid)
-            for article in islice(chain(*[islice(vol.lookup(start_word, strength=strength),
-                                                 max_from_one_dict)
-                                          for vol in vols]),
-                                  max_from_one_dict):
-                if resolve_redirects:
-                    yield self._wrap_redirect(article)
-                else:
-                    yield article
-
-    def _redirect(self, article, level=0):
-        redir = article.redirect
-
-        if not redir:
-            return article
-
-        logging.debug('Redirect %r section %r ==> %r (level %d)',
-                      article.title, article.section, redir, level)
-
-        if level > max_redirect_levels:
-            raise RedirectTooManyLevels(article)
-
-        for strength in (TERTIARY, SECONDARY, PRIMARY):
-            resulti = self.lookup(redir,
-                                  uuid=article.dictionary.uuid,
-                                  strength=strength,
-                                  resolve_redirects=False)
+    def _redirect(self, redirect):
+        vol = self.volume(redirect.entry.volume_id)
+        if vol:
             try:
-                result = resulti.next()
+                entry = self._find(redirect.target, vol.uuid).next()
+                entry.redirect_from = redirect.entry
+                return self.read(entry)
             except StopIteration:
                 pass
-            else:
-                a = result()
-                a.title = result.title
-                a.section = result.section
-                return self._redirect(a, level=level+1)
 
-    def redirect(self, read_func):
-        article = read_func()
-        article.title = read_func.title
-        article.section = read_func.section
-        rarticle = self._redirect(article)
-        if rarticle:
-            return rarticle
-        else:
-            raise RedirectNotFound(article)
-
-
-class RedirectResolveError(Exception):
-
-    def __init__(self, article):
-        self.article = article
-
-class RedirectNotFound(RedirectResolveError): pass
-class RedirectTooManyLevels(RedirectResolveError): pass
-
-
+    def _find(self, word, dictionary_id):
+        return (entry
+                for cmp_func, strength in self.find_comparisons[:len(word)]
+                for vol in self.volumes(dictionary_id)
+                for entry in vol.lookup(word, strength, cmp_func))
