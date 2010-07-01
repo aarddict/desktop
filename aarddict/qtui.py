@@ -1148,9 +1148,6 @@ class DictView(QMainWindow):
         def dict_opened(d):
             progress.setValue(progress.value() + 1)
             log.debug('Opened %r' % d.file_name)
-            func = functools.partial(self.update_word_completion,
-                                     self.word_input.text())
-            self.schedule(func, 200)
 
         def dict_failed(source, error):
             errors.append((source, error))
@@ -1164,6 +1161,9 @@ class DictView(QMainWindow):
             dict_open_thread.setParent(None)
             self.update_title()
             self.update_preferred_dicts()
+            func = functools.partial(self.update_word_completion,
+                                     self.word_input.text())
+            self.schedule(func, 200)
             if errors:
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle(_('Open Failed'))
