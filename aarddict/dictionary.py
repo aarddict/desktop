@@ -329,14 +329,13 @@ class ArticleList(object):
 
 class Article(object):
 
-    def __init__(self, title="", text="", tags=None, meta=None, dictionary=None, position=None):
+    def __init__(self, title="", text="", meta=None, dictionary=None, position=None):
         self.title = title
         self.text = text
-        self.tags = [] if tags is None else tags
         self.meta = {} if meta is None else meta
         self.dictionary = dictionary
         self.section = None
-        self.position = None
+        self.position = position
 
     def _redirect(self):
         redirect = self.meta.get(u'r',
@@ -362,56 +361,24 @@ class Article(object):
         {u'c': u'whatever'}
 
         """
-        return 'Article(title=%r, text=%r, tags=%r, meta=%r)' % (self.title,
-                                                                 self.text,
-                                                                 self.tags,
-                                                                 self.meta)
+        return 'Article(title=%r, text=%r, meta=%r)' % (self.title,
+                                                        self.text,
+                                                        self.meta)
 
-
-class Tag(object):
-
-    def __init__(self, name, start, end, attributes=None):
-        self.name = name
-        self.start = start
-        self.end = end
-        self.attributes = attributes if attributes is not None else {}
-
-    def __repr__(self):
-        """
-        >>> t = Tag(u'a', 1, 5, attributes={u'href': u'abc'})
-        >>> t1 = eval(repr(t))
-        >>> t1.name
-        u'a'
-        >>> t1.start
-        1
-        >>> t1.end
-        5
-        >>> t1.attributes
-        {u'href': u'abc'}
-
-        """
-        return 'Tag(%r, %r, %r, attributes=%r)'%(self.name, self.start,
-                                                 self.end, self.attributes)
-
-
-def to_tag(tagtuple):
-    return Tag(tagtuple[0], tagtuple[1], tagtuple[2],
-               {} if len(tagtuple) < 4 else tagtuple[3])
 
 def to_article(raw_article):
     try:
         articletuple = simplejson.loads(raw_article)
         if len(articletuple) == 3:
-            text, tag_list, meta = articletuple
+            text, _, meta = articletuple
         else:
-            text, tag_list = articletuple
+            text, _ = articletuple
             meta = {}
     except:
         logging.exception('was trying to load article from string:\n%r', raw_article[:20])
         raise
     else:
-        tags = [to_tag(tagtuple) for tagtuple in tag_list]
-        return Article(text=text, tags=tags, meta=meta)
+        return Article(text=text, meta=meta)
 
 
 HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
