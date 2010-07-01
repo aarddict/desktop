@@ -524,7 +524,8 @@ class Volume(object):
         return self.volume_id.__hash__()
 
     def lookup(self, word, strength=PRIMARY, cmp_func=cmp_word_start):
-
+        if not word:            
+            raise StopIteration
         index = bisect_left(CollationKeyList(self.words, strength),
                             collation_key(word, strength).getByteArray())
         try:
