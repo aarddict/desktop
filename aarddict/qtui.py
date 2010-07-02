@@ -9,6 +9,7 @@ import logging
 import string
 import locale
 import re
+import traceback
 
 from ConfigParser import ConfigParser
 from uuid import UUID
@@ -341,6 +342,7 @@ class WordLookupThread(QThread):
     match_found = pyqtSignal(QString, object)
     stopped = pyqtSignal(QString)
     done = pyqtSignal(QString, list)
+    lookup_failed = pyqtSignal(QString, Exception)
 
     def __init__(self, dictionaries, word, parent=None):
         QThread.__init__(self, parent)
@@ -364,8 +366,10 @@ class WordLookupThread(QThread):
                 raise WordLookupStopRequested
         except WordLookupStopRequested:
             self.stopped.emit(self.word)
+        except Exception, e:
+            self.lookup_failed.emit(self.word, e)
         else:
-            self.done.emit(self.word, entries)
+            self.done.emit(self.word, entries)            
         finally:
             dict_access_lock.unlock()
 
@@ -1269,11 +1273,20 @@ class DictView(QMainWindow):
             self.current_lookup_thread = None
 
         word_lookup_thread = WordLookupThread(self.dictionaries, word, self)
+        word_lookup_thread.lookup_failed.connect(self.word_lookup_failed, Qt.QueuedConnection)
         word_lookup_thread.done.connect(self.word_lookup_finished, Qt.QueuedConnection)
         word_lookup_thread.finished.connect(
             functools.partial(word_lookup_thread.setParent, None), Qt.QueuedConnection)
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start(QThread.LowestPriority)
+
+    def word_lookup_failed(self, word, exc):        
+        exception_txt = ''.join(traceback.format_exception_only(type(exc), exc))
+        formatted_error = (_('Error while looking up %(word)s: '
+                             '%(exception)s') %
+                           dict(word=word, exception=exception_txt))
+        self.show_dict_error(_('Word Lookup Failed'), formatted_error)
+        
 
     def word_lookup_finished(self, word, entries):
         log.debug('Lookup for %r finished, got %d article(s)', word, len(entries))
@@ -1370,38 +1383,37 @@ class DictView(QMainWindow):
         load_thread = ArticleLoadThread(self.dictionaries, view, 
                                         self.use_mediawiki_style, self)
         load_thread.article_loaded.connect(self.article_loaded, Qt.QueuedConnection)
-        # def finished():
-        #     if load_thread.errors:
-        #         formatted_errors = []
-        #         for error in load_thread.errors:
-        #             entry, ex = error
-        #             vol = self.dictionaries.volume(entry.volume_id)
-        #             formatted_error = (_('Error reading article %(title)s from '
-        #                                 '%(dict_title)s (file %(dict_file)s): '
-        #                                 '%(exception)s') %
-        #                                dict(title=entry.title,
-        #                                     dict_title=format_title(vol),
-        #                                     dict_file=vol.file_name,
-        #                                     exception=ex))
-        #             formatted_errors.append(formatted_error)
-        #         errors_txt = u'\n'.join(formatted_errors)
-
-        #         msg_box = QMessageBox(self)
-        #         msg_box.setWindowTitle(_('Article Load Failed'))
-        #         msg_box.setIcon(QMessageBox.Critical)
-        #         msg_box.setInformativeText(_('There was an error while loading articles. '
-        #                                      'Dictionary files may be corrupted. '
-        #                                      'Would you like to verify now?'))
-        #         msg_box.setDetailedText(errors_txt)
-        #         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        #         result = msg_box.exec_()
-        #         if result == QMessageBox.Yes:
-        #             self.verify()
-        #     del load_thread.errors[:]
-        #     load_thread.setParent(None)
-
-        # load_thread.finished.connect(finished, Qt.QueuedConnection)
+        load_thread.article_load_failed.connect(self.article_load_failed, Qt.QueuedConnection)
         load_thread.start(QThread.LowestPriority)
+
+    def article_load_failed(self, view, exc):
+        exception_txt = ''.join(traceback.format_exception_only(type(exc), exc))
+        entry = view.entry
+        vol = self.dictionaries.volume(entry.volume_id)
+        view.page().currentFrame().setHtml(_('Failed to load article %s') % view.entry.title)
+        formatted_error = (_('Error reading article %(title)s from '
+                             '%(dict_title)s (file %(dict_file)s): '
+                             '%(exception)s') %
+                           dict(title=entry.title,
+                                dict_title=format_title(vol),
+                                dict_file=vol.file_name,
+                                exception=exception_txt))
+        self.show_dict_error(_('Article Load Failed'), formatted_error)
+        
+
+    def show_dict_error(self, title, error_detail):
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(title)
+        msg_box.setIcon(QMessageBox.Critical)
+        msg_box.setInformativeText(_('There was an error while accessing dictionaries. '
+                                     'Dictionary files may be corrupted. '
+                                     'Would you like to verify now?'))
+        msg_box.setDetailedText(error_detail)
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        result = msg_box.exec_()
+        if result == QMessageBox.Yes:
+            self.verify()
+        
 
 
     def clear_current_articles(self):
