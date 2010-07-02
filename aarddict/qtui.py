@@ -608,7 +608,7 @@ class FindWidget(QToolBar):
         if key == Qt.Key_Return or key == Qt.Key_Enter:
             if modifiers == Qt.NoModifier:
                 self.find_in_article(forward=True)
-            elif modifiers == Qt.ControlModifier:
+            elif modifiers == Qt.ShiftModifier:
                 self.find_in_article(forward=False)
         else:
             QToolBar.keyPressEvent(self, event)
