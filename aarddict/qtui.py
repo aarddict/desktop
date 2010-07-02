@@ -390,6 +390,7 @@ class ArticleLoadThread(QThread):
                     html = self._tohtml(article)
                     title = article.entry.orig_title
                 except Exception, e:
+                    log.exception('Failed to load article for %r', entry)
                     self.errors.append((entry, e))
                 else:
                     self.article_loaded.emit(title, article, html)
@@ -1443,10 +1444,10 @@ class DictView(QMainWindow):
         self.tabs.blockSignals(False)
         self.update_current_article_actions(self.tabs.currentIndex())
 
-    def article_loaded(self, title, article, html):
+    def article_loaded(self, title, article, html):        
+        log.debug('Loaded article for %r', article.entry)
         if isinstance(title, QString):
             title = unicode(title)
-        log.debug('Loaded article %r', article)
         volume_id = article.entry.volume_id
         volume = self.dictionaries.volume(volume_id)
         dictionary_id = volume.uuid
@@ -1470,6 +1471,7 @@ class DictView(QMainWindow):
         view.setProperty('aard:index', QVariant(article.entry.index))
 
         def loadFinished(ok):
+            log.debug('article loadFinished for entry %r', article.entry)
             if ok and article.entry.section:
                 self.go_to_section(view, article.entry.section)
             self.tabs.progress_update()
@@ -1566,6 +1568,7 @@ class DictView(QMainWindow):
             pass
 
     def go_to_section(self, view, section):
+        log.debug('Go to section %r', section)
         mainFrame = view.page().mainFrame()
         mainFrame.addToJavaScriptWindowObject('matcher', matcher)
         js_template = 'scrollToMatch("%s", %%s)' % section
@@ -1577,23 +1580,26 @@ class DictView(QMainWindow):
 
 
     def link_clicked(self, url):
-        scheme = url.scheme()
-        title = unicode(url.toString())
-        log.debug('Link clicked: %r', title)
-        if scheme in ('http', 'https', 'ftp', 'sftp'):
-            webbrowser.open(title)
+        log.debug('Link clicked: %r', url)
+        scheme = unicode(url.scheme())
+        path = unicode(url.path())
+        fragment = unicode(url.fragment())
+        log.debug('scheme: %r, path: %r, frag: %r', scheme, path, fragment)
+        if scheme in (u'http', u'https', u'ftp', u'sftp'):
+            webbrowser.open(unicode(url))
         else:
+            title = '#'.join((path, fragment)) if fragment else path
             if '_' in title:
                 log.debug('Found underscore character in title %r, replacing with space',
                           title)
                 title = title.replace(u'_', u' ')
-            if title.startswith('#'):
+            if not path and fragment:
                 current_tab = self.tabs.currentWidget()
                 if current_tab:
-                    self.go_to_section(current_tab, title[1:])
+                    self.go_to_section(current_tab, fragment)
                 else:
                     log.error('Link %r clicked, but no article view?', title)
-            else:
+            else:                
                 self.set_word_input(title)
 
     def set_word_input(self, text):
@@ -2001,7 +2007,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 view.page().currentFrame().setHtml(html)
             write_appearance(colors, self.use_mediawiki_style)
 
-        button_box.rejected.connect(button_box)
+        button_box.rejected.connect(close)
 
         dialog.setLayout(content)
 

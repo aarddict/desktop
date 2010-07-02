@@ -524,7 +524,7 @@ class Volume(object):
         return self.volume_id.__hash__()
 
     def lookup(self, word, strength=PRIMARY, cmp_func=cmp_word_start):
-        if not word:            
+        if not word:
             raise StopIteration
         index = bisect_left(CollationKeyList(self.words, strength),
                             collation_key(word, strength).getByteArray())
@@ -533,7 +533,11 @@ class Volume(object):
                 matched_word = self.words[index]
                 cmp_result = cmp_func(matched_word, word, strength)
                 if cmp_result == 0:
-                    yield Entry(self.volume_id, index, matched_word)
+                    #sometimes words in index include #fragment
+                    _, section = split_word(matched_word)
+                    #leave matched word exactly as is, but set section
+                    yield Entry(self.volume_id, index, 
+                                matched_word, section=section)
                     index += 1
                 else:
                     break
@@ -648,7 +652,7 @@ class Library(list):
         return r[0] if r else None
 
     def best_match(self, word, max_from_vol=50):
-        return self._lookup(word, self, 
+        return self._lookup(word, self,
                             self.best_match_comparisons, max_from_vol)
 
     def read(self, entry):
@@ -672,9 +676,7 @@ class Library(list):
     def _lookup(self, word, volumes, comparisons, max_from_vol):
         if not word:
             raise StopIteration
-        
-        
-        
+        word, section = split_word(word)
         counts = defaultdict(int)
         seen = set()
         for cmp_func, strength in comparisons:
@@ -683,6 +685,8 @@ class Library(list):
                 if count >= max_from_vol: continue
                 for entry in vol.lookup(word, strength, cmp_func):
                     if entry not in seen:
+                        if section and not entry.section:
+                            entry.section = section
                         yield entry
                         seen.add(entry)
                         count += 1
@@ -700,5 +704,5 @@ class Library(list):
                 pass
 
     def _find(self, word, dictionary_id):
-        return self._lookup(word, self.volumes(dictionary_id), 
+        return self._lookup(word, self.volumes(dictionary_id),
                             self.find_comparisons[:len(word)], 1)
