@@ -1467,27 +1467,11 @@ class DictView(QMainWindow):
             volume_id = current_tab.entry.volume_id
             volume = self.dictionaries.volume(volume_id)
             if not volume:
-                return None
+                return None            
             article_title = current_tab.entry.title
-            metadata = volume.metadata
-            try:
-                siteinfo = metadata['siteinfo']
-            except KeyError:
-                logging.debug('No site info in dictionary %r', volume_id)
-                if 'lang' in metadata and 'sitelang' in metadata:
-                    url = u'http://%s.wikipedia.org/wiki/%s' % (metadata['lang'],
-                                                                article_title)
-                    return url
-            else:
-                try:
-                    general = siteinfo['general']
-                    server = general['server']
-                    articlepath = general['articlepath']
-                except KeyError:
-                    logging.debug('Site info for %s is incomplete', volume_id)
-                else:
-                    url = ''.join((server, articlepath.replace(u'$1', article_title)))
-                    return url
+            article_url = volume.article_url
+            if article_url:
+                return article_url.replace(u'$1', article_title)
 
     def sort_preferred(self, entries):
         def key(x):
@@ -1520,6 +1504,23 @@ class DictView(QMainWindow):
                 log.debug('Found underscore character in title %r, replacing with space',
                           title)
                 title = title.replace(u'_', u' ')
+            if scheme:
+                current_tab = self.tabs.currentWidget()
+                volume_id = current_tab.entry.volume_id
+                vol = self.dictionaries.volume(volume_id)
+                article_url = vol.interwiki_map.get(scheme)
+                if article_url:
+                    dictionary_id = self.dictionaries.dict_by_article_url(article_url)
+                    if dictionary_id:
+                        log.debug('Found dictionary %r by namespace %r', dictionary_id, scheme)
+                        self.update_preferred_dicts(dictionary_id)
+                    else:
+                        log.debug('No dictionary with article url %r', article_url)
+                else:
+                    log.debug('Scheme %r does not appear to be a valid namespace, '
+                              'probably part of title', scheme)
+                    title = ':'.join((scheme, title))
+
             if not path and fragment:
                 current_tab = self.tabs.currentWidget()
                 if current_tab:

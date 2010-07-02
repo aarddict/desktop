@@ -489,6 +489,9 @@ class Volume(object):
                                     read_key,
                                     read_article)
 
+        self._interwiki_map = None
+        self._article_url = None        
+
     title = property(lambda self: self.metadata.get("title", ""))
     version = property(lambda self: self.metadata.get("version", ""))
     description = property(lambda self: self.metadata.get("description", ""))
@@ -536,7 +539,7 @@ class Volume(object):
                     #sometimes words in index include #fragment
                     _, section = split_word(matched_word)
                     #leave matched word exactly as is, but set section
-                    yield Entry(self.volume_id, index, 
+                    yield Entry(self.volume_id, index,
                                 matched_word, section=section)
                     index += 1
                 else:
@@ -570,6 +573,40 @@ class Volume(object):
                 return Redirect(entry, redirect)
             else:
                 return Article(entry, text)
+
+    def _get_interwiki_map(self):
+        if self._interwiki_map is None:
+            self._interwiki_map = {}
+            for item in self.metadata.get('siteinfo', {}).get('interwikimap', {}):
+                prefix = item.get('prefix')
+                url = item.get('url')
+                if prefix and url:
+                    self._interwiki_map[prefix] = url
+        return self._interwiki_map
+
+    interwiki_map = property(_get_interwiki_map)
+
+    def _get_article_url(self):
+        if self._article_url is None:
+            self._article_url = u''
+            if 'siteinfo' in self.metadata:
+                siteinfo = self.metadata['siteinfo']
+                try:
+                    general = siteinfo['general']
+                    server = general['server']
+                    articlepath = general['articlepath']
+                except KeyError:
+                    logging.debug('Site info for %s is incomplete', self)
+                else:
+                    self._article_url = ''.join((server, articlepath))            
+            else:
+                logging.debug('No site info in %r', self)
+                if 'lang' in self.metadata and 'sitelang' in self.metadata:                
+                    self._article_url = u'http://%s.wikipedia.org/wiki/$1' % self.metadata['lang']
+                    logging.debug('Using fallback url based on lang: %r', self._article_url)
+        return self._article_url
+
+    article_url = property(_get_article_url)
 
     def verify(self):
         st_size = os.stat(self.file_name).st_size
@@ -650,6 +687,13 @@ class Library(list):
     def volume(self, volume_id):
         r = [v for v in self if v.volume_id == volume_id]
         return r[0] if r else None
+
+    def dict_by_article_url(self, article_url):
+        if article_url:
+            for vol in self:
+                if vol.article_url == article_url:
+                    return vol.uuid
+        return None
 
     def best_match(self, word, max_from_vol=50):
         return self._lookup(word, self,
