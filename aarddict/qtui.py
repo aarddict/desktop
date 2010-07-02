@@ -367,7 +367,6 @@ class ArticleLoadStopRequested(Exception): pass
 class ArticleLoadThread(QThread):
 
     article_loaded = pyqtSignal(unicode, object, unicode)
-    article_load_started = pyqtSignal(list)
     article_load_stopped = pyqtSignal(QThread)
     article_load_finished = pyqtSignal(QThread, list)
 
@@ -381,7 +380,6 @@ class ArticleLoadThread(QThread):
         self.errors = []
 
     def run(self):
-        self.article_load_started.emit(self.entries)
         dict_access_lock.lock()
         try:
             for entry in self.entries:
@@ -1425,9 +1423,6 @@ class DictView(QMainWindow):
 
             load_thread.finished.connect(finished, Qt.QueuedConnection)
 
-            load_thread.article_load_started.connect(self.article_load_started,
-                                                     Qt.QueuedConnection)
-
             load_thread.article_load_stopped.connect(self.tabs.progress_stop,
                                                      Qt.QueuedConnection)
 
@@ -1497,10 +1492,6 @@ class DictView(QMainWindow):
         self.update_current_article_actions(self.tabs.currentIndex())
 
         view.linkClicked.connect(self.link_clicked)
-
-
-    def article_load_started(self, read_funcs):
-        log.debug('Loading %d article(s)', len(read_funcs))
 
     def show_next_article(self):
         current = self.tabs.currentIndex()
