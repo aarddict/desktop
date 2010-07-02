@@ -177,6 +177,19 @@ about_html = about_tmpl.substitute(dict(appname=_(aarddict.__appname__),
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
 
+redirect_info_tmpl = string.Template(u"""
+<div id="aard:redirectinfo" style="border: thin solid gray; 
+                                   background-color: lightgray; 
+                                   margin-left: auto; 
+                                   margin-right: auto;
+                                   margin-top: 5px;
+                                   margin-top: 0px;
+                                   padding: 5px;
+">
+Redirected from <strong>$title</strong>
+</div>
+""")
+
 article_tmpl = string.Template(u"""<html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -184,6 +197,7 @@ article_tmpl = string.Template(u"""<html>
     </head>
     <body>
         <div id="globalWrapper">
+        $redirect_info
         $content
         </div>
         $scripts
@@ -415,9 +429,14 @@ class ArticleLoadThread(QThread):
 
     def _tohtml(self, article):
         t0 = time.time()
+        if article.entry == self.view.entry:
+            redirect_info = u''
+        else:
+            redirect_info = redirect_info_tmpl.substitute(dict(title=self.view.entry.title))
         result = article_tmpl.substitute(dict(style=(mediawiki_style
                                                      if self.use_mediawiki_style
                                                      else aard_style),
+                                              redirect_info=redirect_info,
                                               content=article.text,
                                               scripts=js))
         log.debug('Converted %r in %ss', article.entry, time.time() - t0)
@@ -1333,7 +1352,7 @@ class DictView(QMainWindow):
             entries = selected.data(Qt.UserRole).toPyObject()
             self.tabs.blockSignals(True)
             view_to_load = None
-            for entry in self.sort_preferred(entries):
+            for i, entry in enumerate(self.sort_preferred(entries)):
                 view = WebView(entry)
                 view.setPage(WebPage(view))
                 volume = self.dictionaries.volume(entry.volume_id)
@@ -1341,14 +1360,12 @@ class DictView(QMainWindow):
                 view.setZoomFactor(self.zoom_factor)
 
                 dict_title = format_title(volume)
-                i = self.tabs.count()
                 if i < 9:
                     tab_label = ('&%d ' % (i+1))+dict_title
                 else:
                     tab_label = dict_title
                 self.tabs.addTab(view, tab_label)
-                self.tabs.setTabToolTip(self.tabs.count() - 1,
-                                        u'\n'.join((dict_title, entry.title)))
+                self.tabs.setTabToolTip(i, entry.title)
                 self.update_current_article_actions(self.tabs.currentIndex())
                 view.linkClicked.connect(self.link_clicked)
             self.tabs.blockSignals(False)
