@@ -178,14 +178,7 @@ http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
 
 redirect_info_tmpl = string.Template(u"""
-<div id="aard:redirectinfo" style="border: thin solid gray; 
-                                   background-color: lightgray; 
-                                   margin-left: auto; 
-                                   margin-right: auto;
-                                   margin-top: 5px;
-                                   margin-top: 0px;
-                                   padding: 5px;
-">
+<div id="aard-redirectinfo"">
 Redirected from <strong>$title</strong>
 </div>
 """)

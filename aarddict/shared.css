@@ -28,4 +28,12 @@ pre:empty,
     display: none;
 }
 
-
+#aard-redirectinfo {
+    border: thin solid gray; 
+    background-color: #eeeeee; 
+    margin-left: auto; 
+    margin-right: auto;
+    margin-top: 5px;
+    margin-top: 0px;
+    padding: 5px;
+}
