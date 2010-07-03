@@ -277,7 +277,8 @@ class WebView(QWebView):
         self.entry = entry
         self.article = None
         self.loading = False
-        
+        self.action_lookup_selection = None
+
     title = property(lambda self: self.entry.title)
 
 
@@ -286,6 +287,8 @@ class WebView(QWebView):
         frame = self.page().currentFrame()
 
         if unicode(self.selectedText()):
+            if self.action_lookup_selection:
+                context_menu.addAction(self.action_lookup_selection)
             context_menu.addAction(self.pageAction(QWebPage.Copy))
         hit_test = frame.hitTestContent(point)
         if unicode(hit_test.linkUrl().toString()):
@@ -369,7 +372,7 @@ class WordLookupThread(QThread):
         except Exception, e:
             self.lookup_failed.emit(self.word, e)
         else:
-            self.done.emit(self.word, entries)            
+            self.done.emit(self.word, entries)
         finally:
             dict_access_lock.unlock()
 
@@ -395,7 +398,7 @@ class ArticleLoadThread(QThread):
         try:
             try:
                 article = self._load_article(self.view.entry)
-                article.text = self._tohtml(article)                
+                article.text = self._tohtml(article)
             except Exception, e:
                 log.exception('Failed to load article for %r', self.view.entry)
                 self.article_load_failed.emit(self.view, e)
@@ -924,12 +927,6 @@ class DictView(QMainWindow):
 
         mn_article = menubar.addMenu(_('&Article'))
 
-        self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'),
-                                           self, triggered=self.copy_article)
-        self.action_copy_article.setShortcut(_('Ctrl+Shift+C'))
-        self.action_copy_article.setToolTip(_('Copy article to clipboard'))
-        mn_article.addAction(self.action_copy_article)
-
         def go_to_find_pane():
             find_toolbar.show()
             find_toolbar.find_input.setFocus()
@@ -942,6 +939,18 @@ class DictView(QMainWindow):
         action_article_find.setToolTip(_('Find text in article'))
         mn_article.addAction(action_article_find)
 
+
+        self.action_lookup_selection = QAction(_('&Lookup Selection'),
+                                           self, triggered=self.lookup_selection)
+        self.action_lookup_selection.setShortcuts([_('Ctrl+Return'), _('Ctrl+Enter')])
+        self.action_lookup_selection.setToolTip(_('Lookup text currently selected in article'))
+        mn_article.addAction(self.action_lookup_selection)
+
+        self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'),
+                                           self, triggered=self.copy_article)
+        self.action_copy_article.setShortcut(_('Ctrl+Shift+C'))
+        self.action_copy_article.setToolTip(_('Copy article to clipboard'))
+        mn_article.addAction(self.action_copy_article)
 
         self.action_save_article = QAction(icons['document-save'], _('&Save...'),
                                            self, triggered=self.save_article)
@@ -1280,13 +1289,13 @@ class DictView(QMainWindow):
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start(QThread.LowestPriority)
 
-    def word_lookup_failed(self, word, exc):        
+    def word_lookup_failed(self, word, exc):
         exception_txt = ''.join(traceback.format_exception_only(type(exc), exc))
         formatted_error = (_('Error while looking up %(word)s: '
                              '%(exception)s') %
                            dict(word=word, exception=exception_txt))
         self.show_dict_error(_('Word Lookup Failed'), formatted_error)
-        
+
 
     def word_lookup_finished(self, word, entries):
         log.debug('Lookup for %r finished, got %d article(s)', word, len(entries))
@@ -1360,6 +1369,7 @@ class DictView(QMainWindow):
             view_to_load = None
             for i, entry in enumerate(self.sort_preferred(entries)):
                 view = WebView(entry)
+                view.action_lookup_selection = self.action_lookup_selection
                 view.setPage(WebPage(view))
                 volume = self.dictionaries.volume(entry.volume_id)
                 view.page().currentFrame().setHtml("Loading...", QUrl(""))
@@ -1380,7 +1390,7 @@ class DictView(QMainWindow):
 
     def load_article(self, view):
         view.article_loaded = True
-        load_thread = ArticleLoadThread(self.dictionaries, view, 
+        load_thread = ArticleLoadThread(self.dictionaries, view,
                                         self.use_mediawiki_style, self)
         load_thread.article_loaded.connect(self.article_loaded, Qt.QueuedConnection)
         load_thread.article_load_failed.connect(self.article_load_failed, Qt.QueuedConnection)
@@ -1399,7 +1409,7 @@ class DictView(QMainWindow):
                                 dict_file=vol.file_name,
                                 exception=exception_txt))
         self.show_dict_error(_('Article Load Failed'), formatted_error)
-        
+
 
     def show_dict_error(self, title, error_detail):
         msg_box = QMessageBox(self)
@@ -1413,7 +1423,7 @@ class DictView(QMainWindow):
         result = msg_box.exec_()
         if result == QMessageBox.Yes:
             self.verify()
-        
+
 
 
     def clear_current_articles(self):
@@ -1463,11 +1473,11 @@ class DictView(QMainWindow):
         if count:
             current_tab = self.tabs.currentWidget()
             if current_tab.entry is None:
-                return None            
+                return None
             volume_id = current_tab.entry.volume_id
             volume = self.dictionaries.volume(volume_id)
             if not volume:
-                return None            
+                return None
             article_title = current_tab.entry.title
             article_url = volume.article_url
             if article_url:
@@ -2020,6 +2030,13 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             page.triggerAction(QWebPage.Copy)
             page.currentFrame().evaluateJavaScript("document.getSelection().empty();")
 
+
+    def lookup_selection(self):
+        current_tab = self.tabs.currentWidget()
+        if current_tab:
+            selection = current_tab.selectedText()
+            if selection:
+                self.set_word_input(selection)
 
 def main(args, debug=False, dev_extras=False):
 
