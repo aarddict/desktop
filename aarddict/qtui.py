@@ -526,18 +526,18 @@ class LineEditWithClear(QLineEdit):
         box = QHBoxLayout()
         btn_clear = QPushButton()
         btn_clear.clicked.connect(clear)
-        btn_clear.setIcon(icons['edit-clear'])
-        btn_clear.setToolTip(_('Clear'))
-        btn_clear.setStyleSheet('border-style: none; margin-right: 4px;')
+        btn_clear.setIcon(icons['edit-clear'])        
+        btn_clear.setToolTip(_('Clear'))        
+        self.setStyleSheet('QPushButton {border: none;}')
         btn_clear.setCursor(Qt.ArrowCursor)
         self.btn_clear = btn_clear
         box.addStretch(1)
         box.addWidget(btn_clear, 0)
         box.setSpacing(0)
-        box.setContentsMargins(0,0,0,0)
+        box.setContentsMargins(0, 0, 2, 0)
         s = btn_clear.sizeHint()
         self.setLayout(box)
-        self.setTextMargins(0, 4, s.width(), 4)
+        self.setTextMargins(0, 4, s.width()+2, 4)
 
     def setClearShortcut(self, shortcut):
         self.btn_clear.setShortcut(shortcut)
