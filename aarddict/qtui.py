@@ -481,6 +481,7 @@ class DictOpenThread(QThread):
     def stop(self):
         self.stop_requested = True
 
+
 class VolumeVerifyThread(QThread):
 
     verified = pyqtSignal(bool)
@@ -511,23 +512,23 @@ class VolumeVerifyThread(QThread):
 
 class LineEditWithClear(QLineEdit):
 
-    arrow_down = pyqtSignal()
-    arrow_up = pyqtSignal()
     cleared = pyqtSignal()
 
-    def __init__(self, parent=None):
+    pass_keys = (QKeySequence.MoveToNextLine,
+                 QKeySequence.MoveToPreviousLine,
+                 QKeySequence.MoveToNextPage,
+                 QKeySequence.MoveToPreviousPage,
+                 QKeySequence.MoveToStartOfDocument,
+                 QKeySequence.MoveToEndOfDocument)
+
+    def __init__(self, pass_target=None, parent=None):
         QLineEdit.__init__(self, parent)
 
-        def clear():
-            self.setFocus()
-            self.setText('')
-            self.cleared.emit()
-        
         box = QHBoxLayout()
         btn_clear = QPushButton()
-        btn_clear.clicked.connect(clear)
-        btn_clear.setIcon(icons['edit-clear'])        
-        btn_clear.setToolTip(_('Clear'))        
+        btn_clear.clicked.connect(self.clear)
+        btn_clear.setIcon(icons['edit-clear'])
+        btn_clear.setToolTip(_('Clear'))
         self.setStyleSheet('QPushButton {border: none;}')
         btn_clear.setCursor(Qt.ArrowCursor)
         self.btn_clear = btn_clear
@@ -539,45 +540,37 @@ class LineEditWithClear(QLineEdit):
         self.setLayout(box)
         self.setTextMargins(0, 4, s.width()+2, 4)
 
+        self.pass_target = pass_target
+
+    def _real_pass_target(self):
+        if callable(self.pass_target):
+            return self.pass_target()
+        else:
+            return self.pass_target
+
+    def keyReleaseEvent (self, event):
+        if any(event.matches(k) for k in self.pass_keys):
+            target = self._real_pass_target()
+            if target:
+                target.keyReleaseEvent(event)
+                return
+        QLineEdit.keyReleaseEvent(self, event)
+
+    def keyPressEvent (self, event):
+        if any(event.matches(k) for k in self.pass_keys):
+            target = self._real_pass_target()
+            if target:
+                target.keyPressEvent(event)
+                return
+        QLineEdit.keyPressEvent(self, event)
+
     def setClearShortcut(self, shortcut):
         self.btn_clear.setShortcut(shortcut)
 
-    def keyPressEvent (self, event):
-        QLineEdit.keyPressEvent(self, event)
-        if event.matches(QKeySequence.MoveToNextLine):
-            self.arrow_down.emit()
-        elif event.matches(QKeySequence.MoveToPreviousLine):
-            self.arrow_up.emit()                        
-
-
-class FindInput(LineEditWithClear):
-
-    passthrough_keys = (QKeySequence.MoveToNextLine,
-                        QKeySequence.MoveToPreviousLine,
-                        QKeySequence.MoveToNextPage,
-                        QKeySequence.MoveToPreviousPage,
-                        QKeySequence.MoveToStartOfDocument,
-                        QKeySequence.MoveToEndOfDocument)
-
-    def __init__(self, tabs, parent=None):
-        LineEditWithClear.__init__(self, parent)
-        self.tabs = tabs
-
-    def keyReleaseEvent (self, event):
-        if any(event.matches(k) for k in self.passthrough_keys):
-            current_tab = self.tabs.currentWidget()
-            if current_tab:
-                current_tab.keyReleaseEvent(event)
-        else:
-            LineEditWithClear.keyReleaseEvent(self, event)
-
-    def keyPressEvent (self, event):
-        if any(event.matches(k) for k in self.passthrough_keys):
-            current_tab = self.tabs.currentWidget()
-            if current_tab:
-                current_tab.keyPressEvent(event)
-        else:
-            LineEditWithClear.keyPressEvent(self, event)
+    def clear(self):
+        self.setFocus()
+        self.setText('')
+        self.cleared.emit()
 
 
 class FindWidget(QToolBar):
@@ -585,8 +578,9 @@ class FindWidget(QToolBar):
     def __init__(self, tabs, parent=None):
         QToolBar.__init__(self, _('&Find'), parent)
         self.tabs = tabs
-        self.find_input = FindInput(tabs, self)
+        self.find_input = LineEditWithClear(self.tabs.currentWidget)
         self.find_input.textEdited.connect(self.find_in_article)
+
         lbl_find = QLabel(_('Find:'))
         lbl_find.setStyleSheet('padding-right: 2px;')
         find_action_close = QAction(icons['window-close'], '', self,
@@ -633,6 +627,7 @@ class FindWidget(QToolBar):
                 self.find_in_article(forward=False)
         else:
             QToolBar.keyPressEvent(self, event)
+
 
 class SingleRowItemSelectionModel(QItemSelectionModel):
 
@@ -815,15 +810,15 @@ class DictView(QMainWindow):
         action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
         action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
 
-        self.word_input = LineEditWithClear()
+        self.word_completion = QListWidget()
+
+        self.word_input = LineEditWithClear(self.word_completion)
         self.word_input.setClearShortcut(_('Ctrl+N'))
         self.word_input.textEdited.connect(self.word_input_text_edited)
-        self.word_input.cleared.connect(functools.partial(self.schedule, 
+        self.word_input.cleared.connect(functools.partial(self.schedule,
                                                           self.update_word_completion, 0))
-        self.word_input.arrow_down.connect(self.select_next_word)
-        self.word_input.arrow_up.connect(self.select_prev_word)
-
-        self.word_completion = QListWidget()
+        # self.word_input.arrow_down.connect(self.select_next_word)
+        # self.word_input.arrow_up.connect(self.select_prev_word)
 
         def focus_current_tab():
             current_tab = self.tabs.currentWidget()
@@ -2064,12 +2059,12 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
     def lookup_selected_words(self):
         current_tab = self.tabs.currentWidget()
         if current_tab:
-            page = current_tab.page()            
+            page = current_tab.page()
             page.triggerAction(QWebPage.SelectNextWord)
             selection = current_tab.selectedText()
             if selection:
                 self.set_word_input(selection)
-        
+
 
 def main(args, debug=False, dev_extras=False):
 
