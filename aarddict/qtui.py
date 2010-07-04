@@ -591,13 +591,20 @@ class FindWidget(QToolBar):
         lbl_find.setStyleSheet('padding-right: 2px;')
         find_action_close = QAction(icons['window-close'], '', self,
                                     triggered=self.hide)
+        find_action_close.setToolTip(_('Close Find bar'))
         self.addAction(find_action_close)
         self.addWidget(lbl_find)
         self.addWidget(self.find_input)
-        self.addAction(QAction(icons['go-previous'], '', self,
-                               triggered=lambda: self.find_in_article(forward=False)))
-        self.addAction(QAction(icons['go-next'], '', self,
-                               triggered=lambda: self.find_in_article(forward=True)))
+        find_action_prev = QAction(icons['go-previous'], '', self,
+                                   triggered=lambda: self.find_in_article(forward=False))
+        find_action_prev.setToolTip(_('Find the previous occurence of the phrase'))
+        self.addAction(find_action_prev)
+
+        find_action_next = QAction(icons['go-next'], '', self,
+                               triggered=lambda: self.find_in_article(forward=True))
+        find_action_next.setToolTip(_('Find the next occurence of the phrase'))
+        self.addAction(find_action_next)
+
         self.cb_find_match_case = QCheckBox(_('&Match Case'))
         self.addWidget(self.cb_find_match_case)
 
