@@ -509,21 +509,28 @@ class VolumeVerifyThread(QThread):
         self.stop_requested = True
 
 
-class WordInput(QLineEdit):
+class LineEditWithClear(QLineEdit):
 
-    word_input_down = pyqtSignal()
-    word_input_up = pyqtSignal()
-    word_input_clear = pyqtSignal()
+    arrow_down = pyqtSignal()
+    arrow_up = pyqtSignal()
+    cleared = pyqtSignal()
 
     def __init__(self, parent=None):
         QLineEdit.__init__(self, parent)
+
+        def clear():
+            self.setFocus()
+            self.setText('')
+            self.cleared.emit()
+        
         box = QHBoxLayout()
         btn_clear = QPushButton()
-        btn_clear.clicked.connect(self.word_input_clear.emit)
+        btn_clear.clicked.connect(clear)
         btn_clear.setIcon(icons['edit-clear'])
-        btn_clear.setShortcut(_('Ctrl+N'))
-        btn_clear.setStyleSheet('border-style: none;')
+        btn_clear.setToolTip(_('Clear'))
+        btn_clear.setStyleSheet('border-style: none; margin-right: 4px;')
         btn_clear.setCursor(Qt.ArrowCursor)
+        self.btn_clear = btn_clear
         box.addStretch(1)
         box.addWidget(btn_clear, 0)
         box.setSpacing(0)
@@ -532,14 +539,18 @@ class WordInput(QLineEdit):
         self.setLayout(box)
         self.setTextMargins(0, 4, s.width(), 4)
 
+    def setClearShortcut(self, shortcut):
+        self.btn_clear.setShortcut(shortcut)
+
     def keyPressEvent (self, event):
         QLineEdit.keyPressEvent(self, event)
         if event.matches(QKeySequence.MoveToNextLine):
-            self.word_input_down.emit()
+            self.arrow_down.emit()
         elif event.matches(QKeySequence.MoveToPreviousLine):
-            self.word_input_up.emit()
+            self.arrow_up.emit()                        
 
-class FindInput(QLineEdit):
+
+class FindInput(LineEditWithClear):
 
     passthrough_keys = (QKeySequence.MoveToNextLine,
                         QKeySequence.MoveToPreviousLine,
@@ -549,7 +560,7 @@ class FindInput(QLineEdit):
                         QKeySequence.MoveToEndOfDocument)
 
     def __init__(self, tabs, parent=None):
-        QLineEdit.__init__(self, parent)
+        LineEditWithClear.__init__(self, parent)
         self.tabs = tabs
 
     def keyReleaseEvent (self, event):
@@ -558,7 +569,7 @@ class FindInput(QLineEdit):
             if current_tab:
                 current_tab.keyReleaseEvent(event)
         else:
-            QLineEdit.keyReleaseEvent(self, event)
+            LineEditWithClear.keyReleaseEvent(self, event)
 
     def keyPressEvent (self, event):
         if any(event.matches(k) for k in self.passthrough_keys):
@@ -566,7 +577,7 @@ class FindInput(QLineEdit):
             if current_tab:
                 current_tab.keyPressEvent(event)
         else:
-            QLineEdit.keyPressEvent(self, event)
+            LineEditWithClear.keyPressEvent(self, event)
 
 
 class FindWidget(QToolBar):
@@ -797,15 +808,13 @@ class DictView(QMainWindow):
         action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
         action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
 
-        def clear_word_input():
-            self.word_input.setFocus()
-            self.set_word_input('')
-
-        self.word_input = WordInput()
+        self.word_input = LineEditWithClear()
+        self.word_input.setClearShortcut(_('Ctrl+N'))
         self.word_input.textEdited.connect(self.word_input_text_edited)
-        self.word_input.word_input_down.connect(self.select_next_word)
-        self.word_input.word_input_up.connect(self.select_prev_word)
-        self.word_input.word_input_clear.connect(clear_word_input)
+        self.word_input.cleared.connect(functools.partial(self.schedule, 
+                                                          self.update_word_completion, 0))
+        self.word_input.arrow_down.connect(self.select_next_word)
+        self.word_input.arrow_up.connect(self.select_prev_word)
 
         self.word_completion = QListWidget()
 
@@ -1276,7 +1285,7 @@ class DictView(QMainWindow):
         self.scheduled_func = func
         self.timer.start(delay)
 
-    def word_input_text_edited(self, word):
+    def word_input_text_edited(self, word=None):
         self.schedule(self.update_word_completion)
 
     def update_word_completion(self):
