@@ -1294,7 +1294,7 @@ class DictView(QMainWindow):
         word = self.word_input.text()
         self.word_input.setFocus()
         self.word_completion.clear()
-        self.word_completion.addItem('Loading...')
+        self.word_completion.addItem(_('Loading...'))
         if self.current_lookup_thread:
             self.current_lookup_thread.stop()
             self.current_lookup_thread = None
@@ -1390,7 +1390,7 @@ class DictView(QMainWindow):
                 view.action_lookup_selection = self.action_lookup_selection
                 view.setPage(WebPage(view))
                 volume = self.dictionaries.volume(entry.volume_id)
-                view.page().currentFrame().setHtml("Loading...", QUrl(""))
+                view.page().currentFrame().setHtml(_('Loading...'), QUrl(''))
                 view.setZoomFactor(self.zoom_factor)
 
                 dict_title = format_title(volume)
