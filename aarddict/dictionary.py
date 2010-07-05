@@ -32,18 +32,15 @@ from PyICU import Locale, Collator
 PRIMARY = Collator.PRIMARY
 SECONDARY = Collator.SECONDARY
 TERTIARY = Collator.TERTIARY
-QUATERNARY = Collator.QUATERNARY
-IDENTICAL = Collator.IDENTICAL
 
 from hashlib import sha1
 
-compression = (zlib.compress,
-               bz2.compress)
+compression = (zlib.compress, bz2.compress)
 
-decompression = (zlib.decompress,
-                 bz2.decompress)
+decompression = (zlib.decompress, bz2.decompress)
 
 max_redirect_levels = 5
+
 
 def format_title(d, with_vol_num=True):
     parts = [d.title]
@@ -58,6 +55,7 @@ def format_title(d, with_vol_num=True):
         parts.append(u' Vol. %s' % d.volume)
     return u''.join(parts)
 
+
 def calcsha1(file_name, offset, chunksize=100000):
     with open(file_name, 'rb') as f:
         f.seek(offset)
@@ -68,11 +66,12 @@ def calcsha1(file_name, offset, chunksize=100000):
             result.update(s)
             yield (f.tell(), result)
 
+
 def decompress(s):
     decompressed = s
-    for decompress in decompression:
+    for decomp in decompression:
         try:
-            decompressed = decompress(s)
+            decompressed = decomp(s)
         except:
             pass
         else:
@@ -88,8 +87,7 @@ def _collators():
         return c
 
     return dict([(strength, create_collator(strength).getCollationKey)
-                 for strength in (PRIMARY, SECONDARY, TERTIARY,
-                                  QUATERNARY, IDENTICAL)])
+                 for strength in (PRIMARY, SECONDARY, TERTIARY)])
 
 _collators = _collators()
 
@@ -149,10 +147,6 @@ def cmp_word_exact(word1, word2, strength):
     >>> cmp_words_exact('á'.decode('utf8'), 'Á'.decode('utf8'), TERTIARY)
     -1
 
-    >>> cmp_words_exact('á'.decode('utf8'), 'Á'.decode('utf8'), QUATERNARY)
-    -1
-
-
     >>> cmp_words_exact('ábc'.decode('utf8'), u'a', PRIMARY)
     1
 
@@ -166,9 +160,6 @@ def cmp_word_exact(word1, word2, strength):
     1
 
     >>> cmp_words_exact('ábc'.decode('utf8'), 'Á'.decode('utf8'), TERTIARY)
-    1
-
-    >>> cmp_words_exact('ábc'.decode('utf8'), 'Á'.decode('utf8'), QUATERNARY)
     1
 
     """
