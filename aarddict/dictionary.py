@@ -384,7 +384,7 @@ HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
                ('version',                  '>H'), #format version, a number, current value 1
                ('uuid',                     '>16s'), # dictionary UUID, shared by all volumes of the same dictionary
                ('volume',                   '>H'), # volume number of this this file
-               ('of',                       '>H'), # total number of volumes for the dictionary
+               ('total_volumes',            '>H'), # total number of volumes for the dictionary
                ('meta_length',              '>L'), #length of metadata compressed string
                ('index_count',              '>L'), #number of words in the dictionary
                ('article_offset',           '>L'), #article offset
@@ -393,7 +393,6 @@ HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
                ('article_length_format',    '>2s'), ##'>L' - article length format
                )
 
-
 def spec_len(spec):
     result = 0
     for name, fmt in spec:
@@ -401,96 +400,78 @@ def spec_len(spec):
     return result
 
 
-class Header(object):
-
-    def __init__(self, file):
-        for name, fmt in HEADER_SPEC:
-            s = file.read(struct.calcsize(fmt))
-            value, = struct.unpack(fmt, s)
-            setattr(self, name, value)
-
-    index1_offset = property(lambda self: spec_len(HEADER_SPEC) + self.meta_length)
-    index2_offset = property(lambda self: self.index1_offset + self.index_count*struct.calcsize(self.index1_item_format))
-
-
 class Volume(object):
 
     def __init__(self, file_or_filename):
-        if isinstance(file_or_filename, file):
-            self.file_name = file_or_filename.name
-            close_on_error = False
-            self.file = file_or_filename
-        else:
-            self.file_name = file_or_filename
-            close_on_error = True
-            self.file = open(file_or_filename, "rb")
 
+        self.file, self.file_name, close_on_error = self._open(file_or_filename)
+
+        header = self._read_header()
         try:
-            header = Header(self.file)
+            self._check_format(header)
         except:
-            logging.exception('Failed to read dictionary header from %s', self.file_name)
-            raise DictFormatError(self.file_name,
-                                  "Not a recognized aarddict dictionary file")
-
-        if header.signature != 'aard':
-            if close_on_error and self.file:
+            if close_on_error:
                 self.file.close()
-            raise DictFormatError(self.file_name,
-                                  "Not a recognized aarddict dictionary file")
+            raise
+        
+        self.index_count = header['index_count']
+        self.volume_id = self.sha1sum = header['sha1sum']
+        self.uuid = UUID(bytes=header['uuid'])
+        self.volume = header['volume']
+        self.total_volumes = header['total_volumes']
 
-        if header.version != 1:
-            if close_on_error and self.file:
-                self.file.close()
-            raise DictFormatError(self.file_name,
-                                  "File format version is not compatible with this viewer")
+        article_offset = header['article_offset']
+        index1_offset = spec_len(HEADER_SPEC) + header['meta_length']
+        index1_item_format = header['index1_item_format']
+        index2_offset = index1_offset + self.index_count*struct.calcsize(index1_item_format)
+        key_length_format = header['key_length_format']
+        article_length_format = header['article_length_format']
 
-        self.index_count = header.index_count
-        self.volume_id = self.sha1sum = header.sha1sum
-        self.uuid = UUID(bytes=header.uuid)
-        self.volume = header.volume
-        self.total_volumes = header.of
+        self.metadata = meta = self._read_meta(header['meta_length'])
 
-        raw_meta = self.file.read(header.meta_length)
-        self.metadata = simplejson.loads(decompress(raw_meta))
+        self.article_count = meta.get('article_count', self.index_count)
 
-        self.article_count = self.metadata.get('article_count',
-                                               self.index_count)
-
-        self.index_language = self.metadata.get("index_language", "")
+        self.index_language = meta.get('index_language', '')
         if isinstance(self.index_language, unicode):
             self.index_language = self.index_language.encode('utf8')
-
         locale_index_language = Locale(self.index_language).getLanguage()
         if locale_index_language:
             self.index_language = locale_index_language
 
-        self.article_language = self.metadata.get("article_language", "")
+        self.article_language = meta.get('article_language', '')
         if isinstance(self.article_language, unicode):
             self.article_language = self.index_language.encode('utf8')
-
         locale_article_language = Locale(self.index_language).getLanguage()
         if locale_article_language:
             self.article_language = locale_article_language
         
+        self.title = meta.get('title', u'')
+        self.version = meta.get('version', u'')
+        self.description = meta.get('description', u'')
+        self.copyright = meta.get('copyright', u'')
+        self.license = meta.get('license', u'')
+        self.source = meta.get('source', u'')
+        self.language_links = sorted(meta.get('language_links', []))        
+
         f = open(self.file_name, 'r+b')
         self.fmap = mmap.mmap(f.fileno(), 
-                              header.article_offset, 
+                              article_offset, 
                               access=mmap.ACCESS_READ)
 
         read_index_item = partial(_m_read_index_item,
                                   self.fmap,
-                                  header.index1_offset,
-                                  header.index1_item_format)
+                                  index1_offset,
+                                  index1_item_format)
 
         read_key = partial(_m_read_key,
                            self.fmap,
-                           header.index2_offset,
-                           header.key_length_format)
+                           index2_offset,
+                           key_length_format)
 
         read_article = partial(_read_article,
                                self.file,
-                               header.article_offset,
-                               header.article_length_format)
+                               article_offset,
+                               article_length_format)
 
         self.words = CacheList(WordList(self.index_count,
                                         read_index_item,
@@ -505,14 +486,45 @@ class Volume(object):
         self._interwiki_map = None
         self._article_url = None
 
-    title = property(lambda self: self.metadata.get("title", ""))
-    version = property(lambda self: self.metadata.get("version", ""))
-    description = property(lambda self: self.metadata.get("description", ""))
-    copyright = property(lambda self: self.metadata.get("copyright", ""))
-    license = property(lambda self: self.metadata.get("license", ""))
-    source = property(lambda self: self.metadata.get("source", ""))
-    language_links = property(lambda self: sorted(self.metadata.get("language_links", [])))
+    def _open(self, file_or_filename):
+        if isinstance(file_or_filename, file):
+            fname = file_or_filename.name
+            close_on_error = False
+            f = file_or_filename
+        else:
+            fname = file_or_filename
+            close_on_error = True
+            f = open(file_or_filename, 'rb')
+        return f, fname, close_on_error
 
+    def _read_header(self):
+        header = {}
+        try:
+            self.file.seek(0)
+            for name, fmt in HEADER_SPEC:
+                s = self.file.read(struct.calcsize(fmt))
+                value, = struct.unpack(fmt, s)
+                header[name] = value
+        except:
+            logging.exception('Failed to read dictionary header from %s',
+                              self.file_name)
+            raise DictFormatError(self.file_name,
+                                  'Not a recognized aarddict dictionary file')
+        else:
+            return header
+
+    def _check_format(self, header):
+        if header['signature'] != 'aard':
+            raise DictFormatError(self.file_name,
+                                  'Not a recognized aarddict dictionary file')
+        if header['version'] != 1:
+            raise DictFormatError(self.file_name,
+                                  'File format version is not compatible with this viewer')        
+
+    def _read_meta(self, meta_length):
+        raw_meta = self.file.read(meta_length)
+        return simplejson.loads(decompress(raw_meta))
+        
     def __len__(self):
         return self.index_count
 
@@ -520,7 +532,7 @@ class Volume(object):
         return self.lookup(s, TERTIARY, cmp_word_exact)
 
     def __contains__(self, s):
-        for item in self[s]:
+        for _ in self[s]:
             return True
         return False
 
