@@ -356,6 +356,7 @@ class WordLookupThread(QThread):
     def run(self):
         wordstr = unicode(self.word)
         log.debug("Looking up %r", wordstr)
+        t0 = time.time()
         entries = []
         dict_access_lock.lock()
         try:
@@ -374,6 +375,7 @@ class WordLookupThread(QThread):
         else:
             self.done.emit(self.word, entries)
         finally:
+            log.debug('Looked up %r in %ss', wordstr, time.time() - t0)
             dict_access_lock.unlock()
 
     def stop(self):

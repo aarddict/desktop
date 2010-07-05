@@ -24,6 +24,7 @@ from bisect import bisect_left
 # from itertools import islice, chain
 from collections import defaultdict, deque
 from uuid import UUID
+import mmap
 
 import simplejson
 from PyICU import Locale, Collator
@@ -201,28 +202,31 @@ def split_word(word):
     lookupword = parts[0] if (parts[0] or section) else word
     return lookupword, section
 
+def _m_readstr(f, pos, len_fmt):
+    size = struct.calcsize(len_fmt)
+    s = f[pos:pos+size]
+    strlen = struct.unpack(len_fmt, s)[0]
+    return f[pos+size:pos+size+strlen]
 
-def _read(file, pos, fmt):
-    file.seek(pos)
-    s = file.read(struct.calcsize(fmt))
+def _m_read_key(f, offset, len_fmt, pos):
+    return _m_readstr(f, offset + pos, len_fmt)
+
+def _m_read_index_item(f, offset, itemfmt, itemno):
+    size = struct.calcsize(itemfmt)
+    pos = offset + itemno * size
+    return struct.unpack(itemfmt, f[pos:pos+size])
+
+def _read(f, pos, fmt):
+    f.seek(pos)
+    s = f.read(struct.calcsize(fmt))
     return struct.unpack(fmt, s)
 
+def _readstr(f, pos, len_fmt):
+    strlen, = _read(f, pos, len_fmt)
+    return f.read(strlen)
 
-def _readstr(file, pos, len_fmt):
-    strlen, = _read(file, pos, len_fmt)
-    return file.read(strlen)
-
-
-def _read_index_item(file, offset, itemfmt, itemno):
-    return _read(file, offset + itemno * struct.calcsize(itemfmt), itemfmt)
-
-
-def _read_key(file, offset, len_fmt, pos):
-    return _readstr(file, offset + pos, len_fmt)
-
-
-def _read_article(file, offset, len_fmt, pos):
-    compressed_article = _readstr(file, offset + pos, len_fmt)
+def _read_article(f, offset, len_fmt, pos):    
+    compressed_article = _readstr(f, offset + pos, len_fmt)
     return decompress(compressed_article)
 
 
@@ -467,30 +471,39 @@ class Volume(object):
         locale_article_language = Locale(self.index_language).getLanguage()
         if locale_article_language:
             self.article_language = locale_article_language
+        
+        f = open(self.file_name, 'r+b')
+        self.fmap = mmap.mmap(f.fileno(), 
+                              header.article_offset, 
+                              access=mmap.ACCESS_READ)
 
-        read_index_item = partial(_read_index_item,
-                                  self.file,
+        read_index_item = partial(_m_read_index_item,
+                                  self.fmap,
                                   header.index1_offset,
                                   header.index1_item_format)
-        read_key = partial(_read_key,
-                           self.file,
+
+        read_key = partial(_m_read_key,
+                           self.fmap,
                            header.index2_offset,
                            header.key_length_format)
+
         read_article = partial(_read_article,
                                self.file,
                                header.article_offset,
                                header.article_length_format)
+
         self.words = CacheList(WordList(self.index_count,
                                         read_index_item,
                                         read_key),
                                name='%s (w)' % format_title(self))
+
         self.articles = ArticleList(self.index_count,
                                     read_index_item,
                                     read_key,
                                     read_article)
 
         self._interwiki_map = None
-        self._article_url = None        
+        self._article_url = None
 
     title = property(lambda self: self.metadata.get("title", ""))
     version = property(lambda self: self.metadata.get("version", ""))
@@ -598,10 +611,10 @@ class Volume(object):
                 except KeyError:
                     logging.debug('Site info for %s is incomplete', self)
                 else:
-                    self._article_url = ''.join((server, articlepath))            
+                    self._article_url = ''.join((server, articlepath))
             else:
                 logging.debug('No site info in %r', self)
-                if 'lang' in self.metadata and 'sitelang' in self.metadata:                
+                if 'lang' in self.metadata and 'sitelang' in self.metadata:
                     self._article_url = u'http://%s.wikipedia.org/wiki/$1' % self.metadata['lang']
                     logging.debug('Using fallback url based on lang: %r', self._article_url)
         return self._article_url
@@ -619,6 +632,7 @@ class Volume(object):
             raise VerifyError()
 
     def close(self):
+        self.fmap.close()
         self.file.close()
 
 
