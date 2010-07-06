@@ -14,14 +14,12 @@
 # Copyright (C) 2008-2009  Jeremy Mortis, Igor Tkach
 
 from __future__ import with_statement
-import struct
 import logging
 import zlib
 import bz2
 import os
-from functools import partial
 from bisect import bisect_left
-# from itertools import islice, chain
+from struct import calcsize, unpack
 from collections import defaultdict, deque
 from uuid import UUID
 import mmap
@@ -193,33 +191,6 @@ def split_word(word):
     lookupword = parts[0] if (parts[0] or section) else word
     return lookupword, section
 
-def _m_readstr(f, pos, len_fmt):
-    size = struct.calcsize(len_fmt)
-    s = f[pos:pos+size]
-    strlen = struct.unpack(len_fmt, s)[0]
-    return f[pos+size:pos+size+strlen]
-
-def _m_read_key(f, offset, len_fmt, pos):
-    return _m_readstr(f, offset + pos, len_fmt)
-
-def _m_read_index_item(f, offset, itemfmt, itemno):
-    size = struct.calcsize(itemfmt)
-    pos = offset + itemno * size
-    return struct.unpack(itemfmt, f[pos:pos+size])
-
-def _read(f, pos, fmt):
-    f.seek(pos)
-    s = f.read(struct.calcsize(fmt))
-    return struct.unpack(fmt, s)
-
-def _readstr(f, pos, len_fmt):
-    strlen, = _read(f, pos, len_fmt)
-    return f.read(strlen)
-
-def _read_article(f, offset, len_fmt, pos):    
-    compressed_article = _readstr(f, offset + pos, len_fmt)
-    return decompress(compressed_article)
-
 
 class CacheList(object):
 
@@ -387,7 +358,7 @@ HEADER_SPEC = (('signature',                '>4s'), # string 'aard'
 def spec_len(spec):
     result = 0
     for name, fmt in spec:
-        result += struct.calcsize(fmt)
+        result += calcsize(fmt)
     return result
 
 
@@ -404,7 +375,7 @@ class Volume(object):
             if close_on_error:
                 self.file.close()
             raise
-        
+
         self.index_count = header['index_count']
         self.volume_id = self.sha1sum = header['sha1sum']
         self.uuid = UUID(bytes=header['uuid'])
@@ -414,7 +385,7 @@ class Volume(object):
         article_offset = header['article_offset']
         index1_offset = spec_len(HEADER_SPEC) + header['meta_length']
         index1_item_format = header['index1_item_format']
-        index2_offset = index1_offset + self.index_count*struct.calcsize(index1_item_format)
+        index2_offset = index1_offset + self.index_count*calcsize(index1_item_format)
         key_length_format = header['key_length_format']
         article_length_format = header['article_length_format']
 
@@ -435,34 +406,40 @@ class Volume(object):
         locale_article_language = Locale(self.index_language).getLanguage()
         if locale_article_language:
             self.article_language = locale_article_language
-        
+
         self.title = meta.get('title', u'')
         self.version = meta.get('version', u'')
         self.description = meta.get('description', u'')
         self.copyright = meta.get('copyright', u'')
         self.license = meta.get('license', u'')
         self.source = meta.get('source', u'')
-        self.language_links = sorted(meta.get('language_links', []))        
+        self.language_links = sorted(meta.get('language_links', []))
 
         f = open(self.file_name, 'r+b')
-        self.fmap = mmap.mmap(f.fileno(), 
-                              article_offset, 
+        self.fmap = mmap.mmap(f.fileno(),
+                              article_offset,
                               access=mmap.ACCESS_READ)
 
-        read_index_item = partial(_m_read_index_item,
-                                  self.fmap,
-                                  index1_offset,
-                                  index1_item_format)
+        ii_structsize = calcsize(index1_item_format)
+        def read_index_item(itemno):
+            pos = index1_offset + itemno * ii_structsize
+            return unpack(index1_item_format, self.fmap[pos:pos+ii_structsize])
 
-        read_key = partial(_m_read_key,
-                           self.fmap,
-                           index2_offset,
-                           key_length_format)
+        klen_structsize = calcsize(key_length_format)
+        def read_key(pos):
+            realpos = index2_offset + pos
+            start = realpos+klen_structsize
+            s = self.fmap[realpos:start]
+            strlen = unpack(key_length_format, s)[0]
+            return self.fmap[start:start+strlen]
 
-        read_article = partial(_read_article,
-                               self.file,
-                               article_offset,
-                               article_length_format)
+        alen_structsize = calcsize(article_length_format)
+        def read_article(pos):
+            self.file.seek(article_offset + pos)
+            s = self.file.read(alen_structsize)
+            strlen = unpack(article_length_format, s)[0]
+            compressed_article = self.file.read(strlen)
+            return decompress(compressed_article)
 
         self.words = CacheList(WordList(self.index_count,
                                         read_index_item,
@@ -493,8 +470,8 @@ class Volume(object):
         try:
             self.file.seek(0)
             for name, fmt in HEADER_SPEC:
-                s = self.file.read(struct.calcsize(fmt))
-                value, = struct.unpack(fmt, s)
+                s = self.file.read(calcsize(fmt))
+                value, = unpack(fmt, s)
                 header[name] = value
         except:
             logging.exception('Failed to read dictionary header from %s',
@@ -510,12 +487,12 @@ class Volume(object):
                                   'Not a recognized aarddict dictionary file')
         if header['version'] != 1:
             raise DictFormatError(self.file_name,
-                                  'File format version is not compatible with this viewer')        
+                                  'File format version is not compatible with this viewer')
 
     def _read_meta(self, meta_length):
         raw_meta = self.file.read(meta_length)
         return simplejson.loads(decompress(raw_meta))
-        
+
     def __len__(self):
         return self.index_count
 
