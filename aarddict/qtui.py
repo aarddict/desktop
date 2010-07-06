@@ -522,18 +522,19 @@ class LineEditWithClear(QLineEdit):
         btn_clear = QPushButton()
         btn_clear.clicked.connect(self.clear)
         btn_clear.setIcon(icons['edit-clear'])
-        btn_clear.setToolTip(_('Clear'))
-        self.setStyleSheet('QPushButton {border: none;}')
+        btn_clear.setToolTip(_('Clear'))        
         btn_clear.setCursor(Qt.ArrowCursor)
         self.btn_clear = btn_clear
         box.addStretch(1)
         box.addWidget(btn_clear, 0)
         box.setSpacing(0)
-        box.setContentsMargins(0, 0, 2, 0)
-        s = btn_clear.sizeHint()
+        box.setContentsMargins(0, 0, 0, 0)
+        self.setStyleSheet('QPushButton {border: none;}')
+        self.setMinimumHeight(btn_clear.sizeHint().height())
         self.setLayout(box)
-        self.setTextMargins(0, 4, s.width()+2, 4)
-
+        left, top, right, bottom = self.getTextMargins()
+        right = max(right, btn_clear.iconSize().width())
+        self.setTextMargins(left, top, right, bottom)
         self.pass_target = pass_target
 
     def _real_pass_target(self):
