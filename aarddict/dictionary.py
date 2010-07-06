@@ -364,17 +364,14 @@ def spec_len(spec):
 
 class Volume(object):
 
-    def __init__(self, file_or_filename):
+    def __init__(self, file_name):
 
-        self.file, self.file_name, close_on_error = self._open(file_or_filename)
+        self.file_name = file_name
 
-        header = self._read_header()
-        try:
+        with open(self.file_name, 'rb') as f:
+            header = self._read_header(f)
             self._check_format(header)
-        except:
-            if close_on_error:
-                self.file.close()
-            raise
+            self.metadata = meta = self._read_meta(f, header['meta_length'])
 
         self.index_count = header['index_count']
         self.volume_id = self.sha1sum = header['sha1sum']
@@ -388,8 +385,6 @@ class Volume(object):
         index2_offset = index1_offset + self.index_count*calcsize(index1_item_format)
         key_length_format = header['key_length_format']
         article_length_format = header['article_length_format']
-
-        self.metadata = meta = self._read_meta(header['meta_length'])
 
         self.article_count = meta.get('article_count', self.index_count)
 
@@ -435,11 +430,12 @@ class Volume(object):
 
         alen_structsize = calcsize(article_length_format)
         def read_article(pos):
-            self.file.seek(article_offset + pos)
-            s = self.file.read(alen_structsize)
-            strlen = unpack(article_length_format, s)[0]
-            compressed_article = self.file.read(strlen)
-            return decompress(compressed_article)
+            with open(self.file_name, 'rb') as f:
+                f.seek(article_offset + pos)
+                s = f.read(alen_structsize)
+                strlen = unpack(article_length_format, s)[0]
+                compressed_article = f.read(strlen)
+                return decompress(compressed_article)
 
         self.words = CacheList(WordList(self.index_count,
                                         read_index_item,
@@ -454,23 +450,11 @@ class Volume(object):
         self._interwiki_map = None
         self._article_url = None
 
-    def _open(self, file_or_filename):
-        if isinstance(file_or_filename, file):
-            fname = file_or_filename.name
-            close_on_error = False
-            f = file_or_filename
-        else:
-            fname = file_or_filename
-            close_on_error = True
-            f = open(file_or_filename, 'rb')
-        return f, fname, close_on_error
-
-    def _read_header(self):
+    def _read_header(self, f):
         header = {}
         try:
-            self.file.seek(0)
             for name, fmt in HEADER_SPEC:
-                s = self.file.read(calcsize(fmt))
+                s = f.read(calcsize(fmt))
                 value, = unpack(fmt, s)
                 header[name] = value
         except:
@@ -489,8 +473,8 @@ class Volume(object):
             raise DictFormatError(self.file_name,
                                   'File format version is not compatible with this viewer')
 
-    def _read_meta(self, meta_length):
-        raw_meta = self.file.read(meta_length)
+    def _read_meta(self, f, meta_length):
+        raw_meta = f.read(meta_length)
         return simplejson.loads(decompress(raw_meta))
 
     def __len__(self):
@@ -613,7 +597,6 @@ class Volume(object):
 
     def close(self):
         self.fmap.close()
-        self.file.close()
 
 
 class DictFormatError(Exception):

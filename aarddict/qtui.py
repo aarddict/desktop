@@ -15,7 +15,7 @@ from ConfigParser import ConfigParser
 from uuid import UUID
 from collections import defaultdict
 
-from PyQt4.QtCore import (QObject, Qt, QThread, QMutex,
+from PyQt4.QtCore import (QObject, Qt, QThread, 
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
                           QSize, QByteArray, QPoint, QRect, QTranslator,
                           QLocale, pyqtSignal, QString)
@@ -334,8 +334,6 @@ class Matcher(QObject):
 
 matcher = Matcher()
 
-dict_access_lock = QMutex()
-
 
 class WordLookupStopRequested(Exception): pass
 
@@ -358,7 +356,6 @@ class WordLookupThread(QThread):
         log.debug("Looking up %r", wordstr)
         t0 = time.time()
         entries = []
-        dict_access_lock.lock()
         try:
             for entry in self.dictionaries.best_match(wordstr):
                 if self.stop_requested:
@@ -373,10 +370,8 @@ class WordLookupThread(QThread):
         except Exception, e:
             self.lookup_failed.emit(self.word, e)
         else:
-            self.done.emit(self.word, entries)
-        finally:
             log.debug('Looked up %r in %ss', wordstr, time.time() - t0)
-            dict_access_lock.unlock()
+            self.done.emit(self.word, entries)            
 
     def stop(self):
         self.stop_requested = True
@@ -396,20 +391,17 @@ class ArticleLoadThread(QThread):
         self.use_mediawiki_style = use_mediawiki_style
 
     def run(self):
-        dict_access_lock.lock()
         try:
-            try:
-                article = self._load_article(self.view.entry)
-                article.text = self._tohtml(article)
-            except Exception, e:
-                log.exception('Failed to load article for %r', self.view.entry)
-                self.article_load_failed.emit(self.view, e)
-            else:
-                self.view.article = article
-                self.view.loading = False
-                self.article_loaded.emit(self.view)
+            article = self._load_article(self.view.entry)
+            article.text = self._tohtml(article)
+        except Exception, e:
+            log.exception('Failed to load article for %r', self.view.entry)
+            self.article_load_failed.emit(self.view, e)
+        else:
+            self.view.article = article
+            self.view.loading = False
+            self.article_loaded.emit(self.view)
         finally:
-            dict_access_lock.unlock()
             del self.view
             del self.dictionaries
 
