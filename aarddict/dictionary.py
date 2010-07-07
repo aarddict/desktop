@@ -18,11 +18,13 @@ import logging
 import zlib
 import bz2
 import os
+import mmap
+import threading
+
 from bisect import bisect_left
 from struct import calcsize, unpack
 from collections import defaultdict, deque
 from uuid import UUID
-import mmap
 
 import simplejson
 from PyICU import Locale, Collator
@@ -448,7 +450,9 @@ class Volume(object):
                                     read_article)
 
         self._interwiki_map = None
-        self._article_url = None
+        self._article_url = None        
+        self._lock = threading.RLock()
+
 
     def _read_header(self, f):
         header = {}
@@ -506,23 +510,24 @@ class Volume(object):
     def lookup(self, word, strength=PRIMARY, cmp_func=cmp_word_start):
         if not word:
             raise StopIteration
-        index = bisect_left(CollationKeyList(self.words, strength),
-                            collation_key(word, strength).getByteArray())
-        try:
-            while True:
-                matched_word = self.words[index]
-                cmp_result = cmp_func(matched_word, word, strength)
-                if cmp_result == 0:
-                    #sometimes words in index include #fragment
-                    _, section = split_word(matched_word)
-                    #leave matched word exactly as is, but set section
-                    yield Entry(self.volume_id, index,
-                                matched_word, section=section)
-                    index += 1
-                else:
-                    break
-        except IndexError:
-            raise StopIteration
+        with self._lock:
+            index = bisect_left(CollationKeyList(self.words, strength),
+                                collation_key(word, strength).getByteArray())
+            try:
+                while True:
+                    matched_word = self.words[index]
+                    cmp_result = cmp_func(matched_word, word, strength)
+                    if cmp_result == 0:
+                        #sometimes words in index include #fragment
+                        _, section = split_word(matched_word)
+                        #leave matched word exactly as is, but set section
+                        yield Entry(self.volume_id, index,
+                                    matched_word, section=section)
+                        index += 1
+                    else:
+                        break
+            except IndexError:
+                raise StopIteration
 
     def read(self, entry):
         if entry.volume_id != self.volume_id:
