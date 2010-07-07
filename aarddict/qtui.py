@@ -343,7 +343,7 @@ class WordLookupThread(QThread):
     match_found = pyqtSignal(QString, object)
     stopped = pyqtSignal(QString)
     done = pyqtSignal(QString, list)
-    lookup_failed = pyqtSignal(QString, Exception)
+    lookup_failed = pyqtSignal(QString, QString)
 
     def __init__(self, dictionaries, word, parent=None):
         QThread.__init__(self, parent)
@@ -367,8 +367,8 @@ class WordLookupThread(QThread):
                 raise WordLookupStopRequested
         except WordLookupStopRequested:
             self.stopped.emit(self.word)
-        except Exception, e:
-            self.lookup_failed.emit(self.word, e)
+        except Exception, e:          
+            self.lookup_failed.emit(self.word, u''.join(traceback.format_exc()))
         else:
             log.debug('Looked up %r in %ss', wordstr, time.time() - t0)
             self.done.emit(self.word, entries)            
@@ -380,7 +380,7 @@ class WordLookupThread(QThread):
 class ArticleLoadThread(QThread):
 
     article_loaded = pyqtSignal(WebView)
-    article_load_failed = pyqtSignal(WebView, Exception)
+    article_load_failed = pyqtSignal(WebView, QString)
 
     def __init__(self, dictionaries, view,
                  use_mediawiki_style=False, parent=None):
@@ -396,7 +396,7 @@ class ArticleLoadThread(QThread):
             article.text = self._tohtml(article)
         except Exception, e:
             log.exception('Failed to load article for %r', self.view.entry)
-            self.article_load_failed.emit(self.view, e)
+            self.article_load_failed.emit(self.view, u''.join(traceback.format_exc()))
         else:
             self.view.article = article
             self.view.loading = False
@@ -1302,9 +1302,8 @@ class DictView(QMainWindow):
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start(QThread.LowestPriority)
 
-    def word_lookup_failed(self, word, exc):
-        exception_txt = ''.join(traceback.format_exception_only(type(exc), exc))
-        formatted_error = (_('Error while looking up %(word)s: '
+    def word_lookup_failed(self, word, exception_txt):
+        formatted_error = (_('Error while looking up %(word)s:\n'
                              '%(exception)s') %
                            dict(word=word, exception=exception_txt))
         self.show_dict_error(_('Word Lookup Failed'), formatted_error)
@@ -1409,13 +1408,12 @@ class DictView(QMainWindow):
         load_thread.article_load_failed.connect(self.article_load_failed, Qt.QueuedConnection)
         load_thread.start(QThread.LowestPriority)
 
-    def article_load_failed(self, view, exc):
-        exception_txt = ''.join(traceback.format_exception_only(type(exc), exc))
+    def article_load_failed(self, view, exception_txt):
         entry = view.entry
         vol = self.dictionaries.volume(entry.volume_id)
         view.page().currentFrame().setHtml(_('Failed to load article %s') % view.entry.title)
         formatted_error = (_('Error reading article %(title)s from '
-                             '%(dict_title)s (file %(dict_file)s): '
+                             '%(dict_title)s (file %(dict_file)s):\n'
                              '%(exception)s') %
                            dict(title=entry.title,
                                 dict_title=format_title(vol),
