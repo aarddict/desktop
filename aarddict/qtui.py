@@ -655,6 +655,7 @@ def read_sources():
 def write_history(history):
     with open(history_file, 'w') as f:
         f.write('\n'.join(item.encode('utf8') for item in history))
+        f.write('\n')
 
 def read_history():
     if os.path.exists(history_file):
