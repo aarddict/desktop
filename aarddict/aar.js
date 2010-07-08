@@ -38,6 +38,11 @@ function scrollToMatch(text, matchStrength) {
 }
 
 function s(elementId) {
-    document.getElementById(elementId).scrollIntoView(true);
+    if (elementId) {	
+	var element = document.getElementById(elementId);
+	if (element) {	    
+	    element.scrollIntoView(true);
+	}
+    }
     return false;
 }
