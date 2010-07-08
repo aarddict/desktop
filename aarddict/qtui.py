@@ -13,9 +13,9 @@ import traceback
 
 from ConfigParser import ConfigParser
 from uuid import UUID
-from collections import defaultdict
+from collections import defaultdict, deque
 
-from PyQt4.QtCore import (QObject, Qt, QThread, 
+from PyQt4.QtCore import (QObject, Qt, QThread,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
                           QSize, QByteArray, QPoint, QRect, QTranslator,
                           QLocale, pyqtSignal, QString)
@@ -43,6 +43,7 @@ from aarddict.dictionary import (format_title,
                                  PRIMARY,
                                  SECONDARY,
                                  TERTIARY,
+                                 Entry,
                                  Article,
                                  cmp_words,
                                  VerifyError)
@@ -89,6 +90,7 @@ lastfiledir_file = os.path.join(app_dir, 'lastfiledir')
 lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
 lastsave_file = os.path.join(app_dir, 'lastsave')
 zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
+scrollval_file = os.path.join(app_dir, 'scrollval')
 
 js = ('<script type="text/javascript">%s</script>' %
       load_file(os.path.join(package_dir, 'aar.js')))
@@ -367,11 +369,11 @@ class WordLookupThread(QThread):
                 raise WordLookupStopRequested
         except WordLookupStopRequested:
             self.stopped.emit(self.word)
-        except Exception, e:          
+        except Exception, e:
             self.lookup_failed.emit(self.word, u''.join(traceback.format_exc()))
         else:
             log.debug('Looked up %r in %ss', wordstr, time.time() - t0)
-            self.done.emit(self.word, entries)            
+            self.done.emit(self.word, entries)
 
     def stop(self):
         self.stop_requested = True
@@ -522,7 +524,7 @@ class LineEditWithClear(QLineEdit):
         btn_clear = QPushButton()
         btn_clear.clicked.connect(self.clear)
         btn_clear.setIcon(icons['edit-clear'])
-        btn_clear.setToolTip(_('Clear'))        
+        btn_clear.setToolTip(_('Clear'))
         btn_clear.setCursor(Qt.ArrowCursor)
         self.btn_clear = btn_clear
         box.addStretch(1)
@@ -632,6 +634,19 @@ class SingleRowItemSelectionModel(QItemSelectionModel):
                                                         QItemSelectionModel.Select |
                                                         QItemSelectionModel.Clear)
 
+class LimitedDict(dict):
+
+    def __init__(self, max_size=100):
+        dict.__init__(self)
+        self.max_size = max_size
+        self.keylist = deque()
+
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, key, value)
+        self.keylist.append(key)
+        if len(self.keylist) > self.max_size:
+            del self[self.keylist.popleft()]
+
 
 def write_sources(sources):
     with open(sources_file, 'w') as f:
@@ -735,6 +750,30 @@ def read_zoomfactor():
 def write_zoomfactor(zoomfactor):
     with open(zoomfactor_file, 'w') as f:
         f.write(str(zoomfactor))
+
+def read_scroll_values():
+    result = LimitedDict()
+    if os.path.exists(scrollval_file):
+        with open(scrollval_file, 'rb') as f:
+            for line in f:
+                if line:
+                    try:
+                        volume_id, index, scrollx, scrolly = line.split()
+                        index = int(index)
+                        scrollx = int(scrollx)
+                        scrolly = int(scrolly)
+                    except:
+                        log.debug('Failed to parse scroll value line %r' % line)
+                    else:
+                        result[Entry(volume_id, index)] = (scrollx, scrolly)
+    return result
+
+def write_scroll_values(scroll_values):
+    with open(scrollval_file, 'w') as f:
+        for entry, value in scroll_values.iteritems():
+            f.write('%s %s %s %s\n' %
+                    (entry.volume_id, entry.index, value[0], value[1]))
+
 
 def mkcss(values):
     return aard_style_tmpl.substitute(values)
@@ -1087,6 +1126,7 @@ class DictView(QMainWindow):
 
         self.use_mediawiki_style = True
         self.update_current_article_actions(-1)
+        self.scroll_values = LimitedDict()
 
     def add_debug_menu(self):
         import debug
@@ -1436,12 +1476,15 @@ class DictView(QMainWindow):
         if result == QMessageBox.Yes:
             self.verify()
 
-
-
     def clear_current_articles(self):
         self.tabs.blockSignals(True)
         for i in reversed(range(self.tabs.count())):
             w = self.tabs.widget(i)
+            f = w.page().mainFrame()
+            scrollx = f.scrollBarValue(Qt.Horizontal)
+            scrolly = f.scrollBarValue(Qt.Vertical)
+            if scrollx or scrolly:
+                self.scroll_values[w.entry] = (scrollx, scrolly)
             self.tabs.removeTab(i)
             w.deleteLater()
         self.tabs.blockSignals(False)
@@ -1453,8 +1496,14 @@ class DictView(QMainWindow):
 
         def loadFinished(ok):
             log.debug('article loadFinished for entry %r', article.entry)
-            if ok and article.entry.section:
-                self.go_to_section(view, article.entry.section)
+            if ok:
+                if view.entry in self.scroll_values:
+                    scrollx, scrolly = self.scroll_values[view.entry]
+                    f = view.page().mainFrame()
+                    f.setScrollBarValue(Qt.Horizontal, scrollx)
+                    f.setScrollBarValue(Qt.Vertical, scrolly)
+                if article.entry.section:
+                    self.go_to_section(view, article.entry.section)
 
         view.loadFinished[bool].connect(loadFinished, Qt.QueuedConnection)
         view.page().currentFrame().setHtml(article.text, QUrl(view.title))
@@ -1964,6 +2013,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         dialog.exec_()
 
     def closeEvent(self, event):
+        self.clear_current_articles()
         self.write_settings()
         for d in self.dictionaries:
             d.close()
@@ -1987,7 +2037,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         write_lastfiledir(self.lastfiledir)
         write_lastdirdir(self.lastdirdir)
         write_lastsave(self.lastsave)
-        write_zoomfactor(self.zoom_factor)
+        write_zoomfactor(self.zoom_factor)        
+        write_scroll_values(self.scroll_values)
 
     def update_title(self):
         dict_title = self.create_dict_title()
@@ -2112,7 +2163,11 @@ def main(args, debug=False, dev_extras=False):
     dv.lastfiledir = read_lastfiledir()
     dv.lastdirdir = read_lastdirdir()
     dv.lastsave = read_lastsave()
-    dv.zoom_factor = read_zoomfactor()
+    dv.zoom_factor = read_zoomfactor()    
+    dv.scroll_values = read_scroll_values()
+
+    print '=============>', dv.scroll_values
+
     dv.word_input.setFocus()
     colors, use_mediawiki_style = read_appearance()
     update_css(mkcss(colors))

@@ -285,7 +285,7 @@ class ArticleList(object):
 
 class Entry(object):
 
-    def __init__(self, volume_id, index, title, section=None, redirect_from=None):
+    def __init__(self, volume_id, index, title=u'', section=u'', redirect_from=None):
         self.volume_id = volume_id
         self.index = index
         self.title = title
