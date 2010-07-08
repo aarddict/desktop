@@ -2165,9 +2165,6 @@ def main(args, debug=False, dev_extras=False):
     dv.lastsave = read_lastsave()
     dv.zoom_factor = read_zoomfactor()    
     dv.scroll_values = read_scroll_values()
-
-    print '=============>', dv.scroll_values
-
     dv.word_input.setFocus()
     colors, use_mediawiki_style = read_appearance()
     update_css(mkcss(colors))
