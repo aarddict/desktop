@@ -10,6 +10,7 @@ import string
 import locale
 import re
 import traceback
+import simplejson as json
 
 from ConfigParser import ConfigParser
 from uuid import UUID
@@ -80,7 +81,7 @@ def load_file(name, binary=False):
 
 app_dir = os.path.expanduser('~/.aarddict')
 sources_file = os.path.join(app_dir, 'sources')
-history_file = os.path.join(app_dir, 'history')
+history_file = os.path.join(app_dir, 'history2')
 history_current_file = os.path.join(app_dir, 'history_current')
 layout_file = os.path.join(app_dir, 'layout')
 geometry_file = os.path.join(app_dir, 'geometry')
@@ -669,31 +670,30 @@ def read_sources():
 
 def write_history(history):
     with open(history_file, 'w') as f:
-        f.write('\n'.join(item.encode('utf8') for item in history))
-        f.write('\n')
+        json.dump(history, f)
 
 def read_history():
     if os.path.exists(history_file):
         with open(history_file) as f:
-            return (line.decode('utf8') for line in f.read().splitlines())
+            return json.load(f)
     else:
         return []
 
-def read_preferred_dicts():
-    if os.path.exists(preferred_dicts_file):
-        def parse(line):
-            key, val = line.split()
-            return (UUID(hex=key), float(val))
-        return dict(parse(line) for line
-                    in load_file(preferred_dicts_file).splitlines()
-                    if line)
-    else:
-        return {}
+# def read_preferred_dicts():
+#     if os.path.exists(preferred_dicts_file):
+#         def parse(line):
+#             key, val = line.split()
+#             return (UUID(hex=key), float(val))
+#         return dict(parse(line) for line
+#                     in load_file(preferred_dicts_file).splitlines()
+#                     if line)
+#     else:
+#         return {}
 
-def write_preferred_dicts(preferred_dicts):
-    with open(preferred_dicts_file, 'w') as f:
-        f.write('\n'.join( '%s %s' % (key.hex, val)
-                           for key, val in preferred_dicts.iteritems()))
+# def write_preferred_dicts(preferred_dicts):
+#     with open(preferred_dicts_file, 'w') as f:
+#         f.write('\n'.join( '%s %s' % (key.hex, val)
+#                            for key, val in preferred_dicts.iteritems()))
 
 def write_lastfiledir(lastfiledir):
     with open(lastfiledir_file, 'w') as f:
@@ -1112,8 +1112,6 @@ class DictView(QMainWindow):
         self.timer.setSingleShot(True)
         self.scheduled_func = None
 
-        self.preferred_dicts = {}
-
         self.tabs.currentChanged.connect(self.article_tab_switched)
 
         self.current_lookup_thread = None
@@ -1127,6 +1125,15 @@ class DictView(QMainWindow):
         self.use_mediawiki_style = True
         self.update_current_article_actions(-1)
         self.scroll_values = LimitedDict()
+
+    @property
+    def preferred_dicts(self):
+        c = self.history_view.currentItem()
+        if c is not None:
+            return c.preferred_dicts
+        else:
+            return dict([(vol.uuid.hex, i) for i, vol in 
+                         enumerate(reversed(self.dictionaries))])
 
     def add_debug_menu(self):
         import debug
@@ -1313,8 +1320,8 @@ class DictView(QMainWindow):
 
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
-            self.preferred_dicts[dict_uuid] = time.time()
-        self.dictionaries.sort(key=lambda d: -self.preferred_dicts.get(d.uuid, 0))
+            self.preferred_dicts[dict_uuid.hex] = time.time()
+        self.dictionaries.sort(key=lambda d: -self.preferred_dicts.get(d.uuid.hex, 0))
 
     def schedule(self, func, delay=500):
         if self.scheduled_func:
@@ -1405,7 +1412,9 @@ class DictView(QMainWindow):
 
     def history_selection_changed(self, selected, deselected):
         title = unicode(selected.text()) if selected else u''
-        func = functools.partial(self.set_word_input, title)
+        def func():
+            self.update_preferred_dicts()
+            self.set_word_input(title)
         self.schedule(func, 200)
 
     def update_history_actions(self, selected, deselected):
@@ -1547,7 +1556,7 @@ class DictView(QMainWindow):
     def sort_preferred(self, entries):
         def key(x):
             vol = self.dictionaries.volume(x.volume_id)
-            return -self.preferred_dicts.get(vol.uuid, 0)
+            return -self.preferred_dicts.get(vol.uuid.hex, 0)
         return sorted(entries, key=key)
 
     def go_to_section(self, view, section):
@@ -1626,7 +1635,7 @@ class DictView(QMainWindow):
             self.history_view.setCurrentItem(next_item)
             self.history_view.scrollToItem(next_item)
 
-    def add_to_history(self, title):
+    def add_to_history(self, title, preferred_dicts=None):
         current_hist_item = self.history_view.currentItem()
         if (not current_hist_item or
             unicode(current_hist_item.text()) != title):
@@ -1635,9 +1644,12 @@ class DictView(QMainWindow):
                 while (self.history_view.count() and
                        self.history_view.item(0) != current_hist_item):
                     self.history_view.takeItem(0)
-
             item = QListWidgetItem()
             item.setText(title)
+            if preferred_dicts is None:
+                item.preferred_dicts = dict(self.preferred_dicts)
+            else:
+                item.preferred_dicts = preferred_dicts
             self.history_view.insertItem(0, item)
             self.history_view.setCurrentItem(item)
             while self.history_view.count() > max_history:
@@ -2023,9 +2035,10 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         history = []
         for i in reversed(range(self.history_view.count())):
             item = self.history_view.item(i)
-            history.append(unicode(item.text()))
+            preferred_dicts = item.preferred_dicts
+            history.append([unicode(item.text()), preferred_dicts])
         write_history(history)
-        write_preferred_dicts(self.preferred_dicts)
+        #write_preferred_dicts(self.preferred_dicts)
         pos = self.pos()
         size = self.size()
         write_geometry((pos.x(), pos.y(), size.width(), size.height()))
@@ -2142,8 +2155,8 @@ def main(args, debug=False, dev_extras=False):
 
     dv.show()
 
-    for title in read_history():
-        dv.add_to_history(title)
+    for title, preferred_dicts in read_history():
+        dv.add_to_history(title, preferred_dicts)
 
     if os.path.exists(history_current_file):
         try:
@@ -2151,7 +2164,7 @@ def main(args, debug=False, dev_extras=False):
         except:
             log.exception('Failed to load data from %s', history_current_file)
         else:
-            if history_current > -1:
+            if history_current > -1 and dv.history_view.count():
                 dv.history_view.blockSignals(True)
                 dv.history_view.setCurrentRow(history_current)
                 dv.history_view.blockSignals(False)
@@ -2159,7 +2172,7 @@ def main(args, debug=False, dev_extras=False):
                 dv.word_input.setText(word)
                 dv.update_history_actions(None, None)
 
-    dv.preferred_dicts = read_preferred_dicts()
+    #dv.preferred_dicts = read_preferred_dicts()
     dv.lastfiledir = read_lastfiledir()
     dv.lastdirdir = read_lastdirdir()
     dv.lastsave = read_lastsave()
