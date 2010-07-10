@@ -1577,7 +1577,7 @@ class DictView(QMainWindow):
         fragment = unicode(url.fragment())
         log.debug('scheme: %r, path: %r, frag: %r', scheme, path, fragment)
         if scheme in (u'http', u'https', u'ftp', u'sftp'):
-            webbrowser.open(unicode(url))
+            webbrowser.open(unicode(url.toString()))
         else:
             title = '#'.join((path, fragment)) if fragment else path
             if '_' in title:
