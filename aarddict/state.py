@@ -15,6 +15,10 @@ from PyQt4.QtGui import QApplication
 log = logging.getLogger(__name__)
 
 app_dir = os.path.expanduser('~/.aarddict')
+
+if not os.path.exists(app_dir):
+    os.makedirs(app_dir)
+
 sources_file = os.path.join(app_dir, 'sources.json')
 state_file = os.path.join(app_dir, 'state.json.gz')
 appearance_file = os.path.join(app_dir, 'appearance.json')
@@ -40,7 +44,6 @@ def read_sources():
 
 
 def write_state(state):
-    print '%r' % state
     f = gzip.open(state_file, 'wb')
     json.dump(state, f, indent=2)
     f.close()

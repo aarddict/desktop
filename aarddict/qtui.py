@@ -5,7 +5,6 @@ import time
 import functools
 import webbrowser
 import logging
-import string
 import locale
 import re
 import traceback
@@ -14,8 +13,8 @@ from collections import defaultdict, deque
 
 from PyQt4.QtCore import (QObject, Qt, QThread,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QSize, QByteArray, QPoint, QTranslator,
-                          QLocale, pyqtSignal, QString)
+                          QSize, QByteArray, QPoint, 
+                          pyqtSignal, QString)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -45,194 +44,15 @@ from aarddict.dictionary import (format_title,
                                  cmp_words,
                                  VerifyError)
 
-from aarddict import package_dir, state
-from aarddict.state import app_dir
-
-import gettext
+from aarddict import state, res
+from aarddict.res import icons
 
 log = logging.getLogger(__name__)
 
-locale.setlocale(locale.LC_ALL, '')
-
-if os.name == 'nt':
-    # windows hack for locale setting
-    lang = os.getenv('LANG')
-    if lang is None:
-        default_lang, default_enc = locale.getdefaultlocale()
-        if default_lang:
-            lang = default_lang
-        if lang:
-            os.environ['LANG'] = lang
-
-locale_dir = os.path.join(package_dir, 'locale')
-gettext_domain = aarddict.__name__
-gettext.bindtextdomain(gettext_domain, locale_dir)
-gettext.textdomain(gettext_domain)
-gettext.install(gettext_domain, locale_dir, unicode=True, names=['ngettext'])
-
-
-def load_file(name):
-    with open(name, 'r') as f:
-        return f.read().decode('utf8')
-
-js = ('<script type="text/javascript">%s</script>' %
-      load_file(os.path.join(package_dir, 'aar.js')))
-
-shared_style_str = load_file(os.path.join(package_dir, 'shared.css'))
-
-aard_style_tmpl = string.Template(('<style type="text/css">%s</style>' %
-                                   '\n'.join((shared_style_str,
-                                              load_file(os.path.join(package_dir,
-                                                                     'aar.css.tmpl'))))))
-
-
-mediawiki_style = ('<style type="text/css">%s</style>' %
-                   '\n'.join((shared_style_str,
-                              load_file(os.path.join(package_dir, 'mediawiki_shared.css')),
-                              load_file(os.path.join(package_dir, 'mediawiki_monobook.css')))))
-
 style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>', re.UNICODE | re.DOTALL)
-
-max_history = 50
-
-iconset = 'Human-O2'
-icondir = os.path.join(package_dir, 'icons/%s/' % iconset)
-logodir = os.path.join(package_dir, 'icons/%s/' % 'hicolor')
-
-dict_detail_tmpl= string.Template("""
-<html>
-<body>
-<h1>$title $version</h1>
-<div style="margin-left:20px;marging-right:20px;">
-<p><strong>$lbl_total_volumes $total_volumes</strong></p>
-$volumes
-<p><strong>$lbl_num_of_articles</strong> <em>$num_of_articles</em></p>
-$language_links
-</div>
-$description
-$source
-$copyright
-$license
-</body>
-</html>
-""")
-
-about_tmpl = string.Template("""
-<div align="center">
-<table cellspacing='5'>
-<tr style="vertical-align: middle;" >
-  <td><img src="$logodir/64x64/apps/aarddict.png"></td>
-  <td style="text-align: center; font-weight: bold;">
-      <span style="font-size: large;">$appname</span><br>
-      $version
-  </td>
-</tr>
-</table>
-<p>$copyright1<br>$copyright2</p>
-<p><a href="$website">$website</a></p>
-</div>
-<div align="center">
-<p style="font-size: small;">
-$lic_notice
-</p>
-<p style="font-size: small;">
-$logo_notice<br>
-$icons_notice
-</p>
-</div>
-""")
-
-about_html = about_tmpl.substitute(dict(appname=_(aarddict.__appname__),
-                                        version=aarddict.__version__,
-                                        logodir=logodir,
-                                        website='http://aarddict.org',
-                                        copyright1=_('(C) 2006-2010 Igor Tkach'),
-                                        copyright2=_('(C) 2008 Jeremy Mortis'),
-                                        lic_notice=_('Distributed under terms and conditions '
-                                                      'of <a href="http://www.gnu.org/licenses'
-                                                      '/gpl-3.0.html">GNU Public License Version 3</a>'),
-                                        logo_notice=_('Aard Dictionary logo by Iryna Gerasymova'),
-                                        icons_notice=_('Human-O2 icon set by '
-                                                       '<a href="http://schollidesign.deviantart.com">'
-                                                       '~schollidesign</a>')
-                                        )
-                                   )
-
 http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
 
-
-redirect_info_tmpl = string.Template(u"""
-<div id="aard-redirectinfo"">
-Redirected from <strong>$title</strong>
-</div>
-""")
-
-article_tmpl = string.Template(u"""<html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-        $style
-    </head>
-    <body>
-        <div id="globalWrapper">
-        $redirect_info
-        $content
-        </div>
-        $scripts
-    </body>
-</html>
-""")
-
-
-def mkicon(name, toggle_name=None, icondir=icondir):
-    icon = QIcon()
-    for size in os.listdir(icondir):
-        current_dir = os.path.join(icondir, size)
-        icon.addFile(os.path.join(current_dir, name+'.png'))
-        if toggle_name:
-            icon.addFile(os.path.join(current_dir, toggle_name+'.png'),
-                         QSize(), QIcon.Active, QIcon.On)
-    return icon
-
-icons = {}
-
-def load_icons():
-    icons['edit-find'] = mkicon('actions/edit-find')
-    icons['edit-clear'] = mkicon('actions/edit-clear')
-    icons['system-search'] = mkicon('actions/system-search')
-    icons['add-file'] = mkicon('actions/add-files-to-archive')
-    icons['add-folder'] = mkicon('actions/add-folder-to-archive')
-    icons['list-remove'] = mkicon('actions/list-remove')
-    icons['go-next'] = mkicon('actions/go-next')
-    icons['go-previous'] = mkicon('actions/go-previous')
-    icons['go-next-page'] = mkicon('actions/go-next-page')
-    icons['go-previous-page'] = mkicon('actions/go-previous-page')
-    icons['view-fullscreen'] = mkicon('actions/view-fullscreen',
-                                      toggle_name='actions/view-restore')
-    icons['application-exit'] = mkicon('actions/application-exit')
-    icons['zoom-in'] = mkicon('actions/zoom-in')
-    icons['zoom-out'] = mkicon('actions/zoom-out')
-    icons['zoom-original'] = mkicon('actions/zoom-original')
-    icons['help-about'] = mkicon('actions/help-about')
-    icons['system-run'] = mkicon('actions/system-run')
-    icons['document-open-recent'] = mkicon('actions/document-open-recent')
-    icons['document-properties'] = mkicon('actions/document-properties')
-
-    icons['folder'] = mkicon('places/folder')
-    icons['file'] = mkicon('mimetypes/text-x-preview')
-
-    icons['emblem-web'] = mkicon('emblems/emblem-web')
-    icons['emblem-ok'] = mkicon('emblems/emblem-ok')
-    icons['emblem-unreadable'] = mkicon('emblems/emblem-unreadable')
-    icons['emblem-art2'] = mkicon('emblems/emblem-art2')
-
-    icons['info'] = mkicon('status/dialog-information')
-    icons['question'] = mkicon('status/dialog-question')
-    icons['warning'] = mkicon('status/dialog-warning')
-    icons['aarddict'] = mkicon('apps/aarddict', icondir=logodir)
-    icons['document-save'] = mkicon('actions/document-save')
-    icons['edit-copy'] = mkicon('actions/edit-copy')
-    icons['window-close'] = mkicon('actions/window-close')
-
+max_history = 50
 
 def linkify(text):
     return http_link_re.sub(lambda m: '<a href="%(target)s">%(target)s</a>'
@@ -365,18 +185,18 @@ class ArticleLoadThread(QThread):
     article_loaded = pyqtSignal(WebView)
     article_load_failed = pyqtSignal(WebView, QString)
 
-    def __init__(self, dictionaries, view,
-                 use_mediawiki_style=False, parent=None):
+    def __init__(self, dictionaries, view, parent=None):
         QThread.__init__(self, parent)
         self.dictionaries = dictionaries
         self.view = view
         self.view.loading = True
-        self.use_mediawiki_style = use_mediawiki_style
 
     def run(self):
         try:
             article = self._load_article(self.view.entry)
-            article.text = self._tohtml(article)
+            #article.text = self._tohtml(article)
+            redirect = None if article.entry == self.view.entry else self.view.entry.title
+            article.text = res.article(article.text, redirect)
         except Exception, e:
             log.exception('Failed to load article for %r', self.view.entry)
             self.article_load_failed.emit(self.view, u''.join(traceback.format_exc()))
@@ -403,21 +223,6 @@ class ArticleLoadThread(QThread):
         log.debug('Read %r from %s in %ss',
                   entry.title, entry.volume_id, time.time() - t0)
         return article
-
-    def _tohtml(self, article):
-        t0 = time.time()
-        if article.entry == self.view.entry:
-            redirect_info = u''
-        else:
-            redirect_info = redirect_info_tmpl.substitute(dict(title=self.view.entry.title))
-        result = article_tmpl.substitute(dict(style=(mediawiki_style
-                                                     if self.use_mediawiki_style
-                                                     else aard_style),
-                                              redirect_info=redirect_info,
-                                              content=article.text,
-                                              scripts=js))
-        log.debug('Converted %r in %ss', article.entry, time.time() - t0)
-        return result
 
 
 class DictOpenThread(QThread):
@@ -504,7 +309,7 @@ class LineEditWithClear(QLineEdit):
         box = QHBoxLayout()
         btn_clear = QPushButton()
         btn_clear.clicked.connect(self.clear)
-        btn_clear.setIcon(icons['edit-clear'])
+        btn_clear.setIcon(res.icon('edit-clear'))
         btn_clear.setToolTip(_('Clear'))
         btn_clear.setCursor(Qt.ArrowCursor)
         self.btn_clear = btn_clear
@@ -627,16 +432,6 @@ class LimitedDict(dict):
         self.keylist.append(key)
         if len(self.keylist) > self.max_size:
             del self[self.keylist.popleft()]
-
-def mkcss(values):
-    return aard_style_tmpl.substitute(values)
-
-aard_style = None
-
-def update_css(css):
-    global aard_style
-    aard_style = css
-    return aard_style
 
 grouping_strength = {1: TERTIARY, 2: TERTIARY, 3: SECONDARY}
 
@@ -943,7 +738,6 @@ class DictView(QMainWindow):
         self.lastdirdir = u''
         self.lastsave = u''
 
-        self.use_mediawiki_style = True
         self.update_current_article_actions(-1)
         self.scroll_values = LimitedDict()
 
@@ -1273,8 +1067,7 @@ class DictView(QMainWindow):
 
     def load_article(self, view):
         view.article_loaded = True
-        load_thread = ArticleLoadThread(self.dictionaries, view,
-                                        self.use_mediawiki_style, self)
+        load_thread = ArticleLoadThread(self.dictionaries, view, self)
         load_thread.article_loaded.connect(self.article_loaded, Qt.QueuedConnection)
         load_thread.article_load_failed.connect(self.article_load_failed, Qt.QueuedConnection)
         load_thread.start(QThread.LowestPriority)
@@ -1669,7 +1462,7 @@ class DictView(QMainWindow):
                 if d.license:
                     params['license'] = '<h2>%s</h2><pre>%s</pre>' % (_('License'), d.license)
 
-                html = dict_detail_tmpl.safe_substitute(params)
+                html = res.dict_detail(params)
             else:
                 html = ''
             detail_view.setHtml(html)
@@ -1695,7 +1488,7 @@ class DictView(QMainWindow):
         palette.setBrush(QPalette.Base, Qt.transparent)
         detail_view.page().setPalette(palette)
         detail_view.setAttribute(Qt.WA_OpaquePaintEvent, False)
-        detail_view.setHtml(about_html)
+        detail_view.setHtml(res.about())
 
         detail_view.linkClicked.connect(self.link_clicked)
 
@@ -1733,8 +1526,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 </div>
 """)
 
-        preview_pane.page().currentFrame().setHtml(mediawiki_style if self.use_mediawiki_style
-                                                   else aard_style + html)
+        preview_pane.page().currentFrame().setHtml(res.style() + html)
 
         appearance = state.read_appearance()
 
@@ -1750,7 +1542,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 pixmap.fill(c)
                 btn.setIcon(QIcon(pixmap))
                 colors[color_name] = str(c.name())
-                style_str = mkcss(colors)
+                style_str = res.css(colors)
                 if not cb_use_mediawiki_style.isChecked():
                     preview_pane.page().currentFrame().setHtml(style_str + html)
 
@@ -1809,14 +1601,14 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         def use_mediawiki_style_changed(state):
             if state == Qt.Checked:
-                style_str = mediawiki_style
+                style_str = res.mediawiki_style
             else:
-                style_str = mkcss(colors)
+                style_str = res.css(colors)
             preview_pane.page().currentFrame().setHtml(style_str + html)
 
 
         cb_use_mediawiki_style.stateChanged.connect(use_mediawiki_style_changed)
-        cb_use_mediawiki_style.setChecked(self.use_mediawiki_style)
+        cb_use_mediawiki_style.setChecked(res.use_mediawiki_style)
 
         color_pane.addWidget(preview_pane, 0, 2, 6, 1)
 
@@ -1830,16 +1622,16 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         def close():
             dialog.reject()
-            update_css(mkcss(colors))
-            self.use_mediawiki_style = cb_use_mediawiki_style.isChecked()
-            style_str = mediawiki_style if self.use_mediawiki_style else aard_style
+            res.update_css(res.css(colors))
+            res.use_mediawiki_style = cb_use_mediawiki_style.isChecked()
+            style_str = res.style()
             for i in range(self.tabs.count()):
                 view = self.tabs.widget(i)
                 currentFrame = view.page().currentFrame()
                 html = unicode(currentFrame.toHtml())
                 html = style_tag_re.sub(style_str, html, count=1)
                 view.page().currentFrame().setHtml(html)
-            appearance['style']['use_mediawiki_style'] = self.use_mediawiki_style
+            appearance['style']['use_mediawiki_style'] = res.use_mediawiki_style
             state.write_appearance(appearance)
 
         button_box.rejected.connect(close)
@@ -1991,33 +1783,22 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         
         appearance = state.read_appearance()
         colors = appearance['colors']
-        self.use_mediawiki_style = appearance['style']['use_mediawiki_style']
-        update_css(mkcss(colors))
+        res.use_mediawiki_style = appearance['style']['use_mediawiki_style']
+        res.update_css(res.css(colors))
 
         
 def main(args, debug=False, dev_extras=False):
-
-    if not os.path.exists(app_dir):
-        os.makedirs(app_dir)
     app = QApplication(sys.argv)
-
-    qtranslator = QTranslator()
-    qtranslator.load('qt_'+str(QLocale.system().name()), locale_dir)
-    app.installTranslator(qtranslator)
-
-    load_icons()
+    res.load(app)
     dv = DictView()
-
     if dev_extras:
         (QWebSettings.globalSettings()
          .setAttribute(QWebSettings.DeveloperExtrasEnabled, True))
     if debug:
         dv.add_debug_menu()
-
     dv.read_state()
     dv.show()
     dv.word_input.setFocus()
-
     preferred_enc = locale.getpreferredencoding()
     dv.open_dicts(state.read_sources()+[arg.decode(preferred_enc) for arg in args])
     sys.exit(app.exec_())
