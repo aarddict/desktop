@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import with_statement
 import sys
 import os
@@ -10,15 +9,12 @@ import string
 import locale
 import re
 import traceback
-import simplejson as json
 
-from ConfigParser import ConfigParser
-from uuid import UUID
 from collections import defaultdict, deque
 
 from PyQt4.QtCore import (QObject, Qt, QThread,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QSize, QByteArray, QPoint, QRect, QTranslator,
+                          QSize, QByteArray, QPoint, QTranslator,
                           QLocale, pyqtSignal, QString)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
@@ -49,7 +45,8 @@ from aarddict.dictionary import (format_title,
                                  cmp_words,
                                  VerifyError)
 
-from aarddict import package_dir
+from aarddict import package_dir, state
+from aarddict.state import app_dir
 
 import gettext
 
@@ -74,24 +71,9 @@ gettext.textdomain(gettext_domain)
 gettext.install(gettext_domain, locale_dir, unicode=True, names=['ngettext'])
 
 
-def load_file(name, binary=False):
-    with open(name, 'r'+ ('b' if binary else '')) as f:
-        content = f.read()
-        return content if binary else content.decode('utf8')
-
-app_dir = os.path.expanduser('~/.aarddict')
-sources_file = os.path.join(app_dir, 'sources')
-history_file = os.path.join(app_dir, 'history2')
-history_current_file = os.path.join(app_dir, 'history_current')
-layout_file = os.path.join(app_dir, 'layout')
-geometry_file = os.path.join(app_dir, 'geometry')
-appearance_file = os.path.join(app_dir, 'appearance.ini')
-preferred_dicts_file = os.path.join(app_dir, 'preferred')
-lastfiledir_file = os.path.join(app_dir, 'lastfiledir')
-lastdirdir_file = os.path.join(app_dir, 'lastdirdir')
-lastsave_file = os.path.join(app_dir, 'lastsave')
-zoomfactor_file = os.path.join(app_dir, 'zoomfactor')
-scrollval_file = os.path.join(app_dir, 'scrollval')
+def load_file(name):
+    with open(name, 'r') as f:
+        return f.read().decode('utf8')
 
 js = ('<script type="text/javascript">%s</script>' %
       load_file(os.path.join(package_dir, 'aar.js')))
@@ -110,8 +92,6 @@ mediawiki_style = ('<style type="text/css">%s</style>' %
                               load_file(os.path.join(package_dir, 'mediawiki_monobook.css')))))
 
 style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>', re.UNICODE | re.DOTALL)
-
-appearance_conf = ConfigParser()
 
 max_history = 50
 
@@ -637,9 +617,9 @@ class SingleRowItemSelectionModel(QItemSelectionModel):
 
 class LimitedDict(dict):
 
-    def __init__(self, max_size=100):
-        dict.__init__(self)
-        self.max_size = max_size
+    def __init__(self, *args, **kwargs):
+        self.max_size = kwargs.pop('max_size', 100)
+        dict.__init__(self, *args, **kwargs)
         self.keylist = deque()
 
     def __setitem__(self, key, value):
@@ -647,133 +627,6 @@ class LimitedDict(dict):
         self.keylist.append(key)
         if len(self.keylist) > self.max_size:
             del self[self.keylist.popleft()]
-
-
-def write_sources(sources):
-    with open(sources_file, 'w') as f:
-        written = list()
-        for source in sources:
-            if source not in written:
-                f.write(source.encode('utf8'))
-                f.write('\n')
-                written.append(source)
-            else:
-                log.debug('Source %r is already written, ignoring', source)
-    return written
-
-def read_sources():
-    if os.path.exists(sources_file):
-        return [source for source
-                in load_file(sources_file).splitlines() if source]
-    else:
-        return []
-
-def write_history(history):
-    with open(history_file, 'w') as f:
-        json.dump(history, f)
-
-def read_history():
-    if os.path.exists(history_file):
-        with open(history_file) as f:
-            return json.load(f)
-    else:
-        return []
-
-# def read_preferred_dicts():
-#     if os.path.exists(preferred_dicts_file):
-#         def parse(line):
-#             key, val = line.split()
-#             return (UUID(hex=key), float(val))
-#         return dict(parse(line) for line
-#                     in load_file(preferred_dicts_file).splitlines()
-#                     if line)
-#     else:
-#         return {}
-
-# def write_preferred_dicts(preferred_dicts):
-#     with open(preferred_dicts_file, 'w') as f:
-#         f.write('\n'.join( '%s %s' % (key.hex, val)
-#                            for key, val in preferred_dicts.iteritems()))
-
-def write_lastfiledir(lastfiledir):
-    with open(lastfiledir_file, 'w') as f:
-        f.write(lastfiledir.encode('utf8'))
-
-def read_lastfiledir():
-    if os.path.exists(lastfiledir_file):
-        return load_file(lastfiledir_file).strip()
-    else:
-        return os.path.expanduser('~')
-
-def write_lastdirdir(lastdirdir):
-    with open(lastdirdir_file, 'w') as f:
-        f.write(lastdirdir.encode('utf8'))
-
-def read_lastdirdir():
-    if os.path.exists(lastdirdir_file):
-        return load_file(lastdirdir_file).strip()
-    else:
-        return os.path.expanduser('~')
-
-def write_lastsave(lastsave):
-    with open(lastsave_file, 'w') as f:
-        f.write(lastsave.encode('utf8'))
-
-def read_lastsave():
-    if os.path.exists(lastsave_file):
-        return load_file(lastsave_file).strip()
-    else:
-        return os.path.expanduser('~')
-
-
-def read_geometry():
-    if os.path.exists(geometry_file):
-        return tuple(int(item) for item in load_file(geometry_file).split())
-    else:
-        r = QRect(0, 0, 640, 480)
-        r.moveCenter(QApplication.desktop().availableGeometry().center())
-    return (r.x(), r.y(), r.width(), r.height())
-
-def write_geometry(rect_tuple):
-    with open(geometry_file, 'w') as f:
-        f.write(' '.join(str(item) for item in rect_tuple))
-
-def read_zoomfactor():
-    if os.path.exists(zoomfactor_file):
-        try:
-            return float(load_file(zoomfactor_file))
-        except:
-            return 1.0
-    else:
-        return 1.0
-
-def write_zoomfactor(zoomfactor):
-    with open(zoomfactor_file, 'w') as f:
-        f.write(str(zoomfactor))
-
-def read_scroll_values():
-    result = LimitedDict()
-    if os.path.exists(scrollval_file):
-        with open(scrollval_file, 'rb') as f:
-            for line in f:
-                if line:
-                    try:
-                        volume_id, index, scrollx, scrolly = line.split()
-                        index = int(index)
-                        scrollx = int(scrollx)
-                        scrolly = int(scrolly)
-                    except:
-                        log.debug('Failed to parse scroll value line %r' % line)
-                    else:
-                        result[Entry(volume_id, index)] = (scrollx, scrolly)
-    return result
-
-def write_scroll_values(scroll_values):
-    with open(scrollval_file, 'w') as f:
-        for entry, value in scroll_values.iteritems():
-            f.write('%s %s %s %s\n' %
-                    (entry.volume_id, entry.index, value[0], value[1]))
-
 
 def mkcss(values):
     return aard_style_tmpl.substitute(values)
@@ -784,36 +637,6 @@ def update_css(css):
     global aard_style
     aard_style = css
     return aard_style
-
-
-default_colors = dict(active_link_bg='#e0e8e8',
-                      footnote_fg='#00557f',
-                      internal_link_fg='maroon',
-                      external_link_fg='#0000cc',
-                      footnote_backref_fg='#00557f',
-                      table_bg='')
-
-def read_appearance():
-    colors = dict(default_colors)
-    use_mediawiki_style = True
-    appearance_conf.read(appearance_file)
-    if appearance_conf.has_section('colors'):
-        for opt in appearance_conf.options('colors'):
-            colors[opt] = appearance_conf.get('colors', opt)
-    if appearance_conf.has_section('style'):
-        use_mediawiki_style = appearance_conf.getboolean('style', 'use_mediawiki_style')
-    return colors, use_mediawiki_style
-
-def write_appearance(colors, use_mediawiki_style):
-    if not appearance_conf.has_section('colors'):
-        appearance_conf.add_section('colors')
-    if not appearance_conf.has_section('style'):
-        appearance_conf.add_section('style')
-    for key, val in colors.iteritems():
-        appearance_conf.set('colors', key, val)
-    appearance_conf.set('style', 'use_mediawiki_style', use_mediawiki_style)
-    with open(appearance_file, 'w') as f:
-        appearance_conf.write(f)
 
 grouping_strength = {1: TERTIARY, 2: TERTIARY, 3: SECONDARY}
 
@@ -852,8 +675,6 @@ class DictView(QMainWindow):
         self.word_input.textEdited.connect(self.word_input_text_edited)
         self.word_input.cleared.connect(functools.partial(self.schedule,
                                                           self.update_word_completion, 0))
-        # self.word_input.arrow_down.connect(self.select_next_word)
-        # self.word_input.arrow_up.connect(self.select_prev_word)
 
         def focus_current_tab():
             current_tab = self.tabs.currentWidget()
@@ -1157,7 +978,7 @@ class DictView(QMainWindow):
 
     def open_dicts(self, sources):
 
-        self.sources = write_sources(self.sources + sources)
+        self.sources = state.write_sources(self.sources + sources)
 
         dict_open_thread = DictOpenThread(sources, self.dictionaries, self)
 
@@ -1295,7 +1116,7 @@ class DictView(QMainWindow):
             self.dictionaries.remove(dictionary)
             dictionary.close()
 
-        self.sources = write_sources(remaining)
+        self.sources = state.write_sources(remaining)
 
         if to_be_removed:
             self.update_title()
@@ -1915,7 +1736,9 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         preview_pane.page().currentFrame().setHtml(mediawiki_style if self.use_mediawiki_style
                                                    else aard_style + html)
 
-        colors = read_appearance()[0]
+        appearance = state.read_appearance()
+
+        colors = appearance['colors']
 
         color_pane = QGridLayout()
         color_pane.setColumnStretch(1, 2)
@@ -2016,7 +1839,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 html = unicode(currentFrame.toHtml())
                 html = style_tag_re.sub(style_str, html, count=1)
                 view.page().currentFrame().setHtml(html)
-            write_appearance(colors, self.use_mediawiki_style)
+            appearance['style']['use_mediawiki_style'] = self.use_mediawiki_style
+            state.write_appearance(appearance)
 
         button_box.rejected.connect(close)
 
@@ -2026,32 +1850,10 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
     def closeEvent(self, event):
         self.clear_current_articles()
-        self.write_settings()
+        self.write_state()
         for d in self.dictionaries:
             d.close()
         event.accept()
-
-    def write_settings(self):
-        history = []
-        for i in reversed(range(self.history_view.count())):
-            item = self.history_view.item(i)
-            preferred_dicts = item.preferred_dicts
-            history.append([unicode(item.text()), preferred_dicts])
-        write_history(history)
-        #write_preferred_dicts(self.preferred_dicts)
-        pos = self.pos()
-        size = self.size()
-        write_geometry((pos.x(), pos.y(), size.width(), size.height()))
-        layout = self.saveState()
-        with open(layout_file, 'wb') as f:
-            f.write(str(layout))
-        with open(history_current_file, 'w') as f:
-            f.write(str(self.history_view.currentRow()))
-        write_lastfiledir(self.lastfiledir)
-        write_lastdirdir(self.lastdirdir)
-        write_lastsave(self.lastsave)
-        write_zoomfactor(self.zoom_factor)        
-        write_scroll_values(self.scroll_values)
 
     def update_title(self):
         dict_title = self.create_dict_title()
@@ -2124,6 +1926,75 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 self.set_word_input(selection)
 
 
+    def write_state(self):
+        appstate = {}
+        history = []
+        for i in reversed(range(self.history_view.count())):
+            item = self.history_view.item(i)
+            preferred_dicts = item.preferred_dicts
+            history.append([unicode(item.text()), preferred_dicts])
+        appstate['history'] = history
+        pos = self.pos()
+        size = self.size()
+        appstate['geometry'] = [pos.x(), pos.y(), size.width(), size.height()]
+        appstate['historycurrent'] = self.history_view.currentRow()
+        appstate['lastfiledir'] = self.lastfiledir
+        appstate['lastdirdir'] = self.lastdirdir
+        appstate['lastsave'] = self.lastsave
+        appstate['zoomfactor'] = self.zoom_factor
+
+        scrollvalues = []        
+        for entry, value in self.scroll_values.iteritems():
+            scrollvalues.append([entry.volume_id, entry.index, value[0], value[1]])
+
+        appstate['scrollvalues'] = scrollvalues
+
+        state.write_state(appstate)
+
+        layout = self.saveState()
+        state.write_layout(layout)
+
+
+    def read_state(self):
+        appstate = state.read_state()
+        
+        x, y, w, h = appstate['geometry']
+        self.move(QPoint(x, y))
+        self.resize(QSize(w, h))
+
+        layout = state.read_layout()
+        if layout:
+            self.restoreState(QByteArray(layout))
+            
+        history = appstate['history']
+        for title, preferred_dicts in history:
+            self.add_to_history(title, preferred_dicts)
+
+        historycurrent = appstate['historycurrent']
+        if historycurrent > -1 and self.history_view.count():
+            self.history_view.blockSignals(True)
+            self.history_view.setCurrentRow(historycurrent)
+            self.history_view.blockSignals(False)
+            word = unicode(self.history_view.currentItem().text())
+            self.word_input.setText(word)
+            self.update_history_actions(None, None)
+
+        self.lastfiledir = appstate['lastfiledir']
+        self.lastdirdir = appstate['lastdirdir']
+        self.lastsave = appstate['lastsave']
+        self.zoom_factor = appstate['zoomfactor']
+
+        scrollvalues = appstate['scrollvalues']
+        for item in scrollvalues:
+            volume_id, index, scrollx, scrolly = item 
+            self.scroll_values[Entry(volume_id, index)] = (scrollx, scrolly)
+        
+        appearance = state.read_appearance()
+        colors = appearance['colors']
+        self.use_mediawiki_style = appearance['style']['use_mediawiki_style']
+        update_css(mkcss(colors))
+
+        
 def main(args, debug=False, dev_extras=False):
 
     if not os.path.exists(app_dir):
@@ -2143,45 +2014,10 @@ def main(args, debug=False, dev_extras=False):
     if debug:
         dv.add_debug_menu()
 
-    x, y, w, h = read_geometry()
-    dv.move(QPoint(x, y))
-    dv.resize(QSize(w, h))
-
-    if os.path.exists(layout_file):
-        try:
-            dv.restoreState(QByteArray(load_file(layout_file, binary=True)))
-        except:
-            log.exception('Failed to restore layout from %s', layout_file)
-
+    dv.read_state()
     dv.show()
-
-    for title, preferred_dicts in read_history():
-        dv.add_to_history(title, preferred_dicts)
-
-    if os.path.exists(history_current_file):
-        try:
-            history_current = int(load_file(history_current_file))
-        except:
-            log.exception('Failed to load data from %s', history_current_file)
-        else:
-            if history_current > -1 and dv.history_view.count():
-                dv.history_view.blockSignals(True)
-                dv.history_view.setCurrentRow(history_current)
-                dv.history_view.blockSignals(False)
-                word = unicode(dv.history_view.currentItem().text())
-                dv.word_input.setText(word)
-                dv.update_history_actions(None, None)
-
-    #dv.preferred_dicts = read_preferred_dicts()
-    dv.lastfiledir = read_lastfiledir()
-    dv.lastdirdir = read_lastdirdir()
-    dv.lastsave = read_lastsave()
-    dv.zoom_factor = read_zoomfactor()    
-    dv.scroll_values = read_scroll_values()
     dv.word_input.setFocus()
-    colors, use_mediawiki_style = read_appearance()
-    update_css(mkcss(colors))
-    dv.use_mediawiki_style = use_mediawiki_style
+
     preferred_enc = locale.getpreferredencoding()
-    dv.open_dicts(read_sources()+[arg.decode(preferred_enc) for arg in args])
+    dv.open_dicts(state.read_sources()+[arg.decode(preferred_enc) for arg in args])
     sys.exit(app.exec_())
