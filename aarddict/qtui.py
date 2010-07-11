@@ -310,7 +310,7 @@ class LineEditWithClear(QLineEdit):
         box = QHBoxLayout()
         btn_clear = QPushButton()
         btn_clear.clicked.connect(self.clear)
-        btn_clear.setIcon(res.icon('edit-clear'))
+        btn_clear.setIcon(res.icons['edit-clear'])
         btn_clear.setToolTip(_('Clear'))
         btn_clear.setCursor(Qt.ArrowCursor)
         self.btn_clear = btn_clear
