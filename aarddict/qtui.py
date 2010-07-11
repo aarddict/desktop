@@ -53,12 +53,13 @@ style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>',
                           re.UNICODE | re.DOTALL)
 http_link_re = re.compile("http[s]?://[^\s\)]+",
                           re.UNICODE)
-
 max_history = 50
+
 
 def linkify(text):
     return http_link_re.sub(lambda m: '<a href="%(target)s">%(target)s</a>'
                             % dict(target=m.group(0)), text)
+
 
 class WebPage(QWebPage):
 
@@ -85,7 +86,6 @@ class WebView(QWebView):
         self.action_lookup_selection = None
 
     title = property(lambda self: self.entry.title)
-
 
     def context_menu_requested(self, point):
         context_menu = QMenu()
@@ -136,6 +136,7 @@ class Matcher(QObject):
             self._result = True
         else:
             self._result = False
+
 
 matcher = Matcher()
 
@@ -701,7 +702,6 @@ class DictView(QMainWindow):
         toolbar.addAction(action_quit)
         self.addToolBar(toolbar)
 
-
         find_toolbar = FindWidget(self.tabs)
         find_toolbar.hide()
 
@@ -722,8 +722,6 @@ class DictView(QMainWindow):
         central_widget_box.addWidget(find_toolbar)
         central_widget = QWidget()
         central_widget.setLayout(central_widget_box)
-
-
         self.setCentralWidget(central_widget)
 
         self.timer = QTimer()
@@ -765,7 +763,6 @@ class DictView(QMainWindow):
                                    triggered=debug.dump_type_count_checkpoint_diff))
         mn_debug.addAction(QAction('Run GC', self, triggered=debug.rungc))
 
-
     def add_dicts(self):
         self.open_dicts(self.select_files())
 
@@ -773,9 +770,7 @@ class DictView(QMainWindow):
         self.open_dicts(self.select_dir())
 
     def open_dicts(self, sources):
-
         self.sources = state.write_sources(self.sources + sources)
-
         dict_open_thread = DictOpenThread(sources, self.dictionaries, self)
 
         progress = QProgressDialog(self)
@@ -824,7 +819,6 @@ class DictView(QMainWindow):
         dict_open_thread.finished.connect(finished, Qt.QueuedConnection)
         dict_open_thread.start()
 
-
     def select_files(self):
         file_names = QFileDialog.getOpenFileNames(self, _('Add Dictionary'),
                                                   self.lastfiledir,
@@ -833,7 +827,6 @@ class DictView(QMainWindow):
         if file_names:
             self.lastfiledir = os.path.dirname(file_names[-1])
         return file_names
-
 
     def select_dir(self):
         name = QFileDialog.getExistingDirectory (self, _('Add Dictionary Directory'),
@@ -1524,10 +1517,7 @@ class DictView(QMainWindow):
         content = QVBoxLayout()
 
         preview_pane = SizedWebView(QSize(300, 300))
-
-
         preview_pane.setPage(WebPage(self))
-
         html = _("""<div id="globalWrapper">
 This is an <a href="#">internal link</a>. <br>
 This is an <a href="http://example.com">external link</a>. <br>
@@ -1537,7 +1527,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 <div>1. <a href="#_r123">&#8593;</a> This is a footnote.</div>
 </div>
 """)
-
         preview_pane.page().currentFrame().setHtml(res.style() + html)
 
         colors = res.colors
@@ -1679,12 +1668,12 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                     msg_box = QMessageBox(self)
                     msg_box.setWindowTitle(_('Failed to Save Article'))
                     msg_box.setIcon(QMessageBox.Critical)
-                    msg_box.setInformativeText(_('There was an error when writing article to file %s')
+                    msg_box.setInformativeText(_('There was an error when '
+                                                 'writing article to file %s')
                                                % file_name)
                     msg_box.setDetailedText(unicode(e))
                     msg_box.setStandardButtons(QMessageBox.Ok)
                     msg_box.open()
-
 
     def copy_article(self):
         current_tab = self.tabs.currentWidget()
@@ -1693,7 +1682,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             page.triggerAction(QWebPage.SelectAll)
             page.triggerAction(QWebPage.Copy)
             page.currentFrame().evaluateJavaScript("document.getSelection().empty();")
-
 
     def lookup_selection(self):
         current_tab = self.tabs.currentWidget()
@@ -1710,7 +1698,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             selection = current_tab.selectedText()
             if selection:
                 self.set_word_input(selection)
-
 
     def write_state(self):
         appstate = {}
@@ -1743,7 +1730,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         appearance = dict(style=dict(use_mediawiki_style=res.use_mediawiki_style),
                           colors=res.colors)
         state.write_appearance(appearance)
-
 
     def read_state(self):
         appstate = state.read_state()
