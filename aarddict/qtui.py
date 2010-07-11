@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 
 style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>',
                           re.UNICODE | re.DOTALL)
-http_link_re = re.compile("http[s]?://[^\s\)]+", 
+http_link_re = re.compile("http[s]?://[^\s\)]+",
                           re.UNICODE)
 
 max_history = 50
@@ -172,8 +172,9 @@ class WordLookupThread(QThread):
                 raise WordLookupStopRequested
         except WordLookupStopRequested:
             self.stopped.emit(self.word)
-        except Exception, e:
-            self.lookup_failed.emit(self.word, u''.join(traceback.format_exc()))
+        except Exception:
+            self.lookup_failed.emit(self.word, 
+                                    u''.join(traceback.format_exc()))
         else:
             log.debug('Looked up %r in %ss', wordstr, time.time() - t0)
             self.done.emit(self.word, entries)
@@ -198,9 +199,10 @@ class ArticleLoadThread(QThread):
             article = self._load_article(self.view.entry)
             redirect = None if article.entry == self.view.entry else self.view.entry.title
             article.text = res.article(article.text, redirect)
-        except Exception, e:
+        except:
             log.exception('Failed to load article for %r', self.view.entry)
-            self.article_load_failed.emit(self.view, u''.join(traceback.format_exc()))
+            self.article_load_failed.emit(self.view, 
+                                          u''.join(traceback.format_exc()))
         else:
             self.view.article = article
             self.view.loading = False
@@ -386,7 +388,6 @@ class FindWidget(QToolBar):
         self.cb_find_match_case = QCheckBox(_('&Match Case'))
         self.addWidget(self.cb_find_match_case)
 
-
     def find_in_article(self, word=None, forward=True):
         if word is None:
             word = self.find_input.text()
@@ -399,7 +400,6 @@ class FindWidget(QToolBar):
             if not forward:
                 flags = flags | QWebPage.FindBackward
             page.findText(word, flags)
-
 
     def keyPressEvent (self, event):
         key = event.key()
@@ -415,7 +415,7 @@ class FindWidget(QToolBar):
 
 class SingleRowItemSelectionModel(QItemSelectionModel):
 
-    def select(self, arg1, arg2):
+    def select(self, arg1, _arg2):
         super(SingleRowItemSelectionModel, self).select(arg1,
                                                         QItemSelectionModel.Rows |
                                                         QItemSelectionModel.Select |
@@ -631,7 +631,8 @@ class DictView(QMainWindow):
         self.action_online_article = QAction(icons['emblem-web'], _('&View Online'),
                                              self, triggered=self.show_article_online)
         self.action_online_article.setShortcut(_('Ctrl+T'))
-        self.action_online_article.setToolTip(_('Open online version of this article in a web browser'))
+        self.action_online_article.setToolTip(_('Open online version of this '
+                                                'article in a web browser'))
         mn_article.addAction(self.action_online_article)
 
         mn_view = menubar.addMenu(_('&View'))
@@ -752,7 +753,7 @@ class DictView(QMainWindow):
                          enumerate(reversed(self.dictionaries))])
 
     def add_debug_menu(self):
-        import debug
+        from aarddict import debug
         mn_debug = self.menuBar().addMenu('Debug')
         mn_debug.addAction(QAction('Cache Stats', self,
                                    triggered=debug.dump_cache_stats))
@@ -946,7 +947,7 @@ class DictView(QMainWindow):
         self.scheduled_func = func
         self.timer.start(delay)
 
-    def word_input_text_edited(self, word=None):
+    def word_input_text_edited(self, _word=None):
         self.schedule(self.update_word_completion)
 
     def update_word_completion(self):
@@ -959,10 +960,13 @@ class DictView(QMainWindow):
             self.current_lookup_thread = None
 
         word_lookup_thread = WordLookupThread(self.dictionaries, word, self)
-        word_lookup_thread.lookup_failed.connect(self.word_lookup_failed, Qt.QueuedConnection)
-        word_lookup_thread.done.connect(self.word_lookup_finished, Qt.QueuedConnection)
+        word_lookup_thread.lookup_failed.connect(self.word_lookup_failed,
+                                                 Qt.QueuedConnection)
+        word_lookup_thread.done.connect(self.word_lookup_finished,
+                                        Qt.QueuedConnection)
         word_lookup_thread.finished.connect(
-            functools.partial(word_lookup_thread.setParent, None), Qt.QueuedConnection)
+            functools.partial(word_lookup_thread.setParent, None),
+            Qt.QueuedConnection)
         self.current_lookup_thread = word_lookup_thread
         word_lookup_thread.start(QThread.LowestPriority)
 
@@ -971,7 +975,6 @@ class DictView(QMainWindow):
                              '%(exception)s') %
                            dict(word=word, exception=exception_txt))
         self.show_dict_error(_('Word Lookup Failed'), formatted_error)
-
 
     def word_lookup_finished(self, word, entries):
         log.debug('Lookup for %r finished, got %d article(s)', word, len(entries))
@@ -1022,21 +1025,22 @@ class DictView(QMainWindow):
             self.word_completion.setCurrentItem(next_item)
             self.word_completion.scrollToItem(next_item)
 
-    def word_selection_changed(self, selected, deselected):
+    def word_selection_changed(self, selected, _deselected):
         func = functools.partial(self.update_shown_article, selected)
         self.schedule(func, 200)
 
-    def history_selection_changed(self, selected, deselected):
+    def history_selection_changed(self, selected, _deselected):
         title = unicode(selected.text()) if selected else u''
         def func():
             self.update_preferred_dicts()
             self.set_word_input(title)
         self.schedule(func, 200)
 
-    def update_history_actions(self, selected, deselected):
+    def update_history_actions(self, _selected, _deselected):
         current_row = self.history_view.currentRow()
         self.action_history_fwd.setEnabled(current_row > 0)
-        self.action_history_back.setEnabled(-1 < current_row < self.history_view.count() - 1)
+        self.action_history_back.setEnabled(-1 < current_row <
+                                             self.history_view.count() - 1)
 
     def update_shown_article(self, selected):
         self.clear_current_articles()
@@ -1069,14 +1073,17 @@ class DictView(QMainWindow):
     def load_article(self, view):
         view.article_loaded = True
         load_thread = ArticleLoadThread(self.dictionaries, view, self)
-        load_thread.article_loaded.connect(self.article_loaded, Qt.QueuedConnection)
-        load_thread.article_load_failed.connect(self.article_load_failed, Qt.QueuedConnection)
+        load_thread.article_loaded.connect(self.article_loaded, 
+                                           Qt.QueuedConnection)
+        load_thread.article_load_failed.connect(self.article_load_failed, 
+                                                Qt.QueuedConnection)
         load_thread.start(QThread.LowestPriority)
 
     def article_load_failed(self, view, exception_txt):
         entry = view.entry
         vol = self.dictionaries.volume(entry.volume_id)
-        view.page().currentFrame().setHtml(_('Failed to load article %s') % view.entry.title)
+        view.page().currentFrame().setHtml(_('Failed to load article %s') 
+                                           % view.entry.title)
         formatted_error = (_('Error reading article %(title)s from '
                              '%(dict_title)s (file %(dict_file)s):\n'
                              '%(exception)s') %
@@ -1116,7 +1123,8 @@ class DictView(QMainWindow):
 
     def article_loaded(self, view):
         article = view.article
-        log.debug('Loaded article for %r (original entry %r)', article.entry, view.entry)
+        log.debug('Loaded article for %r (original entry %r)', 
+                  article.entry, view.entry)
 
         def loadFinished(ok):
             log.debug('article loadFinished for entry %r', article.entry)
@@ -1196,8 +1204,8 @@ class DictView(QMainWindow):
         else:
             title = '#'.join((path, fragment)) if fragment else path
             if '_' in title:
-                log.debug('Found underscore character in title %r, replacing with space',
-                          title)
+                log.debug('Found underscore character in title %r, '
+                          'replacing with space', title)
                 title = title.replace(u'_', u' ')
             if scheme:
                 current_tab = self.tabs.currentWidget()
@@ -1207,10 +1215,12 @@ class DictView(QMainWindow):
                 if article_url:
                     dictionary_id = self.dictionaries.dict_by_article_url(article_url)
                     if dictionary_id:
-                        log.debug('Found dictionary %r by namespace %r', dictionary_id, scheme)
+                        log.debug('Found dictionary %r by namespace %r', 
+                                  dictionary_id, scheme)
                         self.update_preferred_dicts(dictionary_id)
                     else:
-                        log.debug('No dictionary with article url %r', article_url)
+                        log.debug('No dictionary with article url %r', 
+                                  article_url)
                 else:
                     log.debug('Scheme %r does not appear to be a valid namespace, '
                               'probably part of title', scheme)
@@ -1276,7 +1286,7 @@ class DictView(QMainWindow):
         if full_screen:
             self.showFullScreen()
         else:
-             self.showNormal()
+            self.showNormal()
 
     def increase_text_size(self):
         self.set_zoom_factor(self.zoom_factor*1.1)
@@ -1315,7 +1325,8 @@ class DictView(QMainWindow):
         item_list.setSelectionMode(QTableWidget.SingleSelection)
         item_list.setEditTriggers(QTableWidget.NoEditTriggers)
         item_list.verticalHeader().setVisible(False)
-        item_list.setSelectionModel(SingleRowItemSelectionModel(item_list.model()))
+        item_list.setSelectionModel(
+            SingleRowItemSelectionModel(item_list.model()))
 
         for i, volume in enumerate(self.dictionaries):
             text = format_title(volume)
@@ -1459,7 +1470,7 @@ class DictView(QMainWindow):
                 if d.source:
                     params['source'] = '<h2>%s</h2>%s' % (_('Source'), linkify(d.source))
                 if d.copyright:
-                    params['copyright'] = '<h2>%s</h2>%s' %(_('Copyright Notice'), linkify(d.copyright))
+                    params['copyright'] = '<h2>%s</h2>%s' % (_('Copyright Notice'), linkify(d.copyright))
                 if d.license:
                     params['license'] = '<h2>%s</h2><pre>%s</pre>' % (_('License'), d.license)
 
