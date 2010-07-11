@@ -13,7 +13,7 @@ from collections import defaultdict, deque
 
 from PyQt4.QtCore import (QObject, Qt, QThread,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
-                          QSize, QByteArray, QPoint, 
+                          QSize, QByteArray, QPoint,
                           pyqtSignal, QString)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
@@ -49,8 +49,10 @@ from aarddict.res import icons
 
 log = logging.getLogger(__name__)
 
-style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>', re.UNICODE | re.DOTALL)
-http_link_re = re.compile("http[s]?://[^\s\)]+", re.UNICODE)
+style_tag_re = re.compile(u'<style type="text/css">(.+?)</style>',
+                          re.UNICODE | re.DOTALL)
+http_link_re = re.compile("http[s]?://[^\s\)]+", 
+                          re.UNICODE)
 
 max_history = 50
 
@@ -194,7 +196,6 @@ class ArticleLoadThread(QThread):
     def run(self):
         try:
             article = self._load_article(self.view.entry)
-            #article.text = self._tohtml(article)
             redirect = None if article.entry == self.view.entry else self.view.entry.title
             article.text = res.article(article.text, redirect)
         except Exception, e:
@@ -747,7 +748,7 @@ class DictView(QMainWindow):
         if c is not None:
             return c.preferred_dicts
         else:
-            return dict([(vol.uuid.hex, i) for i, vol in 
+            return dict([(vol.uuid.hex, i) for i, vol in
                          enumerate(reversed(self.dictionaries))])
 
     def add_debug_menu(self):
@@ -1421,7 +1422,7 @@ class DictView(QMainWindow):
 
         content.addWidget(button_box)
 
-        def current_changed(current, old_current):
+        def current_changed(current, __):
             uuid = current.data(Qt.UserRole).toPyObject()
             volumes = dictmap[uuid]
 
@@ -1528,9 +1529,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         preview_pane.page().currentFrame().setHtml(res.style() + html)
 
-        appearance = state.read_appearance()
-
-        colors = appearance['colors']
+        colors = res.colors
 
         color_pane = QGridLayout()
         color_pane.setColumnStretch(1, 2)
@@ -1542,9 +1541,9 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 pixmap.fill(c)
                 btn.setIcon(QIcon(pixmap))
                 colors[color_name] = str(c.name())
-                style_str = res.css(colors)
                 if not cb_use_mediawiki_style.isChecked():
-                    preview_pane.page().currentFrame().setHtml(style_str + html)
+                    frame = preview_pane.page().currentFrame()
+                    frame.setHtml(res.style() + html)
 
         pixmap = QPixmap(24, 16)
         pixmap.fill(QColor(colors['internal_link_fg']))
@@ -1599,45 +1598,30 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         cb_use_mediawiki_style = QCheckBox(_('Use Wikipedia style'))
         color_pane.addWidget(cb_use_mediawiki_style, 5, 0, 1, 2)
 
-        def use_mediawiki_style_changed(state):
-            if state == Qt.Checked:
-                style_str = res.mediawiki_style
-            else:
-                style_str = res.css(colors)
-            preview_pane.page().currentFrame().setHtml(style_str + html)
-
+        def use_mediawiki_style_changed(_):
+            res.use_mediawiki_style = cb_use_mediawiki_style.isChecked()
+            preview_pane.page().currentFrame().setHtml(res.style() + html)
 
         cb_use_mediawiki_style.stateChanged.connect(use_mediawiki_style_changed)
         cb_use_mediawiki_style.setChecked(res.use_mediawiki_style)
-
         color_pane.addWidget(preview_pane, 0, 2, 6, 1)
-
         content.addLayout(color_pane)
-
         button_box = QDialogButtonBox()
-
         button_box.setStandardButtons(QDialogButtonBox.Close)
-
         content.addWidget(button_box)
 
         def close():
             dialog.reject()
-            res.update_css(res.css(colors))
-            res.use_mediawiki_style = cb_use_mediawiki_style.isChecked()
-            style_str = res.style()
+            style = res.style()
             for i in range(self.tabs.count()):
                 view = self.tabs.widget(i)
-                currentFrame = view.page().currentFrame()
-                html = unicode(currentFrame.toHtml())
-                html = style_tag_re.sub(style_str, html, count=1)
-                view.page().currentFrame().setHtml(html)
-            appearance['style']['use_mediawiki_style'] = res.use_mediawiki_style
-            state.write_appearance(appearance)
+                frame = view.page().currentFrame()
+                html = unicode(frame.toHtml())
+                html = style_tag_re.sub(style, html, count=1)
+                frame.setHtml(html)
 
         button_box.rejected.connect(close)
-
         dialog.setLayout(content)
-
         dialog.exec_()
 
     def closeEvent(self, event):
@@ -1666,7 +1650,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
     def save_article(self):
         current_tab = self.tabs.currentWidget()
         if current_tab:
-            #article_title = unicode(current_tab.property('aard:title').toString())
             article_title = current_tab.title
             dirname = os.path.dirname(self.lastsave)
             propose_name = os.path.extsep.join((article_title, u'html'))
@@ -1735,7 +1718,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         appstate['lastsave'] = self.lastsave
         appstate['zoomfactor'] = self.zoom_factor
 
-        scrollvalues = []        
+        scrollvalues = []
         for entry, value in self.scroll_values.iteritems():
             scrollvalues.append([entry.volume_id, entry.index, value[0], value[1]])
 
@@ -1746,10 +1729,14 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         layout = self.saveState()
         state.write_layout(layout)
 
+        appearance = dict(style=dict(use_mediawiki_style=res.use_mediawiki_style),
+                          colors=res.colors)
+        state.write_appearance(appearance)
+
 
     def read_state(self):
         appstate = state.read_state()
-        
+
         x, y, w, h = appstate['geometry']
         self.move(QPoint(x, y))
         self.resize(QSize(w, h))
@@ -1757,7 +1744,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         layout = state.read_layout()
         if layout:
             self.restoreState(QByteArray(layout))
-            
+
         history = appstate['history']
         for title, preferred_dicts in history:
             self.add_to_history(title, preferred_dicts)
@@ -1778,15 +1765,14 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         scrollvalues = appstate['scrollvalues']
         for item in scrollvalues:
-            volume_id, index, scrollx, scrolly = item 
+            volume_id, index, scrollx, scrolly = item
             self.scroll_values[Entry(volume_id, index)] = (scrollx, scrolly)
-        
-        appearance = state.read_appearance()
-        colors = appearance['colors']
-        res.use_mediawiki_style = appearance['style']['use_mediawiki_style']
-        res.update_css(res.css(colors))
 
-        
+        appearance = state.read_appearance()
+        res.use_mediawiki_style = appearance['style']['use_mediawiki_style']
+        res.colors = appearance['colors']
+
+
 def main(args, debug=False, dev_extras=False):
     app = QApplication(sys.argv)
     res.load(app)
