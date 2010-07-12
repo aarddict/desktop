@@ -174,7 +174,7 @@ class WordLookupThread(QThread):
         except WordLookupStopRequested:
             self.stopped.emit(self.word)
         except Exception:
-            self.lookup_failed.emit(self.word, 
+            self.lookup_failed.emit(self.word,
                                     u''.join(traceback.format_exc()))
         else:
             log.debug('Looked up %r in %ss', wordstr, time.time() - t0)
@@ -202,7 +202,7 @@ class ArticleLoadThread(QThread):
             article.text = res.article(article.text, redirect)
         except:
             log.exception('Failed to load article for %r', self.view.entry)
-            self.article_load_failed.emit(self.view, 
+            self.article_load_failed.emit(self.view,
                                           u''.join(traceback.format_exc()))
         else:
             self.view.article = article
@@ -365,11 +365,13 @@ class FindWidget(QToolBar):
     def __init__(self, tabs, parent=None):
         QToolBar.__init__(self, _('&Find'), parent)
         self.tabs = tabs
+
         self.find_input = LineEditWithClear(self.tabs.currentWidget)
         self.find_input.textEdited.connect(self.find_in_article)
 
-        lbl_find = QLabel(_('Find:'))
+        lbl_find = QLabel(_('&Find:'))
         lbl_find.setStyleSheet('padding-right: 2px;')
+        lbl_find.setBuddy(self.find_input)
         find_action_close = QAction(icons['window-close'], '', self,
                                     triggered=self.hide)
         find_action_close.setToolTip(_('Close Find bar'))
@@ -1067,16 +1069,16 @@ class DictView(QMainWindow):
     def load_article(self, view):
         view.article_loaded = True
         load_thread = ArticleLoadThread(self.dictionaries, view, self)
-        load_thread.article_loaded.connect(self.article_loaded, 
+        load_thread.article_loaded.connect(self.article_loaded,
                                            Qt.QueuedConnection)
-        load_thread.article_load_failed.connect(self.article_load_failed, 
+        load_thread.article_load_failed.connect(self.article_load_failed,
                                                 Qt.QueuedConnection)
         load_thread.start(QThread.LowestPriority)
 
     def article_load_failed(self, view, exception_txt):
         entry = view.entry
         vol = self.dictionaries.volume(entry.volume_id)
-        view.page().currentFrame().setHtml(_('Failed to load article %s') 
+        view.page().currentFrame().setHtml(_('Failed to load article %s')
                                            % view.entry.title)
         formatted_error = (_('Error reading article %(title)s from '
                              '%(dict_title)s (file %(dict_file)s):\n'
@@ -1117,7 +1119,7 @@ class DictView(QMainWindow):
 
     def article_loaded(self, view):
         article = view.article
-        log.debug('Loaded article for %r (original entry %r)', 
+        log.debug('Loaded article for %r (original entry %r)',
                   article.entry, view.entry)
 
         def loadFinished(ok):
@@ -1209,11 +1211,11 @@ class DictView(QMainWindow):
                 if article_url:
                     dictionary_id = self.dictionaries.dict_by_article_url(article_url)
                     if dictionary_id:
-                        log.debug('Found dictionary %r by namespace %r', 
+                        log.debug('Found dictionary %r by namespace %r',
                                   dictionary_id, scheme)
                         self.update_preferred_dicts(dictionary_id)
                     else:
-                        log.debug('No dictionary with article url %r', 
+                        log.debug('No dictionary with article url %r',
                                   article_url)
                 else:
                     log.debug('Scheme %r does not appear to be a valid namespace, '
