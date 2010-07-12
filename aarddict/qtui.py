@@ -945,7 +945,8 @@ class DictView(QMainWindow):
 
     def update_word_completion(self):
         word = self.word_input.text()
-        self.word_input.setFocus()
+        if not self.history_view.hasFocus():
+            self.word_input.setFocus()
         self.word_completion.clear()
         self.word_completion.addItem(_('Loading...'))
         if self.current_lookup_thread:
