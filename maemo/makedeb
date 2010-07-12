@@ -5,7 +5,7 @@ mkdir -p usr/{bin/,lib/python2.5/site-packages/aarddict/locale,share/{applicatio
 
 cp ../run usr/bin/aarddict || exit
 
-for i in "*.py" "*.js" "*.png" "*.cfg" "*.css" "*.tmpl" locale icons
+for i in "*.py" "*.js" "*.png" "*.css" "*.tmpl" locale icons
 do
   cp -R ../aarddict/$i usr/lib/python2.5/site-packages/aarddict || exit
 done
