@@ -85,7 +85,8 @@ def read_appearance():
                                   external_link_fg='#0000cc',
                                   footnote_backref_fg='#00557f',
                                   table_bg=''),
-                      style=dict(use_mediawiki_style=True))
+                      style=dict(use_mediawiki_style=True),
+                      fonts=dict(default='Sans Serif,10,-1,5,50,0,0,0,0,0'))
     if os.path.exists(appearance_file):
         with open(appearance_file, 'r') as f:
             loaded = json.load(f)

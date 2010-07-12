@@ -4,10 +4,10 @@ import locale
 from string import Template # pylint: disable-msg=W0402
 
 from PyQt4.QtCore import QTranslator, QLocale, QSize
-from PyQt4.QtGui import QIcon
+from PyQt4.QtGui import QIcon, QFont
 
 import aarddict
-from aarddict import package_dir 
+from aarddict import package_dir
 
 
 def _read(name):
@@ -28,9 +28,9 @@ _aard_style_tmpl = Template(('<style type="text/css">%s</style>' %
 
 _mediawiki_style = ('<style type="text/css">%s</style>' %
                    '\n'.join((_shared_style_str,
-                              _read(os.path.join(package_dir, 
+                              _read(os.path.join(package_dir,
                                                  'mediawiki_shared.css')),
-                              _read(os.path.join(package_dir, 
+                              _read(os.path.join(package_dir,
                                                  'mediawiki_monobook.css')))))
 
 _iconset = 'Human-O2'
@@ -169,14 +169,14 @@ def _install_translator(app):
     gettext_domain = aarddict.__name__
     gettext.bindtextdomain(gettext_domain, locale_dir)
     gettext.textdomain(gettext_domain)
-    gettext.install(gettext_domain, locale_dir, 
+    gettext.install(gettext_domain, locale_dir,
                     unicode=True, names=['ngettext'])
 
     qtranslator = QTranslator()
     qtranslator.load('qt_'+str(QLocale.system().name()), locale_dir)
     app.installTranslator(qtranslator)
 
-    
+
 def load(app):
     _load_icons()
     _install_translator(app)
@@ -184,10 +184,42 @@ def load(app):
 
 colors = None
 use_mediawiki_style = True
+font = None
+
+def _css_font(qfont):
+    params = {}
+
+    if not qfont.family().isEmpty():
+        params['font_family'] = unicode(qfont.family())
+    else:
+        params['font_family'] = 'Sans Serif'
+
+    if qfont.pointSize() > -1:
+        params['font_size'] = '%d pt' % qfont.pointSize()
+    elif font.pixelSize() > -1:
+        params['font_size'] = '%d px' % qfont.pixelSize()
+
+    if qfont.bold():
+        params['font_weight'] = 'bold'
+    else:
+        params['font_weight'] = 'normal'
+
+    if qfont.style() == QFont.StyleItalic:
+        params['font_style'] = 'italic'
+    elif qfont.style() == QFont.StyleOblique:
+        params['font_style'] = 'oblique'
+    else:
+        params['font_style'] = 'normal'
+
+    return params
 
 def style():
-    return (_mediawiki_style if use_mediawiki_style else 
-            _aard_style_tmpl.substitute(colors))
+    if use_mediawiki_style:
+        return _mediawiki_style
+    else:
+        params = _css_font(font)
+        params.update(colors)
+        return _aard_style_tmpl.safe_substitute(params)
 
 
 def article(content, redirect):

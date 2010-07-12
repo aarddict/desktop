@@ -25,7 +25,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QColor, QLabel,
                          QColorDialog, QCheckBox, QKeySequence, QPalette,
-                         QMenu, QShortcut)
+                         QMenu, QShortcut, QFontDialog, QFontDatabase, QFont)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
@@ -1595,8 +1595,21 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         btn_active_link.clicked.connect(
             functools.partial(set_color, btn_active_link, 'active_link_bg'))
 
+        btn_font = QPushButton(_('AaBb'))
+        btn_font.setFont(res.font)
+        def select_font():
+            font, ok = QFontDialog.getFont(res.font, self)
+            if ok:
+                res.font = font
+                btn_font.setFont(font)
+                frame = preview_pane.page().currentFrame()
+                frame.setHtml(res.style() + html)
+        btn_font.clicked.connect(select_font)
+        color_pane.addWidget(btn_font, 5, 0)
+        color_pane.addWidget(QLabel(_('Article Text')), 5, 1)
+
         cb_use_mediawiki_style = QCheckBox(_('Use Wikipedia style'))
-        color_pane.addWidget(cb_use_mediawiki_style, 5, 0, 1, 2)
+        color_pane.addWidget(cb_use_mediawiki_style, 6, 0, 1, 2)
 
         def use_mediawiki_style_changed(_):
             res.use_mediawiki_style = cb_use_mediawiki_style.isChecked()
@@ -1604,7 +1617,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         cb_use_mediawiki_style.stateChanged.connect(use_mediawiki_style_changed)
         cb_use_mediawiki_style.setChecked(res.use_mediawiki_style)
-        color_pane.addWidget(preview_pane, 0, 2, 6, 1)
+        color_pane.addWidget(preview_pane, 0, 2, 7, 1)
         content.addLayout(color_pane)
         button_box = QDialogButtonBox()
         button_box.setStandardButtons(QDialogButtonBox.Close)
@@ -1728,7 +1741,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         state.write_layout(layout)
 
         appearance = dict(style=dict(use_mediawiki_style=res.use_mediawiki_style),
-                          colors=res.colors)
+                          colors=res.colors,
+                          fonts=dict(default=unicode(res.font.toString())))
         state.write_appearance(appearance)
 
     def read_state(self):
@@ -1768,6 +1782,9 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         appearance = state.read_appearance()
         res.use_mediawiki_style = appearance['style']['use_mediawiki_style']
         res.colors = appearance['colors']
+        font = QFont()
+        font.fromString(appearance['fonts']['default'])
+        res.font = font
 
 
 def main(args, debug=False, dev_extras=False):
