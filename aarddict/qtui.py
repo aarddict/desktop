@@ -25,7 +25,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QColor, QLabel,
                          QColorDialog, QCheckBox, QKeySequence, QPalette,
-                         QMenu, QShortcut, QFontDialog, QFontDatabase, QFont)
+                         QMenu, QShortcut, QFontDialog, QFont)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
