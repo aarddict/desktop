@@ -314,6 +314,7 @@ class LineEditWithClear(QLineEdit):
         btn_clear = QPushButton()
         btn_clear.clicked.connect(self.clear)
         btn_clear.setIcon(res.icons['edit-clear'])
+        btn_clear.setIconSize(QSize(16,16))
         btn_clear.setToolTip(_('Clear'))
         btn_clear.setCursor(Qt.ArrowCursor)
         self.btn_clear = btn_clear
@@ -365,7 +366,7 @@ class FindWidget(QToolBar):
     def __init__(self, tabs, parent=None):
         QToolBar.__init__(self, _('&Find'), parent)
         self.tabs = tabs
-
+        self.setIconSize(QSize(16,16))
         self.find_input = LineEditWithClear(self.tabs.currentWidget)
         self.find_input.textEdited.connect(self.find_in_article)
 
