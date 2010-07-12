@@ -45,8 +45,10 @@ def read_sources():
 
 def write_state(state):
     f = gzip.open(state_file, 'wb')
-    json.dump(state, f, indent=2)
-    f.close()
+    try:
+        json.dump(state, f, indent=2)
+    finally:
+        f.close()
 
 def read_state():
     home = os.path.expanduser('~')
