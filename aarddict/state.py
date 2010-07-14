@@ -66,13 +66,12 @@ def read_state():
                  history_current=-1,
                  scroll_values={})
     if os.path.exists(state_file):
-        try:
-            f = gzip.open(state_file, 'rb')
+        f = gzip.open(state_file, 'rb')
+        try:            
             loaded = json.load(f)
-        except:
-            log.exception('Failed to load state')
-        else:
             state.update(loaded)
+        finally:
+            f.close()
     return state
 
 
