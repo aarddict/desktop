@@ -57,14 +57,14 @@ def read_state():
     r.moveCenter(QApplication.desktop().availableGeometry().center())
     geometry = [r.x(), r.y(), r.width(), r.height()]
 
-    state = dict(lastfiledir=home,
-                 lastdirdir=home,
-                 lastsave=home,
+    state = dict(last_file_parent=home,
+                 last_dir_parent=home,
+                 last_save=home,
                  geometry=geometry,
-                 zoomfactor=1.0,
+                 zoom_factor=1.0,
                  history=[],
-                 historycurrent=-1,
-                 scrollvalues={})
+                 history_current=-1,
+                 scroll_values={})
     if os.path.exists(state_file):
         try:
             f = gzip.open(state_file, 'rb')

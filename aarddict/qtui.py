@@ -737,9 +737,9 @@ class DictView(QMainWindow):
 
         self.sources = []
         self.zoom_factor = 1.0
-        self.lastfiledir = u''
-        self.lastdirdir = u''
-        self.lastsave = u''
+        self.last_file_parent = u''
+        self.last_dir_parent = u''
+        self.last_save = u''
 
         self.update_current_article_actions(-1)
         self.scroll_values = LimitedDict()
@@ -824,20 +824,20 @@ class DictView(QMainWindow):
 
     def select_files(self):
         file_names = QFileDialog.getOpenFileNames(self, _('Add Dictionary'),
-                                                  self.lastfiledir,
+                                                  self.last_file_parent,
                                                   _('Aard Dictionary Files')+' (*.aar)')
         file_names = [unicode(name) for name in file_names]
         if file_names:
-            self.lastfiledir = os.path.dirname(file_names[-1])
+            self.last_file_parent = os.path.dirname(file_names[-1])
         return file_names
 
     def select_dir(self):
         name = QFileDialog.getExistingDirectory (self, _('Add Dictionary Directory'),
-                                                      self.lastdirdir,
+                                                      self.last_dir_parent,
                                                       QFileDialog.ShowDirsOnly)
         dirname = unicode(name)
         if dirname:
-            self.lastdirdir = os.path.dirname(dirname)
+            self.last_dir_parent = os.path.dirname(dirname)
             return [dirname]
         else:
             return []
@@ -1668,14 +1668,14 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         current_tab = self.tabs.currentWidget()
         if current_tab:
             article_title = current_tab.title
-            dirname = os.path.dirname(self.lastsave)
+            dirname = os.path.dirname(self.last_save)
             propose_name = os.path.extsep.join((article_title, u'html'))
             file_name = QFileDialog.getSaveFileName(self, _('Save Article'),
                                                     os.path.join(dirname, propose_name),
                                                     _('HTML Documents (*.htm *.html)'))
             if file_name:
                 file_name = unicode(file_name)
-                self.lastsave = file_name
+                self.last_save = file_name
                 try:
                     with open(file_name, 'w') as f:
                         current_frame = current_tab.page().currentFrame()
@@ -1727,17 +1727,17 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         pos = self.pos()
         size = self.size()
         appstate['geometry'] = [pos.x(), pos.y(), size.width(), size.height()]
-        appstate['historycurrent'] = self.history_view.currentRow()
-        appstate['lastfiledir'] = self.lastfiledir
-        appstate['lastdirdir'] = self.lastdirdir
-        appstate['lastsave'] = self.lastsave
-        appstate['zoomfactor'] = self.zoom_factor
+        appstate['history_current'] = self.history_view.currentRow()
+        appstate['last_file_parent'] = self.last_file_parent
+        appstate['last_dir_parent'] = self.last_dir_parent
+        appstate['last_save'] = self.last_save
+        appstate['zoom_factor'] = self.zoom_factor
 
-        scrollvalues = []
+        scroll_values = []
         for entry, value in self.scroll_values.iteritems():
-            scrollvalues.append([entry.volume_id, entry.index, value[0], value[1]])
+            scroll_values.append([entry.volume_id, entry.index, value[0], value[1]])
 
-        appstate['scrollvalues'] = scrollvalues
+        appstate['scroll_values'] = scroll_values
 
         state.write_state(appstate)
 
@@ -1764,21 +1764,21 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         for title, preferred_dicts in history:
             self.add_to_history(title, preferred_dicts)
 
-        historycurrent = appstate['historycurrent']
-        if historycurrent > -1 and self.history_view.count():
+        history_current = appstate['history_current']
+        if history_current > -1 and self.history_view.count():
             self.history_view.blockSignals(True)
-            self.history_view.setCurrentRow(historycurrent)
+            self.history_view.setCurrentRow(history_current)
             self.history_view.blockSignals(False)
             word = unicode(self.history_view.currentItem().text())
             self.word_input.setText(word)
             self.update_history_actions(None, None)
 
-        self.lastfiledir = appstate['lastfiledir']
-        self.lastdirdir = appstate['lastdirdir']
-        self.lastsave = appstate['lastsave']
-        self.zoom_factor = appstate['zoomfactor']
+        self.last_file_parent = appstate['last_file_parent']
+        self.last_dir_parent = appstate['last_dir_parent']
+        self.last_save = appstate['last_save']
+        self.zoom_factor = appstate['zoom_factor']
 
-        scrollvalues = appstate['scrollvalues']
+        scrollvalues = appstate['scroll_values']
         for item in scrollvalues:
             volume_id, index, scrollx, scrolly = item
             self.scroll_values[Entry(volume_id, index)] = (scrollx, scrolly)
