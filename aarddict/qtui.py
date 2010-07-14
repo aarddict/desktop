@@ -1629,6 +1629,10 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         def close():
             dialog.reject()
+            appearance = dict(style=dict(use_mediawiki_style=res.use_mediawiki_style),
+                              colors=res.colors,
+                              fonts=dict(default=unicode(res.font.toString())))
+            state.write_appearance(appearance)
             style = res.style()
             for i in range(self.tabs.count()):
                 view = self.tabs.widget(i)
@@ -1744,19 +1748,14 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         layout = self.saveState()
         state.write_layout(layout)
 
-        appearance = dict(style=dict(use_mediawiki_style=res.use_mediawiki_style),
-                          colors=res.colors,
-                          fonts=dict(default=unicode(res.font.toString())))
-        state.write_appearance(appearance)
-
-    def read_state(self):
-        appstate = state.read_state()
+    def read_state(self, load):
+        appstate = state.read_state(load)
 
         x, y, w, h = appstate['geometry']
         self.move(QPoint(x, y))
         self.resize(QSize(w, h))
 
-        layout = state.read_layout()
+        layout = state.read_layout(load)
         if layout:
             self.restoreState(QByteArray(layout))
 
@@ -1783,7 +1782,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             volume_id, index, scrollx, scrolly = item
             self.scroll_values[Entry(volume_id, index)] = (scrollx, scrolly)
 
-        appearance = state.read_appearance()
+        appearance = state.read_appearance(load)
         res.use_mediawiki_style = appearance['style']['use_mediawiki_style']
         res.colors = appearance['colors']
         font = QFont()
@@ -1800,7 +1799,11 @@ def main(args, debug=False, dev_extras=False):
          .setAttribute(QWebSettings.DeveloperExtrasEnabled, True))
     if debug:
         dv.add_debug_menu()
-    dv.read_state()
+    try:
+        dv.read_state(True)
+    except:
+        state.show_error(_('Failed to load saved application state'))
+        dv.read_state(False)
     dv.show()
     dv.word_input.setFocus()
     preferred_enc = locale.getpreferredencoding()

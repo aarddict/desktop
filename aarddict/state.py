@@ -3,6 +3,7 @@ from __future__ import with_statement
 import logging
 import os
 import gzip
+import traceback
 
 try:
     import json
@@ -10,7 +11,7 @@ except ImportError:
     import simplejson as json
 
 from PyQt4.QtCore import QRect
-from PyQt4.QtGui import QApplication
+from PyQt4.QtGui import QApplication, QMessageBox
 
 log = logging.getLogger(__name__)
 
@@ -32,25 +33,34 @@ def write_sources(sources):
         else:
             log.debug('Source %r is already written, ignoring',
                       source)
-    with open(sources_file, 'w') as f:
-        json.dump(nodupe_sources, f, indent=2)
+    try:
+        with open(sources_file, 'w') as f:
+            json.dump(nodupe_sources, f, indent=2)
+    except:
+        show_error(_('Failed to save list of dictionary locations'))
     return nodupe_sources
 
 def read_sources():
-    if os.path.exists(sources_file):
-        with open(sources_file) as f:
-            return json.load(f)
+    try:
+        if os.path.exists(sources_file):
+            with open(sources_file) as f:
+                return json.load(f)
+    except:
+        show_error(_('Failed to load list of dictionary locations'))
     return []
 
 
 def write_state(state):
-    f = gzip.open(state_file, 'wb')
     try:
-        json.dump(state, f, indent=2)
-    finally:
-        f.close()
+        f = gzip.open(state_file, 'wb')
+        try:
+            json.dump(state, f, indent=2)
+        finally:
+            f.close()
+    except:
+        show_error(_('Failed to save application state'))
 
-def read_state():
+def read_state(load=True):
     home = os.path.expanduser('~')
 
     r = QRect(0, 0, 640, 480)
@@ -65,21 +75,27 @@ def read_state():
                  history=[],
                  history_current=-1,
                  scroll_values={})
-    if os.path.exists(state_file):
-        f = gzip.open(state_file, 'rb')
-        try:            
-            loaded = json.load(f)
-            state.update(loaded)
-        finally:
-            f.close()
+    try:
+        if load and os.path.exists(state_file):
+            f = gzip.open(state_file, 'rb')
+            try:            
+                loaded = json.load(f)
+                state.update(loaded)
+            finally:
+                f.close()
+    except:
+        show_error(_('Failed to load saved application state'))
     return state
 
 
 def write_appearance(appearance):
-    with open(appearance_file, 'w') as f:
-        json.dump(appearance, f, indent=2)
+    try:
+        with open(appearance_file, 'w') as f:
+            json.dump(appearance, f, indent=2)
+    except:
+        show_error(_('Failed to save appearance settings'))
 
-def read_appearance():
+def read_appearance(load=True):    
     appearance = dict(colors=dict(active_link_bg='#e0e8e8',
                                   footnote_fg='#00557f',
                                   internal_link_fg='maroon',
@@ -88,21 +104,39 @@ def read_appearance():
                                   table_bg=''),
                       style=dict(use_mediawiki_style=True),
                       fonts=dict(default='Sans Serif,10,-1,5,50,0,0,0,0,0'))
-    if os.path.exists(appearance_file):
-        with open(appearance_file, 'r') as f:
-            loaded = json.load(f)
-            appearance.update(loaded)
+    try:
+        if load and os.path.exists(appearance_file):
+            with open(appearance_file, 'r') as f:
+                loaded = json.load(f)
+                appearance.update(loaded)
+    except:
+        show_error(_('Failed to load saved appearance settings'))
     return appearance
 
 
 def write_layout(layout):
-    with open(layout_file, 'wb') as f:
-        f.write(layout)
+    try:
+        with open(layout_file, 'wb') as f:
+            f.write(layout)
+    except:
+        show_error(_('Failed to save layout'))
 
-def read_layout():
-    if os.path.exists(layout_file):
-        with open(layout_file, 'rb') as f:
-            return f.read()
+def read_layout(load=True):
+    try:
+        if load and os.path.exists(layout_file):
+            with open(layout_file, 'rb') as f:
+                return f.read()        
+    except:
+        show_error(_('Failed to load saved layout'))
     return None
 
 
+def show_error(msg):
+    msg_box = QMessageBox()
+    msg_box.setWindowTitle(_('Error'))
+    msg_box.setIcon(QMessageBox.Warning)
+    msg_box.setInformativeText(msg)
+    msg_box.setDetailedText(u''.join(traceback.format_exc()))
+    msg_box.setStandardButtons(QMessageBox.Close)
+    msg_box.exec_()
+    
