@@ -510,6 +510,7 @@ class DictView(QMainWindow):
         self.word_completion.currentItemChanged.connect(self.word_selection_changed)
 
         self.tabs = QTabWidget()
+        self.tabs.setDocumentMode(True)
 
         self.setDockNestingEnabled(True)
 
