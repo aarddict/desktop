@@ -25,7 +25,7 @@ from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QTableWidget, QTableWidgetItem, QItemSelectionModel,
                          QDockWidget, QToolBar, QColor, QLabel,
                          QColorDialog, QCheckBox, QKeySequence, QPalette,
-                         QMenu, QShortcut, QFontDialog, QFont)
+                         QMenu, QShortcut, QFontDialog, QFont, QToolButton)
 
 from PyQt4.QtWebKit import QWebView, QWebPage, QWebSettings
 
@@ -310,23 +310,26 @@ class LineEditWithClear(QLineEdit):
     def __init__(self, pass_target=None, parent=None):
         QLineEdit.__init__(self, parent)
 
-        box = QHBoxLayout()
-        btn_clear = QPushButton()
-        btn_clear.clicked.connect(self.clear)
-        btn_clear.setIcon(res.icons['edit-clear'])
+        self.action_clear = QAction(icons['edit-clear'], _('Clear'), self,
+                               triggered=self.clear)
+        self.action_clear.setToolTip(_('Clear'))        
+
+        btn_clear = QToolButton(self)        
+        btn_clear.setToolButtonStyle(Qt.ToolButtonIconOnly)
         btn_clear.setIconSize(QSize(16,16))
-        btn_clear.setToolTip(_('Clear'))
+        btn_clear.setDefaultAction(self.action_clear)        
         btn_clear.setCursor(Qt.ArrowCursor)
-        self.btn_clear = btn_clear
+        btn_clear.setStyleSheet('QToolButton {border: transparent;}')
+
+        box = QHBoxLayout()
         box.addStretch(1)
         box.addWidget(btn_clear, 0)
         box.setSpacing(0)
-        box.setContentsMargins(0, 0, 0, 0)
-        self.setStyleSheet('QPushButton {border: none;}')
-        self.setMinimumHeight(btn_clear.sizeHint().height())
+        box.setContentsMargins(0, 0, 0, 0)        
         self.setLayout(box)
+
         left, top, right, bottom = self.getTextMargins()
-        right = max(right, btn_clear.iconSize().width())
+        right = max(right, btn_clear.iconSize().width() + 1)
         self.setTextMargins(left, top, right, bottom)
         self.pass_target = pass_target
 
@@ -353,7 +356,7 @@ class LineEditWithClear(QLineEdit):
         QLineEdit.keyPressEvent(self, event)
 
     def setClearShortcut(self, shortcut):
-        self.btn_clear.setShortcut(shortcut)
+        self.action_clear.setShortcut(shortcut)
 
     def clear(self):
         self.setFocus()
