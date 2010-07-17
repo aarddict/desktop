@@ -502,9 +502,7 @@ class DictView(QMainWindow):
 
         box = QVBoxLayout()
         box.setSpacing(2)
-        #we want right margin set to 0 since it borders with splitter
-        #(left widget)
-        box.setContentsMargins(2, 2, 0, 2)
+        box.setContentsMargins(0, 0, 0, 0)
         box.addWidget(self.word_input)
         box.addWidget(self.word_completion)
         lookup_pane = QWidget()
