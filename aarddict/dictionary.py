@@ -19,12 +19,12 @@ import zlib
 import bz2
 import os
 import mmap
-import threading
 
 from bisect import bisect_left
 from struct import calcsize, unpack
-from collections import defaultdict, deque
+from collections import defaultdict
 from uuid import UUID
+from threading import local
 
 import simplejson
 from PyICU import Locale, Collator
@@ -194,13 +194,12 @@ def split_word(word):
     return lookupword, section
 
 
-class CacheList(object):
+class CacheList(local):
 
-    def __init__(self, alist, max_cache_size=100, name=''):
+    def __init__(self, alist, name=''):
+        super(CacheList, self).__init__(self)
         self.alist = alist
-        self.max_cache_size = max_cache_size
         self.cache = {}
-        self.cache_list = deque()
         self.hit = 0
         self.miss = 0
         self.name = name
@@ -209,16 +208,14 @@ class CacheList(object):
         return len(self.alist)
 
     def __getitem__(self, i):
-        if i in self.cache:
-            result = self.cache[i]
-            self.hit += 1
+        c = self.cache
+        if i not in c:
+            c[i] = r = self.alist[i]
+            # self.miss += 1
+            return r
         else:
-            self.cache[i] = result = self.alist[i]
-            self.miss += 1
-            self.cache_list.append(i)
-            if len(self.cache_list) > self.max_cache_size:
-                del self.cache[self.cache_list.popleft()]
-        return result
+            # self.hit += 1
+            return c[i]
 
 
 class WordList(object):
@@ -450,9 +447,7 @@ class Volume(object):
                                     read_article)
 
         self._interwiki_map = None
-        self._article_url = None        
-        self._lock = threading.RLock()
-
+        self._article_url = None
 
     def _read_header(self, f):
         header = {}
@@ -510,24 +505,23 @@ class Volume(object):
     def lookup(self, word, strength=PRIMARY, cmp_func=cmp_word_start):
         if not word:
             raise StopIteration
-        with self._lock:
-            index = bisect_left(CollationKeyList(self.words, strength),
-                                collation_key(word, strength).getByteArray())
-            try:
-                while True:
-                    matched_word = self.words[index]
-                    cmp_result = cmp_func(matched_word, word, strength)
-                    if cmp_result == 0:
-                        #sometimes words in index include #fragment
-                        _, section = split_word(matched_word)
-                        #leave matched word exactly as is, but set section
-                        yield Entry(self.volume_id, index,
-                                    matched_word, section=section)
-                        index += 1
-                    else:
-                        break
-            except IndexError:
-                raise StopIteration
+        index = bisect_left(CollationKeyList(self.words, strength),
+                            collation_key(word, strength).getByteArray())
+        try:
+            while True:
+                matched_word = self.words[index]
+                cmp_result = cmp_func(matched_word, word, strength)
+                if cmp_result == 0:
+                    #sometimes words in index include #fragment
+                    _, section = split_word(matched_word)
+                    #leave matched word exactly as is, but set section
+                    yield Entry(self.volume_id, index,
+                                matched_word, section=section)
+                    index += 1
+                else:
+                    break
+        except IndexError:
+            raise StopIteration
 
     def read(self, entry):
         if entry.volume_id != self.volume_id:
