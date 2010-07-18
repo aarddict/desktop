@@ -29,6 +29,7 @@ def _read(name):
     with open(name, 'r') as f:
         return f.read().decode('utf8')
 
+locale_dir = os.path.join(package_dir, 'locale')
 
 _article_js = ('<script type="text/javascript">%s</script>' %
                _read(os.path.join(package_dir, 'aar.js')))
@@ -168,7 +169,8 @@ def _load_icons():
     icons['window-close'] = _mkicon('actions/window-close')
 
 
-def _install_translator(app):
+def _init_gettext():
+
     locale.setlocale(locale.LC_ALL, '')
     if os.name == 'nt':
         # windows hack for locale setting
@@ -178,23 +180,18 @@ def _install_translator(app):
             if default_lang:
                 lang = default_lang
             if lang:
-                os.environ['LANG'] = lang
+                os.environ['LANG'] = lang    
 
-    locale_dir = os.path.join(package_dir, 'locale')
     gettext_domain = aarddict.__name__
     gettext.bindtextdomain(gettext_domain, locale_dir)
     gettext.textdomain(gettext_domain)
     gettext.install(gettext_domain, locale_dir,
                     unicode=True, names=['ngettext'])
 
-    qtranslator = QTranslator()
-    qtranslator.load('qt_'+str(QLocale.system().name()), locale_dir)
-    app.installTranslator(qtranslator)
 
-
-def load(app):
-    _load_icons()
-    _install_translator(app)
+def load():
+    _init_gettext()
+    _load_icons()    
 
 
 colors = None

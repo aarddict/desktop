@@ -25,7 +25,7 @@ import traceback
 
 from collections import defaultdict, deque
 
-from PyQt4.QtCore import (QObject, Qt, QThread,
+from PyQt4.QtCore import (QObject, Qt, QThread, QTranslator, QLocale,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
                           QSize, QByteArray, QPoint,
                           pyqtSignal, QString)
@@ -1808,7 +1808,13 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
 def main(args, debug=False, dev_extras=False):
     app = QApplication(sys.argv)
-    res.load(app)
+    
+    qtranslator = QTranslator()
+    qtranslator.load('qt_'+str(QLocale.system().name()), res.locale_dir)
+    app.installTranslator(qtranslator)
+
+    res.load()
+
     dv = DictView()
     if dev_extras:
         (QWebSettings.globalSettings()
