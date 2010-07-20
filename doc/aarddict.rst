@@ -5,9 +5,9 @@ Aard Dictionary
 Overview
 ============
 Aard Dictionary's user interface consists of lookup and history pane
-(intially grouped into tabs), article pane, toolbar and menu.
+(initally grouped into tabs), article pane, toolbar and menu.
 
-.. image:: aarddict_0.8.0_ubuntu_planks_law.png
+.. image:: aarddict_0.9.0_ubuntu_planks_law.png
 
 First open some dictionaries, either by selecting
 :menuselection:`Dictionary-->Add Dictionaries` or
@@ -26,112 +26,176 @@ automatically selected. Articles with similar titles found in one or
 more dictionaries are grouped together and are display in multiple
 tabs in article pane when selected.
 
-.. image:: aarddict_0.8.0_ubuntu_multiple_articles.png
-
 Lookup pane, history pane and toolbar can be rearranged and moved to a new
 position (click pane's title bar or toolbar's drag handle and start
 dragging), either docked around article pane:
 
-.. image:: aarddict_0.8.0_ubuntu_hydrogen.png
+.. image:: aarddict_0.9.0_ubuntu_helium.png
 
-.. image:: aarddict_0.8.0_ubuntu_lanthanum_non_standard_layout.png
+.. image:: aarddict_0.9.0_ubuntu_nitrogen.png
 
 or floating:
 
-.. image:: aarddict_0.8.0_ubuntu_floating.png
+.. image:: aarddict_0.9.0_ubuntu_taylor_series.png
 
 Lookup pane, history pane and toolbar can also be hidden
 (through :menuselection:`View` menu, close button in lookup and history pane's
-title bar, or title bar's popup menu).
+title bar, or context menu over menu bar, tool bar or lokup and
+history title bars).
 
-.. image:: aarddict_0.8.0_ubuntu_periodic_table.png
+.. image:: aarddict_0.9.0_ubuntu_periodic_table.png
 
 Article visual style can be customized with `Article Appearance`
 dialog (:menuselection:`View --> Article Appearance...`).
 
-.. image:: aarddict_0.8.0_ubuntu_article_appearance.png
+.. image:: aarddict_0.9.0_ubuntu_article_appearance.png
 
-Keyboard Shortcuts
-==================
+:menuselection:`Article-->Find` brings up `Find` bar:
 
+.. image:: aarddict_0.9.0_ubuntu_pascals_triangle.png
+
+Matching text in current article is selected as user types. Use `Find`
+bar's arrow buttons or :kbd:`Shift+Enter`/:kbd:`Enter` to select
+previous/next occurence of the phrase. Use :kbd:`Ctrl+Enter` to lookup
+word under selection. Hide `Find` bar with the close button or
+:kbd:`Esc`.
+
+
+Keyboard Navigation
+===================
+
+Application Shortcuts
+---------------------
+
++---------------------+------------------------------------+---------------------------------+
+|Key Sequence         |Action                              |Notes                            |
++=====================+====================================+=================================+
+|:kbd:`Ctrl+O`        |:menuselection:`Dictionary-->Add    |                                 |
+|                     |Dictionaries`                       |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+Y`        |:menuselection:`Dictionary-->Verify`|                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+R`        |:menuselection:`Dictionary-->Remove`|                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+I`        |:menuselection:`Dictionary-->Info`  |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+Q`        |:menuselection:`Dictionary-->Quit`  |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+L`,       |:menuselection:`Navigate-->Lookup   |Moves keyboard focus to          |
+|:kbd:`F2`            |Box`                                |`Lookup` box (making lookup      |
+|                     |                                    |pane visible if hidden) and      |
+|                     |                                    |selects it's current             |
+|                     |                                    |text. Start typing to            |
+|                     |                                    |replace current text or          |
+|                     |                                    |start editing current text       |
+|                     |                                    |by moving caret with             |
+|                     |                                    |:kbd:`Left` or :kbd:`Right`      |
+|                     |                                    |arrow keys.                      |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+N`        |Move keyboard focus to lookup box   |                                 |
+|                     |and clear it's content              |                                 |
+|                     |                                    |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Alt+Left`,     |:menuselection:`Navigate-->Back`    |On Nokia Internet Tablets        |
+|:kbd:`Esc`,          |                                    |:kbd:`Esc` maps to               |
+|:kbd:`Ctrl+[`        |                                    |`Back`/`Cancel` button. If Find  |
+|                     |                                    |bar is currently visible `Esc`   |
+|                     |                                    |hides it instead of going back.  |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Alt+Right`,    |:menuselection:`Navigate-->Forward` |                                 |
+|:kbd:`Shift+Esc`,    |                                    |                                 |
+|:kbd:`Ctrl+]`        |                                    |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+K`,       |:menuselection:`Navigate-->Previous |                                 |
+|:kbd:`Ctrl+,`        |Article`                            |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+J`,       |:menuselection:`Navigate-->Next     |                                 |
+|:kbd:`Ctrl+.`        |Article`                            |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+F`,       |:menuselection:`Article-->Find`     |:kbd:`/` doesn't work            |
+|:kbd:`/`             |                                    |inside lookup box, types         |
+|                     |                                    |`/` instead.                     |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Alt+Enter`     |:menuselection:`Article-->Lookup    |                                 |
+|                     |Selection`                          |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+Enter`    |:menuselection:`Article-->Lookup    |This works like                  |
+|                     |Selected Word`                      |:menuselection:`Article-->Lookup |
+|                     |                                    |Selection` except that selection |
+|                     |                                    |is extended to the end of word   |
+|                     |                                    |where current selection is or, if|
+|                     |                                    |already at the word end, to the  |
+|                     |                                    |end of next word.                |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+Shift+C`  |:menuselection:`Article-->Copy`     |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+S`        |:menuselection:`Article-->Save`     |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+T`        |:menuselection:`Article-->View      |                                 |
+|                     |Online`                             |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl++`,       |:menuselection:`View-->Text         |On Nokia Internet Tablets        |
+|:kbd:`Ctrl+=`,       |Size-->Increase`                    |:kbd:`F7` maps to `Zoom In`      |
+|:kbd:`F7`            |                                    |button.                          |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+-`,       |:menuselection:`View-->Text         |On Nokia Internet Tablets        |
+|:kbd:`F8`            |Size-->Decrease`                    |:kbd:`F8` maps to `Zoom          |
+|                     |                                    |Out` button.                     |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`Ctrl+0`        |:menuselection:`View-->Text         |                                 |
+|                     |Size-->Reset`                       |                                 |
++---------------------+------------------------------------+---------------------------------+
+|:kbd:`F11`           |:menuselection:`View-->Full Screen` |On Nokia Internet Tablets        |
+|                     |                                    |full screen mode is toggled      |
+|                     |                                    |by the `Full Screen`             |
+|                     |                                    |button.                          |
++---------------------+------------------------------------+---------------------------------+
+
+Lookup Box
+----------
 +---------------------+------------------------------------+---------------------------+
-|Key Sequence         |Action                              |Notes                      |
-+=====================+====================================+===========================+
-|:kbd:`Ctrl+O`        |:menuselection:`Dictionary-->Add    |                           |
-|                     |Dictionaries`                       |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+Y`        |:menuselection:`Dictionary-->Verify`|                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+R`        |:menuselection:`Dictionary-->Remove`|                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+I`        |:menuselection:`Dictionary-->Info`  |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+Q`        |:menuselection:`Dictionary-->Quit`  |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+L`,       |:menuselection:`Navigate-->Lookup   |Moves keyboard focus to    |
-|:kbd:`F2`            |Box`                                |`Lookup` box (making lookup|
-|                     |                                    |pane visible if hidden) and|
-|                     |                                    |selects it's current       |
-|                     |                                    |text. Start typing to      |
-|                     |                                    |replace current text or    |
-|                     |                                    |start editing current text |
-|                     |                                    |by moving caret with       |
-|                     |                                    |:kbd:`Left` or :kbd:`Right`|
-|                     |                                    |arrow keys.                |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Alt+Left`,     |:menuselection:`Navigate-->Back`    |On Nokia Internet Tablets  |
-|:kbd:`Esc`,          |                                    |:kbd:`Esc` maps to         |
-|:kbd:`Ctrl+[`        |                                    |`Back`/`Cancel` button.    |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Alt+Right`,    |:menuselection:`Navigate-->Forward` |                           |
-|:kbd:`Shift+Esc`,    |                                    |                           |
-|:kbd:`Ctrl+]`        |                                    |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+K`,       |:menuselection:`Navigate-->Previous |                           |
-|:kbd:`Ctrl+,`        |Article`                            |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+J`,       |:menuselection:`Navigate-->Next     |                           |
-|:kbd:`Ctrl+.`        |Article`                            |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+Shift+C`  |:menuselection:`Article-->Copy`     |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+S`        |:menuselection:`Article-->Save`     |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+T`        |:menuselection:`Article-->View      |                           |
-|                     |Online`                             |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl++`,       |:menuselection:`View-->Text         |On Nokia Internet Tablets  |
-|:kbd:`Ctrl+=`,       |Size-->Increase`                    |:kbd:`F7` maps to `Zoom In`|
-|:kbd:`F7`            |                                    |button.                    |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+-`,       |:menuselection:`View-->Text         |On Nokia Internet Tablets  |
-|:kbd:`F8`            |Size-->Decrease`                    |:kbd:`F8` maps to `Zoom    |
-|                     |                                    |Out` button.               |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Ctrl+0`        |:menuselection:`View-->Text         |                           |
-|                     |Size-->Reset`                       |                           |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`F11`           |:menuselection:`View-->Full Screen` |On Nokia Internet Tablets  |
-|                     |                                    |full screen mode is toggled|
-|                     |                                    |by the `Full Screen`       |
-|                     |                                    |button.                    |
-+---------------------+------------------------------------+---------------------------+
-|:kbd:`Enter`         |Move keyboard focus to current      |When in `Lookup`           |
-|                     |article                             |box. Keyboard focus moves  |
-|                     |                                    |to current article view so |
+|:kbd:`Enter`         |Move keyboard focus to current      |Keyboard focus moves to    |
+|                     |article                             |current article view so    |
 |                     |                                    |that it can be scrolled    |
 |                     |                                    |with arrow keys, :kbd:`Page|
 |                     |                                    |Up`/:kbd:`Page Down` and   |
-|                     |                                    |:kbd:`Home`/:kbd:`End`     |
+|                     |                                    |:kbd:`Home`/:kbd:`End`.    |
+|                     |                                    |                           |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Down`          |Select next word in word list       |When in `Lookup`           |
-|                     |                                    |box. Keyboard focus remains|
-|                     |                                    |in lookup box.             |
+|OS standard          |Navigate word completion list       |Keyboard focus remains in  |
+|navigation keys for  |                                    |lookup box.                |
+|moving to            |                                    |                           |
+|next/previous line,  |                                    |                           |
+|next/previous page,  |                                    |                           |
+|start/end of document|                                    |                           |
 +---------------------+------------------------------------+---------------------------+
-|:kbd:`Up`            |Select previous word in word list   |When in `Lookup`           |
-|                     |                                    |box. Keyboard focus remains|
-|                     |                                    |in lookup box.             |
+
+Find Bar
+--------
 +---------------------+------------------------------------+---------------------------+
+|:kbd:`Enter`         |Find the next occurence of the      |                           |
+|                     |phrase                              |                           |
+|                     |                                    |                           |
+|                     |                                    |                           |
+|                     |                                    |                           |
+|                     |                                    |                           |
+|                     |                                    |                           |
++---------------------+------------------------------------+---------------------------+
+|:kbd:`Shift+Enter`   |Find the previous occurence of the  |                           |
+|                     |phrase                              |                           |
+|                     |                                    |                           |
+|                     |                                    |                           |
+|                     |                                    |                           |
+|                     |                                    |                           |
++---------------------+------------------------------------+---------------------------+
+|OS standard          |Scroll article view                 |Keyboard focus remains in  |
+|navigation keys for  |                                    |find box.                  |
+|moving to            |                                    |                           |
+|next/previous line,  |                                    |                           |
+|next/previous page,  |                                    |                           |
+|start/end of document|                                    |                           |
++---------------------+------------------------------------+---------------------------+
+
 
 Wikipedia Language Link Support
 ===============================
@@ -143,12 +207,14 @@ languages. For example, if English Wikipedia is compiled with Russian
 language links, searching for `Уравнение лап` finds `Laplace's
 Equation` by corresponding Russian title `Уравнение Лапласа`.
 
-.. image:: aarddict_0.8.0_ubuntu_language_link_in_action.png
+.. image:: aarddict_0.9.0_ubuntu_laplaces_equation.png
+
+Note redirect title at the top.
 
 Dictionary info dialog shows list of language link languages included
 into dictionarie's lookup index.
 
-.. image:: aarddict_0.8.0_ubuntu_dict_info.png
+.. image:: aarddict_0.9.0_ubuntu_dict_info.png
 
 
 Verifying Dictionary Data Integrity
@@ -160,12 +226,10 @@ which is used to verify data integrity. To verify volume data
 integrity open `Verify` dialog (:menuselection:`Dictionary -->
 Verify...`), select one of the volumes and click `Verify` button.
 
-.. image:: aarddict_0.8.0_ubuntu_verifying.png
+.. image:: aarddict_0.9.0_ubuntu_verifying.png
 
 Once verified volume status changes from `Unverified` to `OK` or
 `Corrupt`.
-
-.. image:: aarddict_0.8.0_ubuntu_verified.png
 
 Volumes can also be verified by running Aard Dictionary
 from the command line like this::
@@ -241,7 +305,14 @@ Limitations
 - Wikipedia for Aard Dictionary does not include Wikipedia
   navigational features like categories, portals and navigation boxes.
 
-- Wikipedia inter-project links generally do not work.
+- Only some wikipedia inter-project links work. Links that start with
+  a prefix followed by ``:`` are resolved by looking for corresponding
+  server url in interwiki map in dictionary's siteinfo and finding
+  a dictionary with that server url among open dictioneries. Siteinfo
+  generated by Wikipedia API does not always accurately reflect
+  prefixes actually used, so some prefixes fail to resolve. 
+  Also, links with more complex prefixes  - like
+  "w:ru:" don't work. 
 
 - Many XDXF dictionaries have only basic or no markup in
   articles. Accordingly, dictionaries converted from such XDXF also
@@ -250,20 +321,13 @@ Limitations
   proper XDXF and aard markup, but this requires a custom conversion
   tool which hasn't been written yet.
 
-- Dictionaries in :term:`aar-JSON` have very limited table support. Complex
-  tables may miss some data and/or have incorrect structure and
-  generally disregard most of the style present in original table. In
-  Aard Dictionary 0.7.x tables are rendered in monospace font, there is no
-  text wrapping inside table cells, which produces very long
-  horizontal scrollbars in some articles. All text in cells is left
-  aligned.
 
-- In aar-JSON mathematical formulas are not rendered, TeX markup is
-  included as is.
+Dictionaries with articles in older :term:`aar-JSON` format have
+additional limitations (limited table support, math is not rendered)
+and is deprecated. Support for :term:`aar-JSON` has been removed
+from Aard Dictionary in version 0.9.0. Aard Dictionary for Android
+also doesn't support it.
 
-- Aard Dictionary 0.7.x can only render dictionaries in :term:`aar-JSON` format,
-  dictionaries in :term:`aar-HTML` can be opened, but articles won't be
-  rendered, article view will only show raw HTML.
 
 Installation Notes
 ==================
@@ -300,19 +364,19 @@ On Windows earlier than Windows XP SP3 users may also need to install
 
 Maemo
 -----
-Aard Dictionary 0.8.0 depends on PyQt4 libraries that have not been
-released yet. `Aard Dictionary 0.8.0 single click install`_ enables
-Maemo's `extras-devel` repository. Be advised that `extras-devel`
-contains software that is primarily intended for developers and
-testers. If you are uncomfortable installing potentially unstable
-software you may want to stick to an older version of Aard Dictionary.
+Aard Dictionary starting with 0.8.0 depends on PyQt4 libraries which
+have not been officially released for Maemo 4 (N800 and N810) and are
+only available in development repository. `Single click install for
+Maemo 4`_ enables it (`extras-devel`). Be advised that `extras-devel`
+contains potentially unstable software that is primarily intended for
+developers and testers.
 
 Another issue users may encounter when installing on N800/N810 is that Aard Dictionary
-0.8.0 together with PyQt4 and Qt4 libraries is approximately 17
-Mb download and requires 56 Mb of device memory. Some applications may need to
+0.8.0 together with PyQt4 and Qt4 libraries is approximately 23
+Mb download and requires some 70 Mb of device memory. Some applications may need to
 be uninstalled to free enough memory for the installation.
 
-.. _Aard Dictionary 0.8.0 single click install: http://aarddict.org/aarddict_0.8.0.dev.install
+.. _Single click install for Maemo 4: http://aarddict.org/aarddict_0.8.0.dev.install
 
 Building Mac OS X App
 =====================
@@ -379,8 +443,8 @@ Dictionary 0.8.0 and newer.
 .. _MacPorts: http://www.macports.org/
 
 
-History
-=======
+Pre-History
+===========
 Aard Dictionary started from `SDict Viewer`_ code base as an attempt
 to address some of it's shortcomings. Initially Jeremy Mortis started
 to hack on `SDict Viewer`_ and ptksdict_ so that he could look up
@@ -463,6 +527,42 @@ allow to create bzip2 compressed dictionaries.
 
 Release Notes
 =============
+
+0.9.0
+-----
+
+- Find text in article (:menuselection:`Article --> Find...`).
+
+- New user actions to look up selected text in current article. 
+  (:menuselection:`Article --> Lookup Selection`) sets text in lookup
+  box to whatever is currently selected in article. 
+  (:menuselection:`Article --> Lookup Selected Word`) does the same,
+  but extends selection to the end of word first - this is useful 
+  with Find that selects beginning of matched words as user types.
+
+- Ability to select aticle text font when not using
+  Wikipedia style (`issue #9`_)
+
+- Articles found by following a redirect show redirect info at the
+  top.
+
+- Articles are now loaded only when their tab is selected.
+
+- Improve history: remember preferred dictionaries order, 
+  remember scroll position of recent articles.
+
+- Add basic support for inter-wiki links (see Limitations_). 
+
+- Replace `Lookup Box` action button inside lookup box with a `Clear`
+  button, make it look better.
+
+- Revise application state and settings persistence implementation to
+  better support new features (improved history, customizable article
+  font). State saved by 0.8.0 is ignored. 
+
+- Remove support for :term:`aar-JSON`.
+
+.. _issue #9: http://bitbucket.org/itkach/aarddict/issue/9
 
 0.8.0
 -----

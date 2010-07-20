@@ -1,6 +1,85 @@
-=======================
-Old Screenshots (0.7.x)
-=======================
+===============
+Old Screenshots
+===============
+
+0.8.0
+=====
+
+.. figure:: aarddict_0.8.0_ubuntu_planks_law.png
+   :scale: 50
+   :align: center
+
+   Default layout (Ubuntu).
+
+.. figure:: aarddict_0.8.0_ubuntu_language_link_in_action.png
+   :scale: 50
+   :align: center
+
+   Article in English Wikipedia foung by corresponding title from
+   Russian Wikipedia (language link support) (Ubuntu).
+
+.. figure:: aarddict_0.8.0_ubuntu_hydrogen.png
+   :scale: 50
+   :align: center
+
+   Modified layout with history pane below lookup (Ubuntu).
+
+
+.. figure:: aarddict_0.8.0_ubuntu_floating.png
+   :scale: 50
+   :align: center
+
+   Modified layout with vertical toolbar and floating lookup and
+   history panes (Ubuntu).
+
+.. figure:: aarddict_0.8.0_ubuntu_lanthanum_non_standard_layout.png
+   :scale: 50
+   :align: center
+
+   Modified layout with lookup and history on the right side next to
+   each other (Ubuntu).
+
+.. figure:: aarddict_0.8.0_ubuntu_periodic_table.png
+   :scale: 50
+   :align: center
+
+   Modified layout with lookup and history hidden (Ubuntu).
+
+.. figure:: aarddict_0.8.0_ubuntu_multiple_articles.png
+   :scale: 50
+   :align: center
+
+   Multiple articles with similar title found in the same dictionary (Ubuntu).
+
+
+.. figure:: aarddict_0.8.0_ubuntu_dict_info.png
+   :scale: 50
+   :align: center
+
+   Dictionary information dialog (Ubuntu).
+
+
+.. figure:: aarddict_0.8.0_ubuntu_article_appearance.png
+   :scale: 50
+   :align: center
+
+   Dialog for customizing article's visual style (Ubuntu).
+
+.. figure:: aarddict_0.8.0_ubuntu_verifying.png
+   :scale: 50
+   :align: center
+
+   Verifying volume data integrity (Ubuntu).
+
+.. figure:: aarddict_0.8.0_ubuntu_verified.png
+   :scale: 50
+   :align: center
+
+   Dialog for verifying volume data integrity (Ubuntu).
+
+
+0.7.x
+=======
 
 .. figure:: aarddict_0.7.6_ubuntu_enwiki.png
    :scale: 50
