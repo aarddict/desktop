@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-07-17 23:35-0400\n"
+"POT-Creation-Date: 2010-07-20 09:47-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -622,29 +622,34 @@ msgstr ""
 msgid "There was an error when writing article to file %s"
 msgstr ""
 
-#: qtui.py:1821 state.py:101
+#: qtui.py:1827 state.py:101
 msgid "Failed to load saved application state"
 msgstr ""
 
-#: res.py:260
+#: res.py:240
+#, python-format
+msgid "Redirected from <strong>%s</strong>"
+msgstr ""
+
+#: res.py:258
 msgid "(C) 2006-2010 Igor Tkach"
 msgstr ""
 
-#: res.py:261
+#: res.py:259
 msgid "(C) 2008 Jeremy Mortis"
 msgstr ""
 
-#: res.py:262
+#: res.py:260
 msgid ""
 "Distributed under terms and conditions of <a href=\"http://www.gnu.org/"
 "licenses/gpl-3.0.html\">GNU Public License Version 3</a>"
 msgstr ""
 
-#: res.py:265
+#: res.py:263
 msgid "Aard Dictionary logo by Iryna Gerasymova"
 msgstr ""
 
-#: res.py:266
+#: res.py:264
 msgid ""
 "Human-O2 icon set by <a href=\"http://schollidesign.deviantart.com"
 "\">~schollidesign</a>"

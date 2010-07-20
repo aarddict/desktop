@@ -98,7 +98,7 @@ $icons_notice
 
 _redirect_info_tmpl = Template(u"""
 <div id="aard-redirectinfo"">
-Redirected from <strong>$title</strong>
+$redirect_info
 </div>
 """)
 
@@ -236,7 +236,8 @@ def style():
 
 def article(content, redirect):
     if redirect is not None:
-        redirect_info = _redirect_info_tmpl.substitute(dict(title=redirect))
+        redirect_info = _redirect_info_tmpl.substitute(
+            dict(redirect_info=_('Redirected from <strong>%s</strong>') % redirect))
     else:
         redirect_info = u''
     return _article_tmpl.substitute(dict(style=style(),
