@@ -16,8 +16,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.8.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-07-17 23:35-0400\n"
-"PO-Revision-Date: 2010-07-18 00:31-0500\n"
+"POT-Creation-Date: 2010-07-20 09:47-0400\n"
+"PO-Revision-Date: 2010-07-20 09:49-0500\n"
 "Last-Translator: Igor Tkach <itkach@aarddict.org>\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -643,28 +643,33 @@ msgstr "Ошибка при сохранении статьи"
 msgid "There was an error when writing article to file %s"
 msgstr "При записи статьи в файл %s произошла ошибка"
 
-#: qtui.py:1821
+#: qtui.py:1827
 #: state.py:101
 msgid "Failed to load saved application state"
 msgstr "Не удалось восстановить состояние приложения"
 
-#: res.py:260
+#: res.py:240
+#, python-format
+msgid "Redirected from <strong>%s</strong>"
+msgstr "Перенаправлено с <strong>%s</strong>"
+
+#: res.py:258
 msgid "(C) 2006-2010 Igor Tkach"
 msgstr "(C) 2006-2010 Игорь Ткач"
 
-#: res.py:261
+#: res.py:259
 msgid "(C) 2008 Jeremy Mortis"
 msgstr "(C) 2008 Джереми Мортис"
 
-#: res.py:262
+#: res.py:260
 msgid "Distributed under terms and conditions of <a href=\"http://www.gnu.org/licenses/gpl-3.0.html\">GNU Public License Version 3</a>"
 msgstr "Распространяется на условиях <a href=\"http://www.gnu.org/licenses/gpl-3.0.html\">GNU Public License версии 3</a>"
 
-#: res.py:265
+#: res.py:263
 msgid "Aard Dictionary logo by Iryna Gerasymova"
 msgstr "Логотип Aard Dictionary разработан Ириной Герасимовой"
 
-#: res.py:266
+#: res.py:264
 msgid "Human-O2 icon set by <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
 msgstr "Набор пиктограмм Human-O2 разработан <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
 
