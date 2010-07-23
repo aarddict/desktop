@@ -1,458 +1,548 @@
-# translation of aarddict.po to Greek
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
 # Jennie Petoumenou <epetoumenou@gmail.com>, 2010.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-20 00:22-0500\n"
-"PO-Revision-Date: 2010-01-27 09:19-0500\n"
+"POT-Creation-Date: 2010-07-20 09:47-0400\n"
+"PO-Revision-Date: 2010-07-22 20:11-0500\n"
 "Last-Translator: Igor Tkach <itkach@aarddict.org>\n"
 "Language-Team: team@gnome.gr\n"
-"Language: en\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Virtaal 0.5.1\n"
+"X-Generator: Virtaal 0.5.2\n"
 
-#: qtui.py:152
-msgid "(C) 2006-2010 Igor Tkach"
-msgstr "(C) 2006-2010 Igor Tkach"
-
-#: qtui.py:153
-msgid "(C) 2008 Jeremy Mortis"
-msgstr "(C) 2008 Jeremy Mortis"
-
-#: qtui.py:154
-msgid "Distributed under terms and conditions of <a href=\"http://www.gnu.org/licenses/gpl-3.0.html\">GNU Public License Version 3</a>"
-msgstr "Διανέμεται υπό τους όρους της <a href=\"http://www.gnu.org/licenses/gpl-3.0.html\">Ελεύθερης Άδειας Δημόσιας Χρήσης GNU, έκδοσης 3</a>"
-
-#: qtui.py:157
-msgid "Aard Dictionary logo by Iryna Gerasymova"
-msgstr "Λογότυπο λεξικού Aard: Iryna Gerasymova"
-
-#: qtui.py:158
-msgid "Human-O2 icon set by <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
-msgstr "Θέμα εικονιδίων Human-O2: <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
-
-#: qtui.py:374
+#: qtui.py:236
 #, python-format
-msgid "Redirect to %s not found"
-msgstr "Ζητήθηκε ανακατεύθυνση στο %s, αλλά το άρθρο δε βρέθηκε"
+msgid "Article \"%s\" not found"
+msgstr "Δε βρέθηκε το άρθρο \"%s\""
 
-#: qtui.py:726
+#: qtui.py:240
+#, python-format
+msgid "Too many redirects for \"%s\""
+msgstr "Υπερβολικός αριθμός ανακατευθύνσεων για το \"^%s\""
+
+#: qtui.py:327
+#: qtui.py:329
+msgid "Clear"
+msgstr "Εκκαθάριση"
+
+#: qtui.py:384
+msgid "&Find"
+msgstr "&Εύρεση"
+
+#: qtui.py:390
+msgid "&Find:"
+msgstr "&Εύρεση:"
+
+#: qtui.py:395
+msgid "Close Find bar"
+msgstr "Κλείσιμο γραμμής εύρεσης"
+
+#: qtui.py:401
+msgid "Find the previous occurence of the phrase"
+msgstr "Εύρεση της προηγούμενης εμφάνισης της φράσης"
+
+#: qtui.py:406
+msgid "Find the next occurence of the phrase"
+msgstr "Εύρεση της επόμενης εμφάνισης της φράσης"
+
+#: qtui.py:409
+msgid "&Match Case"
+msgstr "&Διάκριση πεζών/κεφαλαίων"
+
+#: qtui.py:483
 msgid "&Lookup Box"
 msgstr "Πεδίο ανα&ζήτησης"
 
-#: qtui.py:728
+#: qtui.py:485
 msgid "Ctrl+L"
 msgstr "Ctrl+L"
 
-#: qtui.py:728
+#: qtui.py:485
 msgid "F2"
 msgstr "F2"
 
-#: qtui.py:729
+#: qtui.py:486
 msgid "Move focus to word input and select its content"
 msgstr "Εστίαση στο πεδίο αναζήτησης και επιλογή των περιεχομένων του"
 
-#: qtui.py:759
+#: qtui.py:491
+msgid "Ctrl+N"
+msgstr "Ctrl+N"
+
+#: qtui.py:513
 msgid "&Back"
 msgstr "&Πίσω"
 
-#: qtui.py:760
+#: qtui.py:515
 msgid "Ctrl+["
 msgstr "Ctrl+["
 
-#: qtui.py:760
-msgid "Esc"
-msgstr "Esc"
-
-#: qtui.py:761
+#: qtui.py:516
 msgid "Go back to previous word in history"
 msgstr "Μετάβαση στο προηγούμενο λήμμα του ιστορικού"
 
-#: qtui.py:763
+#: qtui.py:518
 msgid "&Forward"
 msgstr "&Μπροστά"
 
-#: qtui.py:764
+#: qtui.py:520
 msgid "Ctrl+]"
 msgstr "Ctrl+]"
 
-#: qtui.py:764
+#: qtui.py:520
 msgid "Shift+Esc"
 msgstr "Shift+Esc"
 
-#: qtui.py:765
+#: qtui.py:521
 msgid "Go forward to next word in history"
 msgstr "Μετάβαση στο επόμενο λήμμα του ιστορικού"
 
-#: qtui.py:785
+#: qtui.py:532
 msgid "&Lookup"
 msgstr "Ανα&ζήτηση"
 
-#: qtui.py:793
+#: qtui.py:541
 msgid "&History"
 msgstr "&Ιστορικό"
 
-#: qtui.py:805
+#: qtui.py:553
 msgid "&Dictionary"
 msgstr "&Λεξικό"
 
-#: qtui.py:807
+#: qtui.py:555
 msgid "&Add Dictionaries..."
 msgstr "Προσθήκη &λεξικών..."
 
-#: qtui.py:808
+#: qtui.py:557
 msgid "Ctrl+O"
 msgstr "Ctrl+O"
 
-#: qtui.py:809
+#: qtui.py:558
 msgid "Add dictionaries"
 msgstr "Προσθήκη λεξικών"
 
-#: qtui.py:813
+#: qtui.py:561
 msgid "Add &Directory..."
 msgstr "Προσθήκη &φακέλου..."
 
-#: qtui.py:814
+#: qtui.py:563
 msgid "Add dictionary directory"
 msgstr "Προσθήκη φακέλου με λεξικά"
 
-#: qtui.py:818
+#: qtui.py:566
 msgid "&Verify..."
 msgstr "&Επαλήθευση..."
 
-#: qtui.py:819
+#: qtui.py:568
 msgid "Ctrl+Y"
 msgstr "Ctrl+Y"
 
-#: qtui.py:820
+#: qtui.py:569
 msgid "Verify volume data integrity"
 msgstr "Επαλήθευση της ακεραιότητας των δεδομένων του τόμου"
 
-#: qtui.py:824
+#: qtui.py:572
 msgid "&Remove..."
 msgstr "&Αφαίρεση..."
 
-#: qtui.py:825
+#: qtui.py:574
 msgid "Ctrl+R"
 msgstr "Ctrl+R"
 
-#: qtui.py:826
+#: qtui.py:575
 msgid "Remove dictionary or dictionary directory"
 msgstr "Αφαίρεση λεξικού ή φακέλου λεξικών"
 
-#: qtui.py:830
+#: qtui.py:578
 msgid "&Info..."
 msgstr "Πληροφο&ρίες..."
 
-#: qtui.py:831
+#: qtui.py:580
 msgid "Ctrl+I"
 msgstr "Ctrl+I"
 
-#: qtui.py:832
+#: qtui.py:581
 msgid "Information about open dictionaries"
 msgstr "Πληροφορίες για τα ανοιχτά λεξικά"
 
-#: qtui.py:836
+#: qtui.py:584
 msgid "&Quit"
 msgstr "Έ&ξοδος"
 
-#: qtui.py:837
+#: qtui.py:586
 msgid "Ctrl+Q"
 msgstr "Ctrl+Q"
 
-#: qtui.py:838
+#: qtui.py:587
 msgid "Exit application"
 msgstr "Έξοδος από την εφαρμογή"
 
-#: qtui.py:843
+#: qtui.py:591
 msgid "&Navigate"
 msgstr "&Πλοήγηση"
 
-#: qtui.py:850
+#: qtui.py:598
 msgid "&Next Article"
 msgstr "&Επόμενο άρθρο"
 
-#: qtui.py:851
+#: qtui.py:600
 msgid "Ctrl+K"
 msgstr "Ctrl+K"
 
-#: qtui.py:851
+#: qtui.py:600
 msgid "Ctrl+."
 msgstr "Ctrl+."
 
-#: qtui.py:852
+#: qtui.py:601
 msgid "Show next article"
 msgstr "Εμφάνιση του επόμενου άρθρου"
 
-#: qtui.py:856
+#: qtui.py:604
 msgid "&Previous Article"
 msgstr "Προη&γούμενο άρθρο"
 
-#: qtui.py:857
+#: qtui.py:606
 msgid "Ctrl+J"
 msgstr "Ctrl+J"
 
-#: qtui.py:857
+#: qtui.py:606
 msgid "Ctrl+,"
 msgstr "Ctrl+,"
 
-#: qtui.py:858
+#: qtui.py:607
 msgid "Show previous article"
 msgstr "Εμφάνιση του προηγούμενου άρθρου"
 
-#: qtui.py:863
+#: qtui.py:611
 msgid "&Article"
 msgstr "Ά&ρθρο"
 
-#: qtui.py:865
+#: qtui.py:618
+msgid "&Find..."
+msgstr "&Εύρεση..."
+
+#: qtui.py:621
+msgid "Ctrl+F"
+msgstr "Ctrl+F"
+
+#: qtui.py:621
+msgid "/"
+msgstr "/"
+
+#: qtui.py:622
+msgid "Find text in article"
+msgstr "Εύρεση μέσα στο άρθρο"
+
+#: qtui.py:626
+msgid "&Lookup Selection"
+msgstr "Ανα&ζήτηση επιλογής"
+
+#: qtui.py:628
+msgid "Alt+Return"
+msgstr "Alt+Enter"
+
+#: qtui.py:628
+msgid "Alt+Enter"
+msgstr "Alt+Enter"
+
+#: qtui.py:629
+msgid "Lookup text selected in current article"
+msgstr "Αναζήτηση του επιλεγμένου κειμένου"
+
+#: qtui.py:632
+msgid "&Lookup Selected Word"
+msgstr "Αναζήτηση επιλεγμένης λέξης"
+
+#: qtui.py:634
+msgid "Ctrl+Return"
+msgstr "Ctrl+Enter"
+
+#: qtui.py:634
+msgid "Ctrl+Enter"
+msgstr "Ctrl+Enter"
+
+#: qtui.py:635
+msgid "Extend text selection in current article to next word and lookup selected text"
+msgstr "Επέκταση του επιλεγμένου κειμένου στην επόμενη λέξη και αναζήτηση"
+
+#: qtui.py:639
 msgid "&Copy"
 msgstr "&Αντιγραφή"
 
-#: qtui.py:866
+#: qtui.py:641
 msgid "Ctrl+Shift+C"
 msgstr "Ctrl+Shift+C"
 
-#: qtui.py:867
+#: qtui.py:642
 msgid "Copy article to clipboard"
 msgstr "Αντιγραφή του άρθρου στο πρόχειρο"
 
-#: qtui.py:871
+#: qtui.py:645
 msgid "&Save..."
 msgstr "Απο&θήκευση..."
 
-#: qtui.py:872
+#: qtui.py:647
 msgid "Ctrl+S"
 msgstr "Ctrl+S"
 
-#: qtui.py:873
+#: qtui.py:648
 msgid "Save article text to file"
 msgstr "Αποθήκευση του κειμένου του άρθρου σε αρχείο"
 
-#: qtui.py:877
+#: qtui.py:651
 msgid "&View Online"
 msgstr "&Προβολή άρθρου στο διαδίκτυο"
 
-#: qtui.py:878
+#: qtui.py:653
 msgid "Ctrl+T"
 msgstr "Ctrl+T"
 
-#: qtui.py:879
+#: qtui.py:654
 msgid "Open online version of this article in a web browser"
 msgstr "Προβολή σε περιηγητή της διαδικτυακής (online) εκδοχής του άρθρου"
 
-#: qtui.py:883
+#: qtui.py:658
 msgid "&View"
 msgstr "Προ&βολή"
 
-#: qtui.py:888
+#: qtui.py:663
 msgid "&Toolbar"
 msgstr "&Εργαλειοθήκη"
 
-#: qtui.py:892
+#: qtui.py:667
 msgid "&Article Appearance..."
 msgstr "Εμ&φάνιση άρθρων..."
 
-#: qtui.py:893
+#: qtui.py:669
 msgid "Customize article appearance"
 msgstr "Προσαρμογή της εμφάνισης των άρθρων"
 
-#: qtui.py:897
+#: qtui.py:672
 msgid "Text &Size"
 msgstr "&Μέγεθος κειμένου"
 
-#: qtui.py:899
+#: qtui.py:674
 msgid "&Increase"
 msgstr "&Αύξηση"
 
-#: qtui.py:900
+#: qtui.py:676
 msgid "Ctrl+="
 msgstr "Ctrl+="
 
-#: qtui.py:900
+#: qtui.py:676
 msgid "F7"
 msgstr "F7"
 
-#: qtui.py:901
+#: qtui.py:677
 msgid "Increase size of article text"
 msgstr "Αύξηση μεγέθους του κειμένου των άρθρων"
 
-#: qtui.py:905
+#: qtui.py:680
 msgid "&Decrease"
 msgstr "&Μείωση"
 
-#: qtui.py:906
+#: qtui.py:682
 msgid "F8"
 msgstr "F8"
 
-#: qtui.py:907
+#: qtui.py:683
 msgid "Decrease size of article text"
 msgstr "Μείωση μεγέθους του κειμένου των άρθρων"
 
-#: qtui.py:911
+#: qtui.py:686
 msgid "&Reset"
 msgstr "&Επαναφορά"
 
-#: qtui.py:912
+#: qtui.py:688
 msgid "Ctrl+0"
 msgstr "Ctrl+0"
 
-#: qtui.py:913
+#: qtui.py:689
 msgid "Reset size of article text to default"
 msgstr "Επαναφορά του προεπιλεγμένου μεγέθους των άρθρων"
 
-#: qtui.py:917
+#: qtui.py:692
 msgid "&Full Screen"
 msgstr "&Πλήρης οθόνη"
 
-#: qtui.py:918
+#: qtui.py:693
 msgid "F11"
 msgstr "F11"
 
-#: qtui.py:919
+#: qtui.py:694
 msgid "Toggle full screen mode"
 msgstr "Προβολή σε πλήρη οθόνη"
 
-#: qtui.py:924
+#: qtui.py:699
 msgid "H&elp"
 msgstr "&Βοήθεια"
 
-#: qtui.py:926
+#: qtui.py:701
 msgid "&About..."
 msgstr "&Περί..."
 
-#: qtui.py:927
+#: qtui.py:703
 msgid "Information about Aard Dictionary"
 msgstr "Πληροφορίες για το λεξικό Aard"
 
-#: qtui.py:1014
+#: qtui.py:735
+msgid "Esc"
+msgstr "Esc"
+
+#: qtui.py:796
 msgid "Opening dictionaries..."
 msgstr "Άνοιγμα λεξικών..."
 
-#: qtui.py:1015
+#: qtui.py:797
 msgid "Stop"
 msgstr "Διακοπή"
 
-#: qtui.py:1054
+#: qtui.py:828
 msgid "Open Failed"
 msgstr "Αποτυχία ανοίγματος"
 
-#: qtui.py:1056
+#: qtui.py:830
 msgid "Failed to open some dictionaries"
 msgstr "Δεν ήταν δυνατό το άνοιγμα ορισμένων λεξικών"
 
-#: qtui.py:1073
+#: qtui.py:842
 msgid "Add Dictionary"
 msgstr "Προσθήκη λεξικού"
 
-#: qtui.py:1075
+#: qtui.py:844
 msgid "Aard Dictionary Files"
 msgstr "Αρχεία λεξικών Aard"
 
-#: qtui.py:1083
+#: qtui.py:851
 msgid "Add Dictionary Directory"
 msgstr "Προσθήκη φακέλου λεξικών"
 
-#: qtui.py:1095
+#: qtui.py:863
 msgid "Remove Dictionaries"
 msgstr "Αφαίρεση λεξικών"
 
-#: qtui.py:1119
+#: qtui.py:887
 msgid "Select &All"
 msgstr "Επιλογή Ό&λων"
 
-#: qtui.py:1124
+#: qtui.py:891
 msgid "&Remove"
 msgstr "&Αφαίρεση"
 
-#: qtui.py:1291
-#, python-format
-msgid "Error reading article %(title)s from %(dict_title)s (file %(dict_file)s): %(exception)s"
-msgstr "Σφάλμα κατά την ανάγνωση του άρθρου %(title)s από την %(dict_title)s (file %(dict_file)s): %(exception)s"
+#: qtui.py:970
+#: qtui.py:1070
+msgid "Loading..."
+msgstr "Φόρτωση..."
 
-#: qtui.py:1303
+#: qtui.py:987
+#, python-format
+msgid ""
+"Error while looking up %(word)s:\n"
+"%(exception)s"
+msgstr ""
+"Σφάλμα κατά την αναζήτηση του %(word)s:\n"
+"%(exception)s"
+
+#: qtui.py:990
+msgid "Word Lookup Failed"
+msgstr "Απέτυχε η αναζήτηση"
+
+#: qtui.py:1098
+#, python-format
+msgid "Failed to load article %s"
+msgstr "Απέτυχε η φόρτωση του άρθρου %s"
+
+#: qtui.py:1100
+#, python-format
+msgid ""
+"Error reading article %(title)s from %(dict_title)s (file %(dict_file)s):\n"
+"%(exception)s"
+msgstr ""
+"Σφάλμα κατά την ανάγνωση του άρθρου %(title)s από το λεξικό %(dict_title)s (αρχείο %(dict_file)s):\n"
+"%(exception)s"
+
+#: qtui.py:1107
 msgid "Article Load Failed"
 msgstr "Αποτυχία φόρτωσης άρθρου"
 
-#: qtui.py:1305
-msgid "There was an error while loading articles. Dictionary files may be corrupted. Would you like to verify now?"
-msgstr "Προέκυψε σφάλμα κατά την φόρτωση των άρθρων. Ίσως έχουν καταστραφεί τα αρχεία των λεξικών. Θέλετε να επαληθεύσετε την ακεραιότητά τους τώρα;"
+#: qtui.py:1114
+msgid "There was an error while accessing dictionaries. Dictionary files may be corrupted. Would you like to verify now?"
+msgstr "Προέκυψε σφάλμα πρόσβασης στα λεξικά. Ίσως έχουν καταστραφεί τα αρχεία των λεξικών. Θέλετε να επαληθεύσετε την ακεραιότητά τους τώρα;"
 
-#: qtui.py:1568
+#: qtui.py:1331
 msgid "Verify"
 msgstr "Επαλήθευση"
 
-#: qtui.py:1574
+#: qtui.py:1337
 msgid "Status"
 msgstr "Κατάσταση"
 
-#: qtui.py:1574
-#: qtui.py:1699
+#: qtui.py:1337
+#: qtui.py:1458
 msgid "Volume"
 msgstr "Τόμος"
 
-#: qtui.py:1585
+#: qtui.py:1349
 msgid "Unverified"
 msgstr "Μη επαληθευμένο"
 
-#: qtui.py:1597
+#: qtui.py:1361
 msgid "&Verify"
 msgstr "&Επαλήθευση"
 
-#: qtui.py:1606
+#: qtui.py:1370
 msgid "Verifying..."
 msgstr "Επαλήθευση..."
 
-#: qtui.py:1618
+#: qtui.py:1382
 msgid "Ok"
 msgstr "Εντάξει"
 
-#: qtui.py:1621
+#: qtui.py:1385
 msgid "Corrupt"
 msgstr "Κατεστραμμένο"
 
-#: qtui.py:1654
+#: qtui.py:1414
 msgid "Dictionary Info"
 msgstr "Πληροφορίες λεξικών"
 
-#: qtui.py:1712
+#: qtui.py:1471
 msgid "Volumes:"
 msgstr "Τόμοι:"
 
-#: qtui.py:1715
+#: qtui.py:1474
 msgid "Number of articles:"
 msgstr "Αριθμός άρθρων:"
 
-#: qtui.py:1720
+#: qtui.py:1479
 msgid "Language links:"
 msgstr "Γλωσσικοί σύνδεσμοι:"
 
-#: qtui.py:1725
+#: qtui.py:1484
 msgid "Source"
 msgstr "Πηγή"
 
-#: qtui.py:1727
+#: qtui.py:1486
 msgid "Copyright Notice"
 msgstr "Δικαιώματα πνευματικής ιδιοκτησίας"
 
-#: qtui.py:1729
+#: qtui.py:1488
 msgid "License"
 msgstr "Άδεια χρήσης"
 
-#: qtui.py:1750
+#: qtui.py:1507
 msgid "About"
 msgstr "Περί"
 
-#: qtui.py:1780
+#: qtui.py:1536
 msgid "Article Appearance"
 msgstr "Εμφάνιση άρθρου"
 
-#: qtui.py:1788
+#: qtui.py:1541
 msgid ""
 "<div id=\"globalWrapper\">\n"
 "This is an <a href=\"#\">internal link</a>. <br>\n"
@@ -472,62 +562,132 @@ msgstr ""
 "<div>1. <a href=\"#_r123\">&#8593;</a> Αυτή είναι υποσημείωση.</div>\n"
 "</div>\n"
 
-#: qtui.py:1821
+#: qtui.py:1573
 msgid "Internal Link"
 msgstr "Σύνδεσμος προς άρθρο"
 
-#: qtui.py:1831
+#: qtui.py:1583
 msgid "External Link"
 msgstr "Εξωτερικός σύνδεσμος"
 
-#: qtui.py:1841
+#: qtui.py:1593
 msgid "Footnote Link"
 msgstr "Σύνδεσμος προς υποσημείωση"
 
-#: qtui.py:1851
+#: qtui.py:1603
 msgid "Footnote Back Link"
 msgstr "Σύνδεσμος επιστροφής σε παραπομπή"
 
-#: qtui.py:1861
+#: qtui.py:1613
 msgid "Active Link"
 msgstr "Ενεργοποιημένος σύνδεσμος"
 
-#: qtui.py:1863
+#: qtui.py:1618
+msgid "AaBb"
+msgstr "AaBb"
+
+#: qtui.py:1629
+msgid "Article Text"
+msgstr "Κείμενο άρθρου"
+
+#: qtui.py:1631
 msgid "Use Wikipedia style"
 msgstr "Χρήση στυλ Βικιπαίδειας"
 
-#: qtui.py:1954
+#: qtui.py:1680
 msgid "No dictionaries"
 msgstr "Δεν υπάρχουν λεξικά"
 
-#: qtui.py:1955
+#: qtui.py:1681
 #, python-format
 msgid "%d volume"
 msgid_plural "%d volumes"
 msgstr[0] "%d τόμος"
 msgstr[1] "%d τόμοι"
 
-#: qtui.py:1957
+#: qtui.py:1683
 #, python-format
 msgid "%d dictionary"
 msgid_plural "%d dictionaries"
 msgstr[0] "%d λεξικό"
 msgstr[1] "%d λεξικά"
 
-#: qtui.py:1967
+#: qtui.py:1693
 msgid "Save Article"
 msgstr "Αποθήκευση άρθρου"
 
-#: qtui.py:1969
+#: qtui.py:1695
 msgid "HTML Documents (*.htm *.html)"
 msgstr "Αρχεία HTML (*.htm *.html)"
 
-#: qtui.py:1980
+#: qtui.py:1706
 msgid "Failed to Save Article"
 msgstr "Απέτυχε η αποθήκευση του άρθρου"
 
-#: qtui.py:1982
+#: qtui.py:1708
 #, python-format
 msgid "There was an error when writing article to file %s"
 msgstr "Προέκυψε σφάλμα κατά την εγγραφή του άρθρου στο αρχείο %s"
+
+#: qtui.py:1827
+#: state.py:101
+msgid "Failed to load saved application state"
+msgstr "Απέτυχε η φόρτωση της αποθηκευμένης κατάστασης της εφαρμογής"
+
+#: res.py:240
+#, python-format
+msgid "Redirected from <strong>%s</strong>"
+msgstr "Ανακατεύθυνση από το <strong>%s</strong>"
+
+#: res.py:258
+msgid "(C) 2006-2010 Igor Tkach"
+msgstr "(C) 2006-2010 Igor Tkach"
+
+#: res.py:259
+msgid "(C) 2008 Jeremy Mortis"
+msgstr "(C) 2008 Jeremy Mortis"
+
+#: res.py:260
+msgid "Distributed under terms and conditions of <a href=\"http://www.gnu.org/licenses/gpl-3.0.html\">GNU Public License Version 3</a>"
+msgstr "Διανέμεται υπό τους όρους της <a href=\"http://www.gnu.org/licenses/gpl-3.0.html\">Ελεύθερης Άδειας Δημόσιας Χρήσης GNU, έκδοσης 3</a>"
+
+#: res.py:263
+msgid "Aard Dictionary logo by Iryna Gerasymova"
+msgstr "Λογότυπο λεξικού Aard: Iryna Gerasymova"
+
+#: res.py:264
+msgid "Human-O2 icon set by <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
+msgstr "Θέμα εικονιδίων Human-O2: <a href=\"http://schollidesign.deviantart.com\">~schollidesign</a>"
+
+#: state.py:54
+msgid "Failed to save list of dictionary locations"
+msgstr "Απέτυχε η αποθήκευση της λίστας με τις τοποθεσίες των λεξικών"
+
+#: state.py:63
+msgid "Failed to load list of dictionary locations"
+msgstr "Απέτυχε η φόρτωση της λίστας με τις τοποθεσίες των λεξικών"
+
+#: state.py:75
+msgid "Failed to save application state"
+msgstr "Απέτυχε η αποθήκευση της κατάστασης της εφαρμογής"
+
+#: state.py:110
+msgid "Failed to save appearance settings"
+msgstr "Απέτυχε η αποθήκευση των ρυθμίσεων εμφάνισης"
+
+#: state.py:127
+msgid "Failed to load saved appearance settings"
+msgstr "Απέτυχε η φόρτωση των αποθηκευμένων ρυθμίσεων εμφάνισης"
+
+#: state.py:136
+msgid "Failed to save layout"
+msgstr "Απέτυχε η αποθήκευση της διάταξης"
+
+#: state.py:144
+msgid "Failed to load saved layout"
+msgstr "Απέτυχε η φόρτωση της αποθηκευμένης διάταξης"
+
+#: state.py:150
+msgid "Error"
+msgstr "Σφάλμα"
 
