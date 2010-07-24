@@ -648,6 +648,12 @@ class DictView(QMainWindow):
                                                 'article in a web browser'))
         mn_article.addAction(self.action_online_article)
 
+        action_article_appearance = QAction(icons['emblem-art2'], _('&Appearance...'),
+                                            self, triggered=self.article_appearance)
+        action_article_appearance.setToolTip(_('Customize article appearance'))
+        mn_article.addAction(action_article_appearance)
+
+
         mn_view = menubar.addMenu(_('&View'))
 
         mn_view.addAction(self.dock_lookup_pane.toggleViewAction())
@@ -656,11 +662,6 @@ class DictView(QMainWindow):
         toolbar = QToolBar(_('&Toolbar'), self)
         toolbar.setObjectName('toolbar')
         mn_view.addAction(toolbar.toggleViewAction())
-
-        action_article_appearance = QAction(icons['emblem-art2'], _('&Article Appearance...'),
-                                            self, triggered=self.article_appearance)
-        action_article_appearance.setToolTip(_('Customize article appearance'))
-        mn_view.addAction(action_article_appearance)
 
         mn_text_size = mn_view.addMenu(_('Text &Size'))
 
