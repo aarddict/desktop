@@ -97,22 +97,27 @@ class WebView(QWebView):
         self.entry = entry
         self.article = None
         self.loading = False
-        self.action_lookup_selection = None
+        self.actions = []
+
+        def copy_link():
+            self.page().triggerAction(QWebPage.CopyLinkToClipboard)
+        self.action_copy_link = QAction(_('Copy Lin&k'), self, triggered=copy_link)
+
 
     title = property(lambda self: self.entry.title)
 
     def context_menu_requested(self, point):
         context_menu = QMenu()
+
+        for action in self.actions:
+            if action.isEnabled():
+                context_menu.addAction(action)
+
         frame = self.page().currentFrame()
 
-        if unicode(self.selectedText()):
-            if self.action_lookup_selection:
-                context_menu.addAction(self.action_lookup_selection)
-            context_menu.addAction(self.pageAction(QWebPage.Copy))
         hit_test = frame.hitTestContent(point)
         if unicode(hit_test.linkUrl().toString()):
-            context_menu.addAction(self.pageAction(QWebPage.CopyLinkToClipboard))
-        context_menu.addAction(self.pageAction(QWebPage.SelectAll))
+            context_menu.addAction(self.action_copy_link)
 
         if self.settings().testAttribute(QWebSettings.DeveloperExtrasEnabled):
             context_menu.addSeparator()
@@ -602,6 +607,7 @@ class DictView(QMainWindow):
         action_lookup.setShortcuts([_('Ctrl+Enter'), _('Ctrl+Return')])
         action_lookup.setToolTip(_('Lookup selected text'))
         mn_edit.addAction(action_lookup)
+        self.action_lookup = action_lookup
 
         mn_edit.addSeparator()
 
@@ -626,6 +632,7 @@ class DictView(QMainWindow):
         action_copy.setShortcut(QKeySequence.Copy)
         action_copy.setToolTip(_('Copy'))
         mn_edit.addAction(action_copy)
+        self.action_copy = action_copy
 
         def paste():
             fw = QApplication.focusWidget()            
@@ -657,8 +664,8 @@ class DictView(QMainWindow):
         action_select_all = QAction(_('&Select All'), self, triggered=select_all)
         action_select_all.setShortcut(QKeySequence.SelectAll)
         action_select_all.setToolTip(_('Select all'))
-        mn_edit.addAction(action_select_all)
-        
+        mn_edit.addAction(action_select_all)    
+        self.action_select_all = action_select_all
 
         mn_navigate = menubar.addMenu(_('&Navigate'))
 
@@ -693,19 +700,6 @@ class DictView(QMainWindow):
         action_article_find.setShortcuts([_('Ctrl+F'), _('/')])
         action_article_find.setToolTip(_('Find text in article'))
         mn_article.addAction(action_article_find)
-
-
-        self.action_lookup_selection = QAction(_('&Lookup Selection'),
-                                           self, triggered=self.lookup_selection)
-        self.action_lookup_selection.setShortcuts([_('Alt+Return'), _('Alt+Enter')])
-        self.action_lookup_selection.setToolTip(_('Lookup text selected in current article'))
-        mn_article.addAction(self.action_lookup_selection)
-
-        # self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'),
-        #                                    self, triggered=self.copy_article)
-        # self.action_copy_article.setShortcut(_('Ctrl+Shift+C'))
-        # self.action_copy_article.setToolTip(_('Copy article to clipboard'))
-        # mn_article.addAction(self.action_copy_article)
 
         self.action_save_article = QAction(icons['document-save'], _('&Save...'),
                                            self, triggered=self.save_article)
@@ -1011,7 +1005,6 @@ class DictView(QMainWindow):
         self.action_prev_article.setEnabled(current_tab_index > 0)
         self.action_online_article.setEnabled(self.get_current_article_url() is not None)
         self.action_save_article.setEnabled(count > 0)
-        # self.action_copy_article.setEnabled(count > 0)
 
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
@@ -1130,7 +1123,9 @@ class DictView(QMainWindow):
             view_to_load = None
             for i, entry in enumerate(self.sort_preferred(entries)):
                 view = WebView(entry)
-                view.action_lookup_selection = self.action_lookup_selection
+                view.actions = [self.action_lookup, 
+                                self.action_copy, 
+                                self.action_select_all]
                 view.setPage(WebPage(view))
                 volume = self.dictionaries.volume(entry.volume_id)
                 view.page().currentFrame().setHtml(_('Loading...'), QUrl(''))
@@ -1777,21 +1772,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                     msg_box.setDetailedText(unicode(e))
                     msg_box.setStandardButtons(QMessageBox.Ok)
                     msg_box.open()
-
-    def copy_article(self):
-        current_tab = self.tabs.currentWidget()
-        if current_tab:
-            page = current_tab.page()
-            page.triggerAction(QWebPage.SelectAll)
-            page.triggerAction(QWebPage.Copy)
-            page.currentFrame().evaluateJavaScript("document.getSelection().empty();")
-
-    def lookup_selection(self):
-        current_tab = self.tabs.currentWidget()
-        if current_tab:
-            selection = current_tab.selectedText()
-            if selection:
-                self.set_word_input(selection)
 
     def write_state(self):
         appstate = {}
