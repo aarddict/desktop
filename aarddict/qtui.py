@@ -629,13 +629,6 @@ class DictView(QMainWindow):
         self.action_lookup_selection.setToolTip(_('Lookup text selected in current article'))
         mn_article.addAction(self.action_lookup_selection)
 
-        self.action_lookup_selected_words = QAction(_('&Lookup Selected Word'),
-                                           self, triggered=self.lookup_selected_words)
-        self.action_lookup_selected_words.setShortcuts([_('Ctrl+Return'), _('Ctrl+Enter')])
-        self.action_lookup_selected_words.setToolTip(_('Extend text selection in current article '
-                                                       'to next word and lookup selected text'))
-        mn_article.addAction(self.action_lookup_selected_words)
-
         self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'),
                                            self, triggered=self.copy_article)
         self.action_copy_article.setShortcut(_('Ctrl+Shift+C'))
@@ -1723,15 +1716,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
     def lookup_selection(self):
         current_tab = self.tabs.currentWidget()
         if current_tab:
-            selection = current_tab.selectedText()
-            if selection:
-                self.set_word_input(selection)
-
-    def lookup_selected_words(self):
-        current_tab = self.tabs.currentWidget()
-        if current_tab:
-            page = current_tab.page()
-            page.triggerAction(QWebPage.SelectNextWord)
             selection = current_tab.selectedText()
             if selection:
                 self.set_word_input(selection)
