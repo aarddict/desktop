@@ -563,11 +563,12 @@ class DictView(QMainWindow):
         action_add_dict_dir.setToolTip(_('Add dictionary directory'))
         mn_dictionary.addAction(action_add_dict_dir)
 
-        action_verify = QAction(icons['system-run'], _('&Verify...'),
+        self.action_verify = QAction(icons['system-run'], _('&Verify...'),
                                 self, triggered=self.verify)
-        action_verify.setShortcut(_('Ctrl+Y'))
-        action_verify.setToolTip(_('Verify volume data integrity'))
-        mn_dictionary.addAction(action_verify)
+        self.action_verify.setShortcut(_('Ctrl+Y'))
+        self.action_verify.setToolTip(_('Verify volume data integrity'))
+        mn_dictionary.addAction(self.action_verify)
+
 
         action_remove_dict_source = QAction(icons['list-remove'], _('&Remove...'),
                                             self, triggered=self.remove_dict_source)
@@ -587,6 +588,77 @@ class DictView(QMainWindow):
         action_quit.setToolTip(_('Exit application'))
         action_quit.setMenuRole(QAction.QuitRole)
         mn_dictionary.addAction(action_quit)
+            
+        mn_edit = menubar.addMenu(_('&Edit'))
+
+        def lookup():
+            fw = QApplication.focusWidget()            
+            if hasattr(fw, 'selectedText'):
+                text = fw.selectedText()
+                if text:
+                    self.set_word_input(text)
+
+        action_lookup = QAction(_('&Lookup'), self, triggered=lookup)
+        action_lookup.setShortcuts([_('Ctrl+Enter'), _('Ctrl+Return')])
+        action_lookup.setToolTip(_('Lookup selected text'))
+        mn_edit.addAction(action_lookup)
+
+        mn_edit.addSeparator()
+
+        def cut():
+            fw = QApplication.focusWidget()            
+            if isinstance(fw, QLineEdit):
+                fw.cut()
+
+        action_cut = QAction(_('&Cut'), self, triggered=cut)
+        action_cut.setShortcut(QKeySequence.Cut)
+        action_cut.setToolTip(_('Cut'))
+        mn_edit.addAction(action_cut)
+
+        def copy():
+            fw = QApplication.focusWidget()            
+            if isinstance(fw, QLineEdit):
+                fw.copy()
+            elif isinstance(fw, QWebView):
+                fw.page().triggerAction(QWebPage.Copy)
+
+        action_copy = QAction(_('&Copy'), self, triggered=copy)
+        action_copy.setShortcut(QKeySequence.Copy)
+        action_copy.setToolTip(_('Copy'))
+        mn_edit.addAction(action_copy)
+
+        def paste():
+            fw = QApplication.focusWidget()            
+            if isinstance(fw, QLineEdit):
+                fw.paste()
+
+        action_paste = QAction(_('&Paste'), self, triggered=paste)
+        action_paste.setShortcut(QKeySequence.Paste)
+        action_paste.setToolTip(_('Paste'))
+        mn_edit.addAction(action_paste)
+
+        def delete():
+            fw = QApplication.focusWidget()            
+            if isinstance(fw, QLineEdit):
+                fw.del_()
+
+        action_paste = QAction(_('&Delete'), self, triggered=delete)
+        action_paste.setShortcut(QKeySequence.Delete)
+        action_paste.setToolTip(_('Delete'))
+        mn_edit.addAction(action_paste)
+
+        def select_all():            
+            fw = QApplication.focusWidget()            
+            if isinstance(fw, QLineEdit):
+                fw.selectAll()
+            elif isinstance(fw, QWebView):
+                fw.page().triggerAction(QWebPage.SelectAll)
+        
+        action_select_all = QAction(_('&Select All'), self, triggered=select_all)
+        action_select_all.setShortcut(QKeySequence.SelectAll)
+        action_select_all.setToolTip(_('Select all'))
+        mn_edit.addAction(action_select_all)
+        
 
         mn_navigate = menubar.addMenu(_('&Navigate'))
 
@@ -629,11 +701,11 @@ class DictView(QMainWindow):
         self.action_lookup_selection.setToolTip(_('Lookup text selected in current article'))
         mn_article.addAction(self.action_lookup_selection)
 
-        self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'),
-                                           self, triggered=self.copy_article)
-        self.action_copy_article.setShortcut(_('Ctrl+Shift+C'))
-        self.action_copy_article.setToolTip(_('Copy article to clipboard'))
-        mn_article.addAction(self.action_copy_article)
+        # self.action_copy_article = QAction(icons['edit-copy'], _('&Copy'),
+        #                                    self, triggered=self.copy_article)
+        # self.action_copy_article.setShortcut(_('Ctrl+Shift+C'))
+        # self.action_copy_article.setToolTip(_('Copy article to clipboard'))
+        # mn_article.addAction(self.action_copy_article)
 
         self.action_save_article = QAction(icons['document-save'], _('&Save...'),
                                            self, triggered=self.save_article)
@@ -939,7 +1011,7 @@ class DictView(QMainWindow):
         self.action_prev_article.setEnabled(current_tab_index > 0)
         self.action_online_article.setEnabled(self.get_current_article_url() is not None)
         self.action_save_article.setEnabled(count > 0)
-        self.action_copy_article.setEnabled(count > 0)
+        # self.action_copy_article.setEnabled(count > 0)
 
     def update_preferred_dicts(self, dict_uuid=None):
         if dict_uuid:
