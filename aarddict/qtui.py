@@ -1120,7 +1120,7 @@ class DictView(QMainWindow):
             f = w.page().mainFrame()
             scrollx = f.scrollBarValue(Qt.Horizontal)
             scrolly = f.scrollBarValue(Qt.Vertical)
-            if scrollx or scrolly:
+            if w.article is not None:
                 self.scroll_values[w.entry] = (scrollx, scrolly)
             self.tabs.removeTab(i)
             w.deleteLater()
