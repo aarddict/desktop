@@ -10,8 +10,8 @@ Aard Dictionary's user interface consists of lookup and history pane
 .. image:: aarddict_0.9.0_ubuntu_planks_law.png
 
 First open some dictionaries, either by selecting
-:menuselection:`Dictionary-->Add Dictionaries` or
-:menuselection:`Dictionary-->Add Directory`. Adding a directory means
+:menuselection:`Dictionary --> Add Dictionaries` or
+:menuselection:`Dictionary --> Add Directory`. Adding a directory means
 that Aard Dictionary will scan that directory (without subdirectories)
 and open any dictionaries it finds every time it is started.
 
@@ -50,7 +50,7 @@ dialog (:menuselection:`View --> Article Appearance...`).
 
 .. image:: aarddict_0.9.0_ubuntu_article_appearance.png
 
-:menuselection:`Article-->Find` brings up `Find` bar:
+:menuselection:`Article --> Find` brings up `Find` bar:
 
 .. image:: aarddict_0.9.0_ubuntu_pascals_triangle.png
 
