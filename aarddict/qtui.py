@@ -684,6 +684,10 @@ class DictView(QMainWindow):
             action_select_all.setEnabled(lineedit or webview)
 
         def focus_changed(old, now):
+            #On Mac OS X context menu grabs focus,
+            #don't want to update actions for that
+            if isinstance(now, QMenu):    
+                return
             if isinstance(now, QWebView):
                 now.page().selectionChanged.connect(update_edit_actions)
             elif isinstance(now, QLineEdit):
