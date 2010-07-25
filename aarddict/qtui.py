@@ -605,7 +605,7 @@ class DictView(QMainWindow):
 
         action_lookup = QAction(icons['system-search'], _('&Lookup'), self, triggered=lookup)
         action_lookup.setShortcuts([_('Ctrl+Enter'), _('Ctrl+Return')])
-        action_lookup.setToolTip(_('Lookup selected text'))
+        action_lookup.setToolTip(_('Lookup the selected text'))
         mn_edit.addAction(action_lookup)
         self.action_lookup = action_lookup
 
@@ -616,9 +616,9 @@ class DictView(QMainWindow):
             if isinstance(fw, QLineEdit):
                 fw.cut()
 
-        action_cut = QAction(icons['edit-cut'], _('&Cut'), self, triggered=cut)
+        action_cut = QAction(icons['edit-cut'], _('Cu&t'), self, triggered=cut)
         action_cut.setShortcut(QKeySequence.Cut)
-        action_cut.setToolTip(_('Cut'))
+        action_cut.setToolTip(_('Cut the selection'))
         mn_edit.addAction(action_cut)
 
         def copy():
@@ -630,7 +630,7 @@ class DictView(QMainWindow):
 
         action_copy = QAction(icons['edit-copy'], _('&Copy'), self, triggered=copy)
         action_copy.setShortcut(QKeySequence.Copy)
-        action_copy.setToolTip(_('Copy'))
+        action_copy.setToolTip(_('Copy the selection'))
         mn_edit.addAction(action_copy)
         self.action_copy = action_copy
 
@@ -641,7 +641,7 @@ class DictView(QMainWindow):
 
         action_paste = QAction(icons['edit-paste'], _('&Paste'), self, triggered=paste)
         action_paste.setShortcut(QKeySequence.Paste)
-        action_paste.setToolTip(_('Paste'))
+        action_paste.setToolTip(_('Paste the clipboard'))
         mn_edit.addAction(action_paste)
 
         def delete():
@@ -651,7 +651,7 @@ class DictView(QMainWindow):
 
         action_delete = QAction(icons['edit-delete'], _('&Delete'), self, triggered=delete)
         action_delete.setShortcut(QKeySequence.Delete)
-        action_delete.setToolTip(_('Delete'))
+        action_delete.setToolTip(_('Delete the selected text'))
         mn_edit.addAction(action_delete)
 
         def select_all():
@@ -665,7 +665,7 @@ class DictView(QMainWindow):
                                     _('&Select All'), self,
                                     triggered=select_all)
         action_select_all.setShortcut(QKeySequence.SelectAll)
-        action_select_all.setToolTip(_('Select all'))
+        action_select_all.setToolTip(_('Select the entire text'))
         mn_edit.addAction(action_select_all)
         self.action_select_all = action_select_all
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-07-23 23:01-0400\n"
+"POT-Creation-Date: 2010-07-25 01:02-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,514 +17,546 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: qtui.py:236
+#: qtui.py:104
+msgid "Copy Lin&k"
+msgstr ""
+
+#: qtui.py:241
 #, python-format
 msgid "Article \"%s\" not found"
 msgstr ""
 
-#: qtui.py:240
+#: qtui.py:245
 #, python-format
 msgid "Too many redirects for \"%s\""
 msgstr ""
 
-#: qtui.py:327 qtui.py:329
+#: qtui.py:332 qtui.py:334
 msgid "Clear"
 msgstr ""
 
-#: qtui.py:384
+#: qtui.py:389
 msgid "&Find"
 msgstr ""
 
-#: qtui.py:390
+#: qtui.py:395
 msgid "&Find:"
 msgstr ""
 
-#: qtui.py:395
+#: qtui.py:400
 msgid "Close Find bar"
 msgstr ""
 
-#: qtui.py:401
+#: qtui.py:406
 msgid "Find the previous occurence of the phrase"
 msgstr ""
 
-#: qtui.py:406
+#: qtui.py:411
 msgid "Find the next occurence of the phrase"
 msgstr ""
 
-#: qtui.py:409
+#: qtui.py:414
 msgid "&Match Case"
 msgstr ""
 
-#: qtui.py:483
+#: qtui.py:488
 msgid "&Lookup Box"
 msgstr ""
 
-#: qtui.py:485
+#: qtui.py:490
 msgid "Ctrl+L"
 msgstr ""
 
-#: qtui.py:485
+#: qtui.py:490
 msgid "F2"
 msgstr ""
 
-#: qtui.py:486
+#: qtui.py:491
 msgid "Move focus to word input and select its content"
 msgstr ""
 
-#: qtui.py:491
+#: qtui.py:496
 msgid "Ctrl+N"
 msgstr ""
 
-#: qtui.py:513
+#: qtui.py:518
 msgid "&Back"
 msgstr ""
 
-#: qtui.py:515
+#: qtui.py:520
 msgid "Ctrl+["
 msgstr ""
 
-#: qtui.py:516
+#: qtui.py:521
 msgid "Go back to previous word in history"
 msgstr ""
 
-#: qtui.py:518
+#: qtui.py:523
 msgid "&Forward"
 msgstr ""
 
-#: qtui.py:520
+#: qtui.py:525
 msgid "Ctrl+]"
 msgstr ""
 
-#: qtui.py:520
+#: qtui.py:525
 msgid "Shift+Esc"
 msgstr ""
 
-#: qtui.py:521
+#: qtui.py:526
 msgid "Go forward to next word in history"
 msgstr ""
 
-#: qtui.py:532
+#: qtui.py:537 qtui.py:606
 msgid "&Lookup"
 msgstr ""
 
-#: qtui.py:541
+#: qtui.py:546
 msgid "&History"
 msgstr ""
 
-#: qtui.py:553
+#: qtui.py:558
 msgid "&Dictionary"
 msgstr ""
 
-#: qtui.py:555
+#: qtui.py:560
 msgid "&Add Dictionaries..."
 msgstr ""
 
-#: qtui.py:557
+#: qtui.py:562
 msgid "Ctrl+O"
 msgstr ""
 
-#: qtui.py:558
+#: qtui.py:563
 msgid "Add dictionaries"
 msgstr ""
 
-#: qtui.py:561
+#: qtui.py:566
 msgid "Add &Directory..."
 msgstr ""
 
-#: qtui.py:563
+#: qtui.py:568
 msgid "Add dictionary directory"
 msgstr ""
 
-#: qtui.py:566
+#: qtui.py:571
 msgid "&Verify..."
 msgstr ""
 
-#: qtui.py:568
+#: qtui.py:573
 msgid "Ctrl+Y"
 msgstr ""
 
-#: qtui.py:569
+#: qtui.py:574
 msgid "Verify volume data integrity"
 msgstr ""
 
-#: qtui.py:572
+#: qtui.py:578
 msgid "&Remove..."
 msgstr ""
 
-#: qtui.py:574
+#: qtui.py:580
 msgid "Ctrl+R"
 msgstr ""
 
-#: qtui.py:575
+#: qtui.py:581
 msgid "Remove dictionary or dictionary directory"
 msgstr ""
 
-#: qtui.py:578
+#: qtui.py:584
 msgid "&Info..."
 msgstr ""
 
-#: qtui.py:580
+#: qtui.py:586
 msgid "Ctrl+I"
 msgstr ""
 
-#: qtui.py:581
+#: qtui.py:587
 msgid "Information about open dictionaries"
 msgstr ""
 
-#: qtui.py:584
+#: qtui.py:590
 msgid "&Quit"
 msgstr ""
 
-#: qtui.py:586
+#: qtui.py:592
 msgid "Ctrl+Q"
 msgstr ""
 
-#: qtui.py:587
+#: qtui.py:593
 msgid "Exit application"
 msgstr ""
 
-#: qtui.py:591
-msgid "&Navigate"
-msgstr ""
-
-#: qtui.py:598
-msgid "&Next Article"
-msgstr ""
-
-#: qtui.py:600
-msgid "Ctrl+K"
-msgstr ""
-
-#: qtui.py:600
-msgid "Ctrl+."
-msgstr ""
-
-#: qtui.py:601
-msgid "Show next article"
-msgstr ""
-
-#: qtui.py:604
-msgid "&Previous Article"
-msgstr ""
-
-#: qtui.py:606
-msgid "Ctrl+J"
-msgstr ""
-
-#: qtui.py:606
-msgid "Ctrl+,"
+#: qtui.py:597
+msgid "&Edit"
 msgstr ""
 
 #: qtui.py:607
-msgid "Show previous article"
+msgid "Ctrl+Enter"
 msgstr ""
 
-#: qtui.py:611
-msgid "&Article"
+#: qtui.py:607
+msgid "Ctrl+Return"
 msgstr ""
 
-#: qtui.py:618
-msgid "&Find..."
+#: qtui.py:608
+msgid "Lookup the selected text"
+msgstr ""
+
+#: qtui.py:619
+msgid "Cu&t"
 msgstr ""
 
 #: qtui.py:621
-msgid "Ctrl+F"
+msgid "Cut the selection"
 msgstr ""
 
-#: qtui.py:621
-msgid "/"
-msgstr ""
-
-#: qtui.py:622
-msgid "Find text in article"
-msgstr ""
-
-#: qtui.py:626
-msgid "&Lookup Selection"
-msgstr ""
-
-#: qtui.py:628
-msgid "Alt+Return"
-msgstr ""
-
-#: qtui.py:628
-msgid "Alt+Enter"
-msgstr ""
-
-#: qtui.py:629
-msgid "Lookup text selected in current article"
-msgstr ""
-
-#: qtui.py:632
+#: qtui.py:631
 msgid "&Copy"
 msgstr ""
 
-#: qtui.py:634
-msgid "Ctrl+Shift+C"
+#: qtui.py:633
+msgid "Copy the selection"
 msgstr ""
 
-#: qtui.py:635
-msgid "Copy article to clipboard"
-msgstr ""
-
-#: qtui.py:638
-msgid "&Save..."
-msgstr ""
-
-#: qtui.py:640
-msgid "Ctrl+S"
-msgstr ""
-
-#: qtui.py:641
-msgid "Save article text to file"
+#: qtui.py:642
+msgid "&Paste"
 msgstr ""
 
 #: qtui.py:644
-msgid "&View Online"
+msgid "Paste the clipboard"
 msgstr ""
 
-#: qtui.py:646
-msgid "Ctrl+T"
+#: qtui.py:652
+msgid "&Delete"
 msgstr ""
 
-#: qtui.py:647
-msgid "Open online version of this article in a web browser"
+#: qtui.py:654
+msgid "Delete the selected text"
 msgstr ""
 
-#: qtui.py:651
-msgid "&Appearance..."
-msgstr ""
-
-#: qtui.py:653
-msgid "Customize article appearance"
-msgstr ""
-
-#: qtui.py:657
-msgid "&View"
-msgstr ""
-
-#: qtui.py:662
-msgid "&Toolbar"
-msgstr ""
-
-#: qtui.py:666
-msgid "Text &Size"
+#: qtui.py:665
+msgid "&Select All"
 msgstr ""
 
 #: qtui.py:668
-msgid "&Increase"
+msgid "Select the entire text"
 msgstr ""
 
-#: qtui.py:670
-msgid "Ctrl+="
+#: qtui.py:699
+msgid "&Navigate"
 msgstr ""
 
-#: qtui.py:670
-msgid "F7"
+#: qtui.py:706
+msgid "&Next Article"
 msgstr ""
 
-#: qtui.py:671
-msgid "Increase size of article text"
+#: qtui.py:708
+msgid "Ctrl+K"
 msgstr ""
 
-#: qtui.py:674
-msgid "&Decrease"
+#: qtui.py:708
+msgid "Ctrl+."
 msgstr ""
 
-#: qtui.py:676
-msgid "F8"
+#: qtui.py:709
+msgid "Show next article"
 msgstr ""
 
-#: qtui.py:677
-msgid "Decrease size of article text"
+#: qtui.py:712
+msgid "&Previous Article"
 msgstr ""
 
-#: qtui.py:680
-msgid "&Reset"
+#: qtui.py:714
+msgid "Ctrl+J"
 msgstr ""
 
-#: qtui.py:682
-msgid "Ctrl+0"
+#: qtui.py:714
+msgid "Ctrl+,"
 msgstr ""
 
-#: qtui.py:683
-msgid "Reset size of article text to default"
+#: qtui.py:715
+msgid "Show previous article"
 msgstr ""
 
-#: qtui.py:686
-msgid "&Full Screen"
+#: qtui.py:719
+msgid "&Article"
 msgstr ""
 
-#: qtui.py:687
-msgid "F11"
-msgstr ""
-
-#: qtui.py:688
-msgid "Toggle full screen mode"
-msgstr ""
-
-#: qtui.py:693
-msgid "H&elp"
-msgstr ""
-
-#: qtui.py:695
-msgid "&About..."
-msgstr ""
-
-#: qtui.py:697
-msgid "Information about Aard Dictionary"
+#: qtui.py:726
+msgid "&Find..."
 msgstr ""
 
 #: qtui.py:729
-msgid "Esc"
+msgid "Ctrl+F"
+msgstr ""
+
+#: qtui.py:729
+msgid "/"
+msgstr ""
+
+#: qtui.py:730
+msgid "Find text in article"
+msgstr ""
+
+#: qtui.py:733
+msgid "&Save..."
+msgstr ""
+
+#: qtui.py:735
+msgid "Ctrl+S"
+msgstr ""
+
+#: qtui.py:736
+msgid "Save article text to file"
+msgstr ""
+
+#: qtui.py:739
+msgid "&View Online"
+msgstr ""
+
+#: qtui.py:741
+msgid "Ctrl+T"
+msgstr ""
+
+#: qtui.py:742
+msgid "Open online version of this article in a web browser"
+msgstr ""
+
+#: qtui.py:746
+msgid "&Appearance..."
+msgstr ""
+
+#: qtui.py:748
+msgid "Customize article appearance"
+msgstr ""
+
+#: qtui.py:752
+msgid "&View"
+msgstr ""
+
+#: qtui.py:757
+msgid "&Toolbar"
+msgstr ""
+
+#: qtui.py:761
+msgid "Text &Size"
+msgstr ""
+
+#: qtui.py:763
+msgid "&Increase"
+msgstr ""
+
+#: qtui.py:765
+msgid "Ctrl+="
+msgstr ""
+
+#: qtui.py:765
+msgid "F7"
+msgstr ""
+
+#: qtui.py:766
+msgid "Increase size of article text"
+msgstr ""
+
+#: qtui.py:769
+msgid "&Decrease"
+msgstr ""
+
+#: qtui.py:771
+msgid "F8"
+msgstr ""
+
+#: qtui.py:772
+msgid "Decrease size of article text"
+msgstr ""
+
+#: qtui.py:775
+msgid "&Reset"
+msgstr ""
+
+#: qtui.py:777
+msgid "Ctrl+0"
+msgstr ""
+
+#: qtui.py:778
+msgid "Reset size of article text to default"
+msgstr ""
+
+#: qtui.py:781
+msgid "&Full Screen"
+msgstr ""
+
+#: qtui.py:782
+msgid "F11"
+msgstr ""
+
+#: qtui.py:783
+msgid "Toggle full screen mode"
+msgstr ""
+
+#: qtui.py:788
+msgid "H&elp"
 msgstr ""
 
 #: qtui.py:790
-msgid "Opening dictionaries..."
+msgid "&About..."
 msgstr ""
 
-#: qtui.py:791
-msgid "Stop"
-msgstr ""
-
-#: qtui.py:822
-msgid "Open Failed"
+#: qtui.py:792
+msgid "Information about Aard Dictionary"
 msgstr ""
 
 #: qtui.py:824
-msgid "Failed to open some dictionaries"
-msgstr ""
-
-#: qtui.py:836
-msgid "Add Dictionary"
-msgstr ""
-
-#: qtui.py:838
-msgid "Aard Dictionary Files"
-msgstr ""
-
-#: qtui.py:845
-msgid "Add Dictionary Directory"
-msgstr ""
-
-#: qtui.py:857
-msgid "Remove Dictionaries"
-msgstr ""
-
-#: qtui.py:881
-msgid "Select &All"
+msgid "Esc"
 msgstr ""
 
 #: qtui.py:885
+msgid "Opening dictionaries..."
+msgstr ""
+
+#: qtui.py:886
+msgid "Stop"
+msgstr ""
+
+#: qtui.py:917
+msgid "Open Failed"
+msgstr ""
+
+#: qtui.py:919
+msgid "Failed to open some dictionaries"
+msgstr ""
+
+#: qtui.py:931
+msgid "Add Dictionary"
+msgstr ""
+
+#: qtui.py:933
+msgid "Aard Dictionary Files"
+msgstr ""
+
+#: qtui.py:940
+msgid "Add Dictionary Directory"
+msgstr ""
+
+#: qtui.py:952
+msgid "Remove Dictionaries"
+msgstr ""
+
+#: qtui.py:976
+msgid "Select &All"
+msgstr ""
+
+#: qtui.py:980
 msgid "&Remove"
 msgstr ""
 
-#: qtui.py:964 qtui.py:1064
+#: qtui.py:1058 qtui.py:1160
 msgid "Loading..."
 msgstr ""
 
-#: qtui.py:981
+#: qtui.py:1075
 #, python-format
 msgid ""
 "Error while looking up %(word)s:\n"
 "%(exception)s"
 msgstr ""
 
-#: qtui.py:984
+#: qtui.py:1078
 msgid "Word Lookup Failed"
 msgstr ""
 
-#: qtui.py:1092
+#: qtui.py:1188
 #, python-format
 msgid "Failed to load article %s"
 msgstr ""
 
-#: qtui.py:1094
+#: qtui.py:1190
 #, python-format
 msgid ""
 "Error reading article %(title)s from %(dict_title)s (file %(dict_file)s):\n"
 "%(exception)s"
 msgstr ""
 
-#: qtui.py:1101
+#: qtui.py:1197
 msgid "Article Load Failed"
 msgstr ""
 
-#: qtui.py:1108
+#: qtui.py:1204
 msgid ""
 "There was an error while accessing dictionaries. Dictionary files may be "
 "corrupted. Would you like to verify now?"
 msgstr ""
 
-#: qtui.py:1325
+#: qtui.py:1421
 msgid "Verify"
 msgstr ""
 
-#: qtui.py:1331
+#: qtui.py:1427
 msgid "Status"
 msgstr ""
 
-#: qtui.py:1331 qtui.py:1452
+#: qtui.py:1427 qtui.py:1548
 msgid "Volume"
 msgstr ""
 
-#: qtui.py:1343
+#: qtui.py:1439
 msgid "Unverified"
 msgstr ""
 
-#: qtui.py:1355
+#: qtui.py:1451
 msgid "&Verify"
 msgstr ""
 
-#: qtui.py:1364
+#: qtui.py:1460
 msgid "Verifying..."
 msgstr ""
 
-#: qtui.py:1376
+#: qtui.py:1472
 msgid "Ok"
 msgstr ""
 
-#: qtui.py:1379
+#: qtui.py:1475
 msgid "Corrupt"
 msgstr ""
 
-#: qtui.py:1408
+#: qtui.py:1504
 msgid "Dictionary Info"
 msgstr ""
 
-#: qtui.py:1465
+#: qtui.py:1561
 msgid "Volumes:"
 msgstr ""
 
-#: qtui.py:1468
+#: qtui.py:1564
 msgid "Number of articles:"
 msgstr ""
 
-#: qtui.py:1473
+#: qtui.py:1569
 msgid "Language links:"
 msgstr ""
 
-#: qtui.py:1478
+#: qtui.py:1574
 msgid "Source"
 msgstr ""
 
-#: qtui.py:1480
+#: qtui.py:1576
 msgid "Copyright Notice"
 msgstr ""
 
-#: qtui.py:1482
+#: qtui.py:1578
 msgid "License"
 msgstr ""
 
-#: qtui.py:1501
+#: qtui.py:1597
 msgid "About"
 msgstr ""
 
-#: qtui.py:1530
+#: qtui.py:1626
 msgid "Article Appearance"
 msgstr ""
 
-#: qtui.py:1535
+#: qtui.py:1631
 msgid ""
 "<div id=\"globalWrapper\">\n"
 "This is an <a href=\"#\">internal link</a>. <br>\n"
@@ -537,101 +569,101 @@ msgid ""
 "</div>\n"
 msgstr ""
 
-#: qtui.py:1567
+#: qtui.py:1663
 msgid "Internal Link"
 msgstr ""
 
-#: qtui.py:1577
+#: qtui.py:1673
 msgid "External Link"
 msgstr ""
 
-#: qtui.py:1587
+#: qtui.py:1683
 msgid "Footnote Link"
 msgstr ""
 
-#: qtui.py:1597
+#: qtui.py:1693
 msgid "Footnote Back Link"
 msgstr ""
 
-#: qtui.py:1607
+#: qtui.py:1703
 msgid "Active Link"
 msgstr ""
 
-#: qtui.py:1612
+#: qtui.py:1708
 msgid "AaBb"
 msgstr ""
 
-#: qtui.py:1623
+#: qtui.py:1719
 msgid "Article Text"
 msgstr ""
 
-#: qtui.py:1625
+#: qtui.py:1721
 msgid "Use Wikipedia style"
 msgstr ""
 
-#: qtui.py:1674
+#: qtui.py:1770
 msgid "No dictionaries"
 msgstr ""
 
-#: qtui.py:1675
+#: qtui.py:1771
 #, python-format
 msgid "%d volume"
 msgid_plural "%d volumes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: qtui.py:1677
+#: qtui.py:1773
 #, python-format
 msgid "%d dictionary"
 msgid_plural "%d dictionaries"
 msgstr[0] ""
 msgstr[1] ""
 
-#: qtui.py:1687
+#: qtui.py:1783
 msgid "Save Article"
 msgstr ""
 
-#: qtui.py:1689
+#: qtui.py:1785
 msgid "HTML Documents (*.htm *.html)"
 msgstr ""
 
-#: qtui.py:1700
+#: qtui.py:1796
 msgid "Failed to Save Article"
 msgstr ""
 
-#: qtui.py:1702
+#: qtui.py:1798
 #, python-format
 msgid "There was an error when writing article to file %s"
 msgstr ""
 
-#: qtui.py:1812 state.py:101
+#: qtui.py:1893 state.py:101
 msgid "Failed to load saved application state"
 msgstr ""
 
-#: res.py:240
+#: res.py:246
 #, python-format
 msgid "Redirected from <strong>%s</strong>"
 msgstr ""
 
-#: res.py:258
+#: res.py:264
 msgid "(C) 2006-2010 Igor Tkach"
 msgstr ""
 
-#: res.py:259
+#: res.py:265
 msgid "(C) 2008 Jeremy Mortis"
 msgstr ""
 
-#: res.py:260
+#: res.py:266
 msgid ""
 "Distributed under terms and conditions of <a href=\"http://www.gnu.org/"
 "licenses/gpl-3.0.html\">GNU Public License Version 3</a>"
 msgstr ""
 
-#: res.py:263
+#: res.py:269
 msgid "Aard Dictionary logo by Iryna Gerasymova"
 msgstr ""
 
-#: res.py:264
+#: res.py:270
 msgid ""
 "Human-O2 icon set by <a href=\"http://schollidesign.deviantart.com"
 "\">~schollidesign</a>"
