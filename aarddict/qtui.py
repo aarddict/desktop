@@ -570,7 +570,7 @@ class DictView(QMainWindow):
 
         self.action_verify = QAction(icons['system-run'], _('&Verify...'),
                                 self, triggered=self.verify)
-        self.action_verify.setShortcut(_('Ctrl+Y'))
+        self.action_verify.setShortcut(_('Ctrl+E'))
         self.action_verify.setToolTip(_('Verify volume data integrity'))
         mn_dictionary.addAction(self.action_verify)
 
