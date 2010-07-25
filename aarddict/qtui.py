@@ -753,6 +753,7 @@ class DictView(QMainWindow):
 
         action_article_appearance = QAction(icons['emblem-art2'], _('&Appearance...'),
                                             self, triggered=self.article_appearance)
+        action_article_appearance.setShortcut(_('Ctrl+U'))
         action_article_appearance.setToolTip(_('Customize article appearance'))
         mn_article.addAction(action_article_appearance)
 
