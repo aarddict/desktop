@@ -604,7 +604,10 @@ class DictView(QMainWindow):
                     self.set_word_input(text)
 
         action_lookup = QAction(icons['system-search'], _('&Lookup'), self, triggered=lookup)
-        action_lookup.setShortcuts([_('Ctrl+Enter'), _('Ctrl+Return')])
+        ctrl_ret = _('Ctrl+Return')
+        ctrl_enter = _('Ctrl+Enter')
+        action_lookup.setShortcuts([ctrl_enter, ctrl_ret] if not is_mac_os()
+                                   else [ctrl_ret, ctrl_enter])
         action_lookup.setToolTip(_('Lookup the selected text'))
         mn_edit.addAction(action_lookup)
         self.action_lookup = action_lookup
@@ -1874,6 +1877,12 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         font = QFont()
         font.fromString(appearance['fonts']['default'])
         res.font = font
+
+
+def is_mac_os():
+    import platform
+    mac_ver = platform.mac_ver()
+    return mac_ver and mac_ver[0]
 
 
 def main(args, debug=False, dev_extras=False):
