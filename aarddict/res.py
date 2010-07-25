@@ -18,7 +18,7 @@ import gettext
 import locale
 from string import Template # pylint: disable-msg=W0402
 
-from PyQt4.QtCore import QTranslator, QLocale, QSize
+from PyQt4.QtCore import QSize
 from PyQt4.QtGui import QIcon, QFont
 
 import aarddict
