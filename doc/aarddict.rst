@@ -541,6 +541,22 @@ allow to create bzip2 compressed dictionaries.
 .. _ptksdict: http://www.sdict.com/en/versions.php?version=unix_ptk
 
 
+Contributors
+============
+
+- Jeremy Mortis (initial Aard Dictionary file format design and implementation,
+  initial dictionary compiler implementation)
+
+- Sam Tygier (patches, ideas, `BitTorrent tracker`_)
+
+- Jennie Petoumenou (Greek translation, testing)
+
+- Iryna Gerasymova (Aard Dictionary logo, testing)
+
+- Igor Tkach (`SDict Viewer`_ and Aard Dictionary author)
+
+.. _BitTorrent tracker: http://torrent.tygier.co.uk:6969/
+
 Release Notes
 =============
 
