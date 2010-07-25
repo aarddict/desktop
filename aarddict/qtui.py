@@ -603,7 +603,7 @@ class DictView(QMainWindow):
                 if text:
                     self.set_word_input(text)
 
-        action_lookup = QAction(_('&Lookup'), self, triggered=lookup)
+        action_lookup = QAction(icons['system-search'], _('&Lookup'), self, triggered=lookup)
         action_lookup.setShortcuts([_('Ctrl+Enter'), _('Ctrl+Return')])
         action_lookup.setToolTip(_('Lookup selected text'))
         mn_edit.addAction(action_lookup)
@@ -616,7 +616,7 @@ class DictView(QMainWindow):
             if isinstance(fw, QLineEdit):
                 fw.cut()
 
-        action_cut = QAction(_('&Cut'), self, triggered=cut)
+        action_cut = QAction(icons['edit-cut'], _('&Cut'), self, triggered=cut)
         action_cut.setShortcut(QKeySequence.Cut)
         action_cut.setToolTip(_('Cut'))
         mn_edit.addAction(action_cut)
@@ -628,7 +628,7 @@ class DictView(QMainWindow):
             elif isinstance(fw, QWebView):
                 fw.page().triggerAction(QWebPage.Copy)
 
-        action_copy = QAction(_('&Copy'), self, triggered=copy)
+        action_copy = QAction(icons['edit-copy'], _('&Copy'), self, triggered=copy)
         action_copy.setShortcut(QKeySequence.Copy)
         action_copy.setToolTip(_('Copy'))
         mn_edit.addAction(action_copy)
@@ -639,7 +639,7 @@ class DictView(QMainWindow):
             if isinstance(fw, QLineEdit):
                 fw.paste()
 
-        action_paste = QAction(_('&Paste'), self, triggered=paste)
+        action_paste = QAction(icons['edit-paste'], _('&Paste'), self, triggered=paste)
         action_paste.setShortcut(QKeySequence.Paste)
         action_paste.setToolTip(_('Paste'))
         mn_edit.addAction(action_paste)
@@ -649,7 +649,7 @@ class DictView(QMainWindow):
             if isinstance(fw, QLineEdit):
                 fw.del_()
 
-        action_delete = QAction(_('&Delete'), self, triggered=delete)
+        action_delete = QAction(icons['edit-delete'], _('&Delete'), self, triggered=delete)
         action_delete.setShortcut(QKeySequence.Delete)
         action_delete.setToolTip(_('Delete'))
         mn_edit.addAction(action_delete)
@@ -661,14 +661,16 @@ class DictView(QMainWindow):
             elif isinstance(fw, QWebView):
                 fw.page().triggerAction(QWebPage.SelectAll)
 
-        action_select_all = QAction(_('&Select All'), self, triggered=select_all)
+        action_select_all = QAction(icons['edit-select-all'],
+                                    _('&Select All'), self,
+                                    triggered=select_all)
         action_select_all.setShortcut(QKeySequence.SelectAll)
         action_select_all.setToolTip(_('Select all'))
         mn_edit.addAction(action_select_all)
         self.action_select_all = action_select_all
 
         def update_edit_actions():
-            fw = QApplication.focusWidget()            
+            fw = QApplication.focusWidget()
             lineedit = isinstance(fw, QLineEdit)
             webview = isinstance(fw, QWebView)
             selected = (bool(fw.selectedText())

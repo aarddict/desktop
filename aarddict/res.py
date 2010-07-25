@@ -132,7 +132,13 @@ icons = {}
 
 def _load_icons():
     icons['edit-find'] = _mkicon('actions/edit-find')
+    icons['edit-cut'] = _mkicon('actions/edit-cut')
+    icons['edit-copy'] = _mkicon('actions/edit-copy')
+    icons['edit-paste'] = _mkicon('actions/edit-paste')
+    icons['edit-delete'] = _mkicon('actions/edit-delete')
+    icons['edit-select-all'] = _mkicon('actions/edit-select-all')
     icons['edit-clear'] = _mkicon('actions/edit-clear')
+    
     icons['system-search'] = _mkicon('actions/system-search')
     icons['add-file'] = _mkicon('actions/add-files-to-archive')
     icons['add-folder'] = _mkicon('actions/add-folder-to-archive')
