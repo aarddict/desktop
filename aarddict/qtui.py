@@ -566,6 +566,7 @@ class DictView(QMainWindow):
         action_add_dict_dir = QAction(icons['add-folder'], _('Add &Directory...'),
                                       self, triggered=self.add_dict_dir)
         action_add_dict_dir.setToolTip(_('Add dictionary directory'))
+        action_add_dict_dir.setShortcut(_('Ctrl+Shift+O'))
         mn_dictionary.addAction(action_add_dict_dir)
 
         self.action_verify = QAction(icons['system-run'], _('&Verify...'),
