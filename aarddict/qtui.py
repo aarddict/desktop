@@ -501,6 +501,8 @@ class DictView(QMainWindow):
         def focus_current_tab():
             current_tab = self.tabs.currentWidget()
             if current_tab:
+                self.raise_()
+                self.activateWindow()
                 current_tab.setFocus()
 
         self.word_input.returnPressed.connect(focus_current_tab)
