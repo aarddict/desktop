@@ -569,24 +569,27 @@ class DictView(QMainWindow):
         action_add_dict_dir.setShortcut(_('Ctrl+Shift+O'))
         mn_dictionary.addAction(action_add_dict_dir)
 
-        self.action_verify = QAction(icons['system-run'], _('&Verify...'),
-                                self, triggered=self.verify)
-        self.action_verify.setShortcut(_('Ctrl+E'))
-        self.action_verify.setToolTip(_('Verify volume data integrity'))
-        mn_dictionary.addAction(self.action_verify)
-
-
         action_remove_dict_source = QAction(icons['list-remove'], _('&Remove...'),
                                             self, triggered=self.remove_dict_source)
         action_remove_dict_source.setShortcut(_('Ctrl+R'))
         action_remove_dict_source.setToolTip(_('Remove dictionary or dictionary directory'))
         mn_dictionary.addAction(action_remove_dict_source)
 
+        mn_dictionary.addSeparator()
+
+        self.action_verify = QAction(icons['system-run'], _('&Verify...'),
+                                self, triggered=self.verify)
+        self.action_verify.setShortcut(_('Ctrl+E'))
+        self.action_verify.setToolTip(_('Verify volume data integrity'))
+        mn_dictionary.addAction(self.action_verify)
+
         action_info = QAction(icons['document-properties'], _('&Info...'),
                               self, triggered=self.show_info)
         action_info.setShortcut(_('Ctrl+I'))
         action_info.setToolTip(_('Information about open dictionaries'))
         mn_dictionary.addAction(action_info)
+
+        mn_dictionary.addSeparator()
 
         action_quit = QAction(icons['application-exit'], _('&Quit'),
                               self, triggered=self.close)
@@ -658,6 +661,8 @@ class DictView(QMainWindow):
         action_delete.setToolTip(_('Delete the selected text'))
         mn_edit.addAction(action_delete)
 
+        mn_edit.addSeparator()
+
         def select_all():
             fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
@@ -707,9 +712,10 @@ class DictView(QMainWindow):
         mn_navigate = menubar.addMenu(_('&Navigate'))
 
         mn_navigate.addAction(action_lookup_box)
-
+        mn_navigate.addSeparator()
         mn_navigate.addAction(self.action_history_back)
         mn_navigate.addAction(self.action_history_fwd)
+        mn_navigate.addSeparator()
 
         self.action_next_article = QAction(icons['go-next-page'], _('&Next Article'),
                                            self, triggered=self.show_next_article)
@@ -721,8 +727,7 @@ class DictView(QMainWindow):
                                            self, triggered=self.show_prev_article)
         self.action_prev_article.setShortcuts([_('Ctrl+J'), _('Ctrl+,')])
         self.action_prev_article.setToolTip(_('Show previous article'))
-        mn_navigate.addAction(self.action_prev_article)
-
+        mn_navigate.addAction(self.action_prev_article)        
 
         mn_article = menubar.addMenu(_('&Article'))
 
