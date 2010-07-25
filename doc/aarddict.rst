@@ -56,9 +56,8 @@ dialog (:menuselection:`View --> Article Appearance...`).
 
 Matching text in current article is selected as user types. Use `Find`
 bar's arrow buttons or :kbd:`Shift+Enter`/:kbd:`Enter` to select
-previous/next occurence of the phrase. Use :kbd:`Ctrl+Enter` to lookup
-word under selection. Hide `Find` bar with the close button or
-:kbd:`Esc`.
+previous/next occurence of the phrase. Hide `Find` bar with the close
+button or :kbd:`Esc`.
 
 
 Keyboard Navigation
@@ -67,99 +66,116 @@ Keyboard Navigation
 Application Shortcuts
 ---------------------
 
-+---------------------+------------------------------------+---------------------------------+
-|Key Sequence         |Action                              |Notes                            |
-+=====================+====================================+=================================+
-|:kbd:`Ctrl+O`        |:menuselection:`Dictionary-->Add    |                                 |
-|                     |Dictionaries`                       |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+Y`        |:menuselection:`Dictionary-->Verify`|                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+R`        |:menuselection:`Dictionary-->Remove`|                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+I`        |:menuselection:`Dictionary-->Info`  |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+Q`        |:menuselection:`Dictionary-->Quit`  |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+L`,       |:menuselection:`Navigate-->Lookup   |Moves keyboard focus to          |
-|:kbd:`F2`            |Box`                                |`Lookup` box (making lookup      |
-|                     |                                    |pane visible if hidden) and      |
-|                     |                                    |selects it's current             |
-|                     |                                    |text. Start typing to            |
-|                     |                                    |replace current text or          |
-|                     |                                    |start editing current text       |
-|                     |                                    |by moving caret with             |
-|                     |                                    |:kbd:`Left` or :kbd:`Right`      |
-|                     |                                    |arrow keys.                      |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+N`        |Move keyboard focus to lookup box   |                                 |
-|                     |and clear it's content              |                                 |
-|                     |                                    |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Alt+Left`,     |:menuselection:`Navigate-->Back`    |On Nokia Internet Tablets        |
-|:kbd:`Esc`,          |                                    |:kbd:`Esc` maps to               |
-|:kbd:`Ctrl+[`        |                                    |`Back`/`Cancel` button. If Find  |
-|                     |                                    |bar is currently visible `Esc`   |
-|                     |                                    |hides it instead of going back.  |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Alt+Right`,    |:menuselection:`Navigate-->Forward` |                                 |
-|:kbd:`Shift+Esc`,    |                                    |                                 |
-|:kbd:`Ctrl+]`        |                                    |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+K`,       |:menuselection:`Navigate-->Previous |                                 |
-|:kbd:`Ctrl+,`        |Article`                            |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+J`,       |:menuselection:`Navigate-->Next     |                                 |
-|:kbd:`Ctrl+.`        |Article`                            |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+F`,       |:menuselection:`Article-->Find`     |:kbd:`/` doesn't work            |
-|:kbd:`/`             |                                    |inside lookup box, types         |
-|                     |                                    |`/` instead.                     |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Alt+Enter`     |:menuselection:`Article-->Lookup    |                                 |
-|                     |Selection`                          |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+Enter`    |:menuselection:`Article-->Lookup    |This works like                  |
-|                     |Selected Word`                      |:menuselection:`Article-->Lookup |
-|                     |                                    |Selection` except that selection |
-|                     |                                    |is extended to the end of word   |
-|                     |                                    |where current selection is or, if|
-|                     |                                    |already at the word end, to the  |
-|                     |                                    |end of next word.                |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+Shift+C`  |:menuselection:`Article-->Copy`     |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+S`        |:menuselection:`Article-->Save`     |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+T`        |:menuselection:`Article-->View      |                                 |
-|                     |Online`                             |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl++`,       |:menuselection:`View-->Text         |On Nokia Internet Tablets        |
-|:kbd:`Ctrl+=`,       |Size-->Increase`                    |:kbd:`F7` maps to `Zoom In`      |
-|:kbd:`F7`            |                                    |button.                          |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+-`,       |:menuselection:`View-->Text         |On Nokia Internet Tablets        |
-|:kbd:`F8`            |Size-->Decrease`                    |:kbd:`F8` maps to `Zoom          |
-|                     |                                    |Out` button.                     |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`Ctrl+0`        |:menuselection:`View-->Text         |                                 |
-|                     |Size-->Reset`                       |                                 |
-+---------------------+------------------------------------+---------------------------------+
-|:kbd:`F11`           |:menuselection:`View-->Full Screen` |On Nokia Internet Tablets        |
-|                     |                                    |full screen mode is toggled      |
-|                     |                                    |by the `Full Screen`             |
-|                     |                                    |button.                          |
-+---------------------+------------------------------------+---------------------------------+
++---------------------+-------------------------------------+---------------------------------+
+|Key Sequence         |Action                               |Notes                            |
++=====================+=====================================+=================================+
+|:kbd:`Ctrl+O`        |:menuselection:`Dictionary --> Add   |                                 |
+|                     |Dictionaries`                        |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+Shift+O`  |:menuselection:`Dictionary --> Add   |                                 |
+|                     |Directory`                           |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+R`        |:menuselection:`Dictionary -->       |                                 |
+|                     |Remove`                              |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+E`        |:menuselection:`Dictionary -->       |                                 |
+|                     |Verify`                              |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+I`        |:menuselection:`Dictionary --> Info` |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+Q`        |:menuselection:`Dictionary --> Quit` |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+N`        |Move keyboard focus to lookup box    |                                 |
+|                     |and clear it's content               |                                 |
+|                     |                                     |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+Enter`    |:menuselection:`Edit --> Lookup`     |Lookup selected text in          |
+|                     |                                     |dictionaries. Just like other    |
+|                     |                                     |actions in `Edit` menu, this     |
+|                     |                                     |applies to the widget that       |
+|                     |                                     |currently has keyboard focus.    |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+X`        |:menuselection:`Edit --> Cut`        |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+C`,       |:menuselection:`Edit --> Copy`       |                                 |
+|:kbd:`Ctrl+Insert`   |                                     |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+V`,       |:menuselection:`Edit --> Paste`      |                                 |
+|:kbd:`Shift+Insert`  |                                     |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Del`           |:menuselection:`Edit --> Delete`     |Delete currently selected text,  |
+|                     |                                     |or, if no text is selected,      |
+|                     |                                     |character to the right of current|
+|                     |                                     |caret position.                  |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+A`        |:menuselection:`Edit --> Select All` |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+L`,       |:menuselection:`Navigate --> Lookup  |Moves keyboard focus to `Lookup  |
+|:kbd:`F2`            |Box`                                 |Box` (making lookup pane visible |
+|                     |                                     |if hidden) and selects it's      |
+|                     |                                     |current text. Start typing to    |
+|                     |                                     |replace current text or start    |
+|                     |                                     |editing current text by moving   |
+|                     |                                     |caret with :kbd:`Left` or        |
+|                     |                                     |:kbd:`Right` arrow keys.         |
+|                     |                                     |                                 |
+|                     |                                     |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Alt+Left`,     |:menuselection:`Navigate --> Back`   |On Nokia Internet Tablets        |
+|:kbd:`Esc`,          |                                     |:kbd:`Esc` maps to               |
+|:kbd:`Ctrl+[`        |                                     |`Back`/`Cancel` button. If Find  |
+|                     |                                     |bar is currently visible `Esc`   |
+|                     |                                     |hides it instead of going back.  |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Alt+Right`,    |:menuselection:`Navigate --> Forward`|                                 |
+|:kbd:`Shift+Esc`,    |                                     |                                 |
+|:kbd:`Ctrl+]`        |                                     |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+K`,       |:menuselection:`Navigate --> Previous|                                 |
+|:kbd:`Ctrl+,`        |Article`                             |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+J`,       |:menuselection:`Navigate --> Next    |                                 |
+|:kbd:`Ctrl+.`        |Article`                             |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+F`,       |:menuselection:`Article --> Find`    |:kbd:`/` doesn't work            |
+|:kbd:`/`             |                                     |inside lookup box, types         |
+|                     |                                     |`/` instead.                     |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+S`        |:menuselection:`Article --> Save`    |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+T`        |:menuselection:`Article --> View     |                                 |
+|                     |Online`                              |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+U`        |:menuselection:`Article -->          |                                 |
+|                     |Appearance`                          |                                 |
+|                     |                                     |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl++`,       |:menuselection:`View --> Text Size   |On Nokia Internet Tablets        |
+|:kbd:`Ctrl+=`,       |--> Increase`                        |:kbd:`F7` maps to `Zoom In`      |
+|:kbd:`F7`            |                                     |button.                          |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+-`,       |:menuselection:`View --> Text Size   |On Nokia Internet Tablets        |
+|:kbd:`F8`            |--> Decrease`                        |:kbd:`F8` maps to `Zoom          |
+|                     |                                     |Out` button.                     |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`Ctrl+0`        |:menuselection:`View --> Text Size   |                                 |
+|                     |--> Reset`                           |                                 |
++---------------------+-------------------------------------+---------------------------------+
+|:kbd:`F11`           |:menuselection:`View --> Full Screen`|On Nokia Internet Tablets        |
+|                     |                                     |full screen mode is toggled      |
+|                     |                                     |by the `Full Screen`             |
+|                     |                                     |button.                          |
++---------------------+-------------------------------------+---------------------------------+
 
 Lookup Box
 ----------
 +---------------------+------------------------------------+---------------------------+
 |:kbd:`Enter`         |Move keyboard focus to current      |Keyboard focus moves to    |
-|                     |article                             |current article view so    |
-|                     |                                    |that it can be scrolled    |
-|                     |                                    |with arrow keys, :kbd:`Page|
-|                     |                                    |Up`/:kbd:`Page Down` and   |
-|                     |                                    |:kbd:`Home`/:kbd:`End`.    |
+|                     |article                             |current article so that it |
+|                     |                                    |can be scrolled with       |
+|                     |                                    |standard navigation keys.  |
+|                     |                                    |                           |
+|                     |                                    |                           |
 |                     |                                    |                           |
 +---------------------+------------------------------------+---------------------------+
 |OS standard          |Navigate word completion list       |Keyboard focus remains in  |
@@ -531,19 +547,17 @@ Release Notes
 0.9.0
 -----
 
-- Find text in article (:menuselection:`Article --> Find...`).
+- Implement ability to find text in article (:menuselection:`Article --> Find...`).
 
-- New user actions to look up selected text in current article. 
-  (:menuselection:`Article --> Lookup Selection`) sets text in lookup
-  box to whatever is currently selected in article. 
-  (:menuselection:`Article --> Lookup Selected Word`) does the same,
-  but extends selection to the end of word first - this is useful 
-  with Find that selects beginning of matched words as user types.
-
-- Ability to select aticle text font when not using
+- Implement ability to select aticle text font when not using
   Wikipedia style (`issue #9`_)
 
-- Articles found by following a redirect show redirect info at the
+- Add menu :menuselection:`Edit` with new action to look up currently
+  selected text (:menuselection:`Edit --> Lookup`) and standard
+  editing actions applied to currently focused widget (`Lookup` box,
+  `Find` or article view).
+
+- Articles found by following a redirect now show redirect info at the
   top.
 
 - Articles are now loaded only when their tab is selected.
@@ -559,6 +573,8 @@ Release Notes
 - Revise application state and settings persistence implementation to
   better support new features (improved history, customizable article
   font). State saved by 0.8.0 is ignored. 
+
+- Rearrange menus, add new shortcuts.
 
 - Remove support for :term:`aar-JSON`.
 
