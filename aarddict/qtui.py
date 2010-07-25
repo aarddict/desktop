@@ -331,12 +331,12 @@ class LineEditWithClear(QLineEdit):
 
         self.action_clear = QAction(icons['edit-clear'], _('Clear'), self,
                                triggered=self.clear)
-        self.action_clear.setToolTip(_('Clear'))        
+        self.action_clear.setToolTip(_('Clear'))
 
-        btn_clear = QToolButton(self)        
+        btn_clear = QToolButton(self)
         btn_clear.setToolButtonStyle(Qt.ToolButtonIconOnly)
         btn_clear.setIconSize(QSize(16,16))
-        btn_clear.setDefaultAction(self.action_clear)        
+        btn_clear.setDefaultAction(self.action_clear)
         btn_clear.setCursor(Qt.ArrowCursor)
         btn_clear.setStyleSheet('QToolButton {border: transparent;}')
 
@@ -344,7 +344,7 @@ class LineEditWithClear(QLineEdit):
         box.addStretch(1)
         box.addWidget(btn_clear, 0)
         box.setSpacing(0)
-        box.setContentsMargins(0, 0, 0, 0)        
+        box.setContentsMargins(0, 0, 0, 0)
         self.setLayout(box)
 
         left, top, right, bottom = self.getTextMargins()
@@ -593,11 +593,11 @@ class DictView(QMainWindow):
         action_quit.setToolTip(_('Exit application'))
         action_quit.setMenuRole(QAction.QuitRole)
         mn_dictionary.addAction(action_quit)
-            
+
         mn_edit = menubar.addMenu(_('&Edit'))
 
         def lookup():
-            fw = QApplication.focusWidget()            
+            fw = QApplication.focusWidget()
             if hasattr(fw, 'selectedText'):
                 text = fw.selectedText()
                 if text:
@@ -612,7 +612,7 @@ class DictView(QMainWindow):
         mn_edit.addSeparator()
 
         def cut():
-            fw = QApplication.focusWidget()            
+            fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
                 fw.cut()
 
@@ -622,7 +622,7 @@ class DictView(QMainWindow):
         mn_edit.addAction(action_cut)
 
         def copy():
-            fw = QApplication.focusWidget()            
+            fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
                 fw.copy()
             elif isinstance(fw, QWebView):
@@ -635,7 +635,7 @@ class DictView(QMainWindow):
         self.action_copy = action_copy
 
         def paste():
-            fw = QApplication.focusWidget()            
+            fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
                 fw.paste()
 
@@ -645,27 +645,54 @@ class DictView(QMainWindow):
         mn_edit.addAction(action_paste)
 
         def delete():
-            fw = QApplication.focusWidget()            
+            fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
                 fw.del_()
 
-        action_paste = QAction(_('&Delete'), self, triggered=delete)
-        action_paste.setShortcut(QKeySequence.Delete)
-        action_paste.setToolTip(_('Delete'))
-        mn_edit.addAction(action_paste)
+        action_delete = QAction(_('&Delete'), self, triggered=delete)
+        action_delete.setShortcut(QKeySequence.Delete)
+        action_delete.setToolTip(_('Delete'))
+        mn_edit.addAction(action_delete)
 
-        def select_all():            
-            fw = QApplication.focusWidget()            
+        def select_all():
+            fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
                 fw.selectAll()
             elif isinstance(fw, QWebView):
                 fw.page().triggerAction(QWebPage.SelectAll)
-        
+
         action_select_all = QAction(_('&Select All'), self, triggered=select_all)
         action_select_all.setShortcut(QKeySequence.SelectAll)
         action_select_all.setToolTip(_('Select all'))
-        mn_edit.addAction(action_select_all)    
+        mn_edit.addAction(action_select_all)
         self.action_select_all = action_select_all
+
+        def update_edit_actions():
+            fw = QApplication.focusWidget()            
+            lineedit = isinstance(fw, QLineEdit)
+            webview = isinstance(fw, QWebView)
+            selected = (bool(fw.selectedText())
+                        if (lineedit or webview) else False)
+
+            action_lookup.setEnabled(selected)
+            action_cut.setEnabled(selected and lineedit)
+            action_copy.setEnabled(selected)
+            action_paste.setEnabled(lineedit and QApplication.clipboard().mimeData().hasText())
+            action_delete.setEnabled(lineedit)
+            action_select_all.setEnabled(lineedit or webview)
+
+        def focus_changed(old, now):
+            if isinstance(now, QWebView):
+                now.page().selectionChanged.connect(update_edit_actions)
+            elif isinstance(now, QLineEdit):
+                now.selectionChanged.connect(update_edit_actions)
+            if isinstance(old, QWebView):
+                old.page().selectionChanged.disconnect(update_edit_actions)
+            elif isinstance(old, QLineEdit):
+                old.selectionChanged.connect(update_edit_actions)
+            update_edit_actions()
+
+        QApplication.instance().focusChanged.connect(focus_changed)
 
         mn_navigate = menubar.addMenu(_('&Navigate'))
 
@@ -1123,8 +1150,8 @@ class DictView(QMainWindow):
             view_to_load = None
             for i, entry in enumerate(self.sort_preferred(entries)):
                 view = WebView(entry)
-                view.actions = [self.action_lookup, 
-                                self.action_copy, 
+                view.actions = [self.action_lookup,
+                                self.action_copy,
                                 self.action_select_all]
                 view.setPage(WebPage(view))
                 volume = self.dictionaries.volume(entry.volume_id)
@@ -1845,7 +1872,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
 def main(args, debug=False, dev_extras=False):
     app = QApplication(sys.argv)
-    
+
     qtranslator = QTranslator()
     qtranslator.load('qt_'+str(QLocale.system().name()), res.locale_dir)
     app.installTranslator(qtranslator)
