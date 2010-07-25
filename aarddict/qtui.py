@@ -633,7 +633,7 @@ class DictView(QMainWindow):
                 fw.page().triggerAction(QWebPage.Copy)
 
         action_copy = QAction(icons['edit-copy'], _('&Copy'), self, triggered=copy)
-        action_copy.setShortcut(QKeySequence.Copy)
+        action_copy.setShortcuts([QKeySequence.Copy, _('Ctrl+Insert')])
         action_copy.setToolTip(_('Copy the selection'))
         mn_edit.addAction(action_copy)
         self.action_copy = action_copy
@@ -644,7 +644,7 @@ class DictView(QMainWindow):
                 fw.paste()
 
         action_paste = QAction(icons['edit-paste'], _('&Paste'), self, triggered=paste)
-        action_paste.setShortcut(QKeySequence.Paste)
+        action_paste.setShortcuts([QKeySequence.Paste, _('Shift+Insert')])
         action_paste.setToolTip(_('Paste the clipboard'))
         mn_edit.addAction(action_paste)
 
