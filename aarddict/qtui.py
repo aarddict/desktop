@@ -448,17 +448,33 @@ class SingleRowItemSelectionModel(QItemSelectionModel):
                                                         QItemSelectionModel.Clear)
 
 class LimitedDict(dict):
+    """
+    >>> d = LimitedDict(max_size=2)
+    >>> d['a'] = 1
+    >>> d['b'] = 2
+    >>> d['c'] = 3
+    >>> 'b' in d and 'c' in d and 'a' not in d
+    True
+    >>> d['b'] = 4
+    >>> d['b'] = 4
+    >>> len(d)
+    2
+    >>> d['b']
+    4
 
+    """
     def __init__(self, *args, **kwargs):
         self.max_size = kwargs.pop('max_size', 100)
         dict.__init__(self, *args, **kwargs)
         self.keylist = deque()
 
     def __setitem__(self, key, value):
+        if key not in self:
+            self.keylist.append(key)
+            if len(self.keylist) > self.max_size:
+                k = self.keylist.popleft()
+                del self[k]
         dict.__setitem__(self, key, value)
-        self.keylist.append(key)
-        if len(self.keylist) > self.max_size:
-            del self[self.keylist.popleft()]
 
 grouping_strength = {1: TERTIARY, 2: TERTIARY, 3: SECONDARY}
 
@@ -697,7 +713,7 @@ class DictView(QMainWindow):
         def focus_changed(old, now):
             #On Mac OS X context menu grabs focus,
             #don't want to update actions for that
-            if isinstance(now, QMenu):    
+            if isinstance(now, QMenu):
                 return
             if isinstance(now, QWebView):
                 now.page().selectionChanged.connect(update_edit_actions)
@@ -729,7 +745,7 @@ class DictView(QMainWindow):
                                            self, triggered=self.show_prev_article)
         self.action_prev_article.setShortcuts([_('Ctrl+J'), _('Ctrl+,')])
         self.action_prev_article.setToolTip(_('Show previous article'))
-        mn_navigate.addAction(self.action_prev_article)        
+        mn_navigate.addAction(self.action_prev_article)
 
         mn_article = menubar.addMenu(_('&Article'))
 
