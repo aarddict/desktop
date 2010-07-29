@@ -722,7 +722,7 @@ class DictView(QMainWindow):
             if isinstance(old, QWebView):
                 old.page().selectionChanged.disconnect(update_edit_actions)
             elif isinstance(old, QLineEdit):
-                old.selectionChanged.connect(update_edit_actions)
+                old.selectionChanged.disconnect(update_edit_actions)
             update_edit_actions()
 
         QApplication.instance().focusChanged.connect(focus_changed)
