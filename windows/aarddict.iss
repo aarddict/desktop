@@ -1,6 +1,6 @@
 [Setup]
 AppName=Aard Dictionary
-AppVerName=Aard Dictionary 0.8.0
+AppVerName=Aard Dictionary 0.9.0
 DefaultDirName={pf}\Aard Dictionary
 DefaultGroupName=Aard Dictionary
 Compression=lzma
