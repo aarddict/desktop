@@ -566,7 +566,7 @@ Release Notes
 - Implement ability to find text in article (:menuselection:`Article --> Find...`).
 
 - Implement ability to select aticle text font when not using
-  Wikipedia style (`issue #9`_)
+  Wikipedia style (`issue #7`_)
 
 - Add menu :menuselection:`Edit` with new action to look up currently
   selected text (:menuselection:`Edit --> Lookup`) and standard
@@ -594,7 +594,7 @@ Release Notes
 
 - Remove support for :term:`aar-JSON`.
 
-.. _issue #9: http://bitbucket.org/itkach/aarddict/issue/9
+.. _issue #7: http://bitbucket.org/itkach/aarddict/issue/7
 
 0.8.0
 -----
