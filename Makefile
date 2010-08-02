@@ -1,4 +1,3 @@
-
 PYTHON=`which python`
 DESTDIR=/
 BUILDIR=$(CURDIR)/debian/aarddict
@@ -11,17 +10,19 @@ all:
 	@echo "make clean - Get rid of scratch and byte files"
 
 source:
-	$(PYTHON) setup.py sdist $(COMPILE)
+	$(PYTHON) setup.py sdist $(COMPILE) --dist-dir=../
+	rename -f 's/$(PROJECT)-(.*)\.tar\.gz/$(PROJECT)_$$1\.orig\.tar\.gz/' ../*
+	dpkg-buildpackage -S -i -I -rfakeroot
 
 install:
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
 
 deb:
-	# build the source package in the parent directory
-	# then rename it to project_version.orig.tar.gz
+	 # build the source package in the parent directory
+	 # then rename it to project_version.orig.tar.gz
 	$(PYTHON) setup.py sdist $(COMPILE) --dist-dir=../
 	rename -f 's/$(PROJECT)-(.*)\.tar\.gz/$(PROJECT)_$$1\.orig\.tar\.gz/' ../*
-	# build the package
+	 # build the package
 	dpkg-buildpackage -i -I -rfakeroot
 
 clean:
