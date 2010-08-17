@@ -28,7 +28,7 @@ from collections import defaultdict, deque
 from PyQt4.QtCore import (QObject, Qt, QThread, QTranslator, QLocale,
                           QTimer, QUrl, QVariant, pyqtProperty, pyqtSlot,
                           QSize, QByteArray, QPoint,
-                          pyqtSignal, QString)
+                          pyqtSignal, QString, QEvent)
 
 from PyQt4.QtGui import (QWidget, QIcon, QPixmap, QFileDialog,
                          QLineEdit, QHBoxLayout, QVBoxLayout, QAction,
@@ -505,7 +505,7 @@ class DictView(QMainWindow):
                                     self, triggered=self.go_to_lookup_box)
         action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
         action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
-
+        self.addAction(action_lookup_box)
         self.word_completion = QListWidget()
 
         self.word_input = LineEditWithClear(self.word_completion)
@@ -514,14 +514,7 @@ class DictView(QMainWindow):
         self.word_input.cleared.connect(functools.partial(self.schedule,
                                                           self.update_word_completion, 0))
 
-        def focus_current_tab():
-            current_tab = self.tabs.currentWidget()
-            if current_tab:
-                self.raise_()
-                self.activateWindow()
-                current_tab.setFocus()
-
-        self.word_input.returnPressed.connect(focus_current_tab)
+        self.word_input.returnPressed.connect(self.focus_current_tab)
 
         box = QVBoxLayout()
         box.setSpacing(2)
@@ -537,11 +530,14 @@ class DictView(QMainWindow):
                                            self, triggered=self.history_back)
         self.action_history_back.setShortcuts([QKeySequence.Back, _('Ctrl+[')])
         self.action_history_back.setToolTip(_('Go back to previous word in history'))
+        self.addAction(self.action_history_back)
+
 
         self.action_history_fwd = QAction(icons['go-next'], _('&Forward'),
                                           self, triggered=self.history_fwd)
         self.action_history_fwd.setShortcuts([QKeySequence.Forward, _('Ctrl+]'), _('Shift+Esc')])
         self.action_history_fwd.setToolTip(_('Go forward to next word in history'))
+        self.addAction(self.action_history_fwd)
 
         self.history_view.currentItemChanged.connect(self.history_selection_changed)
         self.history_view.currentItemChanged.connect(self.update_history_actions)
@@ -561,18 +557,20 @@ class DictView(QMainWindow):
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_lookup_pane)
 
-        dock_history = QDockWidget(_('&History'), self)
-        dock_history.setObjectName('dock_history')
-        dock_history.setWidget(self.history_view)
-        dock_history.topLevelChanged[bool].connect(
-            functools.partial(fix_float_title, dock_history, '&History'))
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock_history)
+        self.dock_history = QDockWidget(_('&History'), self)
+        self.dock_history.setObjectName('dock_history')
+        self.dock_history.setWidget(self.history_view)
+        self.dock_history.topLevelChanged[bool].connect(
+            functools.partial(fix_float_title, self.dock_history, '&History'))
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_history)
 
-        self.tabifyDockWidget(self.dock_lookup_pane, dock_history)
+        self.tabifyDockWidget(self.dock_lookup_pane, self.dock_history)
         self.dock_lookup_pane.raise_()
 
 
         menubar = self.menuBar()
+        self.menubar_should_be_visible = menubar.isVisible()
+
         mn_dictionary = menubar.addMenu(_('&Dictionary'))
 
         action_add_dicts = QAction(icons['add-file'], _('&Add Dictionaries...'),
@@ -580,19 +578,21 @@ class DictView(QMainWindow):
         action_add_dicts.setShortcut(_('Ctrl+O'))
         action_add_dicts.setToolTip(_('Add dictionaries'))
         mn_dictionary.addAction(action_add_dicts)
+        self.addAction(action_add_dicts)
 
         action_add_dict_dir = QAction(icons['add-folder'], _('Add &Directory...'),
                                       self, triggered=self.add_dict_dir)
         action_add_dict_dir.setToolTip(_('Add dictionary directory'))
         action_add_dict_dir.setShortcut(_('Ctrl+Shift+O'))
         mn_dictionary.addAction(action_add_dict_dir)
+        self.addAction(action_add_dict_dir)
 
         action_remove_dict_source = QAction(icons['list-remove'], _('&Remove...'),
                                             self, triggered=self.remove_dict_source)
         action_remove_dict_source.setShortcut(_('Ctrl+R'))
         action_remove_dict_source.setToolTip(_('Remove dictionary or dictionary directory'))
         mn_dictionary.addAction(action_remove_dict_source)
-
+        self.addAction(action_remove_dict_source)
         mn_dictionary.addSeparator()
 
         self.action_verify = QAction(icons['system-run'], _('&Verify...'),
@@ -600,13 +600,14 @@ class DictView(QMainWindow):
         self.action_verify.setShortcut(_('Ctrl+E'))
         self.action_verify.setToolTip(_('Verify volume data integrity'))
         mn_dictionary.addAction(self.action_verify)
+        self.addAction(self.action_verify)
 
         action_info = QAction(icons['document-properties'], _('&Info...'),
                               self, triggered=self.show_info)
         action_info.setShortcut(_('Ctrl+I'))
         action_info.setToolTip(_('Information about open dictionaries'))
         mn_dictionary.addAction(action_info)
-
+        self.addAction(action_info)
         mn_dictionary.addSeparator()
 
         action_quit = QAction(icons['application-exit'], _('&Quit'),
@@ -615,6 +616,7 @@ class DictView(QMainWindow):
         action_quit.setToolTip(_('Exit application'))
         action_quit.setMenuRole(QAction.QuitRole)
         mn_dictionary.addAction(action_quit)
+        self.addAction(action_quit)
 
         mn_edit = menubar.addMenu(_('&Edit'))
 
@@ -632,6 +634,7 @@ class DictView(QMainWindow):
                                    else [ctrl_ret, ctrl_enter])
         action_lookup.setToolTip(_('Lookup the selected text'))
         mn_edit.addAction(action_lookup)
+        self.addAction(action_lookup)
         self.action_lookup = action_lookup
 
         mn_edit.addSeparator()
@@ -657,6 +660,7 @@ class DictView(QMainWindow):
         action_copy.setShortcuts([QKeySequence.Copy, _('Ctrl+Insert')])
         action_copy.setToolTip(_('Copy the selection'))
         mn_edit.addAction(action_copy)
+        self.addAction(action_copy)
         self.action_copy = action_copy
 
         def paste():
@@ -668,6 +672,7 @@ class DictView(QMainWindow):
         action_paste.setShortcuts([QKeySequence.Paste, _('Shift+Insert')])
         action_paste.setToolTip(_('Paste the clipboard'))
         mn_edit.addAction(action_paste)
+        self.addAction(action_paste)
 
         def delete():
             fw = QApplication.focusWidget()
@@ -678,6 +683,7 @@ class DictView(QMainWindow):
         action_delete.setShortcut(QKeySequence.Delete)
         action_delete.setToolTip(_('Delete the selected text'))
         mn_edit.addAction(action_delete)
+        self.addAction(action_delete)
 
         mn_edit.addSeparator()
 
@@ -694,6 +700,7 @@ class DictView(QMainWindow):
         action_select_all.setShortcut(QKeySequence.SelectAll)
         action_select_all.setToolTip(_('Select the entire text'))
         mn_edit.addAction(action_select_all)
+        self.addAction(action_select_all)
         self.action_select_all = action_select_all
 
         def update_edit_actions():
@@ -760,6 +767,7 @@ class DictView(QMainWindow):
         action_article_find.setShortcuts([_('Ctrl+F'), _('/')])
         action_article_find.setToolTip(_('Find text in article'))
         mn_article.addAction(action_article_find)
+        self.addAction(action_article_find)
 
         self.action_save_article = QAction(icons['document-save'], _('&Save...'),
                                            self, triggered=self.save_article)
@@ -779,12 +787,12 @@ class DictView(QMainWindow):
         action_article_appearance.setShortcut(_('Ctrl+U'))
         action_article_appearance.setToolTip(_('Customize article appearance'))
         mn_article.addAction(action_article_appearance)
-
+        self.addAction(action_article_appearance)
 
         mn_view = menubar.addMenu(_('&View'))
 
         mn_view.addAction(self.dock_lookup_pane.toggleViewAction())
-        mn_view.addAction(dock_history.toggleViewAction())
+        mn_view.addAction(self.dock_history.toggleViewAction())
 
         toolbar = QToolBar(_('&Toolbar'), self)
         toolbar.setObjectName('toolbar')
@@ -797,25 +805,29 @@ class DictView(QMainWindow):
         action_increase_text.setShortcuts([QKeySequence.ZoomIn, _("Ctrl+="), _('F7')])
         action_increase_text.setToolTip(_('Increase size of article text'))
         mn_text_size.addAction(action_increase_text)
+        self.addAction(action_increase_text)
 
         action_decrease_text = QAction(icons['zoom-out'], _('&Decrease'),
                                        self, triggered=self.decrease_text_size)
         action_decrease_text.setShortcuts([QKeySequence.ZoomOut, _('F8')])
         action_decrease_text.setToolTip(_('Decrease size of article text'))
         mn_text_size.addAction(action_decrease_text)
+        self.addAction(action_decrease_text)
 
         action_reset_text = QAction(icons['zoom-original'], _('&Reset'),
                                     self, triggered=self.reset_text_size)
         action_reset_text.setShortcut(_('Ctrl+0'))
         action_reset_text.setToolTip(_('Reset size of article text to default'))
         mn_text_size.addAction(action_reset_text)
+        self.addAction(action_reset_text)
 
-        action_full_screen = QAction(icons['view-fullscreen'], _('&Full Screen'), self)
-        action_full_screen.setShortcut(_('F11'))
-        action_full_screen.setToolTip(_('Toggle full screen mode'))
-        action_full_screen.setCheckable(True)
-        action_full_screen.triggered[bool].connect(self.toggle_full_screen)
-        mn_view.addAction(action_full_screen)
+        self.action_full_screen = QAction(icons['view-fullscreen'], _('&Full Screen'), self)
+        self.action_full_screen.setShortcut(_('F11'))
+        self.action_full_screen.setToolTip(_('Toggle full screen mode'))
+        self.action_full_screen.setCheckable(True)
+        self.action_full_screen.triggered[bool].connect(self.toggle_full_screen)
+        mn_view.addAction(self.action_full_screen)
+        self.addAction(self.action_full_screen)
 
         mn_help = menubar.addMenu(_('H&elp'))
 
@@ -824,6 +836,7 @@ class DictView(QMainWindow):
         action_about.setToolTip(_('Information about Aard Dictionary'))
         action_about.setMenuRole(QAction.AboutRole)
         mn_help.addAction(action_about)
+        self.addAction(action_about)
 
         toolbar.addAction(self.action_history_back)
         toolbar.addAction(self.action_history_fwd)
@@ -833,22 +846,24 @@ class DictView(QMainWindow):
         toolbar.addAction(action_increase_text)
         toolbar.addAction(action_decrease_text)
         toolbar.addAction(action_reset_text)
-        toolbar.addAction(action_full_screen)
+        toolbar.addAction(self.action_full_screen)
         toolbar.addSeparator()
         toolbar.addAction(action_add_dicts)
         toolbar.addAction(action_add_dict_dir)
         toolbar.addAction(action_info)
         toolbar.addSeparator()
         toolbar.addAction(action_quit)
+        self.toolbar = toolbar
         self.addToolBar(toolbar)
 
         find_toolbar = FindWidget(self.tabs)
         find_toolbar.hide()
+        self.find_toolbar = find_toolbar
 
         def esc():
             if find_toolbar.isVisible():
                 if find_toolbar.find_input.hasFocus():
-                    focus_current_tab()
+                    self.focus_current_tab()
                 find_toolbar.hide()
             else:
                 self.history_back()
@@ -880,6 +895,7 @@ class DictView(QMainWindow):
 
         self.update_current_article_actions(-1)
         self.scroll_values = LimitedDict()
+        self.state_before_full_screen = None
 
     @property
     def preferred_dicts(self):
@@ -1439,6 +1455,8 @@ class DictView(QMainWindow):
             web_view.setZoomFactor(self.zoom_factor)
 
     def go_to_lookup_box(self):
+        if self.windowState() == Qt.WindowFullScreen:
+            self.action_full_screen.trigger()
         if self.dock_lookup_pane.isHidden():
             self.dock_lookup_pane.show()
             QTimer.singleShot(20, self.go_to_lookup_box)
@@ -1447,6 +1465,13 @@ class DictView(QMainWindow):
             self.dock_lookup_pane.activateWindow()
             self.word_input.setFocus()
             self.word_input.selectAll()
+
+    def focus_current_tab(self):
+        current_tab = self.tabs.currentWidget()
+        if current_tab:
+            self.raise_()
+            self.activateWindow()
+            current_tab.setFocus()
 
     def verify(self):
         dialog = QDialog(self)
@@ -1783,7 +1808,41 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         dialog.setLayout(content)
         dialog.exec_()
 
+    def changeEvent(self, event):
+        if event.type() == QEvent.WindowStateChange:
+            window_state = self.windowState()
+            if window_state == Qt.WindowFullScreen:
+                self.action_full_screen.setChecked(True)
+                self.state_before_full_screen = self.saveState()
+                self.menubar_should_be_visible = self.menuBar().isVisible()
+                self.dock_history.hide()
+                self.dock_lookup_pane.hide()
+                self.toolbar.hide()
+                self.menuBar().hide()
+                btn = QToolButton(self.tabs)
+                btn.setToolButtonStyle(Qt.ToolButtonIconOnly)
+                btn.setDefaultAction(self.action_full_screen)
+                btn.show()
+                self.tabs.setCornerWidget(btn, Qt.TopRightCorner)
+
+                if not self.find_toolbar.find_input.hasFocus():
+                    self.focus_current_tab()
+
+            else:
+                self.tabs.setCornerWidget(None, Qt.TopRightCorner)
+                self.action_full_screen.setChecked(False)
+                self.menuBar().setVisible(self.menubar_should_be_visible)
+                if self.state_before_full_screen:
+                    self.restoreState(self.state_before_full_screen)
+
     def closeEvent(self, event):
+
+        if self.windowState() == Qt.WindowFullScreen:
+            self.showNormal()
+            self.menuBar().setVisible(self.menubar_should_be_visible)
+            if self.state_before_full_screen:
+                self.restoreState(self.state_before_full_screen)
+
         self.clear_current_articles()
         self.write_state()
         for d in self.dictionaries:
