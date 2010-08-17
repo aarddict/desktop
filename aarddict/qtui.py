@@ -1101,7 +1101,8 @@ class DictView(QMainWindow):
     def update_word_completion(self):
         word = self.word_input.text()
         if not self.history_view.hasFocus():
-            self.word_input.setFocus()
+            if self.word_input.isVisible():
+                self.word_input.setFocus()
         self.word_completion.clear()
         self.word_completion.addItem(_('Loading...'))
         if self.current_lookup_thread:
@@ -1219,6 +1220,14 @@ class DictView(QMainWindow):
                 view.linkClicked.connect(self.link_clicked)
             self.tabs.blockSignals(False)
             view_to_load = self.tabs.widget(0)
+
+            #don't want to steal focus from word input or history view
+            #but if they are not visible, e.g. in fullscreen, take it
+            if not ((self.history_view.isVisible() and 
+                     self.history_view.hasFocus()) or
+                    (self.word_input.isVisible() and 
+                     self.word_input.hasFocus())):
+                view_to_load.setFocus()
             self.load_article(view_to_load)
 
     def load_article(self, view):
