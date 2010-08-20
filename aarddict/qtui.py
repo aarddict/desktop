@@ -501,11 +501,6 @@ class DictView(QMainWindow):
         self.dictionaries = Library()
         self.update_title()
 
-        action_lookup_box = QAction(_('&Lookup Box'),
-                                    self, triggered=self.go_to_lookup_box)
-        action_lookup_box.setShortcuts([_('Ctrl+L'), _('F2')])
-        action_lookup_box.setToolTip(_('Move focus to word input and select its content'))
-        self.addAction(action_lookup_box)
         self.word_completion = QListWidget()
 
         self.word_input = LineEditWithClear(self.word_completion)
@@ -525,19 +520,6 @@ class DictView(QMainWindow):
         lookup_pane.setLayout(box)
 
         self.history_view = QListWidget()
-
-        self.action_history_back = QAction(icons['go-previous'], _('&Back'),
-                                           self, triggered=self.history_back)
-        self.action_history_back.setShortcuts([QKeySequence.Back, _('Ctrl+[')])
-        self.action_history_back.setToolTip(_('Go back to previous word in history'))
-        self.addAction(self.action_history_back)
-
-
-        self.action_history_fwd = QAction(icons['go-next'], _('&Forward'),
-                                          self, triggered=self.history_fwd)
-        self.action_history_fwd.setShortcuts([QKeySequence.Forward, _('Ctrl+]'), _('Shift+Esc')])
-        self.action_history_fwd.setToolTip(_('Go forward to next word in history'))
-        self.addAction(self.action_history_fwd)
 
         self.history_view.currentItemChanged.connect(self.history_selection_changed)
         self.history_view.currentItemChanged.connect(self.update_history_actions)
@@ -567,58 +549,39 @@ class DictView(QMainWindow):
         self.tabifyDockWidget(self.dock_lookup_pane, self.dock_history)
         self.dock_lookup_pane.raise_()
 
+        self.toolbar = toolbar = QToolBar(_('&Toolbar'), self)
+        toolbar.setObjectName('toolbar')
+        self.addToolBar(toolbar)
 
         menubar = self.menuBar()
         self.menubar_should_be_visible = menubar.isVisible()
 
-        mn_dictionary = menubar.addMenu(_('&Dictionary'))
+        a = self.a
 
-        action_add_dicts = QAction(icons['add-file'], _('&Add Dictionaries...'),
-                                   self, triggered=self.add_dicts)
-        action_add_dicts.setShortcut(_('Ctrl+O'))
-        action_add_dicts.setToolTip(_('Add dictionaries'))
-        mn_dictionary.addAction(action_add_dicts)
-        self.addAction(action_add_dicts)
+        action_add_dicts = a(_('&Add Dictionaries...'), 'add-file',
+                             _('Add dictionaries'),
+                             _('Ctrl+O'), self.add_dicts)
 
-        action_add_dict_dir = QAction(icons['add-folder'], _('Add &Directory...'),
-                                      self, triggered=self.add_dict_dir)
-        action_add_dict_dir.setToolTip(_('Add dictionary directory'))
-        action_add_dict_dir.setShortcut(_('Ctrl+Shift+O'))
-        mn_dictionary.addAction(action_add_dict_dir)
-        self.addAction(action_add_dict_dir)
+        action_add_dict_dir = a(_('Add &Directory...'), 'add-folder',
+                                _('Add dictionary directory'),
+                                _('Ctrl+Shift+O'), self.add_dict_dir)
 
-        action_remove_dict_source = QAction(icons['list-remove'], _('&Remove...'),
-                                            self, triggered=self.remove_dict_source)
-        action_remove_dict_source.setShortcut(_('Ctrl+R'))
-        action_remove_dict_source.setToolTip(_('Remove dictionary or dictionary directory'))
-        mn_dictionary.addAction(action_remove_dict_source)
-        self.addAction(action_remove_dict_source)
-        mn_dictionary.addSeparator()
+        action_remove_dict_source = a(_('&Remove...'), 'list-remove',
+                                      _('Remove dictionary or dictionary directory'),
+                                      _('Ctrl+R'), self.remove_dict_source)
 
-        self.action_verify = QAction(icons['system-run'], _('&Verify...'),
-                                self, triggered=self.verify)
-        self.action_verify.setShortcut(_('Ctrl+E'))
-        self.action_verify.setToolTip(_('Verify volume data integrity'))
-        mn_dictionary.addAction(self.action_verify)
-        self.addAction(self.action_verify)
+        action_verify = a(_('&Verify...'), 'system-run',
+                          _('Verify volume data integrity'),
+                          _('Ctrl+E'), self.verify)
+        self.action_verify = action_verify
 
-        action_info = QAction(icons['document-properties'], _('&Info...'),
-                              self, triggered=self.show_info)
-        action_info.setShortcut(_('Ctrl+I'))
-        action_info.setToolTip(_('Information about open dictionaries'))
-        mn_dictionary.addAction(action_info)
-        self.addAction(action_info)
-        mn_dictionary.addSeparator()
+        action_info = a(_('&Info...'), 'document-properties',
+                        _('Information about open dictionaries'),
+                        _('Ctrl+I'), self.show_info)
 
-        action_quit = QAction(icons['application-exit'], _('&Quit'),
-                              self, triggered=self.close)
-        action_quit.setShortcut(_('Ctrl+Q'))
-        action_quit.setToolTip(_('Exit application'))
-        action_quit.setMenuRole(QAction.QuitRole)
-        mn_dictionary.addAction(action_quit)
-        self.addAction(action_quit)
-
-        mn_edit = menubar.addMenu(_('&Edit'))
+        action_quit = a(_('&Quit'), 'application-exit',
+                        _('Exit application'),
+                        _('Ctrl+Q'), self.close)
 
         def lookup():
             fw = QApplication.focusWidget()
@@ -626,28 +589,20 @@ class DictView(QMainWindow):
                 text = fw.selectedText()
                 if text:
                     self.set_word_input(text)
-
-        action_lookup = QAction(icons['system-search'], _('&Lookup'), self, triggered=lookup)
-        ctrl_ret = _('Ctrl+Return')
-        ctrl_enter = _('Ctrl+Enter')
-        action_lookup.setShortcuts([ctrl_enter, ctrl_ret] if not is_mac_os()
-                                   else [ctrl_ret, ctrl_enter])
-        action_lookup.setToolTip(_('Lookup the selected text'))
-        mn_edit.addAction(action_lookup)
-        self.addAction(action_lookup)
+        ctrl_ret, ctrl_enter = _('Ctrl+Return'), _('Ctrl+Enter')
+        action_lookup = a(_('&Lookup'), 'system-search',
+                          _('Lookup the selected text'),
+                          [ctrl_enter, ctrl_ret] if not is_mac_os()
+                          else [ctrl_ret, ctrl_enter], lookup)
         self.action_lookup = action_lookup
 
-        mn_edit.addSeparator()
 
         def cut():
             fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
                 fw.cut()
-
-        action_cut = QAction(icons['edit-cut'], _('Cu&t'), self, triggered=cut)
-        action_cut.setShortcut(QKeySequence.Cut)
-        action_cut.setToolTip(_('Cut the selection'))
-        mn_edit.addAction(action_cut)
+        action_cut = a(_('Cu&t'), 'edit-cut', _('Cut the selection'),
+                       QKeySequence.Cut, cut)
 
         def copy():
             fw = QApplication.focusWidget()
@@ -655,37 +610,25 @@ class DictView(QMainWindow):
                 fw.copy()
             elif isinstance(fw, QWebView):
                 fw.page().triggerAction(QWebPage.Copy)
-
-        action_copy = QAction(icons['edit-copy'], _('&Copy'), self, triggered=copy)
-        action_copy.setShortcuts([QKeySequence.Copy, _('Ctrl+Insert')])
-        action_copy.setToolTip(_('Copy the selection'))
-        mn_edit.addAction(action_copy)
-        self.addAction(action_copy)
+        action_copy = a(_('&Copy'), 'edit-copy', _('Copy the selection'),
+                        [QKeySequence.Copy, _('Ctrl+Insert')], copy)
         self.action_copy = action_copy
 
         def paste():
             fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
                 fw.paste()
-
-        action_paste = QAction(icons['edit-paste'], _('&Paste'), self, triggered=paste)
-        action_paste.setShortcuts([QKeySequence.Paste, _('Shift+Insert')])
-        action_paste.setToolTip(_('Paste the clipboard'))
-        mn_edit.addAction(action_paste)
-        self.addAction(action_paste)
+        action_paste = a(_('&Paste'), 'edit-paste',
+                         _('Paste the clipboard'),
+                         [QKeySequence.Paste, _('Shift+Insert')], paste)
 
         def delete():
             fw = QApplication.focusWidget()
             if isinstance(fw, QLineEdit):
                 fw.del_()
-
-        action_delete = QAction(icons['edit-delete'], _('&Delete'), self, triggered=delete)
-        action_delete.setShortcut(QKeySequence.Delete)
-        action_delete.setToolTip(_('Delete the selected text'))
-        mn_edit.addAction(action_delete)
-        self.addAction(action_delete)
-
-        mn_edit.addSeparator()
+        action_delete = a(_('&Delete'), 'edit-delete',
+                          _('Delete the selected text'),
+                          QKeySequence.Delete, delete)
 
         def select_all():
             fw = QApplication.focusWidget()
@@ -693,15 +636,155 @@ class DictView(QMainWindow):
                 fw.selectAll()
             elif isinstance(fw, QWebView):
                 fw.page().triggerAction(QWebPage.SelectAll)
-
-        action_select_all = QAction(icons['edit-select-all'],
-                                    _('&Select All'), self,
-                                    triggered=select_all)
-        action_select_all.setShortcut(QKeySequence.SelectAll)
-        action_select_all.setToolTip(_('Select the entire text'))
-        mn_edit.addAction(action_select_all)
-        self.addAction(action_select_all)
+        action_select_all = a(_('&Select All'), 'edit-select-all',
+                              _('Select the entire text'),
+                              QKeySequence.SelectAll, select_all)
         self.action_select_all = action_select_all
+
+        action_lookup_box = self.a(_('&Lookup Box'),
+                                   None,
+                                   _('Move focus to word input and select its content'),
+                                   [_('Ctrl+L'), _('F2')],
+                                   self.go_to_lookup_box)
+
+        action_history_back = self.a(_('&Back'),
+                                     'go-previous',
+                                     _('Go back to previous word in history'),
+                                     [QKeySequence.Back, _('Ctrl+[')],
+                                     self.history_back)
+        self.action_history_back = action_history_back
+
+        action_history_fwd = self.a(_('&Forward'), 'go-next',
+                                    _('Go forward to next word in history'),
+                                    [QKeySequence.Forward, _('Ctrl+]'), _('Shift+Esc')],
+                                    self.history_fwd)
+        self.action_history_fwd = action_history_fwd
+
+        action_next_article = self.a(_('&Next Article'),
+                                     'go-next-page',
+                                     _('Show next article'),
+                                     [_('Ctrl+K'), _('Ctrl+.')],
+                                     self.show_next_article)
+        self.action_next_article = action_next_article
+
+        action_prev_article = self.a(_('&Previous Article'), 'go-previous-page',
+                                     _('Show previous article'), [_('Ctrl+J'), _('Ctrl+,')],
+                                     self.show_prev_article)
+        self.action_prev_article = action_prev_article
+
+        def go_to_find_pane():
+            find_toolbar.show()
+            find_toolbar.find_input.setFocus()
+            find_toolbar.find_input.selectAll()
+        action_article_find = a(_('&Find...'), 'edit-find',
+                                _('Find text in article'),
+                                [_('Ctrl+F'), _('/')],
+                                go_to_find_pane)
+
+        action_save_article = a( _('&Save...'), 'document-save',
+                                 _('Save article text to file'),
+                                 _('Ctrl+S'), self.save_article)
+        self.action_save_article = action_save_article
+
+        action_online_article = a(_('&View Online'), 'emblem-web',
+                                  _('Open online version of this '
+                                    'article in a web browser'),
+                                  _('Ctrl+T'), self.show_article_online)
+        self.action_online_article = action_online_article
+
+        action_article_appearance = a(_('&Appearance...'), 'emblem-art2',
+                                      _('Customize article appearance'),
+                                      _('Ctrl+U'), self.article_appearance)
+
+        action_increase_text = a(_('&Increase'), 'zoom-in',
+                                 _('Increase size of article text'),
+                                 [QKeySequence.ZoomIn, _("Ctrl+="), _('F7')],
+                                 self.increase_text_size)
+
+        action_decrease_text = a(_('&Decrease'), 'zoom-out',
+                                 _('Decrease size of article text'),
+                                 [QKeySequence.ZoomOut, _('F8')],
+                                 self.decrease_text_size)
+
+        action_reset_text = a(_('&Reset'), 'zoom-original',
+                              _('Reset size of article text to default'),
+                              _('Ctrl+0'), self.reset_text_size)
+
+        action_full_screen = a(_('&Full Screen'), 'view-fullscreen',
+                               _('Toggle full screen mode'),
+                               _('F11'), self.toggle_full_screen, checkable=True)
+        self.action_full_screen = action_full_screen
+
+        action_about = a(_('&About...'), 'help-about',
+                         _('Information about Aard Dictionary'),
+                         None, self.about)
+        action_about.setMenuRole(QAction.AboutRole)
+
+        m = self.m
+
+        menubar.addMenu(m(_('&Dictionary'),
+                          action_add_dicts,
+                          action_add_dict_dir,
+                          action_remove_dict_source,
+                          None,
+                          action_verify,
+                          action_info,
+                          None,
+                          action_quit))
+
+        menubar.addMenu(m(_('&Edit'),
+                          action_lookup,
+                          None,
+                          action_cut,
+                          action_paste,
+                          action_delete,
+                          None,
+                          action_select_all))
+
+        menubar.addMenu(m(_('&Navigate'),
+                          action_lookup_box,
+                          None,
+                          action_history_back,
+                          action_history_fwd,
+                          None,
+                          action_next_article,
+                          action_prev_article))
+
+        menubar.addMenu(m(_('&Article'),
+                          action_article_find,
+                          action_save_article,
+                          action_online_article,
+                          action_article_appearance))
+
+        menubar.addMenu(m(_('&View'),
+                          self.dock_lookup_pane.toggleViewAction(),
+                          self.dock_history.toggleViewAction(),
+                          toolbar.toggleViewAction(),
+                          m(_('Text &Size'),
+                            action_increase_text,
+                            action_decrease_text,
+                            action_reset_text),
+                          action_full_screen))
+
+        menubar.addMenu(m(_('H&elp'),
+                          action_about))
+
+        self.t(toolbar,
+               action_history_back,
+               action_history_fwd,
+               action_article_find,
+               action_online_article,
+               None,
+               action_increase_text,
+               action_decrease_text,
+               action_reset_text,
+               action_full_screen,
+               None,
+               action_add_dicts,
+               action_add_dict_dir,
+               action_info,
+               None,
+               action_quit)
 
         def update_edit_actions():
             fw = QApplication.focusWidget()
@@ -734,127 +817,6 @@ class DictView(QMainWindow):
 
         QApplication.instance().focusChanged.connect(focus_changed)
 
-        mn_navigate = menubar.addMenu(_('&Navigate'))
-
-        mn_navigate.addAction(action_lookup_box)
-        mn_navigate.addSeparator()
-        mn_navigate.addAction(self.action_history_back)
-        mn_navigate.addAction(self.action_history_fwd)
-        mn_navigate.addSeparator()
-
-        self.action_next_article = QAction(icons['go-next-page'], _('&Next Article'),
-                                           self, triggered=self.show_next_article)
-        self.action_next_article.setShortcuts([_('Ctrl+K'), _('Ctrl+.')])
-        self.action_next_article.setToolTip(_('Show next article'))
-        mn_navigate.addAction(self.action_next_article)
-
-        self.action_prev_article = QAction(icons['go-previous-page'], _('&Previous Article'),
-                                           self, triggered=self.show_prev_article)
-        self.action_prev_article.setShortcuts([_('Ctrl+J'), _('Ctrl+,')])
-        self.action_prev_article.setToolTip(_('Show previous article'))
-        mn_navigate.addAction(self.action_prev_article)
-
-        mn_article = menubar.addMenu(_('&Article'))
-
-        def go_to_find_pane():
-            find_toolbar.show()
-            find_toolbar.find_input.setFocus()
-            find_toolbar.find_input.selectAll()
-
-        action_article_find = QAction(_('&Find...'),
-                                           self, triggered=go_to_find_pane)
-        action_article_find.setIcon(icons['edit-find'])
-        action_article_find.setShortcuts([_('Ctrl+F'), _('/')])
-        action_article_find.setToolTip(_('Find text in article'))
-        mn_article.addAction(action_article_find)
-        self.addAction(action_article_find)
-
-        self.action_save_article = QAction(icons['document-save'], _('&Save...'),
-                                           self, triggered=self.save_article)
-        self.action_save_article.setShortcut(_('Ctrl+S'))
-        self.action_save_article.setToolTip(_('Save article text to file'))
-        mn_article.addAction(self.action_save_article)
-
-        self.action_online_article = QAction(icons['emblem-web'], _('&View Online'),
-                                             self, triggered=self.show_article_online)
-        self.action_online_article.setShortcut(_('Ctrl+T'))
-        self.action_online_article.setToolTip(_('Open online version of this '
-                                                'article in a web browser'))
-        mn_article.addAction(self.action_online_article)
-
-        action_article_appearance = QAction(icons['emblem-art2'], _('&Appearance...'),
-                                            self, triggered=self.article_appearance)
-        action_article_appearance.setShortcut(_('Ctrl+U'))
-        action_article_appearance.setToolTip(_('Customize article appearance'))
-        mn_article.addAction(action_article_appearance)
-        self.addAction(action_article_appearance)
-
-        mn_view = menubar.addMenu(_('&View'))
-
-        mn_view.addAction(self.dock_lookup_pane.toggleViewAction())
-        mn_view.addAction(self.dock_history.toggleViewAction())
-
-        toolbar = QToolBar(_('&Toolbar'), self)
-        toolbar.setObjectName('toolbar')
-        mn_view.addAction(toolbar.toggleViewAction())
-
-        mn_text_size = mn_view.addMenu(_('Text &Size'))
-
-        action_increase_text = QAction(icons['zoom-in'], _('&Increase'),
-                                       self, triggered=self.increase_text_size)
-        action_increase_text.setShortcuts([QKeySequence.ZoomIn, _("Ctrl+="), _('F7')])
-        action_increase_text.setToolTip(_('Increase size of article text'))
-        mn_text_size.addAction(action_increase_text)
-        self.addAction(action_increase_text)
-
-        action_decrease_text = QAction(icons['zoom-out'], _('&Decrease'),
-                                       self, triggered=self.decrease_text_size)
-        action_decrease_text.setShortcuts([QKeySequence.ZoomOut, _('F8')])
-        action_decrease_text.setToolTip(_('Decrease size of article text'))
-        mn_text_size.addAction(action_decrease_text)
-        self.addAction(action_decrease_text)
-
-        action_reset_text = QAction(icons['zoom-original'], _('&Reset'),
-                                    self, triggered=self.reset_text_size)
-        action_reset_text.setShortcut(_('Ctrl+0'))
-        action_reset_text.setToolTip(_('Reset size of article text to default'))
-        mn_text_size.addAction(action_reset_text)
-        self.addAction(action_reset_text)
-
-        self.action_full_screen = QAction(icons['view-fullscreen'], _('&Full Screen'), self)
-        self.action_full_screen.setShortcut(_('F11'))
-        self.action_full_screen.setToolTip(_('Toggle full screen mode'))
-        self.action_full_screen.setCheckable(True)
-        self.action_full_screen.triggered[bool].connect(self.toggle_full_screen)
-        mn_view.addAction(self.action_full_screen)
-        self.addAction(self.action_full_screen)
-
-        mn_help = menubar.addMenu(_('H&elp'))
-
-        action_about = QAction(icons['help-about'], _('&About...'),
-                               self, triggered=self.about)
-        action_about.setToolTip(_('Information about Aard Dictionary'))
-        action_about.setMenuRole(QAction.AboutRole)
-        mn_help.addAction(action_about)
-        self.addAction(action_about)
-
-        toolbar.addAction(self.action_history_back)
-        toolbar.addAction(self.action_history_fwd)
-        toolbar.addAction(action_article_find)
-        toolbar.addAction(self.action_online_article)
-        toolbar.addSeparator()
-        toolbar.addAction(action_increase_text)
-        toolbar.addAction(action_decrease_text)
-        toolbar.addAction(action_reset_text)
-        toolbar.addAction(self.action_full_screen)
-        toolbar.addSeparator()
-        toolbar.addAction(action_add_dicts)
-        toolbar.addAction(action_add_dict_dir)
-        toolbar.addAction(action_info)
-        toolbar.addSeparator()
-        toolbar.addAction(action_quit)
-        self.toolbar = toolbar
-        self.addToolBar(toolbar)
 
         find_toolbar = FindWidget(self.tabs)
         find_toolbar.hide()
@@ -896,6 +858,45 @@ class DictView(QMainWindow):
         self.update_current_article_actions(-1)
         self.scroll_values = LimitedDict()
         self.state_before_full_screen = None
+
+
+    def a(self, name, icon_name, tooltip, shortcuts, func, checkable=False):
+        if icon_name:
+            action = QAction(icons[icon_name], name, self)
+        else:
+            action = QAction(name, self)
+        if checkable:
+            action.setCheckable(True)
+            action.triggered[bool].connect(func)
+        else:
+            action.triggered.connect(func)
+
+        if shortcuts:
+            if isinstance(shortcuts, (list, tuple)):
+                action.setShortcuts(shortcuts)
+            else:
+                action.setShortcut(shortcuts)
+        action.setToolTip(tooltip)
+        self.addAction(action)
+        return action
+
+    def m(self, name, *args):
+        mn = QMenu(name, self)
+        for item in args:
+            if item is None:
+                mn.addSeparator()
+            elif isinstance(item, QMenu):
+                mn.addMenu(item)
+            else:
+                mn.addAction(item)
+        return mn
+
+    def t(self, toolbar, *args):
+        for item in args:
+            if item is None:
+                toolbar.addSeparator()
+            else:
+                toolbar.addAction(item)
 
     @property
     def preferred_dicts(self):
@@ -1223,9 +1224,9 @@ class DictView(QMainWindow):
 
             #don't want to steal focus from word input or history view
             #but if they are not visible, e.g. in fullscreen, take it
-            if not ((self.history_view.isVisible() and 
+            if not ((self.history_view.isVisible() and
                      self.history_view.hasFocus()) or
-                    (self.word_input.isVisible() and 
+                    (self.word_input.isVisible() and
                      self.word_input.hasFocus())):
                 view_to_load.setFocus()
             self.load_article(view_to_load)
