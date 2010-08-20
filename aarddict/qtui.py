@@ -556,7 +556,43 @@ class DictView(QMainWindow):
         menubar = self.menuBar()
         self.menubar_should_be_visible = menubar.isVisible()
 
-        a = self.a
+        def a(name, icon_name, tooltip, shortcuts, func, checkable=False):
+            if icon_name:
+                action = QAction(icons[icon_name], name, self)
+            else:
+                action = QAction(name, self)
+            if checkable:
+                action.setCheckable(True)
+                action.triggered[bool].connect(func)
+            else:
+                action.triggered.connect(func)
+            if shortcuts:
+                if isinstance(shortcuts, (list, tuple)):
+                    action.setShortcuts(shortcuts)
+                else:
+                    action.setShortcut(shortcuts)
+            action.setToolTip(tooltip)
+            self.addAction(action)
+            return action
+
+        def m(name, *args):
+            mn = QMenu(name, self)
+            for item in args:
+                if item is None:
+                    mn.addSeparator()
+                elif isinstance(item, QMenu):
+                    mn.addMenu(item)
+                else:
+                    mn.addAction(item)
+            return mn
+
+        def t(toolbar, *args):
+            for item in args:
+                if item is None:
+                    toolbar.addSeparator()
+                else:
+                    toolbar.addAction(item)
+
 
         action_add_dicts = a(_('&Add Dictionaries...'), 'add-file',
                              _('Add dictionaries'),
@@ -641,35 +677,35 @@ class DictView(QMainWindow):
                               QKeySequence.SelectAll, select_all)
         self.action_select_all = action_select_all
 
-        action_lookup_box = self.a(_('&Lookup Box'),
-                                   None,
-                                   _('Move focus to word input and select its content'),
-                                   [_('Ctrl+L'), _('F2')],
-                                   self.go_to_lookup_box)
+        action_lookup_box = a(_('&Lookup Box'),
+                              None,
+                              _('Move focus to word input and select its content'),
+                              [_('Ctrl+L'), _('F2')],
+                              self.go_to_lookup_box)
 
-        action_history_back = self.a(_('&Back'),
-                                     'go-previous',
-                                     _('Go back to previous word in history'),
-                                     [QKeySequence.Back, _('Ctrl+[')],
-                                     self.history_back)
+        action_history_back = a(_('&Back'),
+                                'go-previous',
+                                _('Go back to previous word in history'),
+                                [QKeySequence.Back, _('Ctrl+[')],
+                                self.history_back)
         self.action_history_back = action_history_back
 
-        action_history_fwd = self.a(_('&Forward'), 'go-next',
-                                    _('Go forward to next word in history'),
-                                    [QKeySequence.Forward, _('Ctrl+]'), _('Shift+Esc')],
-                                    self.history_fwd)
+        action_history_fwd = a(_('&Forward'), 'go-next',
+                               _('Go forward to next word in history'),
+                               [QKeySequence.Forward, _('Ctrl+]'), _('Shift+Esc')],
+                               self.history_fwd)
         self.action_history_fwd = action_history_fwd
 
-        action_next_article = self.a(_('&Next Article'),
-                                     'go-next-page',
-                                     _('Show next article'),
-                                     [_('Ctrl+K'), _('Ctrl+.')],
-                                     self.show_next_article)
+        action_next_article = a(_('&Next Article'),
+                                'go-next-page',
+                                _('Show next article'),
+                                [_('Ctrl+K'), _('Ctrl+.')],
+                                self.show_next_article)
         self.action_next_article = action_next_article
 
-        action_prev_article = self.a(_('&Previous Article'), 'go-previous-page',
-                                     _('Show previous article'), [_('Ctrl+J'), _('Ctrl+,')],
-                                     self.show_prev_article)
+        action_prev_article = a(_('&Previous Article'), 'go-previous-page',
+                                _('Show previous article'), [_('Ctrl+J'), _('Ctrl+,')],
+                                self.show_prev_article)
         self.action_prev_article = action_prev_article
 
         def go_to_find_pane():
@@ -720,8 +756,6 @@ class DictView(QMainWindow):
                          None, self.about)
         action_about.setMenuRole(QAction.AboutRole)
 
-        m = self.m
-
         menubar.addMenu(m(_('&Dictionary'),
                           action_add_dicts,
                           action_add_dict_dir,
@@ -769,22 +803,22 @@ class DictView(QMainWindow):
         menubar.addMenu(m(_('H&elp'),
                           action_about))
 
-        self.t(toolbar,
-               action_history_back,
-               action_history_fwd,
-               action_article_find,
-               action_online_article,
-               None,
-               action_increase_text,
-               action_decrease_text,
-               action_reset_text,
-               action_full_screen,
-               None,
-               action_add_dicts,
-               action_add_dict_dir,
-               action_info,
-               None,
-               action_quit)
+        t(toolbar,
+          action_history_back,
+          action_history_fwd,
+          action_article_find,
+          action_online_article,
+          None,
+          action_increase_text,
+          action_decrease_text,
+          action_reset_text,
+          action_full_screen,
+          None,
+          action_add_dicts,
+          action_add_dict_dir,
+          action_info,
+          None,
+          action_quit)
 
         def update_edit_actions():
             fw = QApplication.focusWidget()
@@ -858,45 +892,6 @@ class DictView(QMainWindow):
         self.update_current_article_actions(-1)
         self.scroll_values = LimitedDict()
         self.state_before_full_screen = None
-
-
-    def a(self, name, icon_name, tooltip, shortcuts, func, checkable=False):
-        if icon_name:
-            action = QAction(icons[icon_name], name, self)
-        else:
-            action = QAction(name, self)
-        if checkable:
-            action.setCheckable(True)
-            action.triggered[bool].connect(func)
-        else:
-            action.triggered.connect(func)
-
-        if shortcuts:
-            if isinstance(shortcuts, (list, tuple)):
-                action.setShortcuts(shortcuts)
-            else:
-                action.setShortcut(shortcuts)
-        action.setToolTip(tooltip)
-        self.addAction(action)
-        return action
-
-    def m(self, name, *args):
-        mn = QMenu(name, self)
-        for item in args:
-            if item is None:
-                mn.addSeparator()
-            elif isinstance(item, QMenu):
-                mn.addMenu(item)
-            else:
-                mn.addAction(item)
-        return mn
-
-    def t(self, toolbar, *args):
-        for item in args:
-            if item is None:
-                toolbar.addSeparator()
-            else:
-                toolbar.addAction(item)
 
     @property
     def preferred_dicts(self):
