@@ -1822,6 +1822,7 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
     def changeEvent(self, event):
         if event.type() == QEvent.WindowStateChange:
+            self.update_view_actions()
             window_state = self.windowState()
             if window_state == Qt.WindowFullScreen:
                 self.action_full_screen.setChecked(True)
@@ -1846,6 +1847,13 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
                 self.menuBar().setVisible(self.menubar_should_be_visible)
                 if self.state_before_full_screen:
                     self.restoreState(self.state_before_full_screen)
+
+    def update_view_actions(self):
+        window_state = self.windowState()
+        enabled = window_state != Qt.WindowFullScreen
+        self.dock_lookup_pane.toggleViewAction().setEnabled(enabled)
+        self.dock_history.toggleViewAction().setEnabled(enabled)
+        self.toolbar.toggleViewAction().setEnabled(enabled)
 
     def closeEvent(self, event):
 
