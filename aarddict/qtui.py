@@ -699,14 +699,21 @@ class DictView(QMainWindow):
         action_next_article = a(_('&Next Article'),
                                 'go-next-page',
                                 _('Show next article'),
-                                [_('Ctrl+K'), _('Ctrl+.')],
-                                self.show_next_article)
+                                _('Ctrl+K'),
+                                self.show_next_article)        
         self.action_next_article = action_next_article
 
         action_prev_article = a(_('&Previous Article'), 'go-previous-page',
-                                _('Show previous article'), [_('Ctrl+J'), _('Ctrl+,')],
+                                _('Show previous article'), _('Ctrl+J'),
                                 self.show_prev_article)
         self.action_prev_article = action_prev_article
+
+        #If 'Ctrl+.' and 'Ctrl+,' are set as shotcuts on next/previous article actions
+        #they result in '.' and ',' characters entered if focus is 
+        #in an input field and corresponding action is disabled.
+        #Make them shortcuts that are never disabled instead.
+        QShortcut(QKeySequence(_('Ctrl+.')), self).activated.connect(self.show_next_article)
+        QShortcut(QKeySequence(_('Ctrl+,')), self).activated.connect(self.show_prev_article)
 
         def go_to_find_pane():
             find_toolbar.show()
