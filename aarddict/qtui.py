@@ -447,6 +447,45 @@ class SingleRowItemSelectionModel(QItemSelectionModel):
                                                         QItemSelectionModel.Select |
                                                         QItemSelectionModel.Clear)
 
+
+class TabWidget(QTabWidget):
+
+    def __init__(self):
+        QTabWidget.__init__(self)
+        self.setDocumentMode(True)
+        content = QVBoxLayout()
+        self.status = QLabel(self)
+        c = QApplication.palette().color(QPalette.Disabled,
+                                         QPalette.WindowText)
+        self.status.setStyleSheet('QLabel {color: rgb(%s,%s,%s);}' %
+                                  (c.red(), c.green(), c.blue()))
+        self.status.setTextFormat(Qt.RichText)
+        self.status.setWordWrap(True)
+        self.status.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+        content.addSpacing(self.tabBar().geometry().height())
+        content.addWidget(self.status, 1)
+        self.setLayout(content)
+
+    def _update_message_visibility(self):
+        if self.count():
+            self.status.hide()
+        else:
+            self.status.show()
+
+    def addTab(self, *args, **kwargs):
+        result = QTabWidget.addTab(self, *args, **kwargs)
+        self._update_message_visibility()
+        return result
+
+    def removeTab(self, *args, **kwargs):
+        result = QTabWidget.removeTab(self, *args, **kwargs)
+        self._update_message_visibility()
+        return result
+
+    def show_message(self, msg):
+        self.status.setText(msg)
+
+
 class LimitedDict(dict):
     """
     >>> d = LimitedDict(max_size=2)
@@ -525,7 +564,7 @@ class DictView(QMainWindow):
         self.history_view.currentItemChanged.connect(self.update_history_actions)
         self.word_completion.currentItemChanged.connect(self.word_selection_changed)
 
-        self.tabs = QTabWidget()
+        self.tabs = TabWidget()
         self.tabs.setDocumentMode(True)
 
         self.setDockNestingEnabled(True)
@@ -700,7 +739,7 @@ class DictView(QMainWindow):
                                 'go-next-page',
                                 _('Show next article'),
                                 _('Ctrl+K'),
-                                self.show_next_article)        
+                                self.show_next_article)
         self.action_next_article = action_next_article
 
         action_prev_article = a(_('&Previous Article'), 'go-previous-page',
@@ -709,7 +748,7 @@ class DictView(QMainWindow):
         self.action_prev_article = action_prev_article
 
         #If 'Ctrl+.' and 'Ctrl+,' are set as shotcuts on next/previous article actions
-        #they result in '.' and ',' characters entered if focus is 
+        #they result in '.' and ',' characters entered if focus is
         #in an input field and corresponding action is disabled.
         #Make them shortcuts that are never disabled instead.
         QShortcut(QKeySequence(_('Ctrl+.')), self).activated.connect(self.show_next_article)
@@ -1108,6 +1147,7 @@ class DictView(QMainWindow):
                 self.word_input.setFocus()
         self.word_completion.clear()
         self.word_completion.addItem(_('Loading...'))
+        self.tabs.show_message(_('Looking up <strong>%s</strong>') % unicode(word))
         if self.current_lookup_thread:
             self.current_lookup_thread.stop()
             self.current_lookup_thread = None
@@ -1152,10 +1192,11 @@ class DictView(QMainWindow):
             item = self.word_completion.item(0)
             self.word_completion.setCurrentItem(item)
             self.word_completion.scrollToItem(item)
+            self.tabs.show_message('')
         else:
+            self.tabs.show_message(_('Nothing found'))
             #add to history if nothing found so that back button works
             self.add_to_history(unicode(word))
-
         self.current_lookup_thread = None
 
     def select_next_word(self):
