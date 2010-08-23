@@ -23,6 +23,7 @@ from PyQt4.QtGui import QIcon, QFont
 
 import aarddict
 from aarddict import package_dir
+from aarddict.state import app_dir
 
 
 def _read(name):
@@ -34,12 +35,17 @@ locale_dir = os.path.join(package_dir, 'locale')
 _article_js = ('<script type="text/javascript">%s</script>' %
                _read(os.path.join(package_dir, 'aar.js')))
 
+user_css_file = os.path.join(app_dir, 'user.css')
+
+_user_style_str = _read(user_css_file) if os.path.exists(user_css_file) else u''
+
 _shared_style_str = _read(os.path.join(package_dir, 'shared.css'))
 
 _aard_style_tmpl = Template(('<style type="text/css">%s</style>' %
                              '\n'.join((_shared_style_str,
                                         _read(os.path.join(package_dir,
-                                                           'aar.css.tmpl'))))))
+                                                           'aar.css.tmpl')),
+                                        _user_style_str))))
 
 
 _mediawiki_style = ('<style type="text/css">%s</style>' %
@@ -47,7 +53,8 @@ _mediawiki_style = ('<style type="text/css">%s</style>' %
                               _read(os.path.join(package_dir,
                                                  'mediawiki_shared.css')),
                               _read(os.path.join(package_dir,
-                                                 'mediawiki_monobook.css')))))
+                                                 'mediawiki_monobook.css')),
+                              _user_style_str)))
 
 _iconset = 'Human-O2'
 _icondir = os.path.join(package_dir, 'icons/%s/' % _iconset)
