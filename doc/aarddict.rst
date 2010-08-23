@@ -161,8 +161,8 @@ Application Shortcuts
 |:kbd:`Ctrl+0`        |:menuselection:`View --> Text Size   |                                 |
 |                     |--> Reset`                           |                                 |
 +---------------------+-------------------------------------+---------------------------------+
-|:kbd:`F11`           |:menuselection:`View --> Full Screen`|On Nokia Internet Tablets        |
-|                     |                                     |full screen mode is toggled      |
+|:kbd:`F11`,          |:menuselection:`View --> Full Screen`|On Nokia Internet Tablets        |
+|:kbd:`Ctrl+Shift+F`  |                                     |full screen mode is toggled      |
 |                     |                                     |by the `Full Screen`             |
 |                     |                                     |button.                          |
 +---------------------+-------------------------------------+---------------------------------+

@@ -795,10 +795,14 @@ class DictView(QMainWindow):
         action_reset_text = a(_('&Reset'), 'zoom-original',
                               _('Reset size of article text to default'),
                               _('Ctrl+0'), self.reset_text_size)
-
+        
+        mac_os_full_screen_shortcut = _('Ctrl+Shift+F')
+        full_screen_shortcuts = (mac_os_full_screen_shortcut if is_mac_os() 
+                                 else [_('F11'), mac_os_full_screen_shortcut])
         action_full_screen = a(_('&Full Screen'), 'view-fullscreen',
                                _('Toggle full screen mode'),
-                               _('F11'), self.toggle_full_screen, checkable=True)
+                               full_screen_shortcuts, 
+                               self.toggle_full_screen, checkable=True)
         self.action_full_screen = action_full_screen
 
         action_about = a(_('&About...'), 'help-about',
