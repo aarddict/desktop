@@ -1159,7 +1159,9 @@ class DictView(QMainWindow):
             else:
                 self.tabs.setFocus()
         self.word_completion.clear()
-        self.word_completion.addItem(_('Loading...'))
+        loading_item = QListWidgetItem(_('Loading...'))
+        loading_item.setFlags(Qt.NoItemFlags)
+        self.word_completion.addItem(loading_item)
         self.tabs.show_message(_('Looking up <strong>%s</strong>') % unicode(word))
 
         if self.current_lookup_thread:
