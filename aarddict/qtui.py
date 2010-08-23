@@ -889,6 +889,9 @@ class DictView(QMainWindow):
             action_select_all.setEnabled(lineedit or webview)
 
         def focus_changed(old, now):
+            log.debug('Focus change: %r (visible? %s) --> %r (visible? %s)',
+                      (old, old.isVisible() if old else None, 
+                       now, now.isVisible() if now else None))
             #On Mac OS X context menu grabs focus,
             #don't want to update actions for that
             if isinstance(now, QMenu):
@@ -1153,9 +1156,12 @@ class DictView(QMainWindow):
         if not self.history_view.hasFocus():
             if self.word_input.isVisible():
                 self.word_input.setFocus()
+            else:
+                self.tabs.setFocus()
         self.word_completion.clear()
         self.word_completion.addItem(_('Loading...'))
         self.tabs.show_message(_('Looking up <strong>%s</strong>') % unicode(word))
+
         if self.current_lookup_thread:
             self.current_lookup_thread.stop()
             self.current_lookup_thread = None
