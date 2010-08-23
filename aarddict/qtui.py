@@ -764,7 +764,7 @@ class DictView(QMainWindow):
             find_toolbar.find_input.selectAll()
         action_article_find = a(_('&Find...'), 'edit-find',
                                 _('Find text in article'),
-                                [_('Ctrl+F'), _('/')],
+                                [QKeySequence.Find, _('/')],
                                 go_to_find_pane)
 
         action_save_article = a( _('&Save...'), 'document-save',
