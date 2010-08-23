@@ -534,6 +534,10 @@ class DictView(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
+
+        self._pos = self.pos()
+        self._size = self.size()
+
         self.setUnifiedTitleAndToolBarOnMac(False)
         self.setWindowIcon(icons['aarddict'])
 
@@ -1861,6 +1865,16 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         dialog.setLayout(content)
         dialog.exec_()
 
+    def resizeEvent(self, event):
+        window_state = self.windowState()
+        if window_state != Qt.WindowFullScreen:
+            self._size = event.size()
+
+    def moveEvent(self, event):
+        window_state = self.windowState()
+        if window_state != Qt.WindowFullScreen:
+            self._pos = event.pos()
+
     def changeEvent(self, event):
         if event.type() == QEvent.WindowStateChange:
             self.update_view_actions()
@@ -1881,7 +1895,6 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
                 if not self.find_toolbar.find_input.hasFocus():
                     self.focus_current_tab()
-
             else:
                 self.tabs.setCornerWidget(None, Qt.TopRightCorner)
                 self.action_full_screen.setChecked(False)
@@ -1896,19 +1909,11 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         self.dock_history.toggleViewAction().setEnabled(enabled)
         self.toolbar.toggleViewAction().setEnabled(enabled)
 
-    def closeEvent(self, event):
-
-        if self.windowState() == Qt.WindowFullScreen:
-            self.showNormal()
-            self.menuBar().setVisible(self.menubar_should_be_visible)
-            if self.state_before_full_screen:
-                self.restoreState(self.state_before_full_screen)
-
+    def closeEvent(self, _event):
         self.clear_current_articles()
         self.write_state()
         for d in self.dictionaries:
             d.close()
-        event.accept()
 
     def update_title(self):
         dict_title = self.create_dict_title()
@@ -1962,8 +1967,8 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
             preferred_dicts = item.preferred_dicts
             history.append([unicode(item.text()), preferred_dicts])
         appstate['history'] = history
-        pos = self.pos()
-        size = self.size()
+        pos = self._pos
+        size = self._size
         appstate['geometry'] = [pos.x(), pos.y(), size.width(), size.height()]
         appstate['history_current'] = self.history_view.currentRow()
         appstate['last_file_parent'] = self.last_file_parent
@@ -1979,8 +1984,12 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
 
         state.write_state(appstate)
 
-        layout = self.saveState()
-        state.write_layout(layout)
+        if self.windowState() == Qt.WindowFullScreen:
+            if self.state_before_full_screen:
+                state.write_layout(self.state_before_full_screen)
+        else:
+            layout = self.saveState()
+            state.write_layout(layout)
 
     def read_state(self, load):
         appstate = state.read_state(load)
