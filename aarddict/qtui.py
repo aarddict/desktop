@@ -463,12 +463,27 @@ class TabWidget(QTabWidget):
         self.status.setWordWrap(True)
         self.status.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
         content.addSpacing(self.tabBar().geometry().height())
-        content.addWidget(self.status, 1)
+        self.toolbar = QToolBar()
+        content.addStretch()
+        content.addWidget(self.status)
+
+        toolbar_box = QHBoxLayout()
+        toolbar_box.addStretch()
+        toolbar_box.addWidget(self.toolbar)
+        toolbar_box.addStretch()
+        content.addLayout(toolbar_box)
+        content.addStretch()
         self.setLayout(content)
+        self.toolbar.hide()
+
+    def set_actions(self, *actions):
+        for action in actions:
+            self.toolbar.addAction(action)
 
     def _update_message_visibility(self):
         if self.count():
             self.status.hide()
+            self.toolbar.hide()
         else:
             self.status.show()
 
@@ -482,9 +497,16 @@ class TabWidget(QTabWidget):
         self._update_message_visibility()
         return result
 
-    def show_message(self, msg):
+    def show_loading(self, msg):
+        self.toolbar.hide()
         self.status.setText(msg)
 
+    def show_nothing(self, fullscreen):
+        self.status.setText(_('Nothing found'))
+        if fullscreen:
+            self.toolbar.show()
+        else:
+            self.toolbar.hide()
 
 class LimitedDict(dict):
     """
@@ -795,13 +817,13 @@ class DictView(QMainWindow):
         action_reset_text = a(_('&Reset'), 'zoom-original',
                               _('Reset size of article text to default'),
                               _('Ctrl+0'), self.reset_text_size)
-        
+
         mac_os_full_screen_shortcut = _('Ctrl+Shift+F')
-        full_screen_shortcuts = (mac_os_full_screen_shortcut if is_mac_os() 
+        full_screen_shortcuts = (mac_os_full_screen_shortcut if is_mac_os()
                                  else [_('F11'), mac_os_full_screen_shortcut])
         action_full_screen = a(_('&Full Screen'), 'view-fullscreen',
                                _('Toggle full screen mode'),
-                               full_screen_shortcuts, 
+                               full_screen_shortcuts,
                                self.toggle_full_screen, checkable=True)
         self.action_full_screen = action_full_screen
 
@@ -889,9 +911,6 @@ class DictView(QMainWindow):
             action_select_all.setEnabled(lineedit or webview)
 
         def focus_changed(old, now):
-            log.debug('Focus change: %r (visible? %s) --> %r (visible? %s)',
-                      (old, old.isVisible() if old else None, 
-                       now, now.isVisible() if now else None))
             #On Mac OS X context menu grabs focus,
             #don't want to update actions for that
             if isinstance(now, QMenu):
@@ -922,6 +941,8 @@ class DictView(QMainWindow):
                 self.history_back()
 
         QShortcut(QKeySequence(_('Esc')), self).activated.connect(esc)
+
+        self.tabs.set_actions(action_history_back, action_full_screen)
 
         central_widget_box = QVBoxLayout()
         central_widget_box.setSpacing(2)
@@ -1162,7 +1183,7 @@ class DictView(QMainWindow):
         loading_item = QListWidgetItem(_('Loading...'))
         loading_item.setFlags(Qt.NoItemFlags)
         self.word_completion.addItem(loading_item)
-        self.tabs.show_message(_('Looking up <strong>%s</strong>') % unicode(word))
+        self.tabs.show_loading(_('Looking up <strong>%s</strong>') % unicode(word))
 
         if self.current_lookup_thread:
             self.current_lookup_thread.stop()
@@ -1208,9 +1229,9 @@ class DictView(QMainWindow):
             item = self.word_completion.item(0)
             self.word_completion.setCurrentItem(item)
             self.word_completion.scrollToItem(item)
-            self.tabs.show_message('')
+            self.tabs.show_loading('')
         else:
-            self.tabs.show_message(_('Nothing found'))
+            self.tabs.show_nothing(self.windowState() == Qt.WindowFullScreen)
             #add to history if nothing found so that back button works
             self.add_to_history(unicode(word))
         self.current_lookup_thread = None
@@ -1891,7 +1912,10 @@ This is text with a footnote reference<a id="_r123" href="#">[1]</a>. <br>
         if event.type() == QEvent.WindowStateChange:
             self.update_view_actions()
             window_state = self.windowState()
-            if window_state == Qt.WindowFullScreen:
+            fullscreen = window_state == Qt.WindowFullScreen
+            if self.word_completion.count() == 0:
+                self.tabs.show_nothing(fullscreen)
+            if fullscreen:
                 self.action_full_screen.setChecked(True)
                 self.state_before_full_screen = self.saveState()
                 self.menubar_should_be_visible = self.menuBar().isVisible()
