@@ -483,7 +483,6 @@ class TabWidget(QTabWidget):
     def _update_message_visibility(self):
         if self.count():
             self.status.hide()
-            self.toolbar.hide()
         else:
             self.status.show()
 
