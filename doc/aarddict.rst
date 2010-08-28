@@ -604,6 +604,36 @@ Contributors
 Release Notes
 =============
 
+0.9.1
+-----
+
+- Improve full screen mode: show only article tabs, hide everything
+  else. 
+
+- Update Wikipedia style so that article content has some margin
+  around it, like in Aard style.
+
+- Make application shortcuts work regardless of whether menubar or
+  toolbar are visible. This was affecting Maemo users since menubar is
+  not displayed there and toolbar doesn't have all actions and can be
+  turned off. 
+
+- Fix article CSS to not hide content of `pre` elements
+
+- :kbd:`Control+,`/:kbd:`Ctrl+.` for previous/next article no longer
+  prints ``,``/``.`` when in lookup or find input field and
+  corresponding action is disabled
+
+- Show status message in the middle of tab widget for lookup in
+  progress and when lookup didn't yield any results
+
+- Load user-defined article style (CSS) from
+  :file:`$HOME/.aarddict/user.css`.
+
+- Use :kbd:`Ctrl+Shift+F` instead of :kbd:`F11` as shortcut for full
+  screen toggle on Mac.
+
+
 0.9.0
 -----
 
