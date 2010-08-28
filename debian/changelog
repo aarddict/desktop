@@ -1,3 +1,8 @@
+aarddict (0.9.1-1) lucid; urgency=low
+
+  * Update to 0.9.1.
+ -- Igor Tkach <itkach@aarddict.org>  Wed, 25 Aug 2010 00:40:00 -0500
+
 aarddict (0.9.0-2) lucid; urgency=low
 
   * Add python-setuptools build dependency.

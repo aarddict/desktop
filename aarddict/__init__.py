@@ -20,7 +20,7 @@ import logging
 
 logging.basicConfig(format='%(levelname)s: %(message)s')
 
-__version__ = "0.9.1.dev"
+__version__ = "0.9.1"
 __appname__ = "Aard Dictionary"
 
 from os import path
