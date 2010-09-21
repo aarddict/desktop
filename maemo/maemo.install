@@ -1,0 +1,9 @@
+[install]
+catalogues = aard
+package = aarddict
+
+[aard]
+name = Aard Dictionary
+uri = http://aarddict.sourceforge.net/maemo
+components = user
+dist = fremantle-1.2
