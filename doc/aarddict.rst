@@ -601,6 +601,16 @@ Contributors
 
 .. _BitTorrent tracker: http://torrent.tygier.co.uk:6969/
 
+
+Reporting Issues
+================
+
+Please submit issue reports and enhancement requests to `Aard
+Dictionary issue tracker`_.
+
+.. _Aard Dictionary issue tracker: http://bitbucket.org/itkach/aarddict/issues/
+
+
 Release Notes
 =============
 
