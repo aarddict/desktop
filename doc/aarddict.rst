@@ -608,7 +608,7 @@ Reporting Issues
 Please submit issue reports and enhancement requests to `Aard
 Dictionary issue tracker`_.
 
-.. _Aard Dictionary issue tracker: http://bitbucket.org/itkach/aarddict/issues/
+.. _Aard Dictionary issue tracker: http://github.com/aarddict/desktop/issues
 
 
 Release Notes
@@ -650,7 +650,7 @@ Release Notes
 - Implement ability to find text in article (:menuselection:`Article --> Find...`).
 
 - Implement ability to select aticle text font when not using
-  Wikipedia style (`issue #7`_)
+  Wikipedia style (:desktop-issue:`7`)
 
 - Add menu :menuselection:`Edit` with new action to look up currently
   selected text (:menuselection:`Edit --> Lookup`) and standard
@@ -678,7 +678,6 @@ Release Notes
 
 - Remove support for :term:`aar-JSON`.
 
-.. _issue #7: http://bitbucket.org/itkach/aarddict/issue/7
 
 0.8.0
 -----
@@ -764,7 +763,7 @@ Release Notes
 - Display Wikipedia language code in article tab title.
 
 - When article found in multiple dictionaries select tab with article
-  from most recently used dictionary (`issue #1`_).
+  from most recently used dictionary (:desktop-issue:`1`).
 
 - Added ability to verify dictionary data integrity:
   :menuselection:`Dictionary --> Verify`.
@@ -779,7 +778,7 @@ Release Notes
 - Render previously ignored ``dd`` tag often used in Wikipedia
   articles in serif italic font.
 
-- Implemented links to article sections (`issue #6`_).
+- Implemented links to article sections (:desktop-issue:`6`).
 
 - Highlight current item in word lookup history dropdown list.
 
@@ -798,9 +797,6 @@ Release Notes
 - Python 2.5 .deb is now installable on Ubuntu 8.04 LTS.
 
 
-.. _issue #6: http://bitbucket.org/itkach/aarddict/issue/6
-.. _issue #1: http://bitbucket.org/itkach/aarddict/issue/1
-
 0.7.4
 -----
 
@@ -808,30 +804,28 @@ Release Notes
 
 - Added Russian translation
 
+
 0.7.3
 -----
 
-- Customizable link colors (`issue #2`_)
+- Customizable link colors (:desktop-issue:`2`)
 
-- Updated default link colors (`issue #2`_)
+- Updated default link colors (:desktop-issue:`2`)
 
-- +/- keys on N800/N810 change article text size (`issue #3`_)
+- +/- keys on N800/N810 change article text size (:desktop-issue:`3`)
 
 - Article finger scrolling and link sensitivity tweaks
 
-.. _issue #2: http://bitbucket.org/itkach/aarddict/issue/2
-.. _issue #3: http://bitbucket.org/itkach/aarddict/issue/3
 
 0.7.2
 -----
 
-- Much faster word navigation (`issue #4`_)
+- Much faster word navigation (:desktop-issue:`4`)
 
-- Fixed memory leak (`issue #4`_)
+- Fixed memory leak (:desktop-issue:`4`)
 
 - Visual feedback when link clicked
 
-.. _issue #4: http://bitbucket.org/itkach/aarddict/issue/4
 
 0.7.1
 -----
