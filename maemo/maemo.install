@@ -4,6 +4,6 @@ package = aarddict
 
 [aard]
 name = Aard Dictionary
-uri = http://aarddict.sourceforge.net/maemo
+uri = http://aarddict.org/maemo
 components = user
 dist = fremantle-1.2
