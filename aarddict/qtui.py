@@ -1301,12 +1301,14 @@ class DictView(QMainWindow):
             self.tabs.blockSignals(False)
             view_to_load = self.tabs.widget(0)
 
-            #don't want to steal focus from word input or history view
+            #don't want to steal focus from word input or history view or word completion
             #but if they are not visible, e.g. in fullscreen, take it
             if not ((self.history_view.isVisible() and
                      self.history_view.hasFocus()) or
                     (self.word_input.isVisible() and
-                     self.word_input.hasFocus())):
+                     self.word_input.hasFocus()) or
+                    (self.word_completion.isVisible() and
+                     self.word_completion.hasFocus())):
                 view_to_load.setFocus()
             self.load_article(view_to_load)
 
