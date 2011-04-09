@@ -21,7 +21,6 @@ import optparse
 import logging
 
 from pprint import pprint
-from .dictionary import Volume, VerifyError
 
 
 logging.basicConfig(format='%(levelname)s: %(message)s')
@@ -98,6 +97,7 @@ def main():
 
 
 def identify(file_names):
+    from .dictionary import Volume
     tmpl = '%16s: %s'
     for file_name in file_names:
         print '%s:' % file_name
@@ -113,6 +113,8 @@ def identify(file_names):
 
 
 def verify(file_names):
+    from .dictionary import Volume, VerifyError
+
     ERASE_LINE = '\033[2K'
     BOLD='\033[1m'
     RED = '\033[91m'
@@ -141,6 +143,7 @@ def verify(file_names):
 
 
 def metadata(file_names):
+    from .dictionary import Volume
     for file_name in file_names:
         volume = Volume(file_name)
         print '%s metadata:' % file_name
