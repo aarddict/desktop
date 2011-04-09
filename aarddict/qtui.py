@@ -566,6 +566,7 @@ class DictView(QMainWindow):
         self.update_title()
 
         self.word_completion = QListWidget()
+        self.word_completion.itemActivated.connect(self.focus_current_tab)
 
         self.word_input = LineEditWithClear(self.word_completion)
         self.word_input.setClearShortcut(_('Ctrl+N'))
@@ -584,6 +585,7 @@ class DictView(QMainWindow):
         lookup_pane.setLayout(box)
 
         self.history_view = QListWidget()
+        self.history_view.itemActivated.connect(self.focus_current_tab)
 
         self.history_view.currentItemChanged.connect(self.history_selection_changed)
         self.history_view.currentItemChanged.connect(self.update_history_actions)
