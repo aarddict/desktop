@@ -27,7 +27,11 @@ from uuid import UUID
 from threading import local
 
 import simplejson
-from PyICU import Locale, Collator
+try:
+    from icu import Locale, Collator
+except ImportError:
+    from PyICU import Locale, Collator
+
 
 PRIMARY = Collator.PRIMARY
 SECONDARY = Collator.SECONDARY
