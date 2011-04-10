@@ -188,6 +188,11 @@ Lookup Box
 |start/end of document|                                    |                           |
 +---------------------+------------------------------------+---------------------------+
 
+OS standard navigation keys also work in word completion list and
+history list. Activating an item in these lists (:kbd:`Enter` on
+Windows and X Windows) also moves keyboard focus to current article.
+
+
 Find Bar
 --------
 +---------------------+------------------------------------+---------------------------+
