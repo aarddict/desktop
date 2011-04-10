@@ -671,7 +671,7 @@ msgid "Redirected from <strong>%s</strong>"
 msgstr ""
 
 #: res.py:271
-msgid "(C) 2006-2010 Igor Tkach"
+msgid "(C) 2006-2011 Igor Tkach"
 msgstr ""
 
 #: res.py:272

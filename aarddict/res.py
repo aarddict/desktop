@@ -268,7 +268,7 @@ def about():
                   version=aarddict.__version__,
                   logodir=_logodir,
                   website='http://aarddict.org',
-                  copyright1=_('(C) 2006-2010 Igor Tkach'),
+                  copyright1=_('(C) 2006-2011 Igor Tkach'),
                   copyright2=_('(C) 2008 Jeremy Mortis'),
                   lic_notice=_('Distributed under terms and conditions '
                                'of <a href="http://www.gnu.org/licenses'
