@@ -616,8 +616,24 @@ Dictionary issue tracker`_.
 .. _Aard Dictionary issue tracker: http://github.com/aarddict/desktop/issues
 
 
-Release Notes
-=============
+Changes
+=======
+
+0.9.2
+-----
+- Keyboard focus is no longer automatically transferred to article
+  view when word is selected in word completion list
+  (:desktop-issue:`18`)
+
+- Transfer keyboard focus to article view when word is activated in
+  word completion list or history
+
+- Fix aarddict's command line `verify`, `identify` and `metadata` 
+  operations (:desktop-issue:`16`)
+
+- Windows installer no longer installs URL shortcuts to Aard
+  Dictionary's web site and forum (:desktop-issue:`17`)
+
 
 0.9.1
 -----
