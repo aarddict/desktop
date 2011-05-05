@@ -413,7 +413,7 @@ class Volume(object):
         self.source = meta.get('source', u'')
         self.language_links = sorted(meta.get('language_links', []))
 
-        f = open(self.file_name, 'r+b')
+        f = open(self.file_name, 'rb')
         self.fmap = mmap.mmap(f.fileno(),
                               article_offset,
                               access=mmap.ACCESS_READ)
