@@ -624,8 +624,15 @@ Dictionary issue tracker`_.
 Changes
 =======
 
+0.9.3
+-----
+
+- Fix opening read-only dictionary files (:desktop-issue:`19`)
+
+
 0.9.2
 -----
+
 - Keyboard focus is no longer automatically transferred to article
   view when word is selected in word completion list
   (:desktop-issue:`18`)
